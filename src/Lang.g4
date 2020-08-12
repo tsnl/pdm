@@ -7,6 +7,7 @@ options {
 fragment L: [a-zA-Z_];
 fragment D: [0-9];
 fragment X: [0-9a-fA-F];
+fragment SP: 'f' ;
 fragment DC: ~('"' |'\\'|'\r'|'\n') | '\'';
 fragment SC: ~('\''|'\\'|'\r'|'\n') | '"';
 
@@ -14,41 +15,48 @@ ID: L (L|D)* ;
 DINT: D (D|'_')* ;
 XINT: ('0x'|'0X') (X|'_')+ ;
 FLOAT: DINT ('.' (D|'_')*)? ([eE] (D|'_')+)? ;
-DQSTRING: '"'  DC*  '"';
-SQSTRING: '\'' SC* '\'';
+DQSTRING: SP? '"'  DC*  '"';
+SQSTRING: SP? '\'' SC* '\'';
 
 IGNORED: (WHITESPACE | LINE_COMMENT) -> skip;
 fragment WHITESPACE: (' '|'\t'|'\n'|'\r');
 fragment LINE_COMMENT: '#' ~[\r\n\f]*;
 
 sourceFile: importHeader? exportHeader? sourceBody EOF;
-importHeader: 'import' '{' its+=field (',' its+=field)* '}' ;
-exportHeader: 'export' '{' its+=field (',' its+=field)* '}' ';' ;
-sourceBody: (defn_its+=stmt ';')*;
+importHeader: 'import' '{' its+=vField (',' its+=vField)* '}' ';' ;
+exportHeader: 'export' '{' its+=vField (',' its+=vField)* '}' ';' ;
+sourceBody: (defn_its+=fileStmt ';')*;
 
-stmt: ts=typespec? lhs=ID                                     '=' rhs=expr  #bindValStmt
-    | ts=typespec? lhs=ID '(' (args+=ID ',')* (args+=ID)? ')' '=' rhs=expr  #bindFunStmt
+fileStmt
+    : lhs=ID args=fnArgs ('=' rhs=expr)?        #bindFunStmt
+    | lhs=ID             ('=' rhs=expr)         #bindValStmt
+    | lhs=ID args=tsArgs ('=' rhs=typespec)     #bindTypespecStmt
+    ;
+stmt: through=fileStmt      #throughStmt
+    | 'do' rhs=expr         #dropStmt
     ;
 
-expr: through=binaryExpr;
+expr: through=matchExpr;
 primaryExpr
     : ID                                                            #idExpr
     | 'operator' '(' op=anyOp ',' arity=DINT ')'                    #opExpr
     | DINT                                                          #decIntExpr
     | XINT                                                          #hexIntExpr
     | FLOAT                                                         #floatExpr
-    | '(' paren_it=expr ')'                                         #parenExpr
-    | '{' tuple_its+=field (',' tuple_its+=field)* '}'              #tupleExpr
-    | '[' (list_its+=expr (',' list_its+=expr)*)? ']'               #listExpr
+    | SQSTRING                                                      #sqStringExpr
+    | DQSTRING                                                      #dqStringExpr
+    | '(' paren_its=exprList? ')'                                   #parenExpr
+    | '{' tuple_its=vFieldList '}'                                  #tupleExpr
+    | '[' list_its=exprList? ']'                                    #listExpr
     | '{' (prefix_its+=stmt ';')* (result=expr) '}'                 #chainExpr
     | 'if' cond=expr 'then' if_true=expr ('else' if_false=expr)?    #iteExpr
     ;
-field: lhs=ID ':' val=expr ;
 postfixExpr
-    : through=primaryExpr                                       #throughPostfixExpr
-    | prefix=postfixExpr '.' suffix=ID                          #dotNameExpr
-    | prefix=postfixExpr '.' suffix=DINT                        #dotIndexExpr
-    | lhs=postfixExpr '(' (args+=expr (',' args+=expr)*)? ')'   #callExpr
+    : through=primaryExpr                                           #throughPostfixExpr
+    | prefix=postfixExpr '.' suffix=ID                              #dotNameExpr
+    | prefix=postfixExpr '.' suffix=DINT                            #dotIndexExpr
+    | lhs=postfixExpr '<' args=typespecList '>'                     #tCallExpr
+    | lhs=postfixExpr '(' args=exprList? ')'                        #vCallExpr
     ;
 unaryExpr: through=postfixExpr | op=unaryOp arg=unaryExpr ;
 unaryOp: '!' | '+' | '-' | '*' | '^';
@@ -59,6 +67,13 @@ eqBinaryExpr:  through=relBinaryExpr | lt=eqBinaryExpr op=binaryEqOp rt=relBinar
 andBinaryExpr: through=eqBinaryExpr | lt=andBinaryExpr op=binaryAndOp rt=eqBinaryExpr;
 orBinaryExpr:  through=andBinaryExpr | lt=orBinaryExpr op=binaryOrOp rt=andBinaryExpr;
 binaryExpr: through=orBinaryExpr;
+
+lambdaExpr: through=binaryExpr | lambdaArm ;
+matchExpr: through=lambdaExpr | 'match' args=lambdaExpr '{' body=matchBody '}' ;
+matchBody: (arms+=lambdaArm ';')* ;
+lambdaArm: args=fnArgs '->' rhs=binaryExpr ;
+
+
 binaryMulOp: '*' | '/' | '%';
 binaryAddOp: '+' | '-';
 binaryRelOp: '<' | '>' | '<=' | '>=';
@@ -67,16 +82,22 @@ binaryAndOp: '&&';
 binaryOrOp: '||';
 binaryOp: binaryMulOp | binaryAddOp | binaryRelOp | binaryEqOp | binaryAndOp | binaryOrOp;
 anyOp: unaryOp | binaryOp;
+exprList: args+=expr (',' args+=expr)* ;
 
 typespec: through=binaryTypespec;
 primaryTypespec
-    : ID                                            #idTypespec
-    | '(' it=typespec ')'                           #parenTypespec
-    | '[' its+=typespec (',' its+=typespec)* ']'    #enumTypespec
-    | '{' its+=typespec (',' its+=typespec)* '}'    #structTypespec
+    : ID                    #idTypespec
+    | '(' it=typespec ')'   #parenTypespec
+    | '[' tFieldList? ']'   #enumTypespec
+    | '{' tFieldList? '}'   #structTypespec
+    ;
+postfixTypespec
+    : through=primaryTypespec
+    | lhs=postfixTypespec '<' tArgs=typespecList '>'
+    | lhs=postfixTypespec '(' vArgs=exprList ')'
     ;
 unaryTypespec
-    : through=primaryTypespec
+    : through=postfixTypespec
     | op='^' arg=unaryTypespec
     ;
 funBinaryTypespec
@@ -84,3 +105,12 @@ funBinaryTypespec
     | lt=funBinaryTypespec op='->' rt=unaryTypespec
     ;
 binaryTypespec: it=funBinaryTypespec;
+
+vField: lhs=ID ':' val=expr ;
+tField: lhs=ID (':' ts=typespec)? ;
+vFieldList: its+=vField (',' its+=vField)* ;
+tFieldList: its+=tField (',' its+=tField)* ;
+typespecList: its+=typespec (',' its+=typespec)* ;
+
+tsArgs: ('<' tArgs=tFieldList '>') ;
+fnArgs: tsArgs? ('(' vArgs=tFieldList? ')' | singleVArg=tField) ;
