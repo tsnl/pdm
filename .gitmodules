@@ -1,0 +1,6 @@
+# The `intern` library is used for string interning for symbols.
+# Used modules:
+# - symbols
+[submodule "src/intern"]
+	path = src/intern
+	url = https://github.com/chriso/intern
