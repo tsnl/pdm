@@ -11,9 +11,9 @@ export {
     first: first
 };
 
-List(String) -> compiler.Result
-first (args) = {
-  	cwd (it) = f"src/eg1/{it}";
+cwd = (it) -> f"src/eg1/{it}";
+
+first = (args) -> {
     eg1 = compiler.addTarget("eg1");
     eg1 = compiler.addFiles(tc, [
         cwd("main.lang"),
@@ -40,3 +40,4 @@ first (args) = {
     eg1 = preproc.preProcessTarget(eg1);
     compiler.buildTargets([eg1])
 };
+
