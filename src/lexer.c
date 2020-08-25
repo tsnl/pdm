@@ -93,8 +93,9 @@ TokenKind LexOneToken(Source* source, TokenInfo* optInfoP) {
         case '/': return TK_FSLASH;
         case '%': return TK_PERCENT;
         case '+': return TK_PLUS;
-        case '&': return TK_BINARY_AND;
-        case '|': return TK_BINARY_OR;
+        case '&': return TK_AND;
+        case '|': return TK_OR;
+        case '^': return TK_CARET;
         case '-': 
         {
             if (AdvanceSourceReaderHead(source)) {
@@ -140,10 +141,10 @@ TokenKind LexOneToken(Source* source, TokenInfo* optInfoP) {
     //
 
     // if (GetSourceReaderHeadLoc(source) == '"') {
-    //     // todo
+    //     // todo: scan double-quoted strings
     // }
     // if (GetSourceReaderHeadLoc(source) == '\'') {
-    //     // todo
+    //     // todo: scan single-quoted strings
     // }
 
     //
@@ -170,12 +171,14 @@ TokenKind lexOneNumber(Source* source, TokenInfo* optInfoP) {
                 
                 // converting prefix and suffix ints into a double value:
                 if (optInfoP) {
-                    double dotPrefix = prefixTokenInfo.asInt;
-                    double dotSuffix = suffixTokenInfo.asInt;
-                    while (dotSuffix >= 1.0) dotSuffix /= 10;
+                    double dotPrefix = prefixTokenInfo.as.Int;
+                    double dotSuffix = suffixTokenInfo.as.Int;
+                    while (dotSuffix >= 1.0) {
+                        dotSuffix /= 10;
+                    }
                     double value = dotPrefix + dotSuffix;
                     if (optInfoP) {
-                        optInfoP->asFloat = value;
+                        optInfoP->as.Float = value;
                     }
                 }
                 return TK_FLOAT_LIT;
@@ -233,7 +236,7 @@ TokenKind lexOneIntChunk(Source* source, TokenInfo* optInfoP, bool noPrefix) {
 
     // Writing results to infoP:
     if (optInfoP) {
-        optInfoP->asInt = value;
+        optInfoP->as.Int = value;
     }
 
     // Returning results:
@@ -270,7 +273,7 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
         SymbolID symbolID = Symbol(charBuf);
         assert(kwID == 0 && "`strings_lookup` produced an ID but no match.");
         if (optInfoP) {
-            optInfoP->asID = symbolID;
+            optInfoP->as.ID = symbolID;
         }
         return TK_ID;
     }

@@ -1,43 +1,13 @@
 # first.lang
 
 import {
-    compiler: loadModule("/std/compiler.lang"),
-    console: loadModule("/std/console.lang"),
-    preproc: loadModule("./preproc.lang")
+    compiler: "/std/compiler.lang",
+    console: "/std/console.lang",
+    Eg2: "eg2.lang"
 };
 
-export {
-    preproc: preproc, 
-    first: first
+cwd = (it: string) -> f"src/eg1/{it}";
+
+Main = (args: Slc<string>) -> {
+    # Implement stuff
 };
-
-cwd = (it) -> f"src/eg1/{it}";
-
-first = (args) -> {
-    eg1 = compiler.addTarget("eg1");
-    eg1 = compiler.addFiles(tc, [
-        cwd("main.lang"),
-        # all files that follow these can be `%load`-ed from main.lang?
-        cwd("window.lang"),   
-        cwd("audio.lang")
-    ]);
-    eg1 = (
-        if len(args) == 0 then {
-            eg1
-        } else {
-            platform = args[0];
-            if platform == "win32" then {
-                compiler.addFiles(eg1, cwd("render.win32.lang"))
-            } else if platform == "linux" then {
-                compiler.addFiles(eg1, cwd("render.linux.lang"))
-            } else if platform == "macos" then {
-                compiler.addFiles(eg1, cwd("render.macos.lang"))
-            } else {
-                eg1
-            }
-        }
-    );
-    eg1 = preproc.preProcessTarget(eg1);
-    compiler.buildTargets([eg1])
-};
-
