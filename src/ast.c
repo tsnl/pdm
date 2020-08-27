@@ -1,9 +1,10 @@
 #include "ast.h"
 
+#include "config.h"
+
 #include "source.h"
 #include "symbols.h"
 
-typedef enum   AstKind     AstKind;
 typedef union  AstInfo     AstInfo;
 typedef struct AstList     AstList;
 typedef struct AstCall     AstCall;
@@ -15,34 +16,10 @@ typedef struct AstLambda   AstLambda;
 typedef struct AstBind     AstBind;
 typedef struct AstCheck    AstCheck;
 
-enum AstKind {
-    AST_ERROR = -1,
-    AST_NULL = 0,
-
-    // ids:
-    AST_ID,
-    
-    // literals:
-    AST_LITERAL_INT, AST_LITERAL_FLOAT, AST_LITERAL_STRING, 
-    
-    // compounds:
-    AST_TUPLE, AST_STRUCT, AST_SLICE, AST_CHAIN,  AST_ITE,
-    AST_LAMBDA,
-
-    // dots:
-    AST_DOT_INDEX, AST_DOT_NAME,
-    
-    // statements:
-    AST_STMT_BIND, AST_STMT_CHECK, AST_STMT_RETURN,
-
-    // calls:
-    AST_CALL_PAREN, AST_CALL_SQBRK,
-
-    // fields & patterns:
-    AST_PATTERN,
-    AST_FIELD
+struct AstList {
+    size_t count;
+    AstNode* items[MAX_ARG_COUNT];
 };
-
 struct AstField {
     SymbolID name;
     AstNode* node;
@@ -69,9 +46,8 @@ struct AstCheck {
     char* utf8Message;
 };
 struct AstCall {
-    AstNode* called;
-    AstList* templates;
-    AstList* values;
+    AstNode* lhs;
+    AstList* args;
 };
 
 enum AstOperator {
@@ -106,10 +82,9 @@ struct AstNode {
     AstInfo info;
 };
 
-struct AstList {
-    size_t count;
-    AstNode* items[MAX_ARG_COUNT];
-};
+//
+// Constructor helpers:
+//
 
 static size_t allocatedNodes = 0;
 static AstNode nodes[MAX_NODE_COUNT];
@@ -143,6 +118,10 @@ int pushListElement(AstList* list, AstNode* node) {
         return 1;
     }
 }
+
+//
+// Constructor implementations:
+//
 
 AstNode* CreateAstID(Loc loc, SymbolID symbolID) {
     AstNode* idNode = allocateNode(loc, AST_ID);
@@ -225,7 +204,7 @@ int PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typ
     return pushListElement(pattern->info.Items, field);
 }
 
-int PushItemToAstChain(AstNode* chain, AstNode* statement) {
+int PushStmtToAstChain(AstNode* chain, AstNode* statement) {
     return pushListElement(chain->info.Items, statement);
 }
 
@@ -282,19 +261,164 @@ AstNode* CreateAstReturnStmt(Loc loc, SymbolID label, AstNode* returned) {
     return returnNode;
 }
 
-AstNode* CreateAstCall(Loc loc, AstNode* called) {
-    AstNode* callNode = allocateNode(loc, AST_CALL_PAREN);
-    callNode->info.Call.called = called;
-    callNode->info.Call.templates = allocateList();
-    callNode->info.Call.values = allocateList();
+AstNode* CreateAstTemplateCall(Loc loc, AstNode* lhs) {
+    AstNode* callNode = allocateNode(loc, AST_TEMPLATE_CALL);
+    callNode->info.Call.lhs = lhs;
+    callNode->info.Call.args = allocateList();
     return callNode;
 }
 
-int PushActualTemplateArgToAstCall(AstNode* call, AstNode* templateArg) {
-    return pushListElement(call->info.Call.templates, templateArg);
+AstNode* CreateAstValueCall(Loc loc, AstNode* lhs) {
+    AstNode* callNode = allocateNode(loc, AST_VALUE_CALL);
+    callNode->info.Call.lhs = lhs;
+    callNode->info.Call.args = allocateList();
+    return callNode;
 }
 
-int PushActualValueArgToAstCall(AstNode* call, AstNode* valueArg) {
-    return pushListElement(call->info.Call.values, valueArg);
+AstNode* CreateAstSqBrkCall(Loc loc, AstNode* lhs) {
+    AstNode* callNode = allocateNode(loc, AST_SQBRK_CALL);
+    callNode->info.Call.lhs = lhs;
+    callNode->info.Call.args = allocateList();
+    return callNode;
 }
 
+int PushActualArgToAstCall(AstNode* call, AstNode* actualArg) {
+    return pushListElement(call->info.Call.args, actualArg);
+}
+
+//
+// Getter helpers:
+//
+
+inline static size_t getListLength(AstList* list);
+inline static AstNode* getListItemAt(AstList* list, size_t index);
+
+inline size_t getListLength(AstList* list) {
+    return list->count;
+}
+
+inline AstNode* getListItemAt(AstList* list, size_t index) {
+    if (DEBUG && index >= list->count) {
+        // element out of bounds!
+        return NULL;
+    }
+    return list->items[index];
+}
+
+//
+// Getter implementation:
+//
+
+Loc GetAstNodeLoc(AstNode* node) {
+    return node->loc;
+}
+
+AstKind GetAstNodeKind(AstNode* node) {
+    return node->kind;
+}
+
+SymbolID GetAstIDSymbol(AstNode* node) {
+    return node->info.ID;
+}
+
+size_t GetAstIntLiteralValue(AstNode* node) {
+    return node->info.Int;
+}
+
+long double GetAstFloatLiteralValue(AstNode* node) {
+    return node->info.Float;
+}
+
+char const* GetAstStringLiteralUtf8Value(AstNode* node) {
+    return node->info.Utf8String;
+}
+
+size_t GetAstTupleLength(AstNode* node) {
+    return getListLength(node);
+}
+
+size_t GetAstSliceLength(AstNode* node) {
+    return getListLength(node);
+}
+
+size_t GetAstStructLength(AstNode* node) {
+    return getListLength(node);
+}
+
+size_t GetAstPatternLength(AstNode* node) {
+    return getListLength(node);
+}
+
+size_t GetAstChainLength(AstNode* node) {
+    return getListLength(node);
+}
+
+AstNode* GetAstTupleItemAt(AstNode* node, size_t index) {
+    return getListLength(node);
+}
+
+AstNode* GetAstSliceItemAt(AstNode* node, size_t index) {
+    return getListLength(node);
+}
+
+AstNode* GetAstStructItemAt(AstNode* node, size_t index) {
+    return getListLength(node);
+}
+
+AstNode* GetAstPatternItemAt(AstNode* node, size_t index) {
+    return getListLength(node);
+}
+
+AstNode* GetAstChainStmtAt(AstNode* node, size_t index) {
+    return getListLength(node);
+}
+
+AstNode* GetAstIteCond(AstNode* ite) {
+    return getListItemAt(ite, 0);
+}
+
+AstNode* GetAstIteIfTrue(AstNode* ite) {
+    return getListItemAt(ite, 1);
+}
+
+AstNode* GetAstIteIfFalse(AstNode* ite) {
+    return getListItemAt(ite, 2);
+}
+
+AstNode* GetAstDotIndexLhs(AstNode* dot) {
+    return dot->info.DotIx.lhs;
+}
+
+size_t GetAstDotIndexRhs(AstNode* dot) {
+    return dot->info.DotIx.index;
+}
+
+AstNode* GetAstDotNameLhs(AstNode* dot) {
+    return dot->info.DotNm.lhs;
+}
+
+SymbolID GetAstDotNameRhs(AstNode* dot) {
+    return dot->info.DotNm.symbol;
+}
+
+AstNode* GetAstCallLhs(AstNode* call) {
+    return call->info.Call.lhs;
+}
+
+size_t GetAstCallArgCount(AstNode* call) {
+    return getListLength(call->info.Call.args);
+}
+
+AstNode* GetAstCallArgAt(AstNode* call, size_t index) {
+    return getListItemAt(call->info.Call.args, index);
+}
+
+SymbolID GetAstFieldName(AstNode* field) {
+    assert(field->kind == AST_FIELD);
+    return field->info.Field.name;
+}
+
+AstNode* GetAstFieldNode(AstNode* field) {
+    assert(field->kind == AST_FIELD);
+    return field->info.Field.node;
+}

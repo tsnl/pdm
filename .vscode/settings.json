@@ -3,6 +3,7 @@
         "algorithm": "c",
         "bit": "c",
         "functional": "c",
-        "complex": "c"
+        "complex": "c",
+        "chrono": "c"
     }
 }
