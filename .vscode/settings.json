@@ -4,6 +4,8 @@
         "bit": "c",
         "functional": "c",
         "complex": "c",
-        "chrono": "c"
+        "chrono": "c",
+        "__config": "c",
+        "__hash_table": "c"
     }
 }

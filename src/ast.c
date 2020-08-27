@@ -5,6 +5,7 @@
 #include "source.h"
 #include "symbols.h"
 
+typedef struct AstModule   AstModule;
 typedef union  AstInfo     AstInfo;
 typedef struct AstList     AstList;
 typedef struct AstCall     AstCall;
@@ -16,6 +17,10 @@ typedef struct AstLambda   AstLambda;
 typedef struct AstBind     AstBind;
 typedef struct AstCheck    AstCheck;
 
+struct AstModule {
+    SymbolID name;
+    AstList* items;
+};
 struct AstList {
     size_t count;
     AstNode* items[MAX_ARG_COUNT];
@@ -60,6 +65,7 @@ enum AstOperator {
 };
 
 union AstInfo {
+    AstModule   Module;
     SymbolID    ID;
     AstOperator OP;
     size_t      Int;
@@ -80,33 +86,34 @@ struct AstNode {
     Loc loc;
     AstKind kind;
     AstInfo info;
+    void* typeP;
 };
 
 //
 // Constructor helpers:
 //
 
-static size_t allocatedNodes = 0;
-static AstNode nodes[MAX_NODE_COUNT];
+static size_t allocatedNodeCount = 0;
+static AstNode allocatedNodes[MAX_NODE_COUNT];
 
-static size_t allocatedLists = 0;
-static AstList lists[MAX_NODE_COUNT];
+static size_t allocatedListCount = 0;
+static AstList allocatedLists[MAX_NODE_COUNT];
 
 static AstNode* allocateNode(Loc loc, AstKind kind);
 static AstList* allocateList(void);
 static int pushListElement(AstList* list, AstNode* node);
 
 AstNode* allocateNode(Loc loc, AstKind kind) {
-    AstNode* node = &nodes[allocatedNodes++];
+    AstNode* node = &allocatedNodes[allocatedNodeCount++];
     node->loc = loc;
     node->kind = kind;
     return node;
 }
 
 AstList* allocateList(void) {
-    AstList* call = &lists[allocatedLists++];
-    call->count = 0;
-    return call;
+    AstList* listP = &allocatedLists[allocatedListCount++];
+    listP->count = 0;
+    return listP;
 }
 
 int pushListElement(AstList* list, AstNode* node) {
@@ -122,6 +129,17 @@ int pushListElement(AstList* list, AstNode* node) {
 //
 // Constructor implementations:
 //
+
+AstNode* CreateAstModule(Loc loc, SymbolID moduleID) {
+    AstNode* node = allocatedNode(loc, AST_MODULE);
+    node->info.Module.name = moduleID;
+    node->info.Module.items = allocateList();
+    return node;
+}
+
+int PushStmtToAstModule(AstNode* module, AstNode* stmt) {
+    return pushListElement(module->info.Module.items, stmt);
+}
 
 AstNode* CreateAstID(Loc loc, SymbolID symbolID) {
     AstNode* idNode = allocateNode(loc, AST_ID);
@@ -309,6 +327,18 @@ inline AstNode* getListItemAt(AstList* list, size_t index) {
 // Getter implementation:
 //
 
+SymbolID GetAstModuleName(AstNode* node) {
+    return node->info.Module.name;
+}
+
+AstNode* GetAstModuleStmtAt(AstNode* node, size_t index) {
+    return getListItemAt(node->info.Module.items, index);
+}
+
+size_t GetAstNodeKey(AstNode* node) {
+    return (size_t)(node - allocatedNodes);
+}
+
 Loc GetAstNodeLoc(AstNode* node) {
     return node->loc;
 }
@@ -421,4 +451,16 @@ SymbolID GetAstFieldName(AstNode* field) {
 AstNode* GetAstFieldNode(AstNode* field) {
     assert(field->kind == AST_FIELD);
     return field->info.Field.node;
+}
+
+//
+// Scoper and typer storage:
+//
+
+void* GetAstNodeTypeP(AstNode* node) {
+    return node->typeP;
+}
+
+void SetAstNodeTypeP(AstNode* node, void* typeP) {
+    node->typeP = typeP;
 }

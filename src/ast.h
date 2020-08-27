@@ -12,6 +12,7 @@ typedef enum   AstKind AstKind;
 enum AstKind {
     AST_ERROR = -1,
     AST_NULL = 0,
+    AST_MODULE,
     AST_ID,
     AST_LITERAL_INT, AST_LITERAL_FLOAT, AST_LITERAL_STRING, 
     AST_TUPLE, AST_STRUCT, AST_SLICE, AST_CHAIN,  AST_ITE,
@@ -25,6 +26,9 @@ enum AstKind {
 //
 // Constructors:
 //
+
+AstNode* CreateAstModule(Loc loc, SymbolID moduleID);
+int PushStmtToAstModule(AstNode* module, AstNode* stmt);
 
 AstNode* CreateAstID(Loc loc, SymbolID symbolID);
 AstNode* CreateAstIntLiteral(Loc loc, size_t value);
@@ -62,6 +66,10 @@ int PushActualArgToAstCall(AstNode* call, AstNode* actualArg);
 // Getters:
 //
 
+SymbolID GetAstModuleName(AstNode* node);
+AstNode* GetAstModuleStmtAt(AstNode* node, size_t index);
+
+size_t GetAstNodeKey(AstNode* node);
 AstKind GetAstNodeKind(AstNode* node);
 Loc GetAstNodeLoc(AstNode* node);
 
@@ -108,6 +116,13 @@ AstNode* GetAstCallArgAt(AstNode* call, size_t index);
 
 SymbolID GetAstFieldName(AstNode* field);
 AstNode* GetAstFieldNode(AstNode* field);
+
+//
+// Symbol and type storage:
+//
+
+void* GetAstNodeTypeP(AstNode* node);
+void SetAstNodeTypeP(AstNode* node, void* typeP);
 
 //
 // We can implement a Visitor API if required.
