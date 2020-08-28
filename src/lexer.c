@@ -19,6 +19,7 @@ static SymbolID kwThenSymbolID = 0;
 static SymbolID kwElseSymbolID = 0;
 static SymbolID kwOperatorSymbolID = 0;
 static SymbolID kwMatchSymbolID = 0;
+static SymbolID kwReturnSymbolID = 0;
 
 static TokenKind lexOneNumber(Source* source, TokenInfo* optInfoP);
 static TokenKind lexOneIntChunk(Source* source, TokenInfo* optInfoP, bool noPrefix);
@@ -30,7 +31,7 @@ inline static bool isIdChar(char ch);
 // In general, we assume the source head is over the first character of the token to read.
 // - This 'hovering reader' approach => LL(1) lexer.
 // - Read, Advance, Read, Advance...
-// - if(Advance) is an effective way to handle EOFs.
+// - if (Advance...) is an effective way to check for and handle EOFs.
 
 void InitLexer(void) {
     kwImportSymbolID = strings_intern(symbolsDict, "import");
@@ -41,6 +42,7 @@ void InitLexer(void) {
     kwElseSymbolID = strings_intern(symbolsDict, "else");
     kwOperatorSymbolID = strings_intern(symbolsDict, "operator");
     kwMatchSymbolID = strings_intern(symbolsDict, "match");
+    kwReturnSymbolID = strings_intern(symbolsDict, "return");
 }
 
 void DeInitLexer(void) {
@@ -88,7 +90,6 @@ TokenKind LexOneToken(Source* source, TokenInfo* optInfoP) {
         case ',': return TK_COMMA;
         case ':': return TK_COLON;
         case ';': return TK_SEMICOLON;
-        case '=': return TK_EQUALS;
         case '*': return TK_ASTERISK;
         case '/': return TK_FSLASH;
         case '%': return TK_PERCENT;
@@ -96,6 +97,24 @@ TokenKind LexOneToken(Source* source, TokenInfo* optInfoP) {
         case '&': return TK_AND;
         case '|': return TK_OR;
         case '^': return TK_CARET;
+        case '=':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                if (ReadSourceReaderHead(source) == '=') {
+                    return TK_EQUALS;
+                }
+            }
+            return TK_BIND;
+        }
+        case '!':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                if (ReadSourceReaderHead(source) == '=') {
+                    return TK_NEQUALS;
+                }
+            }
+            return TK_NOT;
+        }
         case '-': 
         {
             if (AdvanceSourceReaderHead(source)) {
@@ -110,8 +129,6 @@ TokenKind LexOneToken(Source* source, TokenInfo* optInfoP) {
             if (AdvanceSourceReaderHead(source)) {
                 if (ReadSourceReaderHead(source) == '=') {
                     return TK_LETHAN;
-                } else if (ReadSourceReaderHead(source) == '>') {
-                    return TK_NEQUALS;
                 }
             }
             return TK_LTHAN;
@@ -285,6 +302,7 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
     if (kwID == kwElseSymbolID) { return TK_KW_ELSE; }
     if (kwID == kwOperatorSymbolID) { return TK_KW_OPERATOR; }
     if (kwID == kwMatchSymbolID) { return TK_KW_MATCH; }
+    if (kwID == kwReturnSymbolID) { return TK_KW_RETURN; }
     else {
         assert(0 && "Unimplemented keyword");
     }

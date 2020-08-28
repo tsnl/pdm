@@ -327,12 +327,16 @@ inline AstNode* getListItemAt(AstList* list, size_t index) {
 // Getter implementation:
 //
 
-SymbolID GetAstModuleName(AstNode* node) {
-    return node->info.Module.name;
+SymbolID GetAstModuleName(AstNode* module) {
+    return module->info.Module.name;
 }
 
-AstNode* GetAstModuleStmtAt(AstNode* node, size_t index) {
-    return getListItemAt(node->info.Module.items, index);
+size_t GetAstModuleLength(AstNode* module) {
+    return getListLength(module->info.Module.items);
+}
+
+AstNode* GetAstModuleStmtAt(AstNode* module, size_t index) {
+    return getListItemAt(module->info.Module.items, index);
 }
 
 size_t GetAstNodeKey(AstNode* node) {

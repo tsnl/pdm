@@ -3,9 +3,6 @@
 #include "source.h"
 #include "symbols.h"
 
-#define MAX_ARG_COUNT  (64)
-#define MAX_NODE_COUNT (MAX_ARG_COUNT * 1024)
-
 typedef struct AstNode AstNode;
 typedef enum   AstKind AstKind;
 
@@ -66,8 +63,9 @@ int PushActualArgToAstCall(AstNode* call, AstNode* actualArg);
 // Getters:
 //
 
-SymbolID GetAstModuleName(AstNode* node);
-AstNode* GetAstModuleStmtAt(AstNode* node, size_t index);
+SymbolID GetAstModuleName(AstNode* module);
+size_t GetAstModuleLength(AstNode* module);
+AstNode* GetAstModuleStmtAt(AstNode* module, size_t index);
 
 size_t GetAstNodeKey(AstNode* node);
 AstKind GetAstNodeKind(AstNode* node);
