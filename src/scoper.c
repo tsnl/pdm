@@ -46,10 +46,9 @@ struct Scope {
     void* typeP;
 };
 
-
 size_t allocatedScopersCount = 0;
 Scoper allocatedScopers[MAX_SCOPER_COUNT];
-static size_t allocatedScopeStackFrames = 0;
+static size_t allocatedScopeStackFramesCount = 0;
 static ScopeStackFrame allocatedScopeStackFrames[MAX_NODE_COUNT];
 static Scoper* newScoper(Scope* root);
 static void pushScopeStackFrameToScoper(Scoper* scoper, Scope* scope, PushPurpose pushPurpose);
@@ -78,19 +77,34 @@ Scoper* newScoper(Scope* root) {
     scoper->currentModuleDefEndP = NULL;
     return scoper;
 }
-
 void pushScopeStackFrameToScoper(Scoper* scoper, Scope* scope, PushPurpose pushPurpose) {
-    // todo: continue from here.
+    // creating a new frame:
+    ScopeStackFrame* newFrame = &allocatedScopeStackFrames[allocatedScopeStackFramesCount++];
+    newFrame->linkP = scoper->scopeStackTopP;
+    newFrame->purpose = pushPurpose;
+    newFrame->scope = scope;
+
+    // pushing the frame to the scoper:
+    scoper->scopeStackTopP = newFrame;
 }
-
 ScopeStackFrame* popScopeStackFrameToScoper(Scoper* scoper) {
-
+    ScopeStackFrame* poppedFrame = scoper->scopeStackTopP;
+    if (scoper->scopeStackTopP) {
+        scoper->scopeStackTopP = poppedFrame->linkP;
+        return poppedFrame;
+    } else {
+        // Scoper popped from an empty stack
+        return NULL;
+    }
 }
 
 inline Scope* newScope(Scope* parent, SymbolID defnID, void* typeP) {
-    return &allocatedScopes[allocatedScopeCount++];
+    Scope* scopeP = &allocatedScopes[allocatedScopeCount++];
+    scopeP->parent = parent;
+    scopeP->defnID = defnID;
+    scopeP->typeP = typeP;
+    return scopeP;
 }
-
 Scope* defineSymbol(Scope* parent, SymbolID defnID, void* typeP) {
     return (Scope*)newScope(defnID, typeP, parent);
 }
@@ -111,13 +125,24 @@ void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP) {
         return lookupSymbolUntil(scope->parent, lookupID, endScopeP);
     }
 }
-void pushScope(Scoper* scoper, Scope* scope, PushPurpose purpose) {
-    if (scoper->scopeStackTopP) {
-        scoper->scopeStackTopP
-    }
-}
-Scope* popScope(void) {
 
+static int scoper(Scoper* scoper, AstNode* node);
+
+int scoper(Scoper* scoper, AstNode* node) {
+    AstKind kind = GetAstNodeKind(node);
+    switch (kind) {
+        case AST_LITERAL_INT:
+        case AST_LITERAL_FLOAT:
+        case AST_LITERAL_STRING:
+        {
+            return 1;
+        }
+        case AST_ID:
+        {
+            SetAstIDScopeP(node, GetTopScopeP(scoper));
+            return 1;
+        }
+    }
 }
 
 //
@@ -133,26 +158,9 @@ int ScopeModule(Scoper* scoperP, AstNode* module) {
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
         AstNode* stmt = GetAstModuleStmtAt(module, index);
-        GetAstNodeKind(stmt);
+        // todo: 
     }
     return 0;
-}
-
-int RunScoper(Scoper* scoper, AstNode* node) {
-    AstKind kind = GetAstNodeKind(node);
-    switch (kind) {
-        case AST_LITERAL_INT:
-        case AST_LITERAL_FLOAT:
-        case AST_LITERAL_STRING:
-        {
-            return 1;
-        }
-        case AST_ID:
-        {
-            SetAstIDScopeP(node, GetTopScopeP(scoper));
-            return 1;
-        }
-    }
 }
 
 // After definition, IDs are looked up, map to type IDs.
