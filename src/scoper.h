@@ -6,4 +6,4 @@ typedef struct Scoper Scoper;
 
 Scoper* CreateScoper(void);
 
-int ScopeModule(Scoper* scoper, AstNode* node);
+int RunScoper(Scoper* scoper, AstNode* node);

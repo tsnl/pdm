@@ -122,8 +122,13 @@ AstNode* GetAstFieldNode(AstNode* field);
 void* GetAstNodeTypeP(AstNode* node);
 void SetAstNodeTypeP(AstNode* node, void* typeP);
 
+void* GetAstIDScopeP(AstNode* node);
+void SetAstIDScopeP(AstNode* node, void* scopeP);
+
 //
 // We can implement a Visitor API if required.
 //
+
+
 
 // TODO: Use 'break' statements to early return from chains.

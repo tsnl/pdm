@@ -9,11 +9,16 @@
 // typing/unification after analysis.
 // Crucially, each context contains at most *one* definition.
 
-typedef struct Scoper Scoper;
 typedef struct Scope Scope;
+typedef struct Scoper Scoper;
+typedef enum PushPurpose PushPurpose;
+typedef struct ScopeStackFrame ScopeStackFrame;
 
 struct Scoper {
     Scope* root;
+
+    // stackBegP and stackEndP track scopes for chains and functions that can be pushed or popped.
+    ScopeStackFrame* scopeStackTopP;
 
     // each module context tree starts forward declarations of [all] its symbols.
     // the below 'beg' and 'end' pointers let us iterate through them.
@@ -24,33 +29,70 @@ struct Scoper {
     Scope* currentModuleDefEndP;
 };
 
+enum PushPurpose {
+    PP_INTERNAL,
+    PP_CLOSURE
+};
+
+struct ScopeStackFrame {
+    ScopeStackFrame* linkP;
+    Scope* scope;
+    PushPurpose purpose;
+};
+
 struct Scope {
     Scope* parent;
     SymbolID defnID;
     void* typeP;
 };
 
+
+size_t allocatedScopersCount = 0;
+Scoper allocatedScopers[MAX_SCOPER_COUNT];
+static size_t allocatedScopeStackFrames = 0;
+static ScopeStackFrame allocatedScopeStackFrames[MAX_NODE_COUNT];
+static Scoper* newScoper(Scope* root);
+static void pushScopeStackFrameToScoper(Scoper* scoper, Scope* scope, PushPurpose pushPurpose);
+static ScopeStackFrame* popScopeStackFrameToScoper(Scoper* scoper);
+
 static size_t allocatedScopeCount = 0;
 static Scope allocatedScopes[MAX_NODE_COUNT];
-
-// allocates a new Scope from the `scoper` memory manager.
-inline static Scope* allocateScope(Scope* parent, SymbolID defnID, void* typeP);
-
-// creates a new Scope defining the specified symbol.
+inline static Scope* newScope(Scope* parent, SymbolID defnID, void* typeP);
 static Scope* defineSymbol(Scope* parent, SymbolID defnID, void* typeP);
-
-// looks up a symbol's typeP starting at the specified scope.
 static void* lookupSymbol(Scope* scope, SymbolID lookupID);
-
-// looks up a symbol's typeP starting at the specified scope, and ending at the specified scope.
 static void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP);
 
-inline Scope* allocateScope(Scope* parent, SymbolID defnID, void* typeP) {
+//
+// Static implementation:
+//
+
+Scoper* newScoper(Scope* root) {
+    Scoper* scoper = NULL;
+    if (allocatedScopersCount < MAX_SCOPER_COUNT) {
+        scoper = &allocatedScopers[allocatedScopersCount++];
+    } else {
+        return NULL;
+    }
+    scoper->scopeStackTopP = NULL;
+    scoper->currentModuleDefBegP = NULL;
+    scoper->currentModuleDefEndP = NULL;
+    return scoper;
+}
+
+void pushScopeStackFrameToScoper(Scoper* scoper, Scope* scope, PushPurpose pushPurpose) {
+    // todo: continue from here.
+}
+
+ScopeStackFrame* popScopeStackFrameToScoper(Scoper* scoper) {
+
+}
+
+inline Scope* newScope(Scope* parent, SymbolID defnID, void* typeP) {
     return &allocatedScopes[allocatedScopeCount++];
 }
 
 Scope* defineSymbol(Scope* parent, SymbolID defnID, void* typeP) {
-    return (Scope*)allocateScope(defnID, typeP, parent);
+    return (Scope*)newScope(defnID, typeP, parent);
 }
 void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP) {
     if (scope->defnID == lookupID) {
@@ -69,6 +111,14 @@ void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP) {
         return lookupSymbolUntil(scope->parent, lookupID, endScopeP);
     }
 }
+void pushScope(Scoper* scoper, Scope* scope, PushPurpose purpose) {
+    if (scoper->scopeStackTopP) {
+        scoper->scopeStackTopP
+    }
+}
+Scope* popScope(void) {
+
+}
 
 //
 // Implementation:
@@ -78,16 +128,31 @@ Scoper* CreateScoper(void) {
     return NULL;
 }
 
-int ScopeModule(Scoper* scoper, AstNode* module) {
-    //
-    // Step 1: 
-    //
-    
+int ScopeModule(Scoper* scoperP, AstNode* module) {
+    // building scoperP->currentModuleDef{Beg -> End}P
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
         AstNode* stmt = GetAstModuleStmtAt(module, index);
+        GetAstNodeKind(stmt);
     }
     return 0;
+}
+
+int RunScoper(Scoper* scoper, AstNode* node) {
+    AstKind kind = GetAstNodeKind(node);
+    switch (kind) {
+        case AST_LITERAL_INT:
+        case AST_LITERAL_FLOAT:
+        case AST_LITERAL_STRING:
+        {
+            return 1;
+        }
+        case AST_ID:
+        {
+            SetAstIDScopeP(node, GetTopScopeP(scoper));
+            return 1;
+        }
+    }
 }
 
 // After definition, IDs are looked up, map to type IDs.

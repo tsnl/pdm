@@ -6,6 +6,7 @@
 #include "symbols.h"
 
 typedef struct AstModule   AstModule;
+typedef struct AstID       AstID;
 typedef union  AstInfo     AstInfo;
 typedef struct AstList     AstList;
 typedef struct AstCall     AstCall;
@@ -20,6 +21,10 @@ typedef struct AstCheck    AstCheck;
 struct AstModule {
     SymbolID name;
     AstList* items;
+};
+struct AstID {
+    SymbolID name;
+    void* scopeP;
 };
 struct AstList {
     size_t count;
@@ -66,7 +71,7 @@ enum AstOperator {
 
 union AstInfo {
     AstModule   Module;
-    SymbolID    ID;
+    AstID       ID;
     AstOperator OP;
     size_t      Int;
     long double Float;
@@ -143,7 +148,8 @@ int PushStmtToAstModule(AstNode* module, AstNode* stmt) {
 
 AstNode* CreateAstID(Loc loc, SymbolID symbolID) {
     AstNode* idNode = allocateNode(loc, AST_ID);
-    idNode->info.ID = symbolID;
+    idNode->info.ID.name = symbolID;
+    idNode->info.ID.scopeP = NULL;
     return idNode;
 }
 
@@ -467,4 +473,12 @@ void* GetAstNodeTypeP(AstNode* node) {
 
 void SetAstNodeTypeP(AstNode* node, void* typeP) {
     node->typeP = typeP;
+}
+
+void* GetAstIDScopeP(AstNode* node) {
+    return node->info.ID.scopeP;
+}
+
+void SetAstIDScopeP(AstNode* node, void* scopeP) {
+    node->info.ID.scopeP = scopeP;
 }
