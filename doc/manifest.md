@@ -41,3 +41,9 @@
     - Modular composition over generality is the goal with this language,
     - so maybe not
     - the current system is really good, but manual generics are a must
+- Idea!
+  - To deal with interrupted control flow (e.g. return statements)
+  - just say we don't obtain any typing information from that branch, because the **timeline** we type for is independent
+    - phi nodes create forks in these timelines, enumerating them along with some set-theory range awareness 
+    - gives us finer subdivisions of our scoper contexts along specific program execution paths
+    - ignoring certain paths in lib A and certain parts in lib B, then guaranteeing the parts are mutually exclusive, let us 'incrementally' verify a program. this is _progression_; -in-A- return -enter-B-context-> caller_context -> ...

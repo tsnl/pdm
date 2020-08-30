@@ -171,13 +171,6 @@ AstNode* CreateAstStringLiteral(Loc loc, char* value) {
     return stringNode;
 }
 
-AstNode* CreateAstTuple(Loc loc) {
-    AstNode* tupleNode = allocateNode(loc, AST_TUPLE);
-    tupleNode->info.Items = allocateList();
-    tupleNode->info.Items->count = 0;
-    return tupleNode;
-}
-
 AstNode* CreateAstSlice(Loc loc) {
     AstNode* sliceNode = allocateNode(loc, AST_SLICE);
     sliceNode->info.Items = allocateList();
@@ -357,8 +350,8 @@ AstKind GetAstNodeKind(AstNode* node) {
     return node->kind;
 }
 
-SymbolID GetAstIDSymbol(AstNode* node) {
-    return node->info.ID;
+SymbolID GetAstIDName(AstNode* node) {
+    return node->info.ID.name;
 }
 
 size_t GetAstIntLiteralValue(AstNode* node) {
@@ -487,10 +480,7 @@ void SetAstIDScopeP(AstNode* node, void* scopeP) {
 // Visitor API:
 //
 
-int visit(void* context, AstNode* node, VisitorCb visitorCb) {
-    if (!visitorCb(context, node)) {
-        return 0;
-    }
+inline static int midVisit(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb) {
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_LITERAL_INT:
@@ -500,24 +490,13 @@ int visit(void* context, AstNode* node, VisitorCb visitorCb) {
         {
             return 1;
         }
-        case AST_TUPLE:
-        {
-            size_t tupleLength = GetAstTupleLength(node);
-            for (size_t index = 0; index < tupleLength; index++) {
-                AstNode* tupleItem = GetAstTupleItemAt(node, index);
-                if (!visit(context, tupleItem, visitorCb)) {
-                    return 0;
-                }
-            }
-            return 1;
-        }
         case AST_STRUCT:
         {
             size_t structLength = GetAstTupleLength(node);
             for (size_t index = 0; index < structLength; index++) {
                 AstNode* structField = GetAstStructFieldAt(node, index);
                 AstNode* fieldRhs = GetAstFieldRhs(structField);
-                if (!visit(context, fieldRhs, visitorCb)) {
+                if (!visit(context, fieldRhs, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }
@@ -528,7 +507,7 @@ int visit(void* context, AstNode* node, VisitorCb visitorCb) {
             size_t chainLength = GetAstTupleLength(node);
             for (size_t index = 0; index < chainLength; index++) {
                 AstNode* chainStmt = GetAstChainStmtAt(node, index);
-                if (!visit(context, chainStmt, visitorCb)) {
+                if (!visit(context, chainStmt, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }
@@ -537,54 +516,54 @@ int visit(void* context, AstNode* node, VisitorCb visitorCb) {
         case AST_ITE:
         {
             return (
-                visit(context, GetAstIteCond(node), visitorCb) &&
-                visit(context, GetAstIteIfTrue(node), visitorCb) &&
-                visit(context, GetAstIteIfFalse(node), visitorCb)
+                visit(context, GetAstIteCond(node), preVisitorCb, postVisitorCb) &&
+                visit(context, GetAstIteIfTrue(node), preVisitorCb, postVisitorCb) &&
+                visit(context, GetAstIteIfFalse(node), preVisitorCb, postVisitorCb)
             );
         }
         case AST_LAMBDA:
         {
             return (
-                visit(context, GetAstLambdaPattern(node), visitorCb) &&
-                visit(context, GetAstLambdaBody(node), visitorCb)
+                visit(context, GetAstLambdaPattern(node), preVisitorCb, postVisitorCb) &&
+                visit(context, GetAstLambdaBody(node), preVisitorCb, postVisitorCb)
             );
         }
         case AST_DOT_INDEX:
         {
             return (
-                visit(context, GetAstDotIndexLhs(node), visitorCb) &&
-                visit(context, GetAstDotIndexRhs(node), visitorCb)
+                visit(context, GetAstDotIndexLhs(node), preVisitorCb, postVisitorCb) &&
+                visit(context, GetAstDotIndexRhs(node), preVisitorCb, postVisitorCb)
             );
         }
         case AST_DOT_NAME:
         {
             return (
-                visit(context, GetAstDotNameLhs(node), visitorCb) &&
-                visit(context, GetAstDotNameRhs(node), visitorCb)
+                visit(context, GetAstDotNameLhs(node), preVisitorCb, postVisitorCb) &&
+                visit(context, GetAstDotNameRhs(node), preVisitorCb, postVisitorCb)
             );
         }
         case AST_STMT_BIND:
         {
-            return visit(context, GetAstBindStmtRhs(node), visitorCb);
+            return visit(context, GetAstBindStmtRhs(node), preVisitorCb, postVisitorCb);
         }
         case AST_STMT_CHECK:
         {
-            return visit(context, GetAstCheckStmtChecked(node), visitorCb);
+            return visit(context, GetAstCheckStmtChecked(node), preVisitorCb, postVisitorCb);
         }
         case AST_STMT_RETURN:
         {
-            return visit(context, GetAstReturnStmtValue(node), visitorCb);
+            return visit(context, GetAstReturnStmtValue(node), preVisitorCb, postVisitorCb);
         }
         case AST_TEMPLATE_CALL:
         case AST_VALUE_CALL:
         case AST_SQBRK_CALL:
         {
-            if (!visit(context, GetAstCallLhs(node), visitorCb)) {
+            if (!visit(context, GetAstCallLhs(node), preVisitorCb, postVisitorCb)) {
                 return 0;
             }
             size_t argCount = GetAstCallArgCount(node);
             for (size_t index = 0; index < argCount; index++) {
-                if (!visit(context, GetAstCallArgAt(node, index), visitorCb)) {
+                if (!visit(context, GetAstCallArgAt(node, index), preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }
@@ -592,12 +571,12 @@ int visit(void* context, AstNode* node, VisitorCb visitorCb) {
         }
         case AST_PATTERN:
         {
-            if (!visit(context, GetAstCallLhs(node), visitorCb)) {
+            if (!visit(context, GetAstCallLhs(node), preVisitorCb, postVisitorCb)) {
                 return 0;
             }
             size_t argCount = GetAstCallArgCount(node);
             for (size_t index = 0; index < argCount; index++) {
-                if (!visit(context, GetAstCallArgAt(node, index), visitorCb)) {
+                if (!visit(context, GetAstCallArgAt(node, index), preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }
@@ -605,7 +584,24 @@ int visit(void* context, AstNode* node, VisitorCb visitorCb) {
         }
         case AST_FIELD:
         {
-            return visit(context, GetAstFieldRhs(node), visitorCb);
+            return visit(context, GetAstFieldRhs(node), preVisitorCb, postVisitorCb);
         }
     }
+}
+
+int visit(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb) {
+    if (preVisitorCb) {
+        if (!preVisitorCb(context, node)) {
+            return 0;
+        }
+    }
+    if (!midVisit(context, node, preVisitorCb, postVisitorCb)) {
+        return 0;
+    }
+    if (postVisitorCb) {
+        if (!postVisitorCb(context, node)) {
+            return 0;
+        }
+    }
+    return 1;
 }

@@ -12,7 +12,7 @@ enum AstKind {
     AST_MODULE,
     AST_ID,
     AST_LITERAL_INT, AST_LITERAL_FLOAT, AST_LITERAL_STRING, 
-    AST_TUPLE, AST_STRUCT, AST_SLICE, AST_CHAIN,  AST_ITE,
+    AST_STRUCT, AST_SLICE, AST_CHAIN,  AST_ITE,
     AST_LAMBDA,
     AST_DOT_INDEX, AST_DOT_NAME,
     AST_STMT_BIND, AST_STMT_CHECK, AST_STMT_RETURN,
@@ -32,13 +32,11 @@ AstNode* CreateAstIntLiteral(Loc loc, size_t value);
 AstNode* CreateAstFloatLiteral(Loc loc, long double value);
 AstNode* CreateAstStringLiteral(Loc loc, char* value);
 
-AstNode* CreateAstTuple(Loc loc);
 AstNode* CreateAstSlice(Loc loc);
 AstNode* CreateAstStruct(Loc loc);
 AstNode* CreateAstChain(Loc loc);
 AstNode* CreateAstPattern(Loc loc);
 
-int PushItemToAstTuple(AstNode* tuple, AstNode* pushed);
 int PushItemToAstSlice(AstNode* slice, AstNode* pushed);
 int PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value);
 int PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec);
@@ -71,7 +69,7 @@ size_t GetAstNodeKey(AstNode* node);
 AstKind GetAstNodeKind(AstNode* node);
 Loc GetAstNodeLoc(AstNode* node);
 
-SymbolID GetAstIDSymbol(AstNode* node);
+SymbolID GetAstIDName(AstNode* node);
 size_t GetAstIntLiteralValue(AstNode* node);
 long double GetAstFloatLiteralValue(AstNode* node);
 char const* GetAstStringLiteralUtf8Value(AstNode* node);
@@ -131,6 +129,6 @@ void SetAstIDScopeP(AstNode* node, void* scopeP);
 
 typedef int(*VisitorCb)(void* context, AstNode* node);
 
-int visit(void* context, AstNode* node, VisitorCb visitorCb);
+int visit(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb);
 
 // TODO: Use 'break' statements to early return from chains.

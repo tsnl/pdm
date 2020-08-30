@@ -11,15 +11,16 @@
 
 typedef struct Scope Scope;
 typedef struct Scoper Scoper;
-typedef enum PushPurpose PushPurpose;
-typedef struct ScopeStackFrame ScopeStackFrame;
+typedef enum Breadcrumb Breadcrumb;
+typedef struct BreadcrumbFrame BreadcrumbFrame;
 typedef enum LookupContext LookupContext;
 
 struct Scoper {
     Scope* root;
 
     // stackBegP and stackEndP track scopes for chains and functions that can be pushed or popped.
-    ScopeStackFrame* scopeStackTopP;
+    Scope* currentScopeP;
+    BreadcrumbFrame* breadcrumbStackTopP;
 
     // each module context tree starts forward declarations of [all] its symbols.
     // the below 'beg' and 'end' pointers let us iterate through them.
@@ -30,15 +31,19 @@ struct Scoper {
     Scope* currentModuleDefEndP;
 };
 
-enum PushPurpose {
+enum Breadcrumb {
     PP_INTERNAL,
-    PP_CLOSURE
+    PP_TYPE_CLOSURE,
+    PP_VALUE_CLOSURE,
+    PP_CHAIN,
+    PP_STRUCT,
+    PP_PATTERN,
 };
 
-struct ScopeStackFrame {
-    ScopeStackFrame* linkP;
-    Scope* scope;
-    PushPurpose purpose;
+struct BreadcrumbFrame {
+    BreadcrumbFrame* linkP;
+    Scope* preScopeP;
+    Breadcrumb breadcrumb;
 };
 
 struct Scope {
@@ -56,10 +61,10 @@ enum LookupContext {
 size_t allocatedScopersCount = 0;
 Scoper allocatedScopers[MAX_SCOPER_COUNT];
 static size_t allocatedScopeStackFramesCount = 0;
-static ScopeStackFrame allocatedScopeStackFrames[MAX_NODE_COUNT];
+static BreadcrumbFrame allocatedScopeStackFrames[MAX_NODE_COUNT];
 static Scoper* newScoper(Scope* root);
-static void pushScopeStackFrameToScoper(Scoper* scoper, Scope* scope, PushPurpose pushPurpose);
-static ScopeStackFrame* popScopeStackFrameToScoper(Scoper* scoper);
+static void pushBreadcrumb(Scoper* scoper, Breadcrumb breadcrumb);
+static void popBreadcrumb(Scoper* scoper);
 
 static size_t allocatedScopeCount = 0;
 static Scope allocatedScopes[MAX_NODE_COUNT];
@@ -79,33 +84,39 @@ Scoper* newScoper(Scope* root) {
     } else {
         return NULL;
     }
-    scoper->scopeStackTopP = NULL;
+    scoper->currentScopeP = NULL;
     scoper->currentModuleDefBegP = NULL;
     scoper->currentModuleDefEndP = NULL;
     return scoper;
 }
-void pushScopeStackFrameToScoper(Scoper* scoper, Scope* scope, PushPurpose pushPurpose) {
-    // creating a new frame:
-    ScopeStackFrame* newFrame = &allocatedScopeStackFrames[allocatedScopeStackFramesCount++];
-    newFrame->linkP = scoper->scopeStackTopP;
-    newFrame->purpose = pushPurpose;
-    newFrame->scope = scope;
+void pushBreadcrumb(Scoper* scoper, Breadcrumb breadcrumb) {
+    // allocating a new frame:
+    BreadcrumbFrame* newFrame = &allocatedScopeStackFrames[allocatedScopeStackFramesCount++];
+    
+    // populating:
+    newFrame->linkP = scoper->breadcrumbStackTopP;
+    newFrame->breadcrumb = breadcrumb;
+    newFrame->preScopeP = topScopeOfScoper(scoper);
 
     // pushing the frame to the scoper:
-    scoper->scopeStackTopP = newFrame;
+    scoper->breadcrumbStackTopP = newFrame;
 }
-ScopeStackFrame* popScopeStackFrameToScoper(Scoper* scoper) {
-    ScopeStackFrame* poppedFrame = scoper->scopeStackTopP;
-    if (scoper->scopeStackTopP) {
-        scoper->scopeStackTopP = poppedFrame->linkP;
+void popBreadcrumb(Scoper* scoper) {
+    BreadcrumbFrame* poppedFrame = scoper->breadcrumbStackTopP;
+    if (poppedFrame) {
+        scoper->breadcrumbStackTopP = poppedFrame->linkP;
         return poppedFrame;
     } else {
         // Scoper popped from an empty stack
         return NULL;
     }
 }
+Breadcrumb topBreadcrumb(Scoper* scoper) {
+    return scoper->breadcrumbStackTopP->breadcrumb;
+}
+
 Scope* topScopeOfScoper(Scoper* scoper) {
-    return scoper->scopeStackTopP->scope;
+    return scoper->currentScopeP;
 }
 
 inline Scope* newScope(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP) {
@@ -140,131 +151,82 @@ void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, Looku
     }
 }
 
-static int scopeAstNode(Scoper* scoper, AstNode* node);
+static int preScopeAstNode(Scoper* scoper, AstNode* node);
+static int postScopeAstNode(Scoper* scoper, AstNode* node);
 
-int scopeAstNode(Scoper* scoper, AstNode* node) {
+int preScopeAstNode(Scoper* scoper, AstNode* node) {
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
-        case AST_LITERAL_INT:
-        case AST_LITERAL_FLOAT:
-        case AST_LITERAL_STRING:
-        {
-            return 1;
-        }
         case AST_ID:
         {
             SetAstIDScopeP(node, GetTopScopeP(scoper));
-            return 1;
-        }
-        case AST_TUPLE:
-        {
-            size_t tupleLength = GetAstTupleLength(node);
-            for (size_t index = 0; index < tupleLength; index++) {
-                AstNode* tupleItem = GetAstTupleItemAt(node, index);
-                if (!scopeAstNode(scoper, tupleItem)) {
-                    return 0;
-                }
-            }
-            return 1;
+            break;
         }
         case AST_STRUCT:
         {
-            size_t structLength = GetAstTupleLength(node);
-            for (size_t index = 0; index < structLength; index++) {
-                AstNode* structField = GetAstStructFieldAt(node, index);
-                AstNode* fieldRhs = GetAstFieldRhs(structField);
-                if (!scopeAstNode(scoper, fieldRhs)) {
-                    return 0;
-                }
-            }
-            return 1;
+            pushBreadcrumb(scoper, PP_STRUCT);
+            break;
         }
         case AST_CHAIN:
         {
-            size_t chainLength = GetAstTupleLength(node);
-            for (size_t index = 0; index < chainLength; index++) {
-                AstNode* chainStmt = GetAstChainStmtAt(node, index);
-                if (!scopeAstNode(scoper, chainStmt)) {
-                    return 0;
-                }
-            }
-            return 1;
-        }
-        case AST_ITE:
-        {
-            AstNode* cond = GetAstIteCond(node);
-            AstNode* ifTrue = GetAstIteIfTrue(node);
-            AstNode* ifFalse = GetAstIteIfFalse(node);
-            if (cond) {
-                if (!scopeAstNode(scoper, cond)) {
-                    return 0;
-                }
-            }
-            if (ifTrue) {
-                if (!scopeAstNode(scoper, ifTrue)) {
-                    return 0;
-                }
-            }
-            if (ifFalse) {
-                if (!scopeAstNode(scoper, ifFalse)) {
-                    return 0;
-                }
-            }
-            return 1;
+            pushBreadcrumb(scoper, PP_CHAIN);
+            break;
         }
         case AST_LAMBDA:
         {
-            // TODO
-            return 0;
-        }
-        case AST_DOT_INDEX:
-        {
-            // TODO
-            return 0;
-        }
-        case AST_DOT_NAME:
-        {
-            // TODO
-            return 0;
+            pushBreadcrumb(scoper, PP_VALUE_CLOSURE);
+            break;
         }
         case AST_STMT_BIND:
         {
-            // TODO
-            return 0;
-        }
-        case AST_STMT_CHECK:
-        {
-            return (
-                scopeAstNode(scoper, GetAstCheckStmtChecked(node)) &&
-                scopeAstNode(scoper, GetAstCheckStmtMessage(node))
-            );
-        }
-        case AST_STMT_RETURN:
-        {
-            return scopeAstNode(scoper, GetAstReturnStmtValue(node));
-        }
-        case AST_TEMPLATE_CALL:
-        {
-            
-        }
-        case AST_VALUE_CALL:
-        {
-            // TODO
-            return 0;
-        }
-        case AST_SQBRK_CALL:
-        {
-
+            pushBreadcrumb(scoper, PP_TYPE_CLOSURE);
+            break;
         }
         case AST_PATTERN:
         {
-
+            pushBreadcrumb(scoper, PP_PATTERN);
+            break;
         }
         case AST_FIELD:
         {
-
+            switch (topBreadcrumb(scoper)) {
+                case PP_PATTERN:
+                case PP_STRUCT:
+                case PP_VALUE_CLOSURE:
+                case PP_TYPE_CLOSURE:
+                {
+                    // TODO: define
+                    break;
+                }
+            }
+            break;
+        }
+        default:
+        {
+            break;
         }
     }
+    return 1;
+}
+
+int postScopeAstNode(Scoper* scoper, AstNode* node) {
+    AstKind kind = GetAstNodeKind(node);
+    switch (kind) {
+        case AST_STRUCT:
+        case AST_CHAIN:
+        case AST_LAMBDA:
+        case AST_PATTERN:
+        case AST_STMT_BIND:
+        {
+            popBreadcrumb(scoper);
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+    return 1;
 }
 
 //
@@ -280,10 +242,16 @@ int ScopeModule(Scoper* scoperP, AstNode* module) {
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
         AstNode* stmt = GetAstModuleStmtAt(module, index);
-        
+        // TODO: define the symbol from a bind statement here.
     }
-    return 0;
+    // visiting the AST:
+    if (!visit(scoperP, module, preScopeAstNode, postScopeAstNode)) {
+        return 0;
+    }
+    return 1;
 }
+
+// TODO: lookup symbols.
 
 // After definition, IDs are looked up, map to type IDs.
 // These type IDs can be stored in the AST.

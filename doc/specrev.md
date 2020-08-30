@@ -17,3 +17,4 @@ Spec revisions
   - variadic functions using templates (like C++, Scala List(...)) can address this gap.
 - Chains are a {}-bdd sequence of 0 or more statements followed by a tail expr.
 - Unions removed for now, can be figured out later. Symbols may suffice?
+- Explicit return statements are optional.
