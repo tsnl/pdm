@@ -32,7 +32,7 @@ struct AstList {
 };
 struct AstField {
     SymbolID name;
-    AstNode* node;
+    AstNode* rhs;
 };
 struct AstDotIndex {
     AstNode* lhs;
@@ -217,14 +217,14 @@ int PushItemToAstSlice(AstNode* slice, AstNode* pushed) {
 int PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value) {
     AstNode* field = allocateNode(loc, AST_FIELD);
     field->info.Field.name = name;
-    field->info.Field.node = value;
+    field->info.Field.rhs = value;
     return pushListElement(struct_->info.Items, field);
 }
 
 int PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec) {
     AstNode* field = allocateNode(loc, AST_FIELD);
     field->info.Field.name = name;
-    field->info.Field.node = typespec;
+    field->info.Field.rhs = typespec;
     return pushListElement(pattern->info.Items, field);
 }
 
@@ -281,7 +281,7 @@ AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, char* value) {
 AstNode* CreateAstReturnStmt(Loc loc, SymbolID label, AstNode* returned) {
     AstNode* returnNode = allocateNode(loc, AST_STMT_RETURN);
     returnNode->info.Return.name = label;
-    returnNode->info.Return.node = returned;
+    returnNode->info.Return.rhs = returned;
     return returnNode;
 }
 
@@ -458,9 +458,9 @@ SymbolID GetAstFieldName(AstNode* field) {
     return field->info.Field.name;
 }
 
-AstNode* GetAstFieldNode(AstNode* field) {
+AstNode* GetAstFieldRhs(AstNode* field) {
     assert(field->kind == AST_FIELD);
-    return field->info.Field.node;
+    return field->info.Field.rhs;
 }
 
 //
@@ -481,4 +481,135 @@ void* GetAstIDScopeP(AstNode* node) {
 
 void SetAstIDScopeP(AstNode* node, void* scopeP) {
     node->info.ID.scopeP = scopeP;
+}
+
+//
+// Visitor API:
+//
+
+int visit(void* context, AstNode* node, VisitorCb visitorCb) {
+    int visitValue = visitorCb(context, node);
+    if (!visitValue) {
+        return 0;
+    }
+
+    AstKind kind = GetAstNodeKind(node);
+    switch (kind) {
+        case AST_LITERAL_INT:
+        case AST_LITERAL_FLOAT:
+        case AST_LITERAL_STRING:
+        case AST_ID:
+        {
+            return visitValue;
+        }
+        case AST_TUPLE:
+        {
+            size_t tupleLength = GetAstTupleLength(node);
+            for (size_t index = 0; index < tupleLength; index++) {
+                AstNode* tupleItem = GetAstTupleItemAt(node, index);
+                if (!visit(context, tupleItem, visitorCb)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case AST_STRUCT:
+        {
+            size_t structLength = GetAstTupleLength(node);
+            for (size_t index = 0; index < structLength; index++) {
+                AstNode* structField = GetAstStructFieldAt(node, index);
+                AstNode* fieldRhs = GetAstFieldRhs(structField);
+                if (!visit(context, fieldRhs, visitorCb)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case AST_CHAIN:
+        {
+            size_t chainLength = GetAstTupleLength(node);
+            for (size_t index = 0; index < chainLength; index++) {
+                AstNode* chainStmt = GetAstChainStmtAt(node, index);
+                if (!visit(context, chainStmt, visitorCb)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case AST_ITE:
+        {
+            return (
+                visit(context, GetAstIteCond(node), visitorCb) &&
+                visit(context, GetAstIteIfTrue(node), visitorCb) &&
+                visit(context, GetAstIteIfFalse(node), visitorCb)
+            );
+        }
+        case AST_LAMBDA:
+        {
+            return (
+                visit(context, GetAstLambdaPattern(node), visitorCb) &&
+                visit(context, GetAstLambdaBody(node), visitorCb)
+            );
+        }
+        case AST_DOT_INDEX:
+        {
+            return (
+                visit(context, GetAstDotIndexLhs(node), visitorCb) &&
+                visit(context, GetAstDotIndexRhs(node), visitorCb)
+            );
+        }
+        case AST_DOT_NAME:
+        {
+            return (
+                visit(context, GetAstDotNameLhs(node), visitorCb) &&
+                visit(context, GetAstDotNameRhs(node), visitorCb)
+            );
+        }
+        case AST_STMT_BIND:
+        {
+            // TODO
+            return 0;
+        }
+        case AST_STMT_CHECK:
+        {
+            return visit(context, GetAstCheckStmtChecked(node), visitorCb);
+        }
+        case AST_STMT_RETURN:
+        {
+            return visit(context, GetAstReturnStmtValue(node), visitorCb);
+        }
+        case AST_TEMPLATE_CALL:
+        case AST_VALUE_CALL:
+        case AST_SQBRK_CALL:
+        {
+            if (!visit(context, GetAstCallLhs(node), visitorCb)) {
+                return 0;
+            }
+            size_t argCount = GetAstCallArgCount(node);
+            for (size_t index = 0; index < argCount; index++) {
+                if (!visit(context, GetAstCallArgAt(node, index), visitorCb)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        
+        case AST_PATTERN:
+        {
+            if (!visit(context, GetAstCallLhs(node), visitorCb)) {
+                return 0;
+            }
+            size_t argCount = GetAstCallArgCount(node);
+            for (size_t index = 0; index < argCount; index++) {
+                if (!visit(context, GetAstCallArgAt(node, index), visitorCb)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case AST_FIELD:
+        {
+            return visit(context, GetAstFieldRhs(node), visitorCb);
+        }
+    }
 }

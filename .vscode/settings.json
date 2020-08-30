@@ -6,6 +6,7 @@
         "complex": "c",
         "chrono": "c",
         "__config": "c",
-        "__hash_table": "c"
+        "__hash_table": "c",
+        "__node_handle": "c"
     }
 }

@@ -113,7 +113,7 @@ size_t GetAstCallArgCount(AstNode* call);
 AstNode* GetAstCallArgAt(AstNode* call, size_t index);
 
 SymbolID GetAstFieldName(AstNode* field);
-AstNode* GetAstFieldNode(AstNode* field);
+AstNode* GetAstFieldRhs(AstNode* field);
 
 //
 // Symbol and type storage:
@@ -129,6 +129,8 @@ void SetAstIDScopeP(AstNode* node, void* scopeP);
 // We can implement a Visitor API if required.
 //
 
+typedef int(*VisitorCb)(void* context, AstNode* node);
 
+int visit(void* context, AstNode* node, VisitorCb visitorCb);
 
 // TODO: Use 'break' statements to early return from chains.

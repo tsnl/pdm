@@ -13,6 +13,7 @@ typedef struct Scope Scope;
 typedef struct Scoper Scoper;
 typedef enum PushPurpose PushPurpose;
 typedef struct ScopeStackFrame ScopeStackFrame;
+typedef enum LookupContext LookupContext;
 
 struct Scoper {
     Scope* root;
@@ -43,7 +44,13 @@ struct ScopeStackFrame {
 struct Scope {
     Scope* parent;
     SymbolID defnID;
-    void* typeP;
+    void* valueTypeP;
+    void* typingTypeP;
+};
+
+enum LookupContext {
+    LOOKUP_TYPING,
+    LOOKUP_VALUE
 };
 
 size_t allocatedScopersCount = 0;
@@ -56,10 +63,10 @@ static ScopeStackFrame* popScopeStackFrameToScoper(Scoper* scoper);
 
 static size_t allocatedScopeCount = 0;
 static Scope allocatedScopes[MAX_NODE_COUNT];
-inline static Scope* newScope(Scope* parent, SymbolID defnID, void* typeP);
-static Scope* defineSymbol(Scope* parent, SymbolID defnID, void* typeP);
-static void* lookupSymbol(Scope* scope, SymbolID lookupID);
-static void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP);
+inline static Scope* newScope(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP);
+static Scope* defineSymbol(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP);
+static void* lookupSymbol(Scope* scope, SymbolID lookupID, LookupContext context);
+static void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, LookupContext context);
 
 //
 // Static implementation:
@@ -97,20 +104,27 @@ ScopeStackFrame* popScopeStackFrameToScoper(Scoper* scoper) {
         return NULL;
     }
 }
+Scope* topScopeOfScoper(Scoper* scoper) {
+    return scoper->scopeStackTopP->scope;
+}
 
-inline Scope* newScope(Scope* parent, SymbolID defnID, void* typeP) {
+inline Scope* newScope(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP) {
     Scope* scopeP = &allocatedScopes[allocatedScopeCount++];
     scopeP->parent = parent;
     scopeP->defnID = defnID;
-    scopeP->typeP = typeP;
+    scopeP->valueTypeP = valueTypeP;
+    scopeP->typingTypeP = typingTypeP;
     return scopeP;
 }
-Scope* defineSymbol(Scope* parent, SymbolID defnID, void* typeP) {
-    return (Scope*)newScope(defnID, typeP, parent);
+Scope* defineSymbol(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP) {
+    return (Scope*)newScope(defnID, valueTypeP, typingTypeP, parent);
 }
-void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP) {
+void* lookupSymbol(Scope* scope, SymbolID lookupID, LookupContext context) {
+    return lookupSymbolUntil(scope, lookupID, NULL, context);
+}
+void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, LookupContext context) {
     if (scope->defnID == lookupID) {
-        return scope->typeP;
+        return scope->valueTypeP;
     }
     if (scope == endScopeP) {
         // this is the last scope
@@ -122,13 +136,13 @@ void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP) {
         if (DEBUG && scope->parent) {
             return NULL;
         }
-        return lookupSymbolUntil(scope->parent, lookupID, endScopeP);
+        return lookupSymbolUntil(scope->parent, lookupID, endScopeP, context);
     }
 }
 
-static int scoper(Scoper* scoper, AstNode* node);
+static int scopeAstNode(Scoper* scoper, AstNode* node);
 
-int scoper(Scoper* scoper, AstNode* node) {
+int scopeAstNode(Scoper* scoper, AstNode* node) {
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_LITERAL_INT:
@@ -141,6 +155,114 @@ int scoper(Scoper* scoper, AstNode* node) {
         {
             SetAstIDScopeP(node, GetTopScopeP(scoper));
             return 1;
+        }
+        case AST_TUPLE:
+        {
+            size_t tupleLength = GetAstTupleLength(node);
+            for (size_t index = 0; index < tupleLength; index++) {
+                AstNode* tupleItem = GetAstTupleItemAt(node, index);
+                if (!scopeAstNode(scoper, tupleItem)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case AST_STRUCT:
+        {
+            size_t structLength = GetAstTupleLength(node);
+            for (size_t index = 0; index < structLength; index++) {
+                AstNode* structField = GetAstStructFieldAt(node, index);
+                AstNode* fieldRhs = GetAstFieldRhs(structField);
+                if (!scopeAstNode(scoper, fieldRhs)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case AST_CHAIN:
+        {
+            size_t chainLength = GetAstTupleLength(node);
+            for (size_t index = 0; index < chainLength; index++) {
+                AstNode* chainStmt = GetAstChainStmtAt(node, index);
+                if (!scopeAstNode(scoper, chainStmt)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case AST_ITE:
+        {
+            AstNode* cond = GetAstIteCond(node);
+            AstNode* ifTrue = GetAstIteIfTrue(node);
+            AstNode* ifFalse = GetAstIteIfFalse(node);
+            if (cond) {
+                if (!scopeAstNode(scoper, cond)) {
+                    return 0;
+                }
+            }
+            if (ifTrue) {
+                if (!scopeAstNode(scoper, ifTrue)) {
+                    return 0;
+                }
+            }
+            if (ifFalse) {
+                if (!scopeAstNode(scoper, ifFalse)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case AST_LAMBDA:
+        {
+            // TODO
+            return 0;
+        }
+        case AST_DOT_INDEX:
+        {
+            // TODO
+            return 0;
+        }
+        case AST_DOT_NAME:
+        {
+            // TODO
+            return 0;
+        }
+        case AST_STMT_BIND:
+        {
+            // TODO
+            return 0;
+        }
+        case AST_STMT_CHECK:
+        {
+            return (
+                scopeAstNode(scoper, GetAstCheckStmtChecked(node)) &&
+                scopeAstNode(scoper, GetAstCheckStmtMessage(node))
+            );
+        }
+        case AST_STMT_RETURN:
+        {
+            return scopeAstNode(scoper, GetAstReturnStmtValue(node));
+        }
+        case AST_TEMPLATE_CALL:
+        {
+            
+        }
+        case AST_VALUE_CALL:
+        {
+            // TODO
+            return 0;
+        }
+        case AST_SQBRK_CALL:
+        {
+
+        }
+        case AST_PATTERN:
+        {
+
+        }
+        case AST_FIELD:
+        {
+
         }
     }
 }
@@ -158,7 +280,7 @@ int ScopeModule(Scoper* scoperP, AstNode* module) {
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
         AstNode* stmt = GetAstModuleStmtAt(module, index);
-        // todo: 
+        
     }
     return 0;
 }

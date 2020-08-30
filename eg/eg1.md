@@ -46,7 +46,7 @@ Local pandemonium files can be imported using the builtin `loadPkg` function.
 
 ```
 import {
-    testPkg: loadPkg<#testPkgPath>
+    testPkg: loadPkg<testPkgPath>
 }
 ```
 
