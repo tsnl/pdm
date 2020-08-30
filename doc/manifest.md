@@ -33,3 +33,11 @@
   - 42:30
 > Damas-Milner gives us structure, not name.
 - Thus, type solutions are always in relation to other types or metavariables (implying generics)
+- Error message handling strategy for a 0-typed PL:
+  - Substitute from a trivial set of types to provide an example
+  - Provide UI-based browsing
+  - Go all-in on predicates as types? (No)
+    - Hard to guarantee a struct is really 'just a struct', prompting over-generalization
+    - Modular composition over generality is the goal with this language,
+    - so maybe not
+    - the current system is really good, but manual generics are a must
