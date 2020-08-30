@@ -488,11 +488,9 @@ void SetAstIDScopeP(AstNode* node, void* scopeP) {
 //
 
 int visit(void* context, AstNode* node, VisitorCb visitorCb) {
-    int visitValue = visitorCb(context, node);
-    if (!visitValue) {
+    if (!visitorCb(context, node)) {
         return 0;
     }
-
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_LITERAL_INT:
@@ -500,7 +498,7 @@ int visit(void* context, AstNode* node, VisitorCb visitorCb) {
         case AST_LITERAL_STRING:
         case AST_ID:
         {
-            return visitValue;
+            return 1;
         }
         case AST_TUPLE:
         {
@@ -567,8 +565,7 @@ int visit(void* context, AstNode* node, VisitorCb visitorCb) {
         }
         case AST_STMT_BIND:
         {
-            // TODO
-            return 0;
+            return visit(context, GetAstBindStmtRhs(node), visitorCb);
         }
         case AST_STMT_CHECK:
         {
@@ -593,7 +590,6 @@ int visit(void* context, AstNode* node, VisitorCb visitorCb) {
             }
             return 1;
         }
-        
         case AST_PATTERN:
         {
             if (!visit(context, GetAstCallLhs(node), visitorCb)) {
