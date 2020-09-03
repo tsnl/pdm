@@ -1,4 +1,5 @@
-#pragma once
+#ifndef INCLUDED_USEFUL_H
+#define INCLUDED_USEFUL_H
 
 #include <stdbool.h>
 #include <stdarg.h>
@@ -22,3 +23,5 @@ inline static char* fmt(char const* format, ...) {
 inline bool streq(char const* s, char const* t) {
     return !strcmp(s, t);
 }
+
+#endif  // INCLUDED_USEFUL_H

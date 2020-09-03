@@ -10,35 +10,10 @@
 // - PostFeedback: writes a feedback message about a Source.
 
 typedef struct Loc          Loc;
-typedef struct Package      Package;
-typedef struct Source       Source;
 typedef enum   FeedbackKind FeedbackKind;
 typedef struct FeedbackNote FeedbackNote;
-
-struct Package {
-    char const* pathPrefix;
-    Source* sourcesHead;
-    Source* sourcesTail;
-};
-
-struct Source {
-    char const* pathSuffix;
-    Source* prev;
-    Source* next;
-    FILE* fp;
-    Loc peekLoc;
-    int peekChar;
-    int atEof;
-};
-
-struct Loc {
-    ssize_t offset;
-    int lineIndex;
-    int colIndex;
-};
-
-void NewPackage(Package* packageP, char const* pathPrefix);
-Source* AddSourceToPackage(Package* package);
+typedef struct Package      Package;
+typedef struct Source       Source;
 
 enum FeedbackKind {
     FBK_FATAL,
@@ -47,14 +22,35 @@ enum FeedbackKind {
     FBK_INFO,
     FBK_DEBUG
 };
-
+struct Loc {
+    ssize_t offset;
+    int lineIndex;
+    int colIndex;
+};
 struct FeedbackNote {
     char const* message;
     Source* sourceP;
     Loc loc;
     FeedbackNote* nextP;
 };
+struct Source {
+    char const* pathSuffix;
+    Source* prev;
+    Source* next;
+    FILE* fp;
+    Loc peekLoc;
+    int peekChar;
+    int promisedChar;
+    int atEof;
+};
+struct Package {
+    char const* pathPrefix;
+    Source* sourcesHead;
+    Source* sourcesTail;
+};
 
+void NewPackage(Package* packageP, char const* pathPrefix);
+Source* AddSourceToPackage(Package* packageP, char const* pathSuffix);
 void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, ...);
 
 // The SourceReader API models strings as a finite tape with a traversing head capable of reading 1 char.

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef INCLUDED_CONFIG_H
+#define INCLUDED_CONFIG_H
+
 
 #define MAX_ID_LEN (256)
 
@@ -9,3 +11,6 @@
 
 #define MAX_JOB_COUNT (16)
 #define MAX_SCOPER_COUNT (16)
+
+
+#endif  // INCLUDED_CONFIG_H

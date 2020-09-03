@@ -1,6 +1,7 @@
 #include "source.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 char const* prefix(FeedbackKind kind) {
@@ -24,17 +25,17 @@ Source* newTailSource(Source* prev, char const* pathSuffix) {
     }
 
     sourceP->fp = NULL;
-    sourceP->fp = fopen(pathSuffix);
+    sourceP->fp = fopen(pathSuffix, "r");
     if (!sourceP->fp) {
         goto fail;
     }
 
-    sourceP->loc.offset = -1;
-    sourceP->loc.lineIndex = 0;
-    sourceP->loc.columnIndex = -1;  // if LF is first char, line&col refreshed. else, colIndex++ => (0)
+    sourceP->peekLoc.offset = -1;
+    sourceP->peekLoc.lineIndex = 0;
+    sourceP->peekLoc.colIndex = -1;  // if LF is first char, line&col refreshed. else, colIndex++ => (0)
 
     sourceP->peekChar = fgetc(sourceP->fp);
-    sourceP->atEof = false;
+    sourceP->atEof = 0;
 
 fail:
     if (sourceP) {
@@ -43,7 +44,7 @@ fail:
     return NULL;
 }
 
-void PostFeedback(FeedbackKind kind, Loc loc, char const* fmt, ...) {
+void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, ...) {
     const int feedbackBufSize = 1024;
     char feedbackBuf[feedbackBufSize] = {0};
     va_list args;
@@ -52,10 +53,15 @@ void PostFeedback(FeedbackKind kind, Loc loc, char const* fmt, ...) {
     va_end(args);
 
     // Printing a message to stderr:
-    if (loc.lineIndex > 0 && loc.columnIndex > 0) {
-        fprintf(stderr, "- %s [%d:%d]: %s\n", prefix(kind), 1+loc.lineIndex, 1+loc.columnIndex, feedbackBuf);
-    } else {
-        fprintf(stderr, "- %s: %s\n", prefix(kind), feedbackBuf);
+    for (FeedbackNote* noteP = firstNote; noteP; noteP = noteP->nextP) {
+        Loc loc = noteP->loc;
+        if (loc.lineIndex > 0 && loc.colIndex > 0) {
+            fprintf(stderr, "- %s [%d:%d]: %s\n", prefix(kind), 1+loc.lineIndex, 1+loc.colIndex, feedbackBuf);
+        } else {
+            fprintf(stderr, "- %s: %s\n", prefix(kind), feedbackBuf);
+        }
+        fprintf(stderr, "  %s\n", noteP->message);
+        fprintf(stderr, "  in [%s]\n", noteP->sourceP->pathSuffix);
     }
 }
 
@@ -66,7 +72,7 @@ void NewPackage(Package* packageP, char const* pathPrefix) {
 }
 
 Source* AddSourceToPackage(Package* packageP, char const* pathSuffix) {
-    Source* newSource = newTailSource(newSource->sourcesTail, pathSuffix);
+    Source* newSource = newTailSource(packageP->sourcesTail, pathSuffix);
     return newSource;
 }
 
@@ -92,10 +98,10 @@ int AdvanceSourceReaderHead(Source* sourceP) {
         readChar = sourceP->promisedChar;
         sourceP->promisedChar = EOF;
     } else {
-        if (feof(sourceP)) {
+        if (feof(sourceP->fp)) {
             // EOF
             sourceP->peekChar = EOF;
-            sourceP->atEof = true;
+            sourceP->atEof = 1;
             return 0;
         } else {
             // reading a fresh char
@@ -105,11 +111,11 @@ int AdvanceSourceReaderHead(Source* sourceP) {
 
     // Updating the peekChar, loc, and other attributes:
     sourceP->peekChar = readChar;
-    sourceP->atEof = false;
+    sourceP->atEof = 0;
     sourceP->peekLoc.offset += 1;
     if (readChar == '\n' || readChar == '\r') {
         sourceP->peekLoc.lineIndex++;
-        sourceP->peekLoc.columnIndex = 0;
+        sourceP->peekLoc.colIndex = 0;
         
         // normalizing CRLF and CR line-endings to LF:
         if (readChar == '\r') {
@@ -125,9 +131,17 @@ int AdvanceSourceReaderHead(Source* sourceP) {
             sourceP->peekChar = '\n';
         }
     } else {
-        sourceP->peekLoc.columnIndex++;
+        sourceP->peekLoc.colIndex++;
     }
     return 1;
+}
+
+int SourceReaderAtEof(Source* sourceP) {
+    return sourceP->atEof;
+}
+
+int SourceReaderAtSof(Source* sourceP) {
+    return sourceP->peekChar == EOF && !sourceP->atEof;
 }
 
 int GetSourceReaderHeadLoc(Source* source, Loc* locP) {

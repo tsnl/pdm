@@ -1,4 +1,5 @@
-#pragma once
+#ifndef INCLUDED_SYMBOLS_H
+#define INCLUDED_SYMBOLS_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -12,3 +13,5 @@ void DeInitSymbols(void);
 
 SymbolID Symbol(char const* text);
 char const* GetSymbolText(SymbolID symbolID);
+
+#endif  // INCLUDED_SYMBOLS_H

@@ -1,5 +1,7 @@
 #include "ast.h"
 
+#include <assert.h>
+
 #include "config.h"
 
 #include "source.h"
@@ -79,7 +81,6 @@ union AstInfo {
     AstList*    Items;
     AstCall     Call;
     AstField    Field;
-    AstField    Return;
     AstDotIndex DotIx;
     AstDotName  DotNm;
     AstLambda   Lambda;
@@ -136,7 +137,7 @@ int pushListElement(AstList* list, AstNode* node) {
 //
 
 AstNode* CreateAstModule(Loc loc, SymbolID moduleID) {
-    AstNode* node = allocatedNode(loc, AST_MODULE);
+    AstNode* node = allocateNode(loc, AST_MODULE);
     node->info.Module.name = moduleID;
     node->info.Module.items = allocateList();
     return node;
@@ -146,7 +147,7 @@ int PushStmtToAstModule(AstNode* module, AstNode* stmt) {
     return pushListElement(module->info.Module.items, stmt);
 }
 
-AstNode* CreateAstID(Loc loc, SymbolID symbolID) {
+AstNode* CreateAstId(Loc loc, SymbolID symbolID) {
     AstNode* idNode = allocateNode(loc, AST_ID);
     idNode->info.ID.name = symbolID;
     idNode->info.ID.scopeP = NULL;
@@ -171,11 +172,11 @@ AstNode* CreateAstStringLiteral(Loc loc, char* value) {
     return stringNode;
 }
 
-AstNode* CreateAstSlice(Loc loc) {
-    AstNode* sliceNode = allocateNode(loc, AST_SLICE);
-    sliceNode->info.Items = allocateList();
-    sliceNode->info.Items->count = 0;
-    return sliceNode;
+AstNode* CreateAstList(Loc loc) {
+    AstNode* listNode = allocateNode(loc, AST_SLICE);
+    listNode->info.Items = allocateList();
+    listNode->info.Items->count = 0;
+    return listNode;
 }
 
 AstNode* CreateAstStruct(Loc loc) {
@@ -203,8 +204,8 @@ int PushItemToAstTuple(AstNode* tuple, AstNode* pushed) {
     return pushListElement(tuple->info.Items, pushed);
 }
 
-int PushItemToAstSlice(AstNode* slice, AstNode* pushed) {
-    return pushListElement(slice->info.Items, pushed);
+int PushItemToAstList(AstNode* list, AstNode* pushed) {
+    return pushListElement(list->info.Items, pushed);
 }
 
 int PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value) {
@@ -271,13 +272,6 @@ AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, char* value) {
     return checkNode;
 }
 
-AstNode* CreateAstReturnStmt(Loc loc, SymbolID label, AstNode* returned) {
-    AstNode* returnNode = allocateNode(loc, AST_STMT_RETURN);
-    returnNode->info.Return.name = label;
-    returnNode->info.Return.rhs = returned;
-    return returnNode;
-}
-
 AstNode* CreateAstTemplateCall(Loc loc, AstNode* lhs) {
     AstNode* callNode = allocateNode(loc, AST_TEMPLATE_CALL);
     callNode->info.Call.lhs = lhs;
@@ -287,13 +281,6 @@ AstNode* CreateAstTemplateCall(Loc loc, AstNode* lhs) {
 
 AstNode* CreateAstValueCall(Loc loc, AstNode* lhs) {
     AstNode* callNode = allocateNode(loc, AST_VALUE_CALL);
-    callNode->info.Call.lhs = lhs;
-    callNode->info.Call.args = allocateList();
-    return callNode;
-}
-
-AstNode* CreateAstSqBrkCall(Loc loc, AstNode* lhs) {
-    AstNode* callNode = allocateNode(loc, AST_SQBRK_CALL);
     callNode->info.Call.lhs = lhs;
     callNode->info.Call.args = allocateList();
     return callNode;
@@ -350,7 +337,7 @@ AstKind GetAstNodeKind(AstNode* node) {
     return node->kind;
 }
 
-SymbolID GetAstIDName(AstNode* node) {
+SymbolID GetAstIdName(AstNode* node) {
     return node->info.ID.name;
 }
 
@@ -367,55 +354,55 @@ char const* GetAstStringLiteralUtf8Value(AstNode* node) {
 }
 
 size_t GetAstTupleLength(AstNode* node) {
-    return getListLength(node);
+    return getListLength(node->info.Items);
 }
 
-size_t GetAstSliceLength(AstNode* node) {
-    return getListLength(node);
+size_t GetAstListLength(AstNode* node) {
+    return getListLength(node->info.Items);
 }
 
 size_t GetAstStructLength(AstNode* node) {
-    return getListLength(node);
+    return getListLength(node->info.Items);
 }
 
 size_t GetAstPatternLength(AstNode* node) {
-    return getListLength(node);
+    return getListLength(node->info.Items);
 }
 
 size_t GetAstChainLength(AstNode* node) {
-    return getListLength(node);
+    return getListLength(node->info.Items);
 }
 
 AstNode* GetAstTupleItemAt(AstNode* node, size_t index) {
-    return getListLength(node);
+    return getListItemAt(node->info.Items, index);
 }
 
-AstNode* GetAstSliceItemAt(AstNode* node, size_t index) {
-    return getListLength(node);
+AstNode* GetAstListItemAt(AstNode* node, size_t index) {
+    return getListItemAt(node->info.Items, index);
 }
 
-AstNode* GetAstStructItemAt(AstNode* node, size_t index) {
-    return getListLength(node);
+AstNode* GetAstStructFieldAt(AstNode* node, size_t index) {
+    return getListItemAt(node->info.Items, index);
 }
 
-AstNode* GetAstPatternItemAt(AstNode* node, size_t index) {
-    return getListLength(node);
+AstNode* GetAstPatternFieldAt(AstNode* node, size_t index) {
+    return getListItemAt(node->info.Items, index);
 }
 
 AstNode* GetAstChainStmtAt(AstNode* node, size_t index) {
-    return getListLength(node);
+    return getListItemAt(node->info.Items, index);
 }
 
 AstNode* GetAstIteCond(AstNode* ite) {
-    return getListItemAt(ite, 0);
+    return getListItemAt(ite->info.Items, 0);
 }
 
 AstNode* GetAstIteIfTrue(AstNode* ite) {
-    return getListItemAt(ite, 1);
+    return getListItemAt(ite->info.Items, 1);
 }
 
 AstNode* GetAstIteIfFalse(AstNode* ite) {
-    return getListItemAt(ite, 2);
+    return getListItemAt(ite->info.Items, 2);
 }
 
 AstNode* GetAstDotIndexLhs(AstNode* dot) {
@@ -432,6 +419,36 @@ AstNode* GetAstDotNameLhs(AstNode* dot) {
 
 SymbolID GetAstDotNameRhs(AstNode* dot) {
     return dot->info.DotNm.symbol;
+}
+
+// TODO: implement these getters
+
+AstNode* GetAstLambdaPattern(AstNode* node) {
+    return node->info.Lambda.pattern;
+}
+
+AstNode* GetAstLambdaBody(AstNode* node) {
+    return node->info.Lambda.body;
+}
+
+SymbolID GetAstBindStmtLhs(AstNode* bindStmt) {
+    return bindStmt->info.Bind.name;
+}
+
+AstNode* GetAstBindStmtTemplatePattern(AstNode* bindStmt) {
+    return bindStmt->info.Bind.templatePattern;
+}
+
+AstNode* GetAstBindStmtRhs(AstNode* bindStmt) {
+    return bindStmt->info.Bind.rhs;
+}
+
+AstNode* GetAstCheckStmtChecked(AstNode* checkStmt) {
+    return checkStmt->info.Check.checked;
+}
+
+char* GetAstCheckStmtMessage(AstNode* checkStmt) {
+    return checkStmt->info.Check.utf8Message;
 }
 
 AstNode* GetAstCallLhs(AstNode* call) {
@@ -468,11 +485,11 @@ void SetAstNodeTypeP(AstNode* node, void* typeP) {
     node->typeP = typeP;
 }
 
-void* GetAstIDScopeP(AstNode* node) {
+void* GetAstIdScopeP(AstNode* node) {
     return node->info.ID.scopeP;
 }
 
-void SetAstIDScopeP(AstNode* node, void* scopeP) {
+void SetAstIdScopeP(AstNode* node, void* scopeP) {
     node->info.ID.scopeP = scopeP;
 }
 
@@ -480,7 +497,7 @@ void SetAstIDScopeP(AstNode* node, void* scopeP) {
 // Visitor API:
 //
 
-inline static int midVisit(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb) {
+inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb) {
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_LITERAL_INT:
@@ -531,15 +548,15 @@ inline static int midVisit(void* context, AstNode* node, VisitorCb preVisitorCb,
         case AST_DOT_INDEX:
         {
             return (
-                visit(context, GetAstDotIndexLhs(node), preVisitorCb, postVisitorCb) &&
-                visit(context, GetAstDotIndexRhs(node), preVisitorCb, postVisitorCb)
+                visit(context, GetAstDotIndexLhs(node), preVisitorCb, postVisitorCb)
+                // visit(context, GetAstDotIndexRhs(node), preVisitorCb, postVisitorCb)
             );
         }
         case AST_DOT_NAME:
         {
             return (
-                visit(context, GetAstDotNameLhs(node), preVisitorCb, postVisitorCb) &&
-                visit(context, GetAstDotNameRhs(node), preVisitorCb, postVisitorCb)
+                visit(context, GetAstDotNameLhs(node), preVisitorCb, postVisitorCb)
+                // visit(context, GetAstDotNameRhs(node), preVisitorCb, postVisitorCb)
             );
         }
         case AST_STMT_BIND:
@@ -550,13 +567,8 @@ inline static int midVisit(void* context, AstNode* node, VisitorCb preVisitorCb,
         {
             return visit(context, GetAstCheckStmtChecked(node), preVisitorCb, postVisitorCb);
         }
-        case AST_STMT_RETURN:
-        {
-            return visit(context, GetAstReturnStmtValue(node), preVisitorCb, postVisitorCb);
-        }
         case AST_TEMPLATE_CALL:
         case AST_VALUE_CALL:
-        case AST_SQBRK_CALL:
         {
             if (!visit(context, GetAstCallLhs(node), preVisitorCb, postVisitorCb)) {
                 return 0;
@@ -586,6 +598,32 @@ inline static int midVisit(void* context, AstNode* node, VisitorCb preVisitorCb,
         {
             return visit(context, GetAstFieldRhs(node), preVisitorCb, postVisitorCb);
         }
+        case AST_MODULE:
+        {
+            // TODO: implement 'visit' for modules.
+            assert(0 && "'module' AST node Unsupported AST node in 'visit'.");
+        }
+        case AST_NULL:
+        {
+            if (DEBUG) {
+                assert(0 && "Cannot visit a NULL AST node.");
+            }
+            return 0;
+        }
+        case AST_ERROR:
+        {
+            if (DEBUG) {
+                assert(0 && "Cannot visit an ERROR AST node.");
+            }
+            return 0;
+        }
+        default:
+        {
+            if (DEBUG) {
+                assert(0 && "Unsupport AST node in 'visit'");
+            }
+            return 0;
+        }
     }
 }
 
@@ -595,7 +633,7 @@ int visit(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVi
             return 0;
         }
     }
-    if (!midVisit(context, node, preVisitorCb, postVisitorCb)) {
+    if (!visitChildren(context, node, preVisitorCb, postVisitorCb)) {
         return 0;
     }
     if (postVisitorCb) {

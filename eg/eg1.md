@@ -69,7 +69,7 @@ export {
 - Each definition is a bind statement.
 
 ```
-main_v4: (args Slice[String]) {
+main_v4 = (args Slice[String]) -> {
     status = testPkg.Main();
     if status == 0 then {
         eprint("Test failed: " + testModule.testName);

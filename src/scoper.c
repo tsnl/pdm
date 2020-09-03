@@ -1,4 +1,7 @@
 #include "scoper.h"
+
+#include <assert.h>
+
 #include "symbols.h"
 #include "config.h"
 
@@ -32,12 +35,12 @@ struct Scoper {
 };
 
 enum Breadcrumb {
-    PP_INTERNAL,
-    PP_TYPE_CLOSURE,
-    PP_VALUE_CLOSURE,
-    PP_CHAIN,
-    PP_STRUCT,
-    PP_PATTERN,
+    BRDC_MODULE,
+    BRDC_BIND_CLOSURE,
+    BRDC_FUNC_CLOSURE,
+    BRD_CHAIN,
+    BRDC_STRUCT,
+    BRDC_PATTERN,
 };
 
 struct BreadcrumbFrame {
@@ -96,7 +99,7 @@ void pushBreadcrumb(Scoper* scoper, Breadcrumb breadcrumb) {
     // populating:
     newFrame->linkP = scoper->breadcrumbStackTopP;
     newFrame->breadcrumb = breadcrumb;
-    newFrame->preScopeP = topScopeOfScoper(scoper);
+    newFrame->preScopeP = scoper->currentScopeP;
 
     // pushing the frame to the scoper:
     scoper->breadcrumbStackTopP = newFrame;
@@ -105,18 +108,14 @@ void popBreadcrumb(Scoper* scoper) {
     BreadcrumbFrame* poppedFrame = scoper->breadcrumbStackTopP;
     if (poppedFrame) {
         scoper->breadcrumbStackTopP = poppedFrame->linkP;
-        return poppedFrame;
     } else {
-        // Scoper popped from an empty stack
-        return NULL;
+        if (DEBUG) {
+            assert(0 && "Scoper popped from an empty stack");
+        }
     }
 }
 Breadcrumb topBreadcrumb(Scoper* scoper) {
     return scoper->breadcrumbStackTopP->breadcrumb;
-}
-
-Scope* topScopeOfScoper(Scoper* scoper) {
-    return scoper->currentScopeP;
 }
 
 inline Scope* newScope(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP) {
@@ -128,7 +127,7 @@ inline Scope* newScope(Scope* parent, SymbolID defnID, void* valueTypeP, void* t
     return scopeP;
 }
 Scope* defineSymbol(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP) {
-    return (Scope*)newScope(defnID, valueTypeP, typingTypeP, parent);
+    return (Scope*)newScope(parent, defnID, valueTypeP, typingTypeP);
 }
 void* lookupSymbol(Scope* scope, SymbolID lookupID, LookupContext context) {
     return lookupSymbolUntil(scope, lookupID, NULL, context);
@@ -151,51 +150,64 @@ void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, Looku
     }
 }
 
-static int preScopeAstNode(Scoper* scoper, AstNode* node);
-static int postScopeAstNode(Scoper* scoper, AstNode* node);
+//
+// Implementation:
+//
 
-int preScopeAstNode(Scoper* scoper, AstNode* node) {
+static int preScopeAstNode(void* scoper, AstNode* node);
+static int postScopeAstNode(void* scoper, AstNode* node);
+
+int preScopeAstNode(void* rawScoper, AstNode* node) {
+    Scoper* scoper = rawScoper;
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_ID:
         {
-            SetAstIDScopeP(node, GetTopScopeP(scoper));
+            SetAstIdScopeP(node, scoper->currentScopeP);
             break;
         }
         case AST_STRUCT:
         {
-            pushBreadcrumb(scoper, PP_STRUCT);
+            pushBreadcrumb(scoper, BRDC_STRUCT);
             break;
         }
         case AST_CHAIN:
         {
-            pushBreadcrumb(scoper, PP_CHAIN);
+            pushBreadcrumb(scoper, BRD_CHAIN);
             break;
         }
         case AST_LAMBDA:
         {
-            pushBreadcrumb(scoper, PP_VALUE_CLOSURE);
+            pushBreadcrumb(scoper, BRDC_FUNC_CLOSURE);
             break;
         }
         case AST_STMT_BIND:
         {
-            pushBreadcrumb(scoper, PP_TYPE_CLOSURE);
+            // todo: add types here
+            // todo: define symbols here (unless the top breadcrumb is a module, in which case they are already defined)
+            pushBreadcrumb(scoper, BRDC_BIND_CLOSURE);
             break;
         }
         case AST_PATTERN:
         {
-            pushBreadcrumb(scoper, PP_PATTERN);
+            pushBreadcrumb(scoper, BRDC_PATTERN);
             break;
         }
         case AST_FIELD:
         {
             switch (topBreadcrumb(scoper)) {
-                case PP_PATTERN:
-                case PP_STRUCT:
-                case PP_VALUE_CLOSURE:
-                case PP_TYPE_CLOSURE:
+                case BRDC_PATTERN:
+                case BRDC_STRUCT:
+                case BRDC_FUNC_CLOSURE:
+                case BRDC_BIND_CLOSURE:
                 {
-                    // TODO: define
+                    // TODO: define a symbol here (see AST_STMT_BIND)
+                    break;
+                }
+                default:
+                {
+                    // TODO: raise an error, 
+                    assert(0 && "field in invalid context");
                     break;
                 }
             }
@@ -209,14 +221,15 @@ int preScopeAstNode(Scoper* scoper, AstNode* node) {
     return 1;
 }
 
-int postScopeAstNode(Scoper* scoper, AstNode* node) {
+int postScopeAstNode(void* rawScoper, AstNode* node) {
+    Scoper* scoper = rawScoper;
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_STRUCT:
         case AST_CHAIN:
         case AST_LAMBDA:
-        case AST_PATTERN:
         case AST_STMT_BIND:
+        case AST_PATTERN:
         {
             popBreadcrumb(scoper);
             break;
@@ -229,25 +242,36 @@ int postScopeAstNode(Scoper* scoper, AstNode* node) {
     return 1;
 }
 
-//
-// Implementation:
-//
-
 Scoper* CreateScoper(void) {
     return NULL;
 }
 
 int ScopeModule(Scoper* scoperP, AstNode* module) {
-    // building scoperP->currentModuleDef{Beg -> End}P
+    // building scoperP->currentModuleDef{Beg -> End}P before visiting
+    // (defining all module-symbols in one binding group)
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
         AstNode* stmt = GetAstModuleStmtAt(module, index);
-        // TODO: define the symbol from a bind statement here.
+        if (GetAstNodeKind(stmt) != AST_MODULE) {
+            // error: non-module
+            // todo: add feedback here
+            return 0;
+        }
+        void* valueTypeP = NULL;    // TODO: set valueTypeP
+        void* typingTypeP = NULL;   // TODO: set typingTypeP
+        scoperP->currentScopeP = defineSymbol(scoperP->currentScopeP, GetAstBindStmtLhs(stmt), valueTypeP, typingTypeP);
+        scoperP->currentModuleDefEndP = scoperP->currentScopeP;
+        if (scoperP->currentModuleDefBegP == NULL) {
+            scoperP->currentModuleDefBegP = scoperP->currentScopeP;
+        }
     }
+
     // visiting the AST:
+    pushBreadcrumb(scoperP, BRDC_MODULE);
     if (!visit(scoperP, module, preScopeAstNode, postScopeAstNode)) {
         return 0;
     }
+    popBreadcrumb(scoperP);
     return 1;
 }
 
