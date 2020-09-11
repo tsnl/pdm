@@ -20,6 +20,7 @@ static SymbolID kwElseSymbolID = 0;
 static SymbolID kwOperatorSymbolID = 0;
 static SymbolID kwMatchSymbolID = 0;
 static SymbolID kwReturnSymbolID = 0;
+static SymbolID kwCheckSymbolID = 0;
 
 static TokenKind lexOneNumber(Source* source, TokenInfo* optInfoP);
 static TokenKind lexOneIntChunk(Source* source, TokenInfo* optInfoP, bool noPrefix);
@@ -43,6 +44,7 @@ void InitLexer(void) {
     kwOperatorSymbolID = strings_intern(symbolsDict, "operator");
     kwMatchSymbolID = strings_intern(symbolsDict, "match");
     kwReturnSymbolID = strings_intern(symbolsDict, "return");
+    kwCheckSymbolID = strings_intern(symbolsDict, "check");
 }
 
 void DeInitLexer(void) {
@@ -76,6 +78,11 @@ TokenKind LexOneToken(Source* source, TokenInfo* optInfoP) {
         skipWhitespace(source);
     }
 
+    // Populating 'loc' before any real tokens:
+    if (optInfoP) {
+        GetSourceReaderHeadLoc(source, &optInfoP->loc);
+    }
+
     //
     // Simple tokens:
     //
@@ -94,9 +101,9 @@ TokenKind LexOneToken(Source* source, TokenInfo* optInfoP) {
         case '/': return TK_FSLASH;
         case '%': return TK_PERCENT;
         case '+': return TK_PLUS;
+        case '^': return TK_CARET;
         case '&': return TK_AND;
         case '|': return TK_OR;
-        case '^': return TK_CARET;
         case '=':
         {
             if (AdvanceSourceReaderHead(source)) {
@@ -303,6 +310,7 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
     if (kwID == kwOperatorSymbolID) { return TK_KW_OPERATOR; }
     if (kwID == kwMatchSymbolID) { return TK_KW_MATCH; }
     if (kwID == kwReturnSymbolID) { return TK_KW_RETURN; }
+    if (kwID == kwCheckSymbolID) { return TK_KW_CHECK; }
     else {
         assert(0 && "Unimplemented keyword");
     }

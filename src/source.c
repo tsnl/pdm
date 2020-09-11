@@ -6,12 +6,12 @@
 
 char const* prefix(FeedbackKind kind) {
     switch (kind) {
-    case FBK_FATAL: return "FATAL";
-    case FBK_ERROR: return "ERROR";
-    case FBK_WARNING: return "WARNING";
-    case FBK_INFO: return "INFO";
-    case FBK_DEBUG: return "DEBUG";
-    default: return NULL;
+        case FBK_FATAL: return "FATAL";
+        case FBK_ERROR: return "ERROR";
+        case FBK_WARNING: return "WARNING";
+        case FBK_INFO: return "INFO";
+        case FBK_DEBUG: return "DEBUG";
+        default: return NULL;
     }
 }
 

@@ -99,30 +99,32 @@ size_t GetMetatypeID(Type* typeP) {
 
 Type* GetTypeAfterSubs(Type* arg, TypeSub* firstTypeSubP) {
     switch (arg->kind) {
-    case T_INT:
-    case T_FLOAT:
-    case T_UNIT:
-    {
-        return arg;
-    }
-    case T_PTR:
-    {
-        return GetPtrType(GetTypeAfterSubs(arg->as.Ptr, firstTypeSubP));
-    }
-    case T_META:
-    {
-        for (TypeSub* typeSubP = firstTypeSubP; typeSubP; typeSubP = typeSubP->next) {
-            if (DEBUG) {
-                assert(typeSubP->old->kind == T_META);
-            }
-            if (typeSubP->old == arg) {
-                return typeSubP->new;
-            }
+        case T_INT:
+        case T_FLOAT:
+        case T_UNIT:
+        {
+            return arg;
         }
-        return arg;
-    }
-    default:
-        assert(0 && "NotImplemented: ApplySubstitution for X type kind.");
-        return NULL;
+        case T_PTR:
+        {
+            return GetPtrType(GetTypeAfterSubs(arg->as.Ptr, firstTypeSubP));
+        }
+        case T_META:
+        {
+            for (TypeSub* typeSubP = firstTypeSubP; typeSubP; typeSubP = typeSubP->next) {
+                if (DEBUG) {
+                    assert(typeSubP->old->kind == T_META);
+                }
+                if (typeSubP->old == arg) {
+                    return typeSubP->new;
+                }
+            }
+            return arg;
+        }
+        default:
+        {
+            assert(0 && "NotImplemented: ApplySubstitution for X type kind.");
+            return NULL;
+        }
     }
 }

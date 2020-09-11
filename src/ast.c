@@ -13,16 +13,20 @@ typedef union  AstInfo     AstInfo;
 typedef struct AstList     AstList;
 typedef struct AstCall     AstCall;
 typedef struct AstField    AstField;
-typedef enum   AstOperator AstOperator;
+typedef enum   AstBinaryOperator AstBinaryOperator;
 typedef struct AstDotIndex AstDotIndex;
 typedef struct AstDotName  AstDotName;
 typedef struct AstLambda   AstLambda;
 typedef struct AstBind     AstBind;
 typedef struct AstCheck    AstCheck;
+typedef struct AstUnary    AstUnary;
+typedef struct AstBinary   AstBinary;
 
 struct AstModule {
     SymbolID name;
     AstList* items;
+    AstNode* importHeader;
+    AstNode* exportHeader;
 };
 struct AstID {
     SymbolID name;
@@ -61,20 +65,21 @@ struct AstCall {
     AstNode* lhs;
     AstList* args;
 };
-
-enum AstOperator {
-    OP_BMUL, OP_BDIV, OP_BREM,
-    OP_BADD, OP_BSUB,
-    OP_BLTHAN, OP_BGTHAN, OP_BLETHAN, OP_BGETHAN,
-    OP_BEQUALS, OP_BNEQUALS,
-    OP_BAND, OP_BOR, OP_BXOR,
-    OP_UNOT, OP_UPLUS, OP_UMINUS, OP_UGETREF, OP_UDEREF
+struct AstUnary {
+    AstUnaryOperator operator;
+    AstNode* operand;
+};
+struct AstBinary {
+    AstBinaryOperator operator;
+    AstNode* ltOperand;
+    AstNode* rtOperand;
 };
 
 union AstInfo {
     AstModule   Module;
     AstID       ID;
-    AstOperator OP;
+    AstUnary    Unary;
+    AstBinary   Binary;
     size_t      Int;
     long double Float;
     char*       Utf8String;
@@ -141,6 +146,14 @@ AstNode* CreateAstModule(Loc loc, SymbolID moduleID) {
     node->info.Module.name = moduleID;
     node->info.Module.items = allocateList();
     return node;
+}
+
+void AttachImportHeaderToAstModule(AstNode* module, AstNode* mapping) {
+    module->info.Module.importHeader = mapping;
+}
+
+void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping) {
+    module->info.Module.exportHeader = mapping;
 }
 
 int PushStmtToAstModule(AstNode* module, AstNode* stmt) {
@@ -288,6 +301,21 @@ AstNode* CreateAstValueCall(Loc loc, AstNode* lhs) {
 
 int PushActualArgToAstCall(AstNode* call, AstNode* actualArg) {
     return pushListElement(call->info.Call.args, actualArg);
+}
+
+AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg) {
+    AstNode* unaryNode = allocateNode(loc, AST_UNARY);
+    unaryNode->info.Unary.operator = op;
+    unaryNode->info.Unary.operand = arg;
+    return unaryNode;
+}
+
+AstNode* CreateAstBinary(Loc loc, AstUnaryOperator op, AstNode* ltArg, AstNode* rtArg) {
+    AstNode* binaryNode = allocateNode(loc, AST_BINARY);
+    binaryNode->info.Binary.operator = op;
+    binaryNode->info.Binary.ltOperand = ltArg;
+    binaryNode->info.Binary.rtOperand = rtArg;
+    return binaryNode;
 }
 
 //
@@ -473,6 +501,22 @@ AstNode* GetAstFieldRhs(AstNode* field) {
     return field->info.Field.rhs;
 }
 
+AstUnaryOperator GetAstUnaryOperator(AstNode* unary) {
+    return unary->info.Unary.operator;
+}
+AstNode* GetAstUnaryOperand(AstNode* unary) {
+    return unary->info.Unary.operand;
+}
+AstBinaryOperator GetAstBinaryOperator(AstNode* binary) {
+    return binary->info.Binary.operator;
+}
+AstNode* GetAstBinaryLtOperand(AstNode* binary) {
+    return binary->info.Binary.ltOperand;
+}
+AstNode* GetAstBinaryRtOperand(AstNode* binary) {
+    return binary->info.Binary.rtOperand;
+}
+
 //
 // Scoper and typer storage:
 //
@@ -498,8 +542,7 @@ void SetAstIdScopeP(AstNode* node, void* scopeP) {
 //
 
 inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb) {
-    AstKind kind = GetAstNodeKind(node);
-    switch (kind) {
+    switch (GetAstNodeKind(node)) {
         case AST_LITERAL_INT:
         case AST_LITERAL_FLOAT:
         case AST_LITERAL_STRING:
@@ -642,4 +685,38 @@ int visit(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVi
         }
     }
     return 1;
+}
+
+//
+// Reflection:
+//
+
+char const unaryOperatorTextArray[__UOP_COUNT][2] = {
+    [UOP_NOT] = "!",
+    [UOP_GETREF] = "^",
+    [UOP_DEREF] = "*"
+};
+char const binaryOperatorTextArray[__BOP_COUNT][3] = {
+    [BOP_MUL] = "*",
+    [BOP_DIV] = "/",
+    [BOP_REM] = "%",
+    [BOP_ADD] = "+",
+    [BOP_SUB] = "-",
+    [BOP_LTHAN] = "<", 
+    [BOP_LETHAN] = "<=", 
+    [BOP_GTHAN] = ">", 
+    [BOP_GETHAN] = ">=",
+    [BOP_EQUALS] = "==", 
+    [BOP_NEQUALS] = "!=",
+    [BOP_AND] = "&", 
+    [BOP_OR] = "|",
+    [BOP_XOR] = "^"
+};
+
+char const* GetUnaryOperatorText(AstUnaryOperator op) {
+    return unaryOperatorTextArray[op];
+};
+
+char const* GetBinaryOperatorText(AstBinaryOperator op) {
+    return binaryOperatorTextArray[op];
 }

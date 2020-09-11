@@ -5,7 +5,9 @@
 #include "symbols.h"
 
 typedef struct AstNode AstNode;
-typedef enum   AstKind AstKind;
+typedef enum AstKind AstKind;
+typedef enum AstUnaryOperator AstUnaryOperator;
+typedef enum AstBinaryOperator AstBinaryOperator;
 
 enum AstKind {
     AST_ERROR = -1,
@@ -17,8 +19,22 @@ enum AstKind {
     AST_LAMBDA,
     AST_DOT_INDEX, AST_DOT_NAME,
     AST_STMT_BIND, AST_STMT_CHECK, AST_STMT_RETURN,
-    AST_TEMPLATE_CALL, AST_VALUE_CALL, AST_SQBRK_CALL,
+    AST_TEMPLATE_CALL, AST_VALUE_CALL,
+    AST_UNARY, AST_BINARY,
     AST_PATTERN, AST_FIELD
+};
+
+enum AstUnaryOperator {
+    UOP_NOT, UOP_GETREF, UOP_DEREF,
+    __UOP_COUNT
+};
+enum AstBinaryOperator {
+    BOP_MUL, BOP_DIV, BOP_REM,
+    BOP_ADD, BOP_SUB,
+    BOP_LTHAN, BOP_LETHAN, BOP_GTHAN, BOP_GETHAN,
+    BOP_EQUALS, BOP_NEQUALS,
+    BOP_AND, BOP_OR, BOP_XOR,
+    __BOP_COUNT
 };
 
 //
@@ -26,6 +42,8 @@ enum AstKind {
 //
 
 AstNode* CreateAstModule(Loc loc, SymbolID moduleID);
+void AttachImportHeaderToAstModule(AstNode* module, AstNode* mapping);
+void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping);
 int PushStmtToAstModule(AstNode* module, AstNode* stmt);
 
 AstNode* CreateAstId(Loc loc, SymbolID symbolID);
@@ -55,6 +73,9 @@ AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, char* messageValue);
 AstNode* CreateAstTemplateCall(Loc loc, AstNode* lhs);
 AstNode* CreateAstValueCall(Loc loc, AstNode* lhs);
 int PushActualArgToAstCall(AstNode* call, AstNode* actualArg);
+
+AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
+AstNode* CreateAstBinary(Loc loc, AstUnaryOperator op, AstNode* ltArg, AstNode* rtArg);
 
 //
 // Getters:
@@ -110,6 +131,12 @@ AstNode* GetAstCallArgAt(AstNode* call, size_t index);
 SymbolID GetAstFieldName(AstNode* field);
 AstNode* GetAstFieldRhs(AstNode* field);
 
+AstUnaryOperator GetAstUnaryOperator(AstNode* unary);
+AstNode* GetAstUnaryOperand(AstNode* unary);
+AstBinaryOperator GetAstBinaryOperator(AstNode* binary);
+AstNode* GetAstBinaryLtOperand(AstNode* binary);
+AstNode* GetAstBinaryRtOperand(AstNode* binary);
+
 //
 // Symbol and type storage:
 //
@@ -125,5 +152,12 @@ void SetAstIdScopeP(AstNode* node, void* scopeP);
 typedef int(*VisitorCb)(void* context, AstNode* node);
 
 int visit(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb);
+
+//
+// Reflection:
+//
+
+char const* GetUnaryOperatorText(AstUnaryOperator op);
+char const* GetBinaryOperatorText(AstBinaryOperator op);
 
 #endif  // INCLUDED_AST_H
