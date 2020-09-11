@@ -15,11 +15,11 @@ enum AstKind {
     AST_MODULE,
     AST_ID,
     AST_LITERAL_INT, AST_LITERAL_FLOAT, AST_LITERAL_STRING, 
-    AST_STRUCT, AST_SLICE, AST_CHAIN,  AST_ITE,
+    AST_STRUCT, AST_CHAIN,  AST_ITE,
     AST_LAMBDA,
     AST_DOT_INDEX, AST_DOT_NAME,
     AST_STMT_BIND, AST_STMT_CHECK, AST_STMT_RETURN,
-    AST_TEMPLATE_CALL, AST_VALUE_CALL,
+    AST_CALL,
     AST_UNARY, AST_BINARY,
     AST_PATTERN, AST_FIELD
 };
@@ -44,22 +44,21 @@ enum AstBinaryOperator {
 AstNode* CreateAstModule(Loc loc, SymbolID moduleID);
 void AttachImportHeaderToAstModule(AstNode* module, AstNode* mapping);
 void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping);
-int PushStmtToAstModule(AstNode* module, AstNode* stmt);
+int PushFieldToAstModule(Loc loc, AstNode* module, SymbolID fieldID, AstNode* value);
 
 AstNode* CreateAstId(Loc loc, SymbolID symbolID);
 AstNode* CreateAstIntLiteral(Loc loc, size_t value);
 AstNode* CreateAstFloatLiteral(Loc loc, long double value);
 AstNode* CreateAstStringLiteral(Loc loc, char* value);
 
-AstNode* CreateAstList(Loc loc);
 AstNode* CreateAstStruct(Loc loc);
 AstNode* CreateAstChain(Loc loc);
 AstNode* CreateAstPattern(Loc loc);
 
-int PushItemToAstList(AstNode* list, AstNode* pushed);
 int PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value);
 int PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec);
 int PushStmtToAstChain(AstNode* chain, AstNode* statement);
+void SetAstChainResult(AstNode* chain, AstNode* result);
 
 AstNode* CreateAstIte(Loc loc, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse);
 AstNode* CreateAstDotIndex(Loc loc, AstNode* lhs, size_t index);
@@ -70,10 +69,7 @@ AstNode* CreateAstLambda(Loc loc, AstNode* pattern, AstNode* body);
 AstNode* CreateAstBindStmt(Loc loc, SymbolID lhs, AstNode* templatePattern, AstNode* rhs);
 AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, char* messageValue);
 
-AstNode* CreateAstTemplateCall(Loc loc, AstNode* lhs);
-AstNode* CreateAstValueCall(Loc loc, AstNode* lhs);
-int PushActualArgToAstCall(AstNode* call, AstNode* actualArg);
-
+AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs);
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
 AstNode* CreateAstBinary(Loc loc, AstUnaryOperator op, AstNode* ltArg, AstNode* rtArg);
 
@@ -82,8 +78,8 @@ AstNode* CreateAstBinary(Loc loc, AstUnaryOperator op, AstNode* ltArg, AstNode* 
 //
 
 SymbolID GetAstModuleName(AstNode* module);
-size_t GetAstModuleLength(AstNode* module);
-AstNode* GetAstModuleStmtAt(AstNode* module, size_t index);
+int GetAstModuleLength(AstNode* module);
+AstNode* GetAstModuleFieldAt(AstNode* module, int index);
 
 size_t GetAstNodeKey(AstNode* node);
 AstKind GetAstNodeKind(AstNode* node);
@@ -94,16 +90,14 @@ size_t GetAstIntLiteralValue(AstNode* node);
 long double GetAstFloatLiteralValue(AstNode* node);
 char const* GetAstStringLiteralUtf8Value(AstNode* node);
 
-size_t GetAstTupleLength(AstNode* node);
-size_t GetAstListLength(AstNode* node);
-size_t GetAstStructLength(AstNode* node);
-size_t GetAstPatternLength(AstNode* node);
-size_t GetAstChainLength(AstNode* node);
-AstNode* GetAstTupleItemAt(AstNode* node, size_t index);
-AstNode* GetAstListItemAt(AstNode* node, size_t index);
-AstNode* GetAstStructFieldAt(AstNode* node, size_t index);
-AstNode* GetAstPatternFieldAt(AstNode* node, size_t index);
-AstNode* GetAstChainStmtAt(AstNode* node, size_t index);
+int GetAstTupleLength(AstNode* node);
+int GetAstStructLength(AstNode* node);
+int GetAstPatternLength(AstNode* node);
+int GetAstChainLength(AstNode* node);
+AstNode* GetAstTupleItemAt(AstNode* node, int index);
+AstNode* GetAstStructFieldAt(AstNode* node, int index);
+AstNode* GetAstPatternFieldAt(AstNode* node, int index);
+AstNode* GetAstChainStmtAt(AstNode* node, int index);
 
 AstNode* GetAstIteCond(AstNode* ite);
 AstNode* GetAstIteIfTrue(AstNode* ite);
@@ -125,8 +119,7 @@ AstNode* GetAstCheckStmtChecked(AstNode* checkStmt);
 char* GetAstCheckStmtMessage(AstNode* checkStmt);
 
 AstNode* GetAstCallLhs(AstNode* call);
-size_t GetAstCallArgCount(AstNode* call);
-AstNode* GetAstCallArgAt(AstNode* call, size_t index);
+AstNode* GetAstCallRhs(AstNode* call);
 
 SymbolID GetAstFieldName(AstNode* field);
 AstNode* GetAstFieldRhs(AstNode* field);

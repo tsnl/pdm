@@ -35,12 +35,12 @@ struct Scoper {
 };
 
 enum Breadcrumb {
-    BRDC_MODULE,
-    BRDC_BIND_CLOSURE,
-    BRDC_FUNC_CLOSURE,
-    BRD_CHAIN,
-    BRDC_STRUCT,
-    BRDC_PATTERN,
+    CRUMB_MODULE,
+    CRUMB_BIND_CLOSURE,
+    CRUMB_FUNC_CLOSURE,
+    CRUMB_CHAIN,
+    CRUMB_STRUCT,
+    CRUMB_PATTERN
 };
 
 struct BreadcrumbFrame {
@@ -64,13 +64,13 @@ enum LookupContext {
 size_t allocatedScopersCount = 0;
 Scoper allocatedScopers[MAX_SCOPER_COUNT];
 static size_t allocatedScopeStackFramesCount = 0;
-static BreadcrumbFrame allocatedScopeStackFrames[MAX_NODE_COUNT];
+static BreadcrumbFrame allocatedScopeStackFrames[MAX_AST_NODE_COUNT];
 static Scoper* newScoper(Scope* root);
 static void pushBreadcrumb(Scoper* scoper, Breadcrumb breadcrumb);
 static void popBreadcrumb(Scoper* scoper);
 
 static size_t allocatedScopeCount = 0;
-static Scope allocatedScopes[MAX_NODE_COUNT];
+static Scope allocatedScopes[MAX_AST_NODE_COUNT];
 inline static Scope* newScope(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP);
 static Scope* defineSymbol(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP);
 static void* lookupSymbol(Scope* scope, SymbolID lookupID, LookupContext context);
@@ -168,38 +168,38 @@ int preScopeAstNode(void* rawScoper, AstNode* node) {
         }
         case AST_STRUCT:
         {
-            pushBreadcrumb(scoper, BRDC_STRUCT);
+            pushBreadcrumb(scoper, CRUMB_STRUCT);
             break;
         }
         case AST_CHAIN:
         {
-            pushBreadcrumb(scoper, BRD_CHAIN);
+            pushBreadcrumb(scoper, CRUMB_CHAIN);
             break;
         }
         case AST_LAMBDA:
         {
-            pushBreadcrumb(scoper, BRDC_FUNC_CLOSURE);
+            pushBreadcrumb(scoper, CRUMB_FUNC_CLOSURE);
             break;
         }
         case AST_STMT_BIND:
         {
             // todo: add types here
             // todo: define symbols here (unless the top breadcrumb is a module, in which case they are already defined)
-            pushBreadcrumb(scoper, BRDC_BIND_CLOSURE);
+            pushBreadcrumb(scoper, CRUMB_BIND_CLOSURE);
             break;
         }
         case AST_PATTERN:
         {
-            pushBreadcrumb(scoper, BRDC_PATTERN);
+            pushBreadcrumb(scoper, CRUMB_PATTERN);
             break;
         }
         case AST_FIELD:
         {
             switch (topBreadcrumb(scoper)) {
-                case BRDC_PATTERN:
-                case BRDC_STRUCT:
-                case BRDC_FUNC_CLOSURE:
-                case BRDC_BIND_CLOSURE:
+                case CRUMB_PATTERN:
+                case CRUMB_STRUCT:
+                case CRUMB_FUNC_CLOSURE:
+                case CRUMB_BIND_CLOSURE:
                 {
                     // TODO: define a symbol here (see AST_STMT_BIND)
                     break;
@@ -267,7 +267,7 @@ int ScopeModule(Scoper* scoperP, AstNode* module) {
     }
 
     // visiting the AST:
-    pushBreadcrumb(scoperP, BRDC_MODULE);
+    pushBreadcrumb(scoperP, CRUMB_MODULE);
     if (!visit(scoperP, module, preScopeAstNode, postScopeAstNode)) {
         return 0;
     }

@@ -7,6 +7,9 @@
         "chrono": "c",
         "__config": "c",
         "__hash_table": "c",
-        "__node_handle": "c"
+        "__node_handle": "c",
+        "memory_resource": "c",
+        "iterator": "c",
+        "locale": "c"
     }
 }
