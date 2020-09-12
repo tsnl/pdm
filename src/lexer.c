@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "config.h"
+#include "source.h"
 #include "useful.h"
 
 #include "intern/strings.h"
@@ -51,7 +52,7 @@ void DeInitLexer(void) {
     // do nothing for now.
 }
 
-TokenKind LexOneToken(Source* source, TokenInfo* optInfoP) {
+TokenKind LexOneToken(Source* source, TokenInfo* infoP) {
     // At SOF, reading the first character.
     if (SourceReaderAtSof(source)) {
         AdvanceSourceReaderHead(source);
@@ -79,10 +80,8 @@ TokenKind LexOneToken(Source* source, TokenInfo* optInfoP) {
     }
 
     // Populating 'loc' before any real tokens:
-    if (optInfoP) {
-        GetSourceReaderHeadLoc(source, &optInfoP->loc);
-    }
-
+    GetSourceReaderHeadLoc(source, &infoP->loc);
+    
     //
     // Simple tokens:
     //
@@ -155,7 +154,7 @@ TokenKind LexOneToken(Source* source, TokenInfo* optInfoP) {
     // Numbers:
     //
 
-    TokenKind numTk = lexOneNumber(source, optInfoP);
+    TokenKind numTk = lexOneNumber(source, infoP);
     if (numTk != TK_NULL) {
         return numTk;
     }
@@ -175,10 +174,15 @@ TokenKind LexOneToken(Source* source, TokenInfo* optInfoP) {
     // IDs and keywords:
     //
 
-    TokenKind idOrKeywordTk = lexOneIdOrKeyword(source, optInfoP);
+    TokenKind idOrKeywordTk = lexOneIdOrKeyword(source, infoP);
     if (numTk != TK_NULL) {
         return idOrKeywordTk;
     }
+
+    // Feedback:
+    char offendingChar = ReadSourceReaderHead(source);
+    FeedbackNote note = {"here...", source, infoP->loc, NULL};
+    PostFeedback(FBK_ERROR, &note, "Before '%c' (%d), expected a valid token.", offendingChar, (int)offendingChar);
 
     return TK_NULL;
 }
@@ -287,7 +291,7 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
     charBuf[index] = '\0';
     if (isIdChar(ReadSourceReaderHead(source))) {
         // ID too long, error.
-        // TODO: feedback here
+        PostFeedback(FBK_ERROR, NULL, "ID '%s...' exceeds the maximum supported ID length of (%d) characters.", charBuf, MAX_ID_LEN);
         return TK_NULL;
     }
 

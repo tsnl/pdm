@@ -22,6 +22,7 @@ typedef struct AstCheck    AstCheck;
 typedef struct AstUnary    AstUnary;
 typedef struct AstBinary   AstBinary;
 typedef struct AstChain    AstChain;
+typedef struct AstStruct   AstStruct;
 
 struct AstNodeList {
     size_t count;
@@ -62,7 +63,7 @@ struct AstBind {
 };
 struct AstCheck {
     AstNode* checked;
-    char* utf8Message;
+    AstNode* message;
 };
 struct AstCall {
     AstNode* lhs;
@@ -119,8 +120,8 @@ static size_t allocatedListCount = 0;
 static AstNodeList allocatedLists[MAX_AST_LIST_COUNT];
 
 static AstNode* allocateNode(Loc loc, AstKind kind);
-static AstNodeList* allocateList(void);
-static int pushListElement(AstNodeList* list, AstNode* node);
+static AstNodeList* createList(void);
+static void pushListElement(AstNodeList* list, AstNode* node);
 
 AstNode* allocateNode(Loc loc, AstKind kind) {
     AstNode* node = &allocatedNodes[allocatedNodeCount++];
@@ -128,25 +129,21 @@ AstNode* allocateNode(Loc loc, AstKind kind) {
     node->kind = kind;
     return node;
 }
-
-AstNodeList* allocateList(void) {
+AstNodeList* createList(void) {
     AstNodeList* listP = &allocatedLists[allocatedListCount++];
     listP->count = 0;
     listP->next = NULL;
     return listP;
 }
-
-int pushListElement(AstNodeList* list, AstNode* node) {
+void pushListElement(AstNodeList* list, AstNode* node) {
     if (list->count == MAX_AST_NODES_PER_LIST) {
         if (!list->next) {
-            list->next = allocateList();
+            list->next = createList();
             return pushListElement(list->next, node);
         }
-        return 0;
     } else {
         size_t index = list->count++;
         list->items[index] = node;
-        return 1;
     }
 }
 
@@ -157,7 +154,7 @@ int pushListElement(AstNodeList* list, AstNode* node) {
 AstNode* CreateAstModule(Loc loc, SymbolID moduleID) {
     AstNode* node = allocateNode(loc, AST_MODULE);
     node->info.Module.name = moduleID;
-    node->info.Module.items = allocateList();
+    node->info.Module.items = createList();
     return node;
 }
 
@@ -169,7 +166,7 @@ void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping) {
     module->info.Module.exportHeader = mapping;
 }
 
-int PushFieldToAstModule(Loc loc, AstNode* module, SymbolID name, AstNode* value) {
+void PushFieldToAstModule(Loc loc, AstNode* module, SymbolID name, AstNode* value) {
     AstNode* field = allocateNode(loc, AST_FIELD);
     field->info.Field.name = name;
     field->info.Field.rhs = value;
@@ -201,48 +198,53 @@ AstNode* CreateAstStringLiteral(Loc loc, char* value) {
     return stringNode;
 }
 
+AstNode* CreateAstTuple(Loc loc) {
+    AstNode* tupleNode = allocateNode(loc, AST_TUPLE);
+    tupleNode->info.Items = createList();
+    return tupleNode;
+}
+
 AstNode* CreateAstStruct(Loc loc) {
     AstNode* structNode = allocateNode(loc, AST_STRUCT);
-    structNode->info.Items = allocateList();
-    structNode->info.Items->count = 0;
+    structNode->info.Items = createList();
     return structNode;
 }
 
 AstNode* CreateAstChain(Loc loc) {
     AstNode* chainNode = allocateNode(loc, AST_CHAIN);
-    chainNode->info.Chain.prefix = allocateList();
+    chainNode->info.Chain.prefix = createList();
     chainNode->info.Chain.result = NULL;
     return chainNode;
 }
 
 AstNode* CreateAstPattern(Loc loc) {
     AstNode* patternNode = allocateNode(loc, AST_PATTERN);
-    patternNode->info.Items = allocateList();
+    patternNode->info.Items = createList();
     patternNode->info.Items->count = 0;
     return patternNode;
 }
 
-int PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value) {
+void PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value) {
     AstNode* field = allocateNode(loc, AST_FIELD);
     field->info.Field.name = name;
     field->info.Field.rhs = value;
     return pushListElement(struct_->info.Items, field);
 }
 
-int PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec) {
+void PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec) {
     AstNode* field = allocateNode(loc, AST_FIELD);
     field->info.Field.name = name;
     field->info.Field.rhs = typespec;
     return pushListElement(pattern->info.Items, field);
 }
 
-int PushStmtToAstChain(AstNode* chain, AstNode* statement) {
+void PushStmtToAstChain(AstNode* chain, AstNode* statement) {
     return pushListElement(chain->info.Items, statement);
 }
 
 AstNode* CreateAstIte(Loc loc, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse) {
     AstNode* iteNode = allocateNode(loc, AST_ITE);
-    iteNode->info.Items = allocateList();
+    iteNode->info.Items = createList();
     pushListElement(iteNode->info.Items, cond);
     pushListElement(iteNode->info.Items, ifTrue);
     pushListElement(iteNode->info.Items, ifFalse);
@@ -278,10 +280,10 @@ AstNode* CreateAstBindStmt(Loc loc, SymbolID lhs, AstNode* templatePattern, AstN
     return bindNode;
 }
 
-AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, char* value) {
+AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message) {
     AstNode* checkNode = allocateNode(loc, AST_STMT_CHECK);
     checkNode->info.Check.checked = checked;
-    checkNode->info.Check.utf8Message = value;
+    checkNode->info.Check.message = message;
     return checkNode;
 }
 
@@ -297,7 +299,7 @@ AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg) {
     unaryNode->info.Unary.operand = arg;
     return unaryNode;
 }
-AstNode* CreateAstBinary(Loc loc, AstUnaryOperator op, AstNode* ltArg, AstNode* rtArg) {
+AstNode* CreateAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg) {
     AstNode* binaryNode = allocateNode(loc, AST_BINARY);
     binaryNode->info.Binary.operator = op;
     binaryNode->info.Binary.ltOperand = ltArg;
@@ -391,7 +393,7 @@ int GetAstPatternLength(AstNode* node) {
 int GetAstChainLength(AstNode* node) {
     return getListLength(node->info.Chain.prefix);
 }
-int GetAstChainResult(AstNode* node) {
+AstNode* GetAstChainResult(AstNode* node) {
     return node->info.Chain.result;
 }
 
@@ -419,29 +421,22 @@ AstNode* GetAstIteIfTrue(AstNode* ite) {
 AstNode* GetAstIteIfFalse(AstNode* ite) {
     return getListItemAt(ite->info.Items, 2);
 }
-
 AstNode* GetAstDotIndexLhs(AstNode* dot) {
     return dot->info.DotIx.lhs;
 }
-
 size_t GetAstDotIndexRhs(AstNode* dot) {
     return dot->info.DotIx.index;
 }
-
 AstNode* GetAstDotNameLhs(AstNode* dot) {
     return dot->info.DotNm.lhs;
 }
-
 SymbolID GetAstDotNameRhs(AstNode* dot) {
     return dot->info.DotNm.symbol;
 }
 
-// TODO: implement these getters
-
 AstNode* GetAstLambdaPattern(AstNode* node) {
     return node->info.Lambda.pattern;
 }
-
 AstNode* GetAstLambdaBody(AstNode* node) {
     return node->info.Lambda.body;
 }
@@ -449,11 +444,9 @@ AstNode* GetAstLambdaBody(AstNode* node) {
 SymbolID GetAstBindStmtLhs(AstNode* bindStmt) {
     return bindStmt->info.Bind.name;
 }
-
 AstNode* GetAstBindStmtTemplatePattern(AstNode* bindStmt) {
     return bindStmt->info.Bind.templatePattern;
 }
-
 AstNode* GetAstBindStmtRhs(AstNode* bindStmt) {
     return bindStmt->info.Bind.rhs;
 }
@@ -461,9 +454,8 @@ AstNode* GetAstBindStmtRhs(AstNode* bindStmt) {
 AstNode* GetAstCheckStmtChecked(AstNode* checkStmt) {
     return checkStmt->info.Check.checked;
 }
-
-char* GetAstCheckStmtMessage(AstNode* checkStmt) {
-    return checkStmt->info.Check.utf8Message;
+AstNode* GetAstCheckStmtMessage(AstNode* checkStmt) {
+    return checkStmt->info.Check.message;
 }
 
 AstNode* GetAstCallLhs(AstNode* call) {
@@ -506,15 +498,12 @@ AstNode* GetAstBinaryRtOperand(AstNode* binary) {
 void* GetAstNodeTypeP(AstNode* node) {
     return node->typeP;
 }
-
 void SetAstNodeTypeP(AstNode* node, void* typeP) {
     node->typeP = typeP;
 }
-
 void* GetAstIdScopeP(AstNode* node) {
     return node->info.ID.scopeP;
 }
-
 void SetAstIdScopeP(AstNode* node, void* scopeP) {
     node->info.ID.scopeP = scopeP;
 }
@@ -702,9 +691,6 @@ char const* GetBinaryOperatorText(AstBinaryOperator op) {
     return binaryOperatorTextArray[op];
 }
 
-// GRAND PARSERTODO:
-// - struct
-// - chain
-// - tuple/paren
+// GRAND PARSER TODO:
 // - ite
 // - match

@@ -6,6 +6,7 @@ add_executable(pc
     src/ast.c
     src/ast.h
     src/config.h
+    src/Lang.g4
     src/lexer.c
     src/lexer.h
     src/main.c

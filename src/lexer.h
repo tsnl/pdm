@@ -14,7 +14,7 @@ typedef struct TokenInfo TokenInfo;
 void InitLexer(void);
 void DeInitLexer(void);
 
-TokenKind LexOneToken(Source* source, TokenInfo* optInfoP);
+TokenKind LexOneToken(Source* source, TokenInfo* infoP);
 
 enum TokenKind {
     TK_EOS = -1,

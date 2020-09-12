@@ -20,6 +20,7 @@ struct Parser {
 };
 static TokenKind lookaheadKind(Parser* p, int index);
 static TokenInfo* lookaheadInfo(Parser* p, int index);
+static Loc lookaheadLoc(Parser* p, int index);
 static void advance(Parser* p);
 static int match(Parser* p, TokenKind tokenKind);
 static int matchIf(Parser* p, TokenKindPredicate tokenKindPredicate);
@@ -33,25 +34,27 @@ struct BinaryOpPrecedenceNode {
     TokenKind tokenKind;
     AstBinaryOperator bop;
 };
-BinaryOpPrecedenceNode mulBinaryOpPrecedenceNode = {NULL, BOP_MUL};
-BinaryOpPrecedenceNode divBinaryOpPrecedenceNode = {&mulBinaryOpPrecedenceNode, BOP_DIV};
-BinaryOpPrecedenceNode remBinaryOpPrecedenceNode = {&divBinaryOpPrecedenceNode, BOP_REM};
-BinaryOpPrecedenceNode addBinaryOpPrecedenceNode = {&remBinaryOpPrecedenceNode, BOP_ADD};
-BinaryOpPrecedenceNode subBinaryOpPrecedenceNode = {&addBinaryOpPrecedenceNode, BOP_SUB};
-BinaryOpPrecedenceNode lThanBinaryOpPrecedenceNode = {&subBinaryOpPrecedenceNode, BOP_LTHAN};
-BinaryOpPrecedenceNode gThanBinaryOpPrecedenceNode = {&lThanBinaryOpPrecedenceNode, BOP_GTHAN};
-BinaryOpPrecedenceNode leThanBinaryOpPrecedenceNode = {&gThanBinaryOpPrecedenceNode, BOP_LETHAN};
-BinaryOpPrecedenceNode geThanBinaryOpPrecedenceNode = {&leThanBinaryOpPrecedenceNode, BOP_GETHAN};
-BinaryOpPrecedenceNode andBinaryOpPrecedenceNode = {&geThanBinaryOpPrecedenceNode, BOP_AND};
-BinaryOpPrecedenceNode xorBinaryOpPrecedenceNode = {&andBinaryOpPrecedenceNode, BOP_XOR};
-BinaryOpPrecedenceNode orBinaryOpPrecedenceNode = {&xorBinaryOpPrecedenceNode, BOP_OR};
+BinaryOpPrecedenceNode mulBinaryOpPrecedenceNode = {NULL, TK_ASTERISK, BOP_MUL};
+BinaryOpPrecedenceNode divBinaryOpPrecedenceNode = {&mulBinaryOpPrecedenceNode, TK_FSLASH, BOP_DIV};
+BinaryOpPrecedenceNode remBinaryOpPrecedenceNode = {&divBinaryOpPrecedenceNode, TK_PERCENT, BOP_REM};
+BinaryOpPrecedenceNode addBinaryOpPrecedenceNode = {&remBinaryOpPrecedenceNode, TK_PLUS, BOP_ADD};
+BinaryOpPrecedenceNode subBinaryOpPrecedenceNode = {&addBinaryOpPrecedenceNode, TK_MINUS, BOP_SUB};
+BinaryOpPrecedenceNode lThanBinaryOpPrecedenceNode = {&subBinaryOpPrecedenceNode, TK_LTHAN, BOP_LTHAN};
+BinaryOpPrecedenceNode gThanBinaryOpPrecedenceNode = {&lThanBinaryOpPrecedenceNode, TK_GTHAN, BOP_GTHAN};
+BinaryOpPrecedenceNode leThanBinaryOpPrecedenceNode = {&gThanBinaryOpPrecedenceNode, TK_LETHAN, BOP_LETHAN};
+BinaryOpPrecedenceNode geThanBinaryOpPrecedenceNode = {&leThanBinaryOpPrecedenceNode, TK_GETHAN, BOP_GETHAN};
+BinaryOpPrecedenceNode andBinaryOpPrecedenceNode = {&geThanBinaryOpPrecedenceNode, TK_AND, BOP_AND};
+BinaryOpPrecedenceNode xorBinaryOpPrecedenceNode = {&andBinaryOpPrecedenceNode, TK_CARET, BOP_XOR};
+BinaryOpPrecedenceNode orBinaryOpPrecedenceNode = {&xorBinaryOpPrecedenceNode, TK_OR, BOP_OR};
 BinaryOpPrecedenceNode* binaryOpPrecedenceListHead = &orBinaryOpPrecedenceNode;
 
 static AstNode* parseStmt(Parser* p);
+static AstNode* tryParseStmt(Parser* p);
 static AstNode* parseBindStmt(Parser* p);
 static AstNode* parseCheckStmt(Parser* p);
 
 static AstNode* parseExpr(Parser* p);
+static AstNode* tryParseExpr(Parser* p);
 static AstNode* tryParsePrimaryExpr(Parser* p);
 static AstNode* tryParsePostfixExpr(Parser* p);
 static AstNode* tryParsePostfixExprSuffix(Parser* p, AstNode* lhs, int* stopP);
@@ -63,6 +66,8 @@ static AstNode* tryParseCallExpr(Parser* p);
 static AstNode* parsePattern(Parser* p);
 static void parsePatternElement(Parser* p, AstNode* pattern, int* okP);
 
+static AstNode* parseString(Parser* p);
+
 //
 // Implementation:
 //
@@ -72,6 +77,9 @@ static TokenKind lookaheadKind(Parser* p, int index) {
 }
 static TokenInfo* lookaheadInfo(Parser* p, int index) {
     return &p->lookaheadBuffer[index].peekInfo;
+}
+static Loc lookaheadLoc(Parser* p, int index) {
+    return lookaheadInfo(p,index)->loc;
 }
 static void advance(Parser* p) {
     // copying look-aheads backward:
@@ -120,6 +128,23 @@ static int expectIf(Parser* p, TokenKindPredicate tokenKindPredicate, char const
 }
 
 static AstNode* parseStmt(Parser* p) {
+    Loc loc = lookaheadLoc(p,0);
+
+    AstNode* stmt = tryParseStmt(p);
+    if (stmt) {
+        return stmt;
+    }
+
+    FeedbackNote note = {
+        .message = "here...",
+        .sourceP = p->source,
+        .loc = loc,
+        .nextP = NULL
+    };
+    PostFeedback(FBK_ERROR, &note, "Expected a statement");
+    return NULL;
+}
+static AstNode* tryParseStmt(Parser* p) {
     if (lookaheadKind(p,0) == TK_KW_CHECK) {
         parseCheckStmt(p);
     }
@@ -128,10 +153,9 @@ static AstNode* parseStmt(Parser* p) {
     }
     return NULL;
 }
-
 static AstNode* parseBindStmt(Parser* p) {
-    Loc loc = lookaheadInfo(p, 0)->loc;
-    
+    Loc loc = lookaheadLoc(p,0);
+
     TokenInfo* idTokenInfo = lookaheadInfo(p, 0);
     SymbolID lhs = SYM_NULL;
     AstNode* templatePattern = NULL;
@@ -154,15 +178,13 @@ static AstNode* parseBindStmt(Parser* p) {
     }
     rhs = parseExpr(p);
     if (!rhs) {
-        // bad rhs
         return NULL;
     }
 
     return CreateAstBindStmt(loc, lhs, templatePattern, rhs);
 }
-
 static AstNode* parseCheckStmt(Parser* p) {
-    Loc loc = lookaheadInfo(p,0)->loc;
+    Loc loc = lookaheadLoc(p,0);
     AstNode* checked;
     AstNode* message;
     if (!expect(p, TK_KW_CHECK, "the keyword 'check'")) {
@@ -189,10 +211,28 @@ static AstNode* parseCheckStmt(Parser* p) {
 }
 
 static AstNode* parseExpr(Parser* p) {
+    Loc loc = lookaheadLoc(p,0);
+
+    AstNode* expr = tryParseExpr(p);
+    if (expr) {
+        return expr;
+    }
+
+    FeedbackNote note = {
+        .message = "here...",
+        .sourceP = p->source,
+        .loc = loc,
+        .nextP = NULL
+    };
+    PostFeedback(FBK_ERROR, &note, "Expected an expression");
+    return NULL;
+}
+static AstNode* tryParseExpr(Parser* p) {
     return tryParseCallExpr(p);
 }
 static AstNode* tryParsePrimaryExpr(Parser* p) {
-    Loc loc; GetSourceReaderHeadLoc(p->source, &loc);
+    Loc loc = lookaheadLoc(p,0); 
+
     switch (lookaheadKind(p,0)) {
         case TK_ID: 
         { 
@@ -226,19 +266,38 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
         case TK_DQSTRING_LIT:
         case TK_SQSTRING_LIT:
         { 
-            TokenInfo* stringTokenInfo = lookaheadInfo(p, 0);
-            if (match(p, TK_SQSTRING_LIT) || match(p, TK_DQSTRING_LIT)) {
-                return CreateAstStringLiteral(stringTokenInfo->loc, stringTokenInfo->as.Utf8String);
-            } else {
-                expectError(p, "a string literal");
-                return NULL;
-            }
+            return parseString(p);
         }
         case TK_LPAREN:
         {
-            // if one expr, then parenthesized.
-            // if multiple comma-separated exprs, then tuple
-            // todo: implement tuples and parenthesized exprs
+            if (!expect(p, TK_LPAREN, "an opening '('")) {
+                return NULL;
+            }
+
+            AstNode* expr = parseExpr(p);
+            if (!expr) {
+                return NULL;
+            }
+
+            if (match(p, TK_COMMA)) {
+                AstNode* firstExpr = expr;
+                expr = CreateAstStruct(loc);
+
+                PushFieldToAstTuple(GetAstNodeLoc(firstExpr), expr, firstExpr);
+                do {
+                    AstNode* nextExpr = parseExpr(p);
+                    if (!nextExpr) {
+                        return NULL;
+                    }
+                    PushFieldToAstTuple(GetAstNodeLoc(nextExpr), expr, nextExpr);
+                } while (match(p, TK_COMMA));
+            }
+
+            if (!expect(p, TK_RPAREN, "a closing ')'")) {
+                return NULL;
+            }
+
+            return expr;
         }
         case TK_LSQBRK: 
         { 
@@ -248,9 +307,11 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
         }
         case TK_LCYBRK: 
         {
-            advance(p);
+            if (!expect(p, TK_LCYBRK, "an opening '{'")) {
+                return NULL;
+            }
 
-            // if label, then struct (aka namedtuple), else chain.
+            AstNode* result;
             if (lookaheadKind(p,0) == TK_ID && lookaheadKind(p,1) == TK_COLON) {
                 // struct/namedtuple
                 AstNode* structNode = CreateAstStruct(loc);
@@ -259,6 +320,9 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
                     if (expect(p, TK_ID, "a label")) {
                         if (expect(p, TK_COLON, "a label, followed by a colon")) {
                             AstNode* rhs = parseExpr(p);
+                            if (!rhs) {
+                                return NULL;
+                            }
                             PushFieldToAstStruct(loc, structNode, labelInfo->as.ID, rhs);
                         }
                     } else {
@@ -268,31 +332,58 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
                         break;
                     }
                 }
+                result = structNode;
             } else {
                 // chain
                 AstNode* chainNode = CreateAstStruct(loc);
-                
-                // fixme: this is all wrong, need to handle result tails
-                
+                AstNode* elementNode;
+
                 for (;;) {
-                    AstNode* stmt = parseStmt(p);
-                    if (stmt) {
-                        PushStmtToAstChain(chainNode, stmt);
-                    } else {
-                        return NULL;
+                    // if <statement> ';', continue
+                    elementNode = parseStmt(p);
+                    if (elementNode) {
+                        PushStmtToAstChain(chainNode, elementNode);
+                        if (!expect(p, TK_SEMICOLON, "a ';' separator")) {
+                            goto fatal_error;
+                        }
+                        continue;
                     }
-                    if (!match(p, TK_SEMICOLON)) {
+
+                    // else optional <expr>, break
+                    elementNode = tryParseExpr(p);
+                    if (elementNode) {
+                        SetAstChainResult(chainNode, elementNode);
+                        break;
+                    } else {
+                        SetAstChainResult(chainNode, NULL);
+                        break;
+                    }
+
+                    // error
+                    fatal_error: {
+                        FeedbackNote note = {
+                            .message = "chain here...",
+                            .sourceP = p->source,
+                            .loc = loc,
+                            .nextP = NULL
+                        };
+                        PostFeedback(FBK_ERROR, &note, "invalid chain");
                         break;
                     }
                 }
-                return chainNode;
+                result = chainNode;
             }
 
             if (!expect(p, TK_RCYBRK, "a closing '}'")) {
                 return NULL;
             }
+
+            return result;
         }
-        default: { return NULL; }
+        default: 
+        { 
+            return NULL; 
+        }
     }
 }
 static AstNode* tryParsePostfixExpr(Parser* p) {
@@ -318,7 +409,7 @@ static AstNode* tryParsePostfixExprSuffix(Parser* p, AstNode* lhs, int* stopP) {
     return NULL;
 }
 static AstNode* tryParseUnaryExpr(Parser* p) {
-    Loc loc; GetSourceReaderHeadLoc(p->source, &loc);
+    Loc loc = lookaheadLoc(p,0);
     AstUnaryOperator operator;
     if (match(p, TK_NOT)) {
         operator = UOP_NOT;
@@ -326,6 +417,13 @@ static AstNode* tryParseUnaryExpr(Parser* p) {
         operator = UOP_GETREF;
     } else if (match(p, TK_ASTERISK)) {
         operator = UOP_DEREF;
+    } else if (match(p, TK_MINUS)) {
+        operator = UOP_MINUS;
+    } else if (match(p, TK_PLUS)) {
+        operator = UOP_PLUS;
+    } else {
+        expectError(p, "a valid unary operator");
+        return NULL;
     }
     AstNode* operand = tryParseUnaryExpr(p);
     return CreateAstUnary(loc, operator, operand);
@@ -365,7 +463,7 @@ static AstNode* tryParseCallExpr(Parser* p) {
 }
 
 static AstNode* parsePattern(Parser* p) {
-    Loc loc; GetSourceReaderHeadLoc(p->source, &loc);
+    Loc loc = lookaheadLoc(p,0);
     
     if (!expect(p, TK_LSQBRK, "an opening '[' (for a pattern)")) {
         return NULL;
@@ -388,9 +486,10 @@ static AstNode* parsePattern(Parser* p) {
     if (!expect(p, TK_RSQBRK, "a closing ']' (for a pattern)")) {
         return NULL;
     }
+    return pattern;
 }
 static void parsePatternElement(Parser* p, AstNode* pattern, int* okP) {
-    Loc loc; GetSourceReaderHeadLoc(p, &loc);
+    Loc patternLoc = lookaheadLoc(p,0);
     SymbolID bankedSymbols[MAX_IDS_PER_SHARED_FIELD];
     int bankedSymbolsCount;
     do {
@@ -404,19 +503,37 @@ static void parsePatternElement(Parser* p, AstNode* pattern, int* okP) {
 
             // push all banked fields we have if we have a ':' next
             if (match(p, TK_COLON)) {
+                Loc rhsLoc = lookaheadLoc(p,0);
                 AstNode* rhs = parseExpr(p);
-                for (int i = 0; i < bankedSymbolsCount; i++) {
-                    PushFieldToAstPattern(loc, pattern, firstTokenInfo->as.ID, rhs);
+                if (!rhs) {
+                    *okP = 0;
+                    FeedbackNote noteParent = {"in pattern...", p->source, patternLoc, NULL};
+                    FeedbackNote noteHere = {"here...", p->source, rhsLoc, &noteParent};
+                    PostFeedback(FBK_ERROR, &noteHere, "Expected a field RHS");
+                    return;
                 }
-                return 1;
+                for (int i = 0; i < bankedSymbolsCount; i++) {
+                    PushFieldToAstPattern(patternLoc, pattern, firstTokenInfo->as.ID, rhs);
+                }
+                return;
             }
         } else {
-            // todo: feedback + error here.
-            // eof before pattern ID.
+            FeedbackNote noteParent = {"in pattern...", p->source, patternLoc, NULL};
+            PostFeedback(FBK_ERROR, &noteParent, "Unexpected EOF before pattern label");
             *okP = 0;
-            return 0;
+            return;
         }
     } while (match(p, TK_COMMA));
+}
+
+AstNode* parseString(Parser* p) {
+    TokenInfo* stringTokenInfo = lookaheadInfo(p, 0);
+    if (match(p, TK_SQSTRING_LIT) || match(p, TK_DQSTRING_LIT)) {
+        return CreateAstStringLiteral(stringTokenInfo->loc, stringTokenInfo->as.Utf8String);
+    } else {
+        expectError(p, "a string literal");
+        return NULL;
+    }
 }
 
 //

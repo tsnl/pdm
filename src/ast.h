@@ -15,7 +15,7 @@ enum AstKind {
     AST_MODULE,
     AST_ID,
     AST_LITERAL_INT, AST_LITERAL_FLOAT, AST_LITERAL_STRING, 
-    AST_STRUCT, AST_CHAIN,  AST_ITE,
+    AST_TUPLE, AST_STRUCT, AST_CHAIN,  AST_ITE,
     AST_LAMBDA,
     AST_DOT_INDEX, AST_DOT_NAME,
     AST_STMT_BIND, AST_STMT_CHECK, AST_STMT_RETURN,
@@ -26,6 +26,7 @@ enum AstKind {
 
 enum AstUnaryOperator {
     UOP_NOT, UOP_GETREF, UOP_DEREF,
+    UOP_PLUS, UOP_MINUS,
     __UOP_COUNT
 };
 enum AstBinaryOperator {
@@ -44,20 +45,22 @@ enum AstBinaryOperator {
 AstNode* CreateAstModule(Loc loc, SymbolID moduleID);
 void AttachImportHeaderToAstModule(AstNode* module, AstNode* mapping);
 void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping);
-int PushFieldToAstModule(Loc loc, AstNode* module, SymbolID fieldID, AstNode* value);
+void PushFieldToAstModule(Loc loc, AstNode* module, SymbolID fieldID, AstNode* value);
 
 AstNode* CreateAstId(Loc loc, SymbolID symbolID);
 AstNode* CreateAstIntLiteral(Loc loc, size_t value);
 AstNode* CreateAstFloatLiteral(Loc loc, long double value);
 AstNode* CreateAstStringLiteral(Loc loc, char* value);
 
+AstNode* CreateAstTuple(Loc loc);
 AstNode* CreateAstStruct(Loc loc);
 AstNode* CreateAstChain(Loc loc);
 AstNode* CreateAstPattern(Loc loc);
 
-int PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value);
-int PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec);
-int PushStmtToAstChain(AstNode* chain, AstNode* statement);
+void PushFieldToAstTuple(Loc loc, AstNode* tuple, AstNode* value);
+void PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value);
+void PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec);
+void PushStmtToAstChain(AstNode* chain, AstNode* statement);
 void SetAstChainResult(AstNode* chain, AstNode* result);
 
 AstNode* CreateAstIte(Loc loc, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse);
@@ -67,11 +70,11 @@ AstNode* CreateAstDotName(Loc loc, AstNode* lhs, SymbolID rhs);
 AstNode* CreateAstLambda(Loc loc, AstNode* pattern, AstNode* body);
 
 AstNode* CreateAstBindStmt(Loc loc, SymbolID lhs, AstNode* templatePattern, AstNode* rhs);
-AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, char* messageValue);
+AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message);
 
 AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs);
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
-AstNode* CreateAstBinary(Loc loc, AstUnaryOperator op, AstNode* ltArg, AstNode* rtArg);
+AstNode* CreateAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg);
 
 //
 // Getters:
@@ -94,6 +97,7 @@ int GetAstTupleLength(AstNode* node);
 int GetAstStructLength(AstNode* node);
 int GetAstPatternLength(AstNode* node);
 int GetAstChainLength(AstNode* node);
+AstNode* GetAstChainResult(AstNode* node);
 AstNode* GetAstTupleItemAt(AstNode* node, int index);
 AstNode* GetAstStructFieldAt(AstNode* node, int index);
 AstNode* GetAstPatternFieldAt(AstNode* node, int index);
@@ -116,7 +120,7 @@ AstNode* GetAstBindStmtTemplatePattern(AstNode* bindStmt);
 AstNode* GetAstBindStmtRhs(AstNode* bindStmt);
 
 AstNode* GetAstCheckStmtChecked(AstNode* checkStmt);
-char* GetAstCheckStmtMessage(AstNode* checkStmt);
+AstNode* GetAstCheckStmtMessage(AstNode* checkStmt);
 
 AstNode* GetAstCallLhs(AstNode* call);
 AstNode* GetAstCallRhs(AstNode* call);

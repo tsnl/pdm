@@ -247,19 +247,18 @@ Scoper* CreateScoper(void) {
 }
 
 int ScopeModule(Scoper* scoperP, AstNode* module) {
+    if (DEBUG) {
+        assert(GetAstNodeKind(module) == AST_MODULE);
+    }
+
     // building scoperP->currentModuleDef{Beg -> End}P before visiting
     // (defining all module-symbols in one binding group)
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
-        AstNode* stmt = GetAstModuleStmtAt(module, index);
-        if (GetAstNodeKind(stmt) != AST_MODULE) {
-            // error: non-module
-            // todo: add feedback here
-            return 0;
-        }
+        AstNode* field = GetAstModuleFieldAt(module, index);
         void* valueTypeP = NULL;    // TODO: set valueTypeP
         void* typingTypeP = NULL;   // TODO: set typingTypeP
-        scoperP->currentScopeP = defineSymbol(scoperP->currentScopeP, GetAstBindStmtLhs(stmt), valueTypeP, typingTypeP);
+        scoperP->currentScopeP = defineSymbol(scoperP->currentScopeP, GetAstFieldName(field), valueTypeP, typingTypeP);
         scoperP->currentModuleDefEndP = scoperP->currentScopeP;
         if (scoperP->currentModuleDefBegP == NULL) {
             scoperP->currentModuleDefBegP = scoperP->currentScopeP;
