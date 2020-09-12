@@ -302,7 +302,16 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
         case TK_LSQBRK: 
         { 
             AstNode* pattern = parsePattern(p);
+            if (!pattern) {
+                return NULL;
+            }
+            if (!expect(p, TK_ARROW, "'->' <body>")) {
+                return NULL;
+            }
             AstNode* body = parseExpr(p);
+            if (!body) {
+                return NULL;
+            }
             return CreateAstLambda(GetAstNodeLoc(pattern), pattern, body);
         }
         case TK_LCYBRK: 

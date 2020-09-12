@@ -112,7 +112,7 @@ export {
   - This is vital for resolving chain-struct ambiguity in 2 look-ahead tokens
 
 ```
-main_v4: (args: Slice[String]) -> {
+main_v4: [args: Slice String] -> {
     status = testPkg.Main();
     if status == 0 then {
         eprint("Test failed: " + testModule.testName);
@@ -132,3 +132,4 @@ main_v4: (args: Slice[String]) -> {
    If we can allow the user to abstractly specify an export header, we have 'module-interfaces' as a feature.
     - An easy way to do this? Subfunc loadPkg and add assertions.
     - **Making sense of assertions at compile time is a key differentiator.**
+  - **UPDATE:** why not just auto-export capitalized symbols?
