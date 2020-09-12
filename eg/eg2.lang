@@ -46,7 +46,7 @@ addImage[t]: [i,j: Image t] -> {
     name = f"({i.name}+{j.name})";
     size = i.size;
     data = map(addPixel)(zip i.data j.data);
-    Image t (name, size, data)
+    Image t (name,size,data)
 };
 mulImage[t]: [i: Image t, x: u8] -> {
     scalePixelByX = [p: Pixel] -> {
@@ -66,7 +66,7 @@ mulImage[t]: [i: Image t, x: u8] -> {
 zip[t]: [a: Iterable[t], b: Iterable[t]] -> {
     match (next(a), next(b)) with {
         [x: Some t, y: Some t] -> {
-            Some t (Pair t (x, y))
+            Some t (Pair t (x,y))
         };
         [...] -> {
             None

@@ -305,7 +305,7 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
             if (!pattern) {
                 return NULL;
             }
-            if (!expect(p, TK_ARROW, "'->' <body>")) {
+            if (!expect(p, TK_ARROW, "'->'")) {
                 return NULL;
             }
             AstNode* body = parseExpr(p);
@@ -327,7 +327,7 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
                 for (;;) {
                     TokenInfo* labelInfo = lookaheadInfo(p,0);
                     if (expect(p, TK_ID, "a label")) {
-                        if (expect(p, TK_COLON, "a label, followed by a colon")) {
+                        if (expect(p, TK_COLON, "a label's colon")) {
                             AstNode* rhs = parseExpr(p);
                             if (!rhs) {
                                 return NULL;
