@@ -1,4 +1,4 @@
-set(CMAKE_MINIMUM_REQUIRED_VERSION 3.18.2)
+cmake_minimum_required(VERSION 3.18)
 
 project(pandemonium)
 
@@ -6,7 +6,8 @@ add_executable(pc
     src/ast.c
     src/ast.h
     src/config.h
-    src/Lang.g4
+    src/interp.c
+    src/interp.h
     src/lexer.c
     src/lexer.h
     src/main.c

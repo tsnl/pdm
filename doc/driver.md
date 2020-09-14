@@ -1,7 +1,8 @@
 # Implementing a test framework
 
-- Finalize packages spec (done, see [packages.md](./packages.md))
+- Finalize packages spec (done, see [scripts.md](./scripts.md))
 - Load a package with no imports from the FS using the [`cxong/tinydir`](https://github.com/cxong/tinydir) dependency.
+  - tinydir may not be required given the local emphasis of scripts.
 - Generate...
   - C output source code
   - Promela output source code (?)

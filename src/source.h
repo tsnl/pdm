@@ -5,14 +5,12 @@
 #include <stdio.h>
 
 // Compilers transform source into some output; this module models that source.
-// - NewPackage: mark a filesystem subtree as a package.
-// - AddSourceToPackage: add a source file to a package using the source path prefix within the package subtree.
+// - NewScriptSource: add a source file to a package using the source path prefix within the package subtree.
 // - PostFeedback: writes a feedback message about a Source.
 
 typedef struct Loc          Loc;
 typedef enum   FeedbackKind FeedbackKind;
 typedef struct FeedbackNote FeedbackNote;
-typedef struct Package      Package;
 typedef struct Source       Source;
 
 enum FeedbackKind {
@@ -34,7 +32,7 @@ struct FeedbackNote {
     FeedbackNote* nextP;
 };
 struct Source {
-    char const* pathSuffix;
+    char const* path;
     Source* prev;
     Source* next;
     FILE* fp;
@@ -43,14 +41,9 @@ struct Source {
     int promisedChar;
     int atEof;
 };
-struct Package {
-    char const* pathPrefix;
-    Source* sourcesHead;
-    Source* sourcesTail;
-};
 
-void NewPackage(Package* packageP, char const* pathPrefix);
-Source* AddSourceToPackage(Package* packageP, char const* pathSuffix);
+Source* CreateSource(char const* path);
+
 void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, ...);
 
 // The SourceReader API models strings as a finite tape with a traversing head capable of reading 1 char.

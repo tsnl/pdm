@@ -18,6 +18,7 @@ struct Parser {
     Source* source;
     ParserLookahead lookaheadBuffer[PARSER_LOOKAHEAD_COUNT];
 };
+static Parser createParser(Source* source);
 static TokenKind lookaheadKind(Parser* p, int index);
 static TokenInfo* lookaheadInfo(Parser* p, int index);
 static Loc lookaheadLoc(Parser* p, int index);
@@ -72,6 +73,18 @@ static AstNode* parseString(Parser* p);
 // Implementation:
 //
 
+static Parser createParser(Source* source) {
+    Parser p;
+    p.source = source;
+    for (int i = 0; i < PARSER_LOOKAHEAD_COUNT; i++) {
+        TokenKind kind = LexOneToken(source, &p.lookaheadBuffer[i].peekInfo);
+        p.lookaheadBuffer[i].peekKind = kind;
+        if (kind == TK_EOS || kind == TK_NULL) {
+            break;
+        }
+    }
+    return p;
+}
 static TokenKind lookaheadKind(Parser* p, int index) {
     return p->lookaheadBuffer[index].peekKind;
 }
@@ -550,6 +563,24 @@ AstNode* parseString(Parser* p) {
 //
 
 AstNode* ParseSource(Source* source) {
-    // TODO: implement a source parser, delegating to the above.
-    return NULL;
+    Parser p = createParser(source);
+    AstNode* module = CreateAstModule(lookaheadLoc(&p,0), SYM_NULL);    // todo: allow script name in syntax or remove from spec
+    for (;;) {
+        // todo: add support for import/export/params/etc...
+        TokenInfo* tokenInfo = lookaheadInfo(&p,0);
+        if (match(&p, TK_ID)) {
+            SymbolID lhsID = tokenInfo->as.ID;
+            if (!expect(&p, TK_COLON, "a label's colon")) {
+                return NULL;
+            }
+            AstNode* rhs = parseExpr(&p);
+            if (!expect(&p, TK_SEMICOLON, "a terminating semicolon")) {
+                return NULL;
+            }
+            PushFieldToAstModule(tokenInfo->loc, module, lhsID, rhs);
+        } else {
+            break;
+        }
+    }
+    return module;
 }

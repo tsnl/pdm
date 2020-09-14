@@ -170,7 +170,7 @@ void PushFieldToAstModule(Loc loc, AstNode* module, SymbolID name, AstNode* valu
     AstNode* field = allocateNode(loc, AST_FIELD);
     field->info.Field.name = name;
     field->info.Field.rhs = value;
-    return pushListElement(module->info.Items, field);
+    pushListElement(module->info.Items, field);
 }
 
 AstNode* CreateAstId(Loc loc, SymbolID symbolID) {

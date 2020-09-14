@@ -4,14 +4,19 @@
 
 #include "intern/strings.h"
 
-static struct strings* stringsRepository;
+static struct strings* stringsRepository = NULL;
 
 void InitSymbols(void) {
-    stringsRepository = strings_new();
+    if (!stringsRepository) {
+        stringsRepository = strings_new();
+    }
 }
 
 void DeInitSymbols(void) {
-    strings_free(stringsRepository);
+    if (stringsRepository) {
+        strings_free(stringsRepository);
+        stringsRepository = NULL;
+    }
 }
 
 SymbolID Symbol(char const* text) {

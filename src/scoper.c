@@ -65,7 +65,7 @@ size_t allocatedScopersCount = 0;
 Scoper allocatedScopers[MAX_SCOPER_COUNT];
 static size_t allocatedScopeStackFramesCount = 0;
 static BreadcrumbFrame allocatedScopeStackFrames[MAX_AST_NODE_COUNT];
-static Scoper* newScoper(Scope* root);
+static Scoper* newScoper();
 static void pushBreadcrumb(Scoper* scoper, Breadcrumb breadcrumb);
 static void popBreadcrumb(Scoper* scoper);
 
@@ -80,7 +80,7 @@ static void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP
 // Static implementation:
 //
 
-Scoper* newScoper(Scope* root) {
+Scoper* newScoper() {
     Scoper* scoper = NULL;
     if (allocatedScopersCount < MAX_SCOPER_COUNT) {
         scoper = &allocatedScopers[allocatedScopersCount++];
@@ -243,7 +243,7 @@ int postScopeAstNode(void* rawScoper, AstNode* node) {
 }
 
 Scoper* CreateScoper(void) {
-    return NULL;
+    return newScoper();
 }
 
 int ScopeModule(Scoper* scoperP, AstNode* module) {

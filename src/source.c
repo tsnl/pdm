@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+Source* sourcesHead = NULL;
+Source* sourcesTail = NULL;
+
 char const* prefix(FeedbackKind kind) {
     switch (kind) {
         case FBK_FATAL: return "FATAL";
@@ -13,35 +16,6 @@ char const* prefix(FeedbackKind kind) {
         case FBK_DEBUG: return "DEBUG";
         default: return NULL;
     }
-}
-
-Source* newTailSource(Source* prev, char const* pathSuffix) {
-    Source* sourceP = (Source*)malloc(sizeof(Source));
-    sourceP->prev = prev;
-    sourceP->next = NULL;
-    sourceP->pathSuffix = (char const*)strdup(pathSuffix);
-    if (!sourceP->pathSuffix) {
-        goto fail;
-    }
-
-    sourceP->fp = NULL;
-    sourceP->fp = fopen(pathSuffix, "r");
-    if (!sourceP->fp) {
-        goto fail;
-    }
-
-    sourceP->peekLoc.offset = -1;
-    sourceP->peekLoc.lineIndex = 0;
-    sourceP->peekLoc.colIndex = -1;  // if LF is first char, line&col refreshed. else, colIndex++ => (0)
-
-    sourceP->peekChar = fgetc(sourceP->fp);
-    sourceP->atEof = 0;
-
-fail:
-    if (sourceP) {
-        free(sourceP);
-    }
-    return NULL;
 }
 
 void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, ...) {
@@ -61,19 +35,44 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
             fprintf(stderr, "- %s: %s\n", prefix(kind), feedbackBuf);
         }
         fprintf(stderr, "  %s\n", noteP->message);
-        fprintf(stderr, "  in [%s]\n", noteP->sourceP->pathSuffix);
+        fprintf(stderr, "  in [%s]\n", noteP->sourceP->path);
     }
 }
 
-void NewPackage(Package* packageP, char const* pathPrefix) {
-    packageP->pathPrefix = strdup(pathPrefix);
-    packageP->sourcesHead = NULL;
-    packageP->sourcesTail = NULL;
-}
+Source* CreateSource(char const* path) {
+    Source* sourceP = (Source*)malloc(sizeof(Source));
+    sourceP->prev = sourcesTail;
+    sourceP->next = NULL;
+    if (sourcesHead == NULL) {
+        sourcesHead = sourceP;
+    }
+    sourcesTail = sourceP;
+    
+    sourceP->path = (char const*)strdup(path);
+    if (!sourceP->path) {
+        goto fail;
+    }
 
-Source* AddSourceToPackage(Package* packageP, char const* pathSuffix) {
-    Source* newSource = newTailSource(packageP->sourcesTail, pathSuffix);
-    return newSource;
+    sourceP->fp = NULL;
+    sourceP->fp = fopen(path, "r");
+    if (!sourceP->fp) {
+        goto fail;
+    }
+
+    sourceP->peekLoc.offset = -1;
+    sourceP->peekLoc.lineIndex = 0;
+    sourceP->peekLoc.colIndex = -1;  // if LF is first char, line&col refreshed. else, colIndex++ => (0)
+
+    sourceP->peekChar = fgetc(sourceP->fp);
+    sourceP->atEof = 0;
+
+    return sourceP;
+
+fail:
+    if (sourceP) {
+        free(sourceP);
+    }
+    return NULL;
 }
 
 int ReadSourceReaderHead(Source* sourceP) {
