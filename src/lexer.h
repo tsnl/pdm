@@ -44,4 +44,11 @@ struct TokenInfo {
     } as;
 };
 
+//
+// Reflection
+//
+
+void DebugLexer(Source* source);
+int TokenAsText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength);
+
 #endif  // INCLUDED_LEXER_H

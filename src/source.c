@@ -63,7 +63,8 @@ Source* CreateSource(char const* path) {
     sourceP->peekLoc.lineIndex = 0;
     sourceP->peekLoc.colIndex = -1;  // if LF is first char, line&col refreshed. else, colIndex++ => (0)
 
-    sourceP->peekChar = fgetc(sourceP->fp);
+    sourceP->peekChar = EOF;
+    sourceP->promisedChar = EOF;
     sourceP->atEof = 0;
 
     return sourceP;
@@ -97,14 +98,13 @@ int AdvanceSourceReaderHead(Source* sourceP) {
         readChar = sourceP->promisedChar;
         sourceP->promisedChar = EOF;
     } else {
-        if (feof(sourceP->fp)) {
+        // reading a fresh char
+        readChar = fgetc(sourceP->fp);
+        if (readChar < 0) {
             // EOF
             sourceP->peekChar = EOF;
             sourceP->atEof = 1;
             return 0;
-        } else {
-            // reading a fresh char
-            readChar = fgetc(sourceP->fp);
         }
     }
 

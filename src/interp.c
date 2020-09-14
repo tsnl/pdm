@@ -1,5 +1,7 @@
 #include "interp.h"
 
+#include <stdio.h>
+#include "lexer.h"
 #include "parser.h"
 #include "scoper.h"
 #include "typer.h"
@@ -10,18 +12,30 @@ struct Interp {
 
 Interp* CreateInterp(void) {
     InitSymbols();
+    InitLexer();
     return NULL;
 }
 
 void DestroyInterp(Interp* interp) {
     DeInitSymbols();
+    DeInitLexer();
 }
 
 int ExecuteScript(Interp* interp, Source* scriptSource) {
+    // LEXER DEBUG:
+    // DebugLexer(scriptSource);
+    // return 1;
+    
     AstNode* moduleAstNode = ParseSource(scriptSource);
     if (!moduleAstNode) {
         return 0;
     }
+
+    // DEBUG
+    printf("Start of Module dump:\n\n");
+    PrintNode(stdout, moduleAstNode);
+    printf("\n\nEnd of Module dump.\n");
+
     Scoper* scoper = CreateScoper();
     if (!ScopeModule(scoper, moduleAstNode)) {
         return 0;

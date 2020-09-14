@@ -23,6 +23,9 @@ static SymbolID kwMatchSymbolID = 0;
 static SymbolID kwReturnSymbolID = 0;
 static SymbolID kwCheckSymbolID = 0;
 
+static TokenKind lexOneToken(Source* source, TokenInfo* infoP);
+static TokenKind lexOneSimpleToken(Source* source, TokenInfo* infoP);
+static TokenKind helpLexOneSimpleToken(Source* source, TokenInfo* infoP);
 static TokenKind lexOneNumber(Source* source, TokenInfo* optInfoP);
 static TokenKind lexOneIntChunk(Source* source, TokenInfo* optInfoP, bool noPrefix);
 static TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP);
@@ -36,6 +39,7 @@ inline static bool isIdChar(char ch);
 // - if (Advance...) is an effective way to check for and handle EOFs.
 
 void InitLexer(void) {
+    symbolsDict = strings_new();
     kwImportSymbolID = strings_intern(symbolsDict, "import");
     kwExportSymbolID = strings_intern(symbolsDict, "export");
     kwDoSymbolID = strings_intern(symbolsDict, "do");
@@ -52,50 +56,105 @@ void DeInitLexer(void) {
     // do nothing for now.
 }
 
-TokenKind LexOneToken(Source* source, TokenInfo* infoP) {
+TokenKind lexOneToken(Source* source, TokenInfo* infoP) {
     // At SOF, reading the first character.
     if (SourceReaderAtSof(source)) {
         AdvanceSourceReaderHead(source);
+    }
+    
+    // Ignoring whitespace & comments:
+    while (isspace(ReadSourceReaderHead(source))) {
+        skipWhitespace(source);
+        while (ReadSourceReaderHead(source) == '#') {
+            for (;;) {
+                AdvanceSourceReaderHead(source);
+                if (ReadSourceReaderHead(source) == '\n') {
+                    break;
+                }
+            }
+            skipWhitespace(source);
+        }
     }
 
     // If at EOF, returning TK_EOS (not TK_NULL!) to indicate the end of this token stream.
     if (SourceReaderAtEof(source)) {
         return TK_EOS;
     }
-    
+
     //
-    // Ignoring whitespace and comments:
-    //
-
-    skipWhitespace(source);
-
-    while (ReadSourceReaderHead(source) == '#') {
-        for (;;) {
-            AdvanceSourceReaderHead(source);
-            if (ReadSourceReaderHead(source) == '\n') {
-                break;
-            }
-        }
-        skipWhitespace(source);
-    }
-
     // Populating 'loc' before any real tokens:
+    //
+
     GetSourceReaderHeadLoc(source, &infoP->loc);
     
     //
     // Simple tokens:
     //
 
+    TokenKind kind = lexOneSimpleToken(source, infoP);
+    if (kind != TK_NULL) {
+        return kind;
+    }
+
+    //
+    // Numbers:
+    //
+
+    if (isdigit(ReadSourceReaderHead(source))) {
+        return lexOneNumber(source, infoP);
+    }
+
+    //
+    // Strings:
+    //
+
+    // if (GetSourceReaderHeadLoc(source) == '"') {
+    //     // todo: scan double-quoted strings
+    // }
+    // if (GetSourceReaderHeadLoc(source) == '\'') {
+    //     // todo: scan single-quoted strings
+    // }
+
+    //
+    // IDs and keywords:
+    //
+
+    if (isalpha(ReadSourceReaderHead(source)) || ReadSourceReaderHead(source) == '_') {
+        return lexOneIdOrKeyword(source, infoP);
+    }
+
+    //
+    // Error: unknown token kind.
+    // Offer feedback with location.
+    //
+    
+    char offendingChar = ReadSourceReaderHead(source);
+    FeedbackNote note = {"here...", source, infoP->loc, NULL};
+    PostFeedback(FBK_ERROR, &note, "Before '%c' (%d), expected a valid token.", offendingChar, (int)offendingChar);
+
+    return TK_NULL;
+}
+
+TokenKind lexOneSimpleToken(Source* source, TokenInfo* optInfoP) {
+    TokenKind tk = helpLexOneSimpleToken(source, optInfoP);
+    if (tk != TK_NULL) {
+        AdvanceSourceReaderHead(source);
+    }
+    return tk;
+}
+TokenKind helpLexOneSimpleToken(Source* source, TokenInfo* optInfoP) {
+    // lexes all of a simple token, advances EXCEPT the last character.
     switch (ReadSourceReaderHead(source)) {
+        case '.': return TK_DOT;
+        case ':': return TK_COLON;
+        case ',': return TK_COMMA;
+        case ';': return TK_SEMICOLON;
         case '(': return TK_LPAREN;
         case ')': return TK_RPAREN;
         case '[': return TK_LSQBRK;
         case ']': return TK_RSQBRK;
         case '{': return TK_LCYBRK;
         case '}': return TK_RCYBRK;
-        case ',': return TK_COMMA;
-        case ':': return TK_COLON;
-        case ';': return TK_SEMICOLON;
         case '*': return TK_ASTERISK;
         case '/': return TK_FSLASH;
         case '%': return TK_PERCENT;
@@ -148,45 +207,12 @@ TokenKind LexOneToken(Source* source, TokenInfo* infoP) {
             }
             return TK_GTHAN;
         }
+        default:
+        {
+            return TK_NULL;
+        }
     }
-
-    //
-    // Numbers:
-    //
-
-    TokenKind numTk = lexOneNumber(source, infoP);
-    if (numTk != TK_NULL) {
-        return numTk;
-    }
-
-    //
-    // Strings:
-    //
-
-    // if (GetSourceReaderHeadLoc(source) == '"') {
-    //     // todo: scan double-quoted strings
-    // }
-    // if (GetSourceReaderHeadLoc(source) == '\'') {
-    //     // todo: scan single-quoted strings
-    // }
-
-    //
-    // IDs and keywords:
-    //
-
-    TokenKind idOrKeywordTk = lexOneIdOrKeyword(source, infoP);
-    if (numTk != TK_NULL) {
-        return idOrKeywordTk;
-    }
-
-    // Feedback:
-    char offendingChar = ReadSourceReaderHead(source);
-    FeedbackNote note = {"here...", source, infoP->loc, NULL};
-    PostFeedback(FBK_ERROR, &note, "Before '%c' (%d), expected a valid token.", offendingChar, (int)offendingChar);
-
-    return TK_NULL;
 }
-
 TokenKind lexOneNumber(Source* source, TokenInfo* optInfoP) {
     TokenInfo prefixTokenInfo;
     TokenKind prefixTokenKind = lexOneIntChunk(source, &prefixTokenInfo, false);
@@ -278,12 +304,13 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
     for (index = 0; index < MAX_ID_LEN; index++) {
         // reading the next character:
         char ch = ReadSourceReaderHead(source);
-        if (!AdvanceSourceReaderHead(source)) {
-            break;
-        }
+        
         // adding the character to the charBuf:
         if (isIdChar(ch)) {
-            charBuf[index++] = ch;
+            charBuf[index] = ch;
+            if (!AdvanceSourceReaderHead(source)) {
+                break;
+            }
         } else {
             break;
         }
@@ -321,6 +348,7 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
 }
 
 inline void skipWhitespace(Source* source) {
+    int stop = 0;
     do {
         switch (ReadSourceReaderHead(source)) {
             case ' ':
@@ -332,12 +360,254 @@ inline void skipWhitespace(Source* source) {
             }
             default: 
             {
+                stop = 1;
                 break;
             }
         }
-    } while (AdvanceSourceReaderHead(source));
+    } while (!stop && AdvanceSourceReaderHead(source));
 }
 
 inline bool isIdChar(char ch) {
     return isalpha(ch) || ch == '_';
+}
+
+TokenKind LexOneToken(Source* source, TokenInfo* infoP) {
+    TokenKind tk = lexOneToken(source, infoP);
+    // char buffer[512];
+    // TokenAsText(tk, infoP, buffer, 512);
+    // printf("%s\n", buffer);
+    return tk;
+}
+
+void DebugLexer(Source* source) {
+    TokenInfo info;
+    char lineBuffer[512];
+    for (;;) {
+        TokenKind kind = LexOneToken(source, &info);
+        if (kind == TK_NULL) {
+            printf("Terminated with TK_NULL\n");
+            break;
+        }
+        if (kind == TK_EOS) {
+            printf("Terminated with TK_EOS\n");
+            break;
+        }
+        assert(TokenAsText(kind, &info, lineBuffer, 512) < 512);
+        printf("%s\n", lineBuffer);
+    }
+    // char buffer[512];
+    // TokenAsText(tk, infoP, buffer, 512);
+    // printf("%s\n", buffer);
+}
+
+int TokenAsText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
+    int const maxInfoLen = MAX_ID_LEN;
+    char const* name;
+    char info[maxInfoLen+1] = {'\0'};
+    switch (tk)
+    {
+        case TK_DOT:
+        {
+            name = ".";
+            break;
+        }
+        case TK_COMMA:
+        {
+            name = ",";
+            break;
+        }
+        case TK_COLON:
+        {
+            name = ":";
+            break;
+        }
+        case TK_LPAREN:
+        {
+            name = "(";
+            break;
+        }
+        case TK_RPAREN:
+        {
+            name = ")";
+            break;
+        }
+        case TK_LSQBRK:
+        {
+            name = "[";
+            break;
+        }
+        case TK_RSQBRK:
+        {
+            name = "]";
+            break;
+        }
+        case TK_LCYBRK:
+        {
+            name = "{";
+            break;
+        }
+        case TK_SEMICOLON:
+        {
+            name = ";";
+            break;
+        }
+        case TK_ASTERISK:
+        {
+            name = "*";
+            break;
+        }
+        case TK_FSLASH:
+        {
+            name = "/";
+            break;
+        }
+        case TK_PERCENT:
+        {
+            name = "%";
+            break;
+        }
+        case TK_PLUS:
+        {
+            name = "+";
+            break;
+        }
+        case TK_MINUS:
+        {
+            name = "-";
+            break;
+        }
+        case TK_AND:
+        {
+            name = "&";
+            break;
+        }
+        case TK_OR:
+        {
+            name = "|";
+            break;
+        }
+        case TK_CARET:
+        {
+            name = "^";
+            break;
+        }
+        case TK_NOT:
+        {
+            name = "!";
+            break;
+        }
+        case TK_BIND:
+        {
+            name = "=";
+            break;
+        }
+        case TK_EQUALS:
+        {
+            name = "==";
+            break;
+        }
+        case TK_NEQUALS:
+        {
+            name = "!=";
+            break;
+        }
+        case TK_KW_IMPORT:
+        {
+            name = "import";
+            break;
+        }
+        case TK_KW_EXPORT:
+        {
+            name = "export";
+            break;
+        }
+        case TK_KW_DO:
+        {
+            name = "do";
+            break;
+        }
+        case TK_KW_IF:
+        {
+            name = "if";
+            break;
+        }
+        case TK_KW_THEN:
+        {
+            name = "then";
+            break;
+        }
+        case TK_KW_ELSE:
+        {
+            name = "else";
+            break;
+        }
+        case TK_KW_OPERATOR:
+        {
+            name = "operator";
+            break;
+        }
+        case TK_KW_MATCH:
+        {
+            name = "match";
+            break;
+        }
+        case TK_KW_RETURN:
+        {
+            name = "return";
+            break;
+        }
+        case TK_KW_CHECK:
+        {
+            name = "check";
+            break;
+        }
+        case TK_DINT_LIT:
+        {
+            name = "<d-int>";
+            snprintf(info, maxInfoLen, "%zd", ti->as.Int);
+            break;
+        }
+        case TK_XINT_LIT:
+        {
+            name = "<x-int>";
+            snprintf(info, maxInfoLen, "%zd", ti->as.Int);
+            break;
+        }
+        case TK_FLOAT_LIT:
+        {
+            name = "<float>";
+            snprintf(info, maxInfoLen, "%Lf", ti->as.Float);
+            break;
+        }
+        case TK_DQSTRING_LIT:
+        {
+            name = "<text>";
+            break;
+        }
+        case TK_SQSTRING_LIT:
+        {
+            name = "<text>";
+            break;
+        }
+        case TK_ID:
+        {
+            name = "<id>";
+            snprintf(info, maxInfoLen, "%s", GetSymbolText(ti->as.ID));
+            break;
+        }
+        case TK_NULL:
+        {
+            name = "<NULL>";
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+    if (info[0]) {
+        return snprintf(buf, bufLength-1, "%s (%s)", info, name);
+    } else {
+        return snprintf(buf, bufLength-1, "%s", name);
+    }
 }

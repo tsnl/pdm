@@ -615,6 +615,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
                     return 0;
                 }
             }
+            return 1;
         }
         case AST_NULL:
         {
@@ -683,6 +684,10 @@ char const binaryOperatorTextArray[__BOP_COUNT][3] = {
     [BOP_XOR] = "^"
 };
 
+//
+// Reflection:
+//
+
 char const* GetUnaryOperatorText(AstUnaryOperator op) {
     return unaryOperatorTextArray[op];
 };
@@ -691,6 +696,44 @@ char const* GetBinaryOperatorText(AstBinaryOperator op) {
     return binaryOperatorTextArray[op];
 }
 
-// GRAND PARSER TODO:
-// - ite
-// - match
+void PrintNode(FILE* file, AstNode* node) {
+    switch (GetAstNodeKind(node))
+    {
+        case AST_MODULE:
+        {
+            int length = GetAstModuleLength(node);
+            printf("MODULE... (%d)\n", length);
+            for (int i = 0; i < length; i++) {
+                PrintNode(file, GetAstModuleFieldAt(node, i));
+                fputs(";\n", stderr);
+            }
+            break;
+        }
+        case AST_ID:
+        {
+            fputs(GetSymbolText(node->info.ID.name), file);
+            break;
+        }
+        case AST_LITERAL_INT:
+        {
+            fprintf(file, "%zu", node->info.Int);
+            break;
+        }
+        case AST_LITERAL_FLOAT:
+        {
+            fprintf(file, "%Lf", node->info.Float);
+            break;
+        }
+        case AST_FIELD:
+        {
+            fprintf(file, "%s: ", GetSymbolText(node->info.Field.name));
+            PrintNode(file, node->info.Field.rhs);
+            break;
+        }
+        default:
+        {
+            fprintf(file, "?");
+            break;
+        }
+    }
+}
