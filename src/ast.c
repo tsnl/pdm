@@ -3,9 +3,10 @@
 #include <assert.h>
 
 #include "config.h"
-
 #include "source.h"
 #include "symbols.h"
+
+#include "stb/stretchy_buffer.h"
 
 typedef struct AstModule   AstModule;
 typedef struct AstID       AstID;
@@ -21,6 +22,7 @@ typedef struct AstBind     AstBind;
 typedef struct AstCheck    AstCheck;
 typedef struct AstUnary    AstUnary;
 typedef struct AstBinary   AstBinary;
+typedef struct AstInt      AstInt;
 typedef struct AstChain    AstChain;
 typedef struct AstStruct   AstStruct;
 
@@ -43,6 +45,7 @@ struct AstID {
 struct AstField {
     SymbolID name;
     AstNode* rhs;
+    AstNode* pattern;
 };
 struct AstDotIndex {
     AstNode* lhs;
@@ -57,8 +60,7 @@ struct AstLambda {
     AstNode* body;
 };
 struct AstBind {
-    SymbolID name;
-    AstNode* templatePattern;
+    SymbolID lhs;
     AstNode* rhs;
 };
 struct AstCheck {
@@ -78,28 +80,32 @@ struct AstBinary {
     AstNode* ltOperand;
     AstNode* rtOperand;
 };
+struct AstInt {
+    size_t value;
+    int base;
+};
 struct AstChain {
     AstNodeList* prefix;
     AstNode* result;
 };
 
 union AstInfo {
-    AstModule   Module;
-    AstID       ID;
-    AstUnary    Unary;
-    AstBinary   Binary;
-    size_t      Int;
-    long double Float;
-    char*       Utf8String;
+    AstModule       Module;
+    AstID           ID;
+    AstUnary        Unary;
+    AstBinary       Binary;
+    AstInt          Int;
+    long double     Float;
+    int*            UnicodeStringSb;
     AstNodeList*    Items;
-    AstCall     Call;
-    AstField    Field;
-    AstDotIndex DotIx;
-    AstDotName  DotNm;
-    AstLambda   Lambda;
-    AstBind     Bind;
-    AstCheck    Check;
-    AstChain    Chain;
+    AstCall         Call;
+    AstField        Field;
+    AstDotIndex     DotIx;
+    AstDotName      DotNm;
+    AstLambda       Lambda;
+    AstBind         Bind;
+    AstCheck        Check;
+    AstChain        Chain;
 };
 
 struct AstNode {
@@ -139,8 +145,8 @@ void pushListElement(AstNodeList* list, AstNode* node) {
     if (list->count == MAX_AST_NODES_PER_LIST) {
         if (!list->next) {
             list->next = createList();
-            return pushListElement(list->next, node);
         }
+        return pushListElement(list->next, node);
     } else {
         size_t index = list->count++;
         list->items[index] = node;
@@ -166,11 +172,12 @@ void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping) {
     module->info.Module.exportHeader = mapping;
 }
 
-void PushFieldToAstModule(Loc loc, AstNode* module, SymbolID name, AstNode* value) {
+void PushFieldToAstModule(Loc loc, AstNode* module, SymbolID name, AstNode* templatePattern, AstNode* value) {
     AstNode* field = allocateNode(loc, AST_FIELD);
     field->info.Field.name = name;
+    field->info.Field.pattern = templatePattern;
     field->info.Field.rhs = value;
-    pushListElement(module->info.Items, field);
+    pushListElement(module->info.Module.items, field);
 }
 
 AstNode* CreateAstId(Loc loc, SymbolID symbolID) {
@@ -180,9 +187,10 @@ AstNode* CreateAstId(Loc loc, SymbolID symbolID) {
     return idNode;
 }
 
-AstNode* CreateAstIntLiteral(Loc loc, size_t value) {
+AstNode* CreateAstIntLiteral(Loc loc, size_t value, int base) {
     AstNode* intNode = allocateNode(loc, AST_LITERAL_INT);
-    intNode->info.Int = value;
+    intNode->info.Int.value = value;
+    intNode->info.Int.base = base;
     return intNode;
 }
 
@@ -192,9 +200,9 @@ AstNode* CreateAstFloatLiteral(Loc loc, long double value) {
     return floatNode;
 }
 
-AstNode* CreateAstStringLiteral(Loc loc, char* value) {
+AstNode* CreateAstStringLiteral(Loc loc, int* valueSb) {
     AstNode* stringNode = allocateNode(loc, AST_LITERAL_STRING);
-    stringNode->info.Utf8String = value;
+    stringNode->info.UnicodeStringSb = valueSb;
     return stringNode;
 }
 
@@ -224,22 +232,32 @@ AstNode* CreateAstPattern(Loc loc) {
     return patternNode;
 }
 
+void PushFieldToAstTuple(Loc loc, AstNode* tuple, AstNode* value) {
+    AstNode* field = allocateNode(loc, AST_FIELD);
+    field->info.Field.name = SYM_NULL;
+    field->info.Field.pattern = NULL;
+    field->info.Field.rhs = value;
+    pushListElement(tuple->info.Items, field);
+}
 void PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value) {
     AstNode* field = allocateNode(loc, AST_FIELD);
     field->info.Field.name = name;
+    field->info.Field.pattern = NULL;
     field->info.Field.rhs = value;
-    return pushListElement(struct_->info.Items, field);
+    pushListElement(struct_->info.Items, field);
 }
-
 void PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec) {
     AstNode* field = allocateNode(loc, AST_FIELD);
     field->info.Field.name = name;
+    field->info.Field.pattern = NULL;
     field->info.Field.rhs = typespec;
-    return pushListElement(pattern->info.Items, field);
+    pushListElement(pattern->info.Items, field);
 }
-
 void PushStmtToAstChain(AstNode* chain, AstNode* statement) {
-    return pushListElement(chain->info.Items, statement);
+    pushListElement(chain->info.Chain.prefix, statement);
+}
+void SetAstChainResult(AstNode* chain, AstNode* result) {
+    chain->info.Chain.result = result;
 }
 
 AstNode* CreateAstIte(Loc loc, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse) {
@@ -272,10 +290,9 @@ AstNode* CreateAstLambda(Loc loc, AstNode* pattern, AstNode* body) {
     return lambdaNode;
 }
 
-AstNode* CreateAstBindStmt(Loc loc, SymbolID lhs, AstNode* templatePattern, AstNode* rhs) {
+AstNode* CreateAstBindStmt(Loc loc, SymbolID lhs, AstNode* rhs) {
     AstNode* bindNode = allocateNode(loc, AST_STMT_BIND);
-    bindNode->info.Bind.name = lhs;
-    bindNode->info.Bind.templatePattern = templatePattern;
+    bindNode->info.Bind.lhs = lhs;
     bindNode->info.Bind.rhs = rhs;
     return bindNode;
 }
@@ -370,15 +387,18 @@ SymbolID GetAstIdName(AstNode* node) {
 }
 
 size_t GetAstIntLiteralValue(AstNode* node) {
-    return node->info.Int;
+    return node->info.Int.value;
+}
+int GetAstIntLiteralBase(AstNode* node) {
+    return node->info.Int.base;
 }
 
 long double GetAstFloatLiteralValue(AstNode* node) {
     return node->info.Float;
 }
 
-char const* GetAstStringLiteralUtf8Value(AstNode* node) {
-    return node->info.Utf8String;
+int const* GetAstStringLiteralValue(AstNode* node) {
+    return node->info.UnicodeStringSb;
 }
 
 int GetAstTupleLength(AstNode* node) {
@@ -407,7 +427,7 @@ AstNode* GetAstPatternFieldAt(AstNode* node, int index) {
     return getListItemAt(node->info.Items, index);
 }
 AstNode* GetAstChainStmtAt(AstNode* node, int index) {
-    return getListItemAt(node->info.Items, index);
+    return getListItemAt(node->info.Chain.prefix, index);
 }
 
 AstNode* GetAstIteCond(AstNode* ite) {
@@ -442,10 +462,7 @@ AstNode* GetAstLambdaBody(AstNode* node) {
 }
 
 SymbolID GetAstBindStmtLhs(AstNode* bindStmt) {
-    return bindStmt->info.Bind.name;
-}
-AstNode* GetAstBindStmtTemplatePattern(AstNode* bindStmt) {
-    return bindStmt->info.Bind.templatePattern;
+    return bindStmt->info.Bind.lhs;
 }
 AstNode* GetAstBindStmtRhs(AstNode* bindStmt) {
     return bindStmt->info.Bind.rhs;
@@ -466,12 +483,18 @@ AstNode* GetAstCallRhs(AstNode* call) {
 }
 
 SymbolID GetAstFieldName(AstNode* field) {
-    assert(field->kind == AST_FIELD);
+    if (DEBUG) {
+        assert(field->kind == AST_FIELD);
+    }
     return field->info.Field.name;
 }
-
+AstNode* GetAstFieldPattern(AstNode* field) {
+    return field->info.Field.pattern;
+}
 AstNode* GetAstFieldRhs(AstNode* field) {
-    assert(field->kind == AST_FIELD);
+    if (DEBUG) {
+        assert(field->kind == AST_FIELD);
+    }
     return field->info.Field.rhs;
 }
 
@@ -604,7 +627,16 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         }
         case AST_FIELD:
         {
-            return visit(context, GetAstFieldRhs(node), preVisitorCb, postVisitorCb);
+            AstNode* pattern = GetAstFieldPattern(node);
+            if (pattern) {
+                if (!visit(context, pattern, preVisitorCb, postVisitorCb)) {
+                    return 0;
+                }
+            }
+            if (!visit(context, GetAstFieldRhs(node), preVisitorCb, postVisitorCb)) {
+                return 0;
+            }
+            return 1;
         }
         case AST_MODULE:
         {
@@ -705,7 +737,7 @@ void PrintNode(FILE* file, AstNode* node) {
             printf("MODULE... (%d)\n", length);
             for (int i = 0; i < length; i++) {
                 PrintNode(file, GetAstModuleFieldAt(node, i));
-                fputs(";\n", stderr);
+                fputs(";\n", file);
             }
             break;
         }
@@ -716,12 +748,41 @@ void PrintNode(FILE* file, AstNode* node) {
         }
         case AST_LITERAL_INT:
         {
-            fprintf(file, "%zu", node->info.Int);
+            if (node->info.Int.base == 10) {
+                fprintf(file, "%zu", node->info.Int.value);
+            } else if (node->info.Int.base == 16) {
+                fprintf(file, "0x%zx", node->info.Int.value);
+            } else if (DEBUG) {
+                assert(0 && "invalid 'base' while printing literal int.");
+            }
             break;
         }
         case AST_LITERAL_FLOAT:
         {
             fprintf(file, "%Lf", node->info.Float);
+            break;
+        }
+        case AST_LITERAL_STRING:
+        {
+            fputc('"', file);
+            int length = sb_count(node->info.UnicodeStringSb);
+            for (int index = 0; index < length; index++) {
+                int ch = node->info.UnicodeStringSb[index];
+                if (ch == '\\') {
+                    fputs("\\\\", file);
+                } else if (ch == '\n') {
+                    fputs("\\n", file);
+                } else if (ch == '\r') {
+                    fputs("\\r", file);
+                } else if (ch == '\a') {
+                    fputs("\\a", file);
+                } else if (ch == '"') {
+                    fputs("\\\"", file);
+                } else {
+                    fputc(ch, file);
+                }
+            }
+            fputc('"', file);
             break;
         }
         case AST_FIELD:

@@ -21,7 +21,7 @@ enum TokenKind {
     TK_NULL = 0,
     TK_ID,
     TK_KW_IMPORT, TK_KW_EXPORT, TK_KW_DO, TK_KW_IF, TK_KW_THEN, TK_KW_ELSE, TK_KW_OPERATOR, 
-    TK_KW_MATCH, TK_KW_RETURN, TK_KW_CHECK,
+    TK_KW_MATCH, TK_KW_WITH, TK_KW_RETURN, TK_KW_CHECK,
     TK_DINT_LIT, TK_XINT_LIT, TK_FLOAT_LIT, TK_DQSTRING_LIT, TK_SQSTRING_LIT,
     TK_DOT, TK_COLON, TK_COMMA, TK_SEMICOLON,
     TK_NOT, TK_CARET,
@@ -40,7 +40,7 @@ struct TokenInfo {
         long double Float;
         size_t Int;
         SymbolID ID;
-        char* Utf8String;
+        int* UnicodeStringSb;
     } as;
 };
 
@@ -49,6 +49,6 @@ struct TokenInfo {
 //
 
 void DebugLexer(Source* source);
-int TokenAsText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength);
+int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength);
 
 #endif  // INCLUDED_LEXER_H

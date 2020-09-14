@@ -9,6 +9,7 @@
 #include "useful.h"
 
 #include "intern/strings.h"
+#include "stb/stretchy_buffer.h"
 
 struct strings* symbolsDict;
 
@@ -20,6 +21,7 @@ static SymbolID kwThenSymbolID = 0;
 static SymbolID kwElseSymbolID = 0;
 static SymbolID kwOperatorSymbolID = 0;
 static SymbolID kwMatchSymbolID = 0;
+static SymbolID kwWithSymbolID = 0;
 static SymbolID kwReturnSymbolID = 0;
 static SymbolID kwCheckSymbolID = 0;
 
@@ -27,10 +29,12 @@ static TokenKind lexOneToken(Source* source, TokenInfo* infoP);
 static TokenKind lexOneSimpleToken(Source* source, TokenInfo* infoP);
 static TokenKind helpLexOneSimpleToken(Source* source, TokenInfo* infoP);
 static TokenKind lexOneNumber(Source* source, TokenInfo* optInfoP);
-static TokenKind lexOneIntChunk(Source* source, TokenInfo* optInfoP, bool noPrefix);
+static TokenKind lexOneIntChunk(Source* source, TokenInfo* optInfoP, int noPrefix);
 static TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP);
+static TokenKind lexOneString(Source* source, TokenInfo* infoP);
 inline static void skipWhitespace(Source* source);
 
+inline static bool isFirstIdChar(char ch);
 inline static bool isIdChar(char ch);
 
 // In general, we assume the source head is over the first character of the token to read.
@@ -48,12 +52,14 @@ void InitLexer(void) {
     kwElseSymbolID = strings_intern(symbolsDict, "else");
     kwOperatorSymbolID = strings_intern(symbolsDict, "operator");
     kwMatchSymbolID = strings_intern(symbolsDict, "match");
+    kwWithSymbolID = strings_intern(symbolsDict, "with");
     kwReturnSymbolID = strings_intern(symbolsDict, "return");
     kwCheckSymbolID = strings_intern(symbolsDict, "check");
 }
 
 void DeInitLexer(void) {
     // do nothing for now.
+    strings_free(symbolsDict);
 }
 
 TokenKind lexOneToken(Source* source, TokenInfo* infoP) {
@@ -63,17 +69,14 @@ TokenKind lexOneToken(Source* source, TokenInfo* infoP) {
     }
     
     // Ignoring whitespace & comments:
-    while (isspace(ReadSourceReaderHead(source))) {
+    while (isspace(ReadSourceReaderHead(source)) || ReadSourceReaderHead(source) == '#') {
         skipWhitespace(source);
-        while (ReadSourceReaderHead(source) == '#') {
-            for (;;) {
+        if (ReadSourceReaderHead(source) == '#') {
+            do {
                 AdvanceSourceReaderHead(source);
-                if (ReadSourceReaderHead(source) == '\n') {
-                    break;
-                }
-            }
-            skipWhitespace(source);
+            } while (ReadSourceReaderHead(source) != '\n');
         }
+        skipWhitespace(source);
     }
 
     // If at EOF, returning TK_EOS (not TK_NULL!) to indicate the end of this token stream.
@@ -108,18 +111,15 @@ TokenKind lexOneToken(Source* source, TokenInfo* infoP) {
     // Strings:
     //
 
-    // if (GetSourceReaderHeadLoc(source) == '"') {
-    //     // todo: scan double-quoted strings
-    // }
-    // if (GetSourceReaderHeadLoc(source) == '\'') {
-    //     // todo: scan single-quoted strings
-    // }
-
+    if (ReadSourceReaderHead(source) == '"' || ReadSourceReaderHead(source) == '\'') {
+        return lexOneString(source, infoP);
+    }
+    
     //
     // IDs and keywords:
     //
 
-    if (isalpha(ReadSourceReaderHead(source)) || ReadSourceReaderHead(source) == '_') {
+    if (isFirstIdChar(ReadSourceReaderHead(source))) {
         return lexOneIdOrKeyword(source, infoP);
     }
 
@@ -215,7 +215,7 @@ TokenKind helpLexOneSimpleToken(Source* source, TokenInfo* optInfoP) {
 }
 TokenKind lexOneNumber(Source* source, TokenInfo* optInfoP) {
     TokenInfo prefixTokenInfo;
-    TokenKind prefixTokenKind = lexOneIntChunk(source, &prefixTokenInfo, false);
+    TokenKind prefixTokenKind = lexOneIntChunk(source, &prefixTokenInfo, 0);
     if (prefixTokenKind == TK_DINT_LIT) {
         if (ReadSourceReaderHead(source) == '.') {
             // float
@@ -244,16 +244,15 @@ TokenKind lexOneNumber(Source* source, TokenInfo* optInfoP) {
     }
     return prefixTokenKind;
 }
-
-TokenKind lexOneIntChunk(Source* source, TokenInfo* optInfoP, bool noPrefix) {
+TokenKind lexOneIntChunk(Source* source, TokenInfo* optInfoP, int noPrefix) {
     // Checking for a hex prefix:
-    TokenKind tokenKind;
+    TokenKind tokenKind = TK_DINT_LIT;
     if (!noPrefix) {
-        tokenKind = TK_DINT_LIT;
         if (ReadSourceReaderHead(source) == '0') {
             if (AdvanceSourceReaderHead(source)) {
                 if (ReadSourceReaderHead(source) == 'x') {
                     // 0x hex prefix detected.
+                    AdvanceSourceReaderHead(source);
                     tokenKind = TK_XINT_LIT;
                 }
             }
@@ -296,7 +295,6 @@ TokenKind lexOneIntChunk(Source* source, TokenInfo* optInfoP, bool noPrefix) {
     // Returning results:
     return tokenKind;
 }
-
 TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
     // The longest supported ID is (MAX_ID_LEN) characters long.
     size_t index;
@@ -340,10 +338,83 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
     if (kwID == kwElseSymbolID) { return TK_KW_ELSE; }
     if (kwID == kwOperatorSymbolID) { return TK_KW_OPERATOR; }
     if (kwID == kwMatchSymbolID) { return TK_KW_MATCH; }
+    if (kwID == kwWithSymbolID) { return TK_KW_WITH; }
     if (kwID == kwReturnSymbolID) { return TK_KW_RETURN; }
     if (kwID == kwCheckSymbolID) { return TK_KW_CHECK; }
     else {
         assert(0 && "Unimplemented keyword");
+    }
+}
+static TokenKind lexOneString(Source* source, TokenInfo* infoP) {
+    // reading the first character, i.e., the quote character:
+    int quoteChar = ReadSourceReaderHead(source);
+    TokenKind tokenKind;
+    if (quoteChar == '"') {
+        tokenKind = TK_DQSTRING_LIT;
+    } else if (quoteChar == '\'') { 
+        tokenKind = TK_SQSTRING_LIT;
+    } else if (DEBUG) {
+        assert(0 && "Invalid quote character.");
+    }
+    AdvanceSourceReaderHead(source);
+
+    // reading the string content:
+    int* contentStretchyBuffer = NULL;
+    while (ReadSourceReaderHead(source) != quoteChar) {
+        if (ReadSourceReaderHead(source) == '\\') {
+            Loc escapeSequenceLoc;
+            GetSourceReaderHeadLoc(source, &escapeSequenceLoc);
+
+            AdvanceSourceReaderHead(source);
+
+            int valid = 1;
+            if (ReadSourceReaderHead(source) == 'n') {
+                sb_push(contentStretchyBuffer, '\n');
+            } else if (ReadSourceReaderHead(source) == 'r') {
+                sb_push(contentStretchyBuffer, '\r');
+            } else if (ReadSourceReaderHead(source) == 'a') {
+                sb_push(contentStretchyBuffer, '\a');
+            } else if (ReadSourceReaderHead(source) == 't') {
+                sb_push(contentStretchyBuffer, '\t');
+            } else if (ReadSourceReaderHead(source) == '\\') {
+                sb_push(contentStretchyBuffer, '\\');
+            } else if (ReadSourceReaderHead(source) == quoteChar) {
+                sb_push(contentStretchyBuffer, quoteChar);
+            } else {
+                valid = 0;
+            }
+            AdvanceSourceReaderHead(source);
+
+            if (!valid) {
+                char invalidSecondChar = ReadSourceReaderHead(source);
+                
+                // invalid escape sequence!
+                FeedbackNote note = {"here...", source, escapeSequenceLoc, NULL};
+
+                if (invalidSecondChar == EOF) {
+                    PostFeedback(FBK_ERROR, &note, "Invalid escape sequence at EOF");
+                } else {
+                    PostFeedback(FBK_ERROR, &note, "Invalid escape sequence: \\%c", invalidSecondChar);
+                }
+                break;
+            }
+
+        } else {
+            sb_push(contentStretchyBuffer, ReadSourceReaderHead(source));
+            AdvanceSourceReaderHead(source);
+        }
+    }
+
+    // reading the closing quote character:
+    if (ReadSourceReaderHead(source) == quoteChar) {
+        AdvanceSourceReaderHead(source);
+        sb_push(contentStretchyBuffer, '\0');
+        infoP->as.UnicodeStringSb = contentStretchyBuffer;
+        return tokenKind;
+    } else {
+        FeedbackNote firstNote = {"here...", source, infoP->loc, NULL};
+        PostFeedback(FBK_ERROR, &firstNote, "Invalid string literal");
+        return TK_NULL;
     }
 }
 
@@ -367,8 +438,11 @@ inline void skipWhitespace(Source* source) {
     } while (!stop && AdvanceSourceReaderHead(source));
 }
 
-inline bool isIdChar(char ch) {
+inline bool isFirstIdChar(char ch) {
     return isalpha(ch) || ch == '_';
+}
+inline bool isIdChar(char ch) {
+    return isalnum(ch) || ch == '_';
 }
 
 TokenKind LexOneToken(Source* source, TokenInfo* infoP) {
@@ -392,7 +466,7 @@ void DebugLexer(Source* source) {
             printf("Terminated with TK_EOS\n");
             break;
         }
-        assert(TokenAsText(kind, &info, lineBuffer, 512) < 512);
+        assert(TokenToText(kind, &info, lineBuffer, 512) < 512);
         printf("%s\n", lineBuffer);
     }
     // char buffer[512];
@@ -400,7 +474,7 @@ void DebugLexer(Source* source) {
     // printf("%s\n", buffer);
 }
 
-int TokenAsText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
+int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
     int const maxInfoLen = MAX_ID_LEN;
     char const* name;
     char info[maxInfoLen+1] = {'\0'};
@@ -444,6 +518,11 @@ int TokenAsText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
         case TK_LCYBRK:
         {
             name = "{";
+            break;
+        }
+        case TK_RCYBRK:
+        {
+            name = "}";
             break;
         }
         case TK_SEMICOLON:
@@ -582,17 +661,36 @@ int TokenAsText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
         case TK_DQSTRING_LIT:
         {
             name = "<text>";
+            info[0] = '"';
+            int index;
+            for (index = 0; ti->as.UnicodeStringSb[index]; index++) {
+                // todo: handle escape sequences correctly
+                info[1+index] = ti->as.UnicodeStringSb[index];
+            }
+            info[index+1] = '"';
             break;
         }
         case TK_SQSTRING_LIT:
         {
             name = "<text>";
+            info[0] = '\'';
+            int index;
+            for (index = 0; ti->as.UnicodeStringSb[index]; index++) {
+                // todo: handle escape sequences correctly
+                info[1+index] = ti->as.UnicodeStringSb[index];
+            }
+            info[index+1] = '\'';
             break;
         }
         case TK_ID:
         {
             name = "<id>";
             snprintf(info, maxInfoLen, "%s", GetSymbolText(ti->as.ID));
+            break;
+        }
+        case TK_ARROW:
+        {
+            name = "->";
             break;
         }
         case TK_NULL:

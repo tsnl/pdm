@@ -35,6 +35,8 @@ int ExecuteScript(Interp* interp, Source* scriptSource) {
     printf("Start of Module dump:\n\n");
     PrintNode(stdout, moduleAstNode);
     printf("\n\nEnd of Module dump.\n");
+    
+    return 0;
 
     Scoper* scoper = CreateScoper();
     if (!ScopeModule(scoper, moduleAstNode)) {
