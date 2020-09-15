@@ -120,11 +120,13 @@ static int matchIf(Parser* p, TokenKindPredicate tokenKindPredicate) {
     }
 }
 inline static void expectError(Parser* p, char const* expectedDesc) {
-    char text[512];
+    char errorText[512];
     TokenKind kind = lookaheadKind(p,0);
     TokenInfo info = lookaheadInfo(p,0);
-    TokenToText(kind, &info, text, 512);
-    printf("... Before '%s' expected %s.\n", text, expectedDesc);
+    TokenToText(kind, &info, errorText, 512);
+    
+    FeedbackNote* note = CreateFeedbackNote("here...", p->source, info.loc, NULL);
+    PostFeedback(FBK_ERROR, note, "Before '%s' expected %s.", errorText, expectedDesc);
 }
 static int expect(Parser* p, TokenKind tokenKind, char const* expectedDesc) {
     if (match(p, tokenKind)) {
@@ -162,10 +164,10 @@ static AstNode* parseStmt(Parser* p) {
 }
 static AstNode* tryParseStmt(Parser* p) {
     if (lookaheadKind(p,0) == TK_KW_CHECK) {
-        parseCheckStmt(p);
+        return parseCheckStmt(p);
     }
     if (lookaheadKind(p,0) == TK_ID && lookaheadKind(p,1) == TK_BIND) {
-        parseBindStmt(p);
+        return parseBindStmt(p);
     }
     return NULL;
 }
@@ -364,7 +366,7 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
 
                 for (;;) {
                     // if <statement> ';', continue
-                    elementNode = parseStmt(p);
+                    elementNode = tryParseStmt(p);
                     if (elementNode) {
                         PushStmtToAstChain(chainNode, elementNode);
                         if (!expect(p, TK_SEMICOLON, "a ';' separator")) {
@@ -377,11 +379,10 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
                     elementNode = tryParseExpr(p);
                     if (elementNode) {
                         SetAstChainResult(chainNode, elementNode);
-                        break;
                     } else {
                         SetAstChainResult(chainNode, NULL);
-                        break;
                     }
+                    break;
 
                     // error
                     fatal_error: {

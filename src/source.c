@@ -18,6 +18,14 @@ char const* prefix(FeedbackKind kind) {
     }
 }
 
+FeedbackNote* CreateFeedbackNote(char const* message, Source* source, Loc loc, FeedbackNote* next) {
+    FeedbackNote* note = malloc(sizeof(FeedbackNote));
+    note->message = message;
+    note->sourceP = source;
+    note->loc = loc;
+    note->nextP = next;
+    return note;
+}
 void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, ...) {
     const int feedbackBufSize = 1024;
     char feedbackBuf[feedbackBufSize] = {0};
