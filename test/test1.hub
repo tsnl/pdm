@@ -10,5 +10,5 @@ prompt: "how are you doing?";
 f1: [x,y,z: Float] -> {
     a = x;
     b = [i: Int] -> i;
-    (x)
+    (x*a)
 };

@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+#include "config.h"
 #include "source.h"
 #include "symbols.h"
 
@@ -162,7 +163,5 @@ int visit(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVi
 
 char const* GetUnaryOperatorText(AstUnaryOperator op);
 char const* GetBinaryOperatorText(AstBinaryOperator op);
-
-void PrintNode(FILE* file, AstNode* node);
 
 #endif  // INCLUDED_AST_H

@@ -5,6 +5,8 @@ project(pandemonium)
 add_executable(pc
     src/ast.c
     src/ast.h
+    src/code-printer.c
+    src/code-printer.h
     src/config.h
     src/interp.c
     src/interp.h

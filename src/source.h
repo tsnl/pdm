@@ -46,6 +46,7 @@ Source* CreateSource(char const* path);
 
 FeedbackNote* CreateFeedbackNote(char const* message, Source* source, Loc loc, FeedbackNote* next);
 void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, ...);
+int GetErrorPosted(void);
 
 // The SourceReader API models strings as a finite tape with a traversing head capable of reading 1 char.
 // - AdvanceSourceReaderHead: advance head by (+1) bytes.

@@ -44,7 +44,9 @@ BinaryOpPrecedenceNode lThanBinaryOpPrecedenceNode = {&subBinaryOpPrecedenceNode
 BinaryOpPrecedenceNode gThanBinaryOpPrecedenceNode = {&lThanBinaryOpPrecedenceNode, TK_GTHAN, BOP_GTHAN};
 BinaryOpPrecedenceNode leThanBinaryOpPrecedenceNode = {&gThanBinaryOpPrecedenceNode, TK_LETHAN, BOP_LETHAN};
 BinaryOpPrecedenceNode geThanBinaryOpPrecedenceNode = {&leThanBinaryOpPrecedenceNode, TK_GETHAN, BOP_GETHAN};
-BinaryOpPrecedenceNode andBinaryOpPrecedenceNode = {&geThanBinaryOpPrecedenceNode, TK_AND, BOP_AND};
+BinaryOpPrecedenceNode equalsBinaryOpPrecedenceNode = {&geThanBinaryOpPrecedenceNode, TK_EQUALS, BOP_EQUALS};
+BinaryOpPrecedenceNode notEqualsBinaryOpPrecedenceNode = {&equalsBinaryOpPrecedenceNode, TK_NEQUALS, BOP_NEQUALS};
+BinaryOpPrecedenceNode andBinaryOpPrecedenceNode = {&notEqualsBinaryOpPrecedenceNode, TK_AND, BOP_AND};
 BinaryOpPrecedenceNode xorBinaryOpPrecedenceNode = {&andBinaryOpPrecedenceNode, TK_CARET, BOP_XOR};
 BinaryOpPrecedenceNode orBinaryOpPrecedenceNode = {&xorBinaryOpPrecedenceNode, TK_OR, BOP_OR};
 BinaryOpPrecedenceNode* binaryOpPrecedenceListHead = &orBinaryOpPrecedenceNode;
@@ -64,8 +66,10 @@ static AstNode* tryParseBinaryExprAtPrecedence(Parser* p, BinaryOpPrecedenceNode
 static AstNode* tryParseBinaryExpr(Parser* p);
 static AstNode* tryParseCallExpr(Parser* p);
 
-static AstNode* parsePattern(Parser* p);
-static void parsePatternElement(Parser* p, AstNode* pattern, int* okP);
+static AstNode* parsePattern(Parser* p, TokenKind lpTk, TokenKind rpTk, int hasTail);
+static void parsePatternElement(Parser* p, AstNode* pattern, int* okP, int hasTail);
+static void parsePatternElementWithTail(Parser* p, AstNode* pattern, int* okP);
+static void parsePatternElementWithoutTail(Parser* p, AstNode* pattern, int* okP);
 
 static AstNode* parseString(Parser* p);
 
@@ -318,7 +322,7 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
         }
         case TK_LSQBRK: 
         { 
-            AstNode* pattern = parsePattern(p);
+            AstNode* pattern = parsePattern(p, TK_LSQBRK, TK_RSQBRK, 1);
             if (!pattern) {
                 return NULL;
             }
@@ -486,17 +490,22 @@ static AstNode* tryParseCallExpr(Parser* p) {
     return lhs;
 }
 
-static AstNode* parsePattern(Parser* p) {
+static AstNode* parsePattern(Parser* p, TokenKind lpTk, TokenKind rpTk, int hasTail) {
+    if (DEBUG) {
+        assert(lpTk == TK_LPAREN || lpTk == TK_LSQBRK);
+        assert(rpTk == TK_RPAREN || rpTk == TK_RSQBRK);
+    }
+
     Loc loc = lookaheadLoc(p,0);
     
-    if (!expect(p, TK_LSQBRK, "an opening '[' (for a pattern)")) {
+    if (!expect(p, lpTk, "an opening '[' or '(' (for a pattern)")) {
         return NULL;
     }
     
     int ok = 1;
     AstNode* pattern = CreateAstPattern(loc);
-    for (;;) {
-        parsePatternElement(p, pattern, &ok);
+    while (lookaheadKind(p,0) == TK_ID) {
+        parsePatternElement(p, pattern, &ok, hasTail);
         if (!ok) {
             // bad pattern element
             return NULL;
@@ -507,12 +516,20 @@ static AstNode* parsePattern(Parser* p) {
         }
     }
 
-    if (!expect(p, TK_RSQBRK, "a closing ']' (for a pattern)")) {
+    if (!expect(p, rpTk, "a closing ']' or ')' (for a pattern)")) {
         return NULL;
     }
+
     return pattern;
 }
-static void parsePatternElement(Parser* p, AstNode* pattern, int* okP) {
+static void parsePatternElement(Parser* p, AstNode* pattern, int* okP, int hasTail) {
+    if (hasTail) {
+        parsePatternElementWithTail(p, pattern, okP);
+    } else {
+        parsePatternElementWithoutTail(p, pattern, okP);
+    }
+}
+static void parsePatternElementWithTail(Parser* p, AstNode* pattern, int* okP) {
     Loc patternLoc = lookaheadLoc(p,0);
     SymbolID bankedSymbols[MAX_IDS_PER_SHARED_FIELD];
     int bankedSymbolsCount = 0;
@@ -533,7 +550,7 @@ static void parsePatternElement(Parser* p, AstNode* pattern, int* okP) {
         }
     } while (match(p, TK_COMMA));
 
-    // push all banked fields
+    // push all banked fields, read tail
     Loc rhsLoc = lookaheadLoc(p,0);
     AstNode* rhs = parseExpr(p);
     if (rhs) {
@@ -545,6 +562,15 @@ static void parsePatternElement(Parser* p, AstNode* pattern, int* okP) {
         FeedbackNote noteParent = {"in pattern...", p->source, patternLoc, NULL};
         FeedbackNote noteHere = {"here...", p->source, rhsLoc, &noteParent};
         PostFeedback(FBK_ERROR, &noteHere, "Expected a field RHS");
+    }
+}
+static void parsePatternElementWithoutTail(Parser* p, AstNode* pattern, int* okP) {
+    // just 1 ID
+    TokenInfo ti = lookaheadInfo(p,0);
+    if (expect(p, TK_ID, "a pattern ID")) {
+        PushFieldToAstPattern(ti.loc, pattern, ti.as.ID, NULL);
+    } else {
+        *okP = 0;
     }
 }
 
@@ -572,8 +598,8 @@ AstNode* ParseSource(Source* source) {
             SymbolID lhsID = tokenInfo.as.ID;
 
             AstNode* templatePattern = NULL;
-            if (lookaheadKind(&p,0) == TK_LSQBRK) {
-                templatePattern = parsePattern(&p);
+            if (lookaheadKind(&p,0) == TK_LPAREN) {
+                templatePattern = parsePattern(&p, TK_LPAREN, TK_RPAREN, 0);
                 if (!templatePattern) {
                     // bad pattern
                     return NULL;

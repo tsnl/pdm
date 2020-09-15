@@ -1,10 +1,12 @@
 #include "interp.h"
 
 #include <stdio.h>
+
 #include "lexer.h"
 #include "parser.h"
 #include "scoper.h"
 #include "typer.h"
+#include "code-printer.h"
 
 struct Interp {
 
@@ -33,7 +35,8 @@ int ExecuteScript(Interp* interp, Source* scriptSource) {
 
     // DEBUG
     printf("Start of Module dump:\n\n");
-    PrintNode(stdout, moduleAstNode);
+    CodePrinter printer = CreateCodePrinter(stdout, 0);
+    PrintNode(&printer, moduleAstNode);
     printf("\n\nEnd of Module dump.\n");
     
     return 0;

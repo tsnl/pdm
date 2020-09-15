@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+int errorPosted = 0;
 Source* sourcesHead = NULL;
 Source* sourcesTail = NULL;
 
@@ -27,6 +28,10 @@ FeedbackNote* CreateFeedbackNote(char const* message, Source* source, Loc loc, F
     return note;
 }
 void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, ...) {
+    if (kind == FBK_ERROR) {
+        errorPosted = 1;
+    }
+    
     const int feedbackBufSize = 1024;
     char feedbackBuf[feedbackBufSize] = {0};
     va_list args;
@@ -45,6 +50,9 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
         fprintf(stderr, "  %s\n", noteP->message);
         fprintf(stderr, "  in [%s]\n", noteP->sourceP->path);
     }
+}
+int GetErrorPosted(void) {
+    return errorPosted;
 }
 
 Source* CreateSource(char const* path) {

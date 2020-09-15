@@ -5,7 +5,7 @@
 
 int main() {
     Interp* interp = CreateInterp();
-    Source* scriptSource = CreateSource("test/test1.hub");
+    Source* scriptSource = CreateSource("test/test2.hub");
     if (!ExecuteScript(interp, scriptSource)) {
         printf("Execution failed.\n");
         return 1;
