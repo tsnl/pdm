@@ -10,6 +10,24 @@
         "__node_handle": "c",
         "memory_resource": "c",
         "iterator": "c",
-        "locale": "c"
+        "locale": "c",
+        "__cxx_version": "cpp",
+        "__bit_reference": "c",
+        "__functional_base": "c",
+        "atomic": "c",
+        "bitset": "c",
+        "__memory": "c",
+        "limits": "c",
+        "memory": "c",
+        "optional": "c",
+        "ratio": "c",
+        "system_error": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "vector": "c",
+        "__locale": "c",
+        "cstdlib": "c",
+        "ostream": "c",
+        "typeinfo": "c"
     }
 }
