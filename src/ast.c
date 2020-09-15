@@ -106,6 +106,7 @@ union AstInfo {
     AstBind         Bind;
     AstCheck        Check;
     AstChain        Chain;
+    AstNode*        Paren;
 };
 
 struct AstNode {
@@ -186,24 +187,26 @@ AstNode* CreateAstId(Loc loc, SymbolID symbolID) {
     idNode->info.ID.scopeP = NULL;
     return idNode;
 }
-
 AstNode* CreateAstIntLiteral(Loc loc, size_t value, int base) {
     AstNode* intNode = allocateNode(loc, AST_LITERAL_INT);
     intNode->info.Int.value = value;
     intNode->info.Int.base = base;
     return intNode;
 }
-
 AstNode* CreateAstFloatLiteral(Loc loc, long double value) {
     AstNode* floatNode = allocateNode(loc, AST_LITERAL_FLOAT);
     floatNode->info.Float = value;
     return floatNode;
 }
-
 AstNode* CreateAstStringLiteral(Loc loc, int* valueSb) {
     AstNode* stringNode = allocateNode(loc, AST_LITERAL_STRING);
     stringNode->info.UnicodeStringSb = valueSb;
     return stringNode;
+}
+AstNode* CreateAstParen(Loc loc, AstNode* it) {
+    AstNode* parenNode = allocateNode(loc, AST_PAREN);
+    parenNode->info.Paren = it;
+    return parenNode;
 }
 
 AstNode* CreateAstTuple(Loc loc) {
@@ -211,7 +214,6 @@ AstNode* CreateAstTuple(Loc loc) {
     tupleNode->info.Items = createList();
     return tupleNode;
 }
-
 AstNode* CreateAstStruct(Loc loc) {
     AstNode* structNode = allocateNode(loc, AST_STRUCT);
     structNode->info.Items = createList();
@@ -392,13 +394,17 @@ size_t GetAstIntLiteralValue(AstNode* node) {
 int GetAstIntLiteralBase(AstNode* node) {
     return node->info.Int.base;
 }
-
 long double GetAstFloatLiteralValue(AstNode* node) {
     return node->info.Float;
 }
-
 int const* GetAstStringLiteralValue(AstNode* node) {
     return node->info.UnicodeStringSb;
+}
+AstNode* GetAstParenItem(AstNode* node) {
+    if (DEBUG) {
+        assert(node->kind == AST_PAREN);
+    }
+    return node->info.Paren;
 }
 
 int GetAstTupleLength(AstNode* node) {
@@ -410,7 +416,7 @@ int GetAstStructLength(AstNode* node) {
 int GetAstPatternLength(AstNode* node) {
     return getListLength(node->info.Items);
 }
-int GetAstChainLength(AstNode* node) {
+int GetAstChainPrefixLength(AstNode* node) {
     return getListLength(node->info.Chain.prefix);
 }
 AstNode* GetAstChainResult(AstNode* node) {
@@ -426,7 +432,7 @@ AstNode* GetAstStructFieldAt(AstNode* node, int index) {
 AstNode* GetAstPatternFieldAt(AstNode* node, int index) {
     return getListItemAt(node->info.Items, index);
 }
-AstNode* GetAstChainStmtAt(AstNode* node, int index) {
+AstNode* GetAstChainPrefixStmtAt(AstNode* node, int index) {
     return getListItemAt(node->info.Chain.prefix, index);
 }
 
@@ -544,6 +550,11 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         {
             return 1;
         }
+        case AST_PAREN:
+        {
+            visit(context, node->info.Paren, preVisitorCb, postVisitorCb);
+            return 1;
+        }
         case AST_STRUCT:
         {
             size_t structLength = GetAstTupleLength(node);
@@ -558,12 +569,16 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         }
         case AST_CHAIN:
         {
-            size_t chainLength = GetAstTupleLength(node);
+            size_t chainLength = GetAstChainPrefixLength(node);
             for (size_t index = 0; index < chainLength; index++) {
-                AstNode* chainStmt = GetAstChainStmtAt(node, index);
+                AstNode* chainStmt = GetAstChainPrefixStmtAt(node, index);
                 if (!visit(context, chainStmt, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
+            }
+            AstNode* result = GetAstChainResult(node);
+            if (result && !visit(context, result, preVisitorCb, postVisitorCb)) {
+                return 0;
             }
             return 1;
         }
@@ -787,8 +802,54 @@ void PrintNode(FILE* file, AstNode* node) {
         }
         case AST_FIELD:
         {
-            fprintf(file, "%s: ", GetSymbolText(node->info.Field.name));
-            PrintNode(file, node->info.Field.rhs);
+            fprintf(file, "%s: ", GetSymbolText(GetAstFieldName(node)));
+            PrintNode(file, GetAstFieldRhs(node));
+            break;
+        }
+        case AST_LAMBDA:
+        {
+            PrintNode(file, GetAstLambdaPattern(node));
+            fputs(" -> ", file);
+            PrintNode(file, GetAstLambdaBody(node));
+            break;
+        }
+        case AST_PATTERN:
+        {
+            fputs("[", file);
+            int patternLength = GetAstPatternLength(node);
+            for (int index = 0; index < patternLength; index++) {
+                PrintNode(file, GetAstPatternFieldAt(node, index));
+                if (index != patternLength-1) {
+                    fputs(", ", file);
+                }
+            }
+            fputs("]", file);
+            break;
+        }
+        case AST_PAREN:
+        {
+            fputs("(", file);
+            PrintNode(file, GetAstParenItem(node));
+            fputs(")", file);
+            break;
+        }
+        case AST_CHAIN:
+        {
+            fputs("{\n", file);
+            int prefixLength = GetAstChainPrefixLength(node);
+            for (int index = 0; index < prefixLength; index++) {
+                fputs("\t", file);
+                AstNode* stmt = GetAstChainPrefixStmtAt(node, index);
+                PrintNode(file, stmt);
+                fputs(";\n", file);
+            }
+            AstNode* result = GetAstChainResult(node);
+            if (result) {
+                fputs("\t", file);
+                PrintNode(file, result);
+                fputs("\n", file);
+            }
+            fputs("}", file);
             break;
         }
         default:

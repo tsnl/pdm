@@ -6,3 +6,8 @@ PM: 0x42;
 hi: "hello, there!";
 intro: "my name is <name>";
 prompt: "how are you doing?";
+
+f1: [x,y,z: Float] -> {
+    a = x;
+    x
+};

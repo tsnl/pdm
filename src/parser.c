@@ -291,8 +291,9 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
             }
 
             if (match(p, TK_COMMA)) {
+                // tuple
                 AstNode* firstExpr = expr;
-                expr = CreateAstStruct(loc);
+                expr = CreateAstTuple(loc);
 
                 PushFieldToAstTuple(GetAstNodeLoc(firstExpr), expr, firstExpr);
                 do {
@@ -302,6 +303,9 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
                     }
                     PushFieldToAstTuple(GetAstNodeLoc(nextExpr), expr, nextExpr);
                 } while (match(p, TK_COMMA));
+            } else {
+                // paren
+                expr = CreateAstParen(loc, expr);
             }
 
             if (!expect(p, TK_RPAREN, "a closing ')'")) {
@@ -355,7 +359,7 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
                 result = structNode;
             } else {
                 // chain
-                AstNode* chainNode = CreateAstStruct(loc);
+                AstNode* chainNode = CreateAstChain(loc);
                 AstNode* elementNode;
 
                 for (;;) {
@@ -510,39 +514,37 @@ static AstNode* parsePattern(Parser* p) {
 static void parsePatternElement(Parser* p, AstNode* pattern, int* okP) {
     Loc patternLoc = lookaheadLoc(p,0);
     SymbolID bankedSymbols[MAX_IDS_PER_SHARED_FIELD];
-    int bankedSymbolsCount;
+    int bankedSymbolsCount = 0;
+
     do {
+        // label
+        TokenInfo tokenInfo = lookaheadInfo(p,0);
         if (expect(p, TK_ID, "a pattern label")) {
             // bank this label
-            TokenInfo firstTokenInfo = lookaheadInfo(p,0);
-            bankedSymbols[bankedSymbolsCount++] = firstTokenInfo.as.ID;
+            bankedSymbols[bankedSymbolsCount++] = tokenInfo.as.ID;
             if (DEBUG) {
                 assert(bankedSymbolsCount < MAX_IDS_PER_SHARED_FIELD);
             }
-
-            // push all banked fields we have if we have a ':' next
-            if (match(p, TK_COLON)) {
-                Loc rhsLoc = lookaheadLoc(p,0);
-                AstNode* rhs = parseExpr(p);
-                if (!rhs) {
-                    *okP = 0;
-                    FeedbackNote noteParent = {"in pattern...", p->source, patternLoc, NULL};
-                    FeedbackNote noteHere = {"here...", p->source, rhsLoc, &noteParent};
-                    PostFeedback(FBK_ERROR, &noteHere, "Expected a field RHS");
-                    return;
-                }
-                for (int i = 0; i < bankedSymbolsCount; i++) {
-                    PushFieldToAstPattern(patternLoc, pattern, firstTokenInfo.as.ID, rhs);
-                }
-                return;
-            }
-        } else {
-            FeedbackNote noteParent = {"in pattern...", p->source, patternLoc, NULL};
-            PostFeedback(FBK_ERROR, &noteParent, "Unexpected EOF before pattern label");
-            *okP = 0;
-            return;
+        }
+        // colon?
+        if (match(p, TK_COLON)) {
+            break;
         }
     } while (match(p, TK_COMMA));
+
+    // push all banked fields
+    Loc rhsLoc = lookaheadLoc(p,0);
+    AstNode* rhs = parseExpr(p);
+    if (rhs) {
+        for (int i = 0; i < bankedSymbolsCount; i++) {
+            PushFieldToAstPattern(patternLoc, pattern, bankedSymbols[i], rhs);
+        }
+    } else {
+        *okP = 0;
+        FeedbackNote noteParent = {"in pattern...", p->source, patternLoc, NULL};
+        FeedbackNote noteHere = {"here...", p->source, rhsLoc, &noteParent};
+        PostFeedback(FBK_ERROR, &noteHere, "Expected a field RHS");
+    }
 }
 
 AstNode* parseString(Parser* p) {

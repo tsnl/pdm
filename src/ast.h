@@ -17,6 +17,7 @@ enum AstKind {
     AST_MODULE,
     AST_ID,
     AST_LITERAL_INT, AST_LITERAL_FLOAT, AST_LITERAL_STRING, 
+    AST_PAREN,
     AST_TUPLE, AST_STRUCT, AST_CHAIN,  AST_ITE,
     AST_LAMBDA,
     AST_DOT_INDEX, AST_DOT_NAME,
@@ -53,6 +54,7 @@ AstNode* CreateAstId(Loc loc, SymbolID symbolID);
 AstNode* CreateAstIntLiteral(Loc loc, size_t value, int base);
 AstNode* CreateAstFloatLiteral(Loc loc, long double value);
 AstNode* CreateAstStringLiteral(Loc loc, int* valueSb);
+AstNode* CreateAstParen(Loc loc, AstNode* it);
 
 AstNode* CreateAstTuple(Loc loc);
 AstNode* CreateAstStruct(Loc loc);
@@ -95,16 +97,17 @@ size_t GetAstIntLiteralValue(AstNode* node);
 int GetAstIntLiteralBase(AstNode* node);
 long double GetAstFloatLiteralValue(AstNode* node);
 int const* GetAstStringLiteralValue(AstNode* node);
+AstNode* GetAstParenItem(AstNode* node);
 
 int GetAstTupleLength(AstNode* node);
 int GetAstStructLength(AstNode* node);
 int GetAstPatternLength(AstNode* node);
-int GetAstChainLength(AstNode* node);
+int GetAstChainPrefixLength(AstNode* node);
 AstNode* GetAstChainResult(AstNode* node);
 AstNode* GetAstTupleItemAt(AstNode* node, int index);
 AstNode* GetAstStructFieldAt(AstNode* node, int index);
 AstNode* GetAstPatternFieldAt(AstNode* node, int index);
-AstNode* GetAstChainStmtAt(AstNode* node, int index);
+AstNode* GetAstChainPrefixStmtAt(AstNode* node, int index);
 
 AstNode* GetAstIteCond(AstNode* ite);
 AstNode* GetAstIteIfTrue(AstNode* ite);
