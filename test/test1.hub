@@ -9,5 +9,6 @@ prompt: "how are you doing?";
 
 f1: [x,y,z: Float] -> {
     a = x;
-    x
+    b = [i: Int] -> i;
+    (x)
 };

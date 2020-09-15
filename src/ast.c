@@ -852,6 +852,21 @@ void PrintNode(FILE* file, AstNode* node) {
             fputs("}", file);
             break;
         }
+        case AST_STMT_BIND:
+        {
+            fputs(GetSymbolText(GetAstBindStmtLhs(node)), file);
+            fputs(" = ", file);
+            PrintNode(file, GetAstBindStmtRhs(node));
+            break;
+        }
+        case AST_STMT_CHECK:
+        {
+            fputs("check(", file);
+            PrintNode(file, GetAstCheckStmtChecked(node));
+            // todo: print the check message here.
+            fputs(", ...)", file);
+            break;
+        }
         default:
         {
             fprintf(file, "?");

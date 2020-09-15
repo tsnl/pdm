@@ -122,7 +122,6 @@ AstNode* GetAstLambdaPattern(AstNode* lambda);
 AstNode* GetAstLambdaBody(AstNode* lambda);
 
 SymbolID GetAstBindStmtLhs(AstNode* bindStmt);
-AstNode* GetAstBindStmtTemplatePattern(AstNode* bindStmt);
 AstNode* GetAstBindStmtRhs(AstNode* bindStmt);
 
 AstNode* GetAstCheckStmtChecked(AstNode* checkStmt);
