@@ -555,33 +555,6 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             visit(context, node->info.Paren, preVisitorCb, postVisitorCb);
             return 1;
         }
-        case AST_STRUCT:
-        {
-            size_t structLength = GetAstTupleLength(node);
-            for (size_t index = 0; index < structLength; index++) {
-                AstNode* structField = GetAstStructFieldAt(node, index);
-                AstNode* fieldRhs = GetAstFieldRhs(structField);
-                if (!visit(context, fieldRhs, preVisitorCb, postVisitorCb)) {
-                    return 0;
-                }
-            }
-            return 1;
-        }
-        case AST_CHAIN:
-        {
-            size_t chainLength = GetAstChainPrefixLength(node);
-            for (size_t index = 0; index < chainLength; index++) {
-                AstNode* chainStmt = GetAstChainPrefixStmtAt(node, index);
-                if (!visit(context, chainStmt, preVisitorCb, postVisitorCb)) {
-                    return 0;
-                }
-            }
-            AstNode* result = GetAstChainResult(node);
-            if (result && !visit(context, result, preVisitorCb, postVisitorCb)) {
-                return 0;
-            }
-            return 1;
-        }
         case AST_ITE:
         {
             return (
@@ -611,6 +584,17 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
                 // visit(context, GetAstDotNameRhs(node), preVisitorCb, postVisitorCb)
             );
         }
+        case AST_UNARY:
+        {
+            return visit(context, GetAstUnaryOperand(node), preVisitorCb, postVisitorCb);
+        }
+        case AST_BINARY:
+        {
+            return (
+                visit(context, GetAstBinaryLtOperand(node), preVisitorCb, postVisitorCb) &&
+                visit(context, GetAstBinaryRtOperand(node), preVisitorCb, postVisitorCb)
+            );
+        }
         case AST_STMT_BIND:
         {
             return visit(context, GetAstBindStmtRhs(node), preVisitorCb, postVisitorCb);
@@ -634,9 +618,47 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             int patternLength = GetAstPatternLength(node);
             for (int i = 0; i < patternLength; i++) {
                 AstNode* patternField = GetAstPatternFieldAt(node, i);
-                if (!visit(context, node, preVisitorCb, postVisitorCb)) {
+                if (!visit(context, patternField, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
+            }
+            return 1;
+        }
+        case AST_TUPLE:
+        {
+            int tupleLength = GetAstTupleLength(node);
+            for (int i = 0; i < tupleLength; i++) {
+                AstNode* tupleField = GetAstPatternFieldAt(node, i);
+                if (!visit(context, tupleField, preVisitorCb, postVisitorCb)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case AST_STRUCT:
+        {
+            size_t structLength = GetAstTupleLength(node);
+            for (size_t index = 0; index < structLength; index++) {
+                AstNode* structField = GetAstStructFieldAt(node, index);
+                AstNode* fieldRhs = GetAstFieldRhs(structField);
+                if (!visit(context, fieldRhs, preVisitorCb, postVisitorCb)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case AST_CHAIN:
+        {
+            size_t chainLength = GetAstChainPrefixLength(node);
+            for (size_t index = 0; index < chainLength; index++) {
+                AstNode* chainStmt = GetAstChainPrefixStmtAt(node, index);
+                if (!visit(context, chainStmt, preVisitorCb, postVisitorCb)) {
+                    return 0;
+                }
+            }
+            AstNode* result = GetAstChainResult(node);
+            if (result && !visit(context, result, preVisitorCb, postVisitorCb)) {
+                return 0;
             }
             return 1;
         }
@@ -648,7 +670,8 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
                     return 0;
                 }
             }
-            if (!visit(context, GetAstFieldRhs(node), preVisitorCb, postVisitorCb)) {
+            AstNode* rhs = GetAstFieldRhs(node);
+            if (rhs && !visit(context, rhs, preVisitorCb, postVisitorCb)) {
                 return 0;
             }
             return 1;
@@ -658,7 +681,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             int moduleLength = GetAstModuleLength(node);
             for (int i = 0; i < moduleLength; i++) {
                 AstNode* moduleField = GetAstModuleFieldAt(node, i);
-                if (!visit(context, node, preVisitorCb, postVisitorCb)) {
+                if (!visit(context, moduleField, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }
@@ -681,7 +704,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         default:
         {
             if (DEBUG) {
-                assert(0 && "Unsupport AST node in 'visit'");
+                assert(0 && "Unsupported AST node in 'visit'");
             }
             return 0;
         }

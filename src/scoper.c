@@ -36,10 +36,11 @@ struct Scoper {
 
 enum Breadcrumb {
     CRUMB_MODULE,
-    CRUMB_BIND_CLOSURE,
-    CRUMB_FUNC_CLOSURE,
+    CRUMB_BIND,
+    CRUMB_LAMBDA,
     CRUMB_CHAIN,
     CRUMB_STRUCT,
+    CRUMB_TUPLE,
     CRUMB_PATTERN
 };
 
@@ -65,7 +66,7 @@ size_t allocatedScopersCount = 0;
 Scoper allocatedScopers[MAX_SCOPER_COUNT];
 static size_t allocatedScopeStackFramesCount = 0;
 static BreadcrumbFrame allocatedScopeStackFrames[MAX_AST_NODE_COUNT];
-static Scoper* newScoper();
+static Scoper* createScoper();
 static void pushBreadcrumb(Scoper* scoper, Breadcrumb breadcrumb);
 static void popBreadcrumb(Scoper* scoper);
 
@@ -80,7 +81,7 @@ static void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP
 // Static implementation:
 //
 
-Scoper* newScoper() {
+Scoper* createScoper() {
     Scoper* scoper = NULL;
     if (allocatedScopersCount < MAX_SCOPER_COUNT) {
         scoper = &allocatedScopers[allocatedScopersCount++];
@@ -166,11 +167,6 @@ int preScopeAstNode(void* rawScoper, AstNode* node) {
             SetAstIdScopeP(node, scoper->currentScopeP);
             break;
         }
-        case AST_STRUCT:
-        {
-            pushBreadcrumb(scoper, CRUMB_STRUCT);
-            break;
-        }
         case AST_CHAIN:
         {
             pushBreadcrumb(scoper, CRUMB_CHAIN);
@@ -178,14 +174,17 @@ int preScopeAstNode(void* rawScoper, AstNode* node) {
         }
         case AST_LAMBDA:
         {
-            pushBreadcrumb(scoper, CRUMB_FUNC_CLOSURE);
+            pushBreadcrumb(scoper, CRUMB_LAMBDA);
             break;
         }
         case AST_STMT_BIND:
         {
-            // todo: add types here
-            // todo: define symbols here (unless the top breadcrumb is a module, in which case they are already defined)
-            pushBreadcrumb(scoper, CRUMB_BIND_CLOSURE);
+            pushBreadcrumb(scoper, CRUMB_BIND);
+            break;
+        }
+        case AST_TUPLE:
+        {
+            pushBreadcrumb(scoper, CRUMB_TUPLE);
             break;
         }
         case AST_PATTERN:
@@ -193,13 +192,25 @@ int preScopeAstNode(void* rawScoper, AstNode* node) {
             pushBreadcrumb(scoper, CRUMB_PATTERN);
             break;
         }
+        case AST_STRUCT:
+        {
+            pushBreadcrumb(scoper, CRUMB_STRUCT);
+            break;
+        }
         case AST_FIELD:
         {
             switch (topBreadcrumb(scoper)) {
+                case CRUMB_MODULE:
+                {
+                    // TODO: lookup the symbol defined before.
+                    // TODO: define template arguments here.
+                    break;
+                }
+                case CRUMB_TUPLE:
                 case CRUMB_PATTERN:
                 case CRUMB_STRUCT:
-                case CRUMB_FUNC_CLOSURE:
-                case CRUMB_BIND_CLOSURE:
+                case CRUMB_LAMBDA:
+                case CRUMB_BIND:
                 {
                     // TODO: define a symbol here (see AST_STMT_BIND)
                     break;
@@ -243,7 +254,7 @@ int postScopeAstNode(void* rawScoper, AstNode* node) {
 }
 
 Scoper* CreateScoper(void) {
-    return newScoper();
+    return createScoper();
 }
 
 int ScopeModule(Scoper* scoperP, AstNode* module) {
@@ -251,8 +262,8 @@ int ScopeModule(Scoper* scoperP, AstNode* module) {
         assert(GetAstNodeKind(module) == AST_MODULE);
     }
 
+    // defining all module-symbols in one binding group
     // building scoperP->currentModuleDef{Beg -> End}P before visiting
-    // (defining all module-symbols in one binding group)
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
         AstNode* field = GetAstModuleFieldAt(module, index);

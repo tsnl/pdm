@@ -6,11 +6,17 @@
 int main() {
     Interp* interp = CreateInterp();
     Source* scriptSource = CreateSource("test/test2.hub");
-    if (!ExecuteScript(interp, scriptSource)) {
+    
+    int result = ExecuteScript(interp, scriptSource);
+    int exitCode;
+    if (result) {
+        printf("Execution succeeded.\n");
+        exitCode = 0;
+    } else {
         printf("Execution failed.\n");
-        return 1;
+        exitCode = 1;
     }
-    printf("Execution done.\n");
+    
     DestroyInterp(interp);
-    return 0;
+    return exitCode;
 }

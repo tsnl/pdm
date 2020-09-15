@@ -43,6 +43,7 @@ struct Source {
 };
 
 Source* CreateSource(char const* path);
+Source* DupSource(Source* old);
 
 FeedbackNote* CreateFeedbackNote(char const* message, Source* source, Loc loc, FeedbackNote* next);
 void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, ...);

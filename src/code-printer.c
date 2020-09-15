@@ -102,7 +102,22 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         {
             SymbolID lhs = GetAstFieldName(node);
             if (lhs != SYM_NULL) {
-                PrintFormattedText(cp, "%s: ", GetSymbolText(lhs));
+                PrintText(cp, GetSymbolText(lhs));
+                AstNode* pattern = GetAstFieldPattern(node);
+                if (pattern) {
+                    PrintChar(cp, '(');
+                    int patternCount = GetAstPatternLength(pattern);
+                    for (int patternIndex = 0; patternIndex < patternCount; patternIndex++) {
+                        AstNode* patternFieldAtIndex = GetAstPatternFieldAt(pattern, patternIndex);
+                        SymbolID patternNameAtIndex = GetAstFieldName(patternFieldAtIndex);
+                        PrintText(cp, GetSymbolText(patternNameAtIndex));
+                        if (patternIndex+1 != patternCount) {
+                            PrintChar(cp, ',');
+                        }
+                    }
+                    PrintChar(cp, ')');
+                }
+                PrintText(cp, ": ");
             }
             PrintNode(cp, GetAstFieldRhs(node));
             break;

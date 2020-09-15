@@ -24,7 +24,7 @@ void DestroyInterp(Interp* interp) {
 }
 
 int ExecuteScript(Interp* interp, Source* scriptSource) {
-    // LEXER DEBUG:
+    // DEBUG: lex and exit
     // DebugLexer(scriptSource);
     // return 1;
     
@@ -33,13 +33,12 @@ int ExecuteScript(Interp* interp, Source* scriptSource) {
         return 0;
     }
 
-    // DEBUG
-    printf("Start of Module dump:\n\n");
-    CodePrinter printer = CreateCodePrinter(stdout, 0);
-    PrintNode(&printer, moduleAstNode);
-    printf("\n\nEnd of Module dump.\n");
-    
-    return 0;
+    // DEBUG: print module dump
+    // printf("Start of Module dump:\n\n");
+    // CodePrinter printer = CreateCodePrinter(stdout, 0);
+    // PrintNode(&printer, moduleAstNode);
+    // printf("\n\nEnd of Module dump.\n");
+    // return 1;
 
     Scoper* scoper = CreateScoper();
     if (!ScopeModule(scoper, moduleAstNode)) {

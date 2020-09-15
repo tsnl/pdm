@@ -91,6 +91,9 @@ fail:
     }
     return NULL;
 }
+Source* DupSource(Source* old) {
+    return CreateSource(old->path);
+}
 
 int ReadSourceReaderHead(Source* sourceP) {
     return sourceP->peekChar;
