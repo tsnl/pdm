@@ -97,7 +97,7 @@ size_t GetMetatypeID(Type* typeP) {
 // Substitutions:
 //
 
-Type* GetTypeAfterSubs(Type* arg, TypeSub* firstTypeSubP) {
+Type* SubstituteType(Type* arg, TypeSub* firstTypeSubP) {
     switch (arg->kind) {
         case T_INT:
         case T_FLOAT:
@@ -107,7 +107,7 @@ Type* GetTypeAfterSubs(Type* arg, TypeSub* firstTypeSubP) {
         }
         case T_PTR:
         {
-            return GetPtrType(GetTypeAfterSubs(arg->as.Ptr, firstTypeSubP));
+            return GetPtrType(SubstituteType(arg->as.Ptr, firstTypeSubP));
         }
         case T_META:
         {
@@ -125,6 +125,39 @@ Type* GetTypeAfterSubs(Type* arg, TypeSub* firstTypeSubP) {
         {
             assert(0 && "NotImplemented: ApplySubstitution for X type kind.");
             return NULL;
+        }
+    }
+}
+
+Type* TypeNode(AstNode* node) {
+    switch (GetAstNodeKind(node)) {
+        case AST_UNIT:
+        {
+            return GetUnitType();
+        }
+        case AST_LITERAL_FLOAT:
+        {
+            return GetFloatType(FLOAT64);
+        }
+        case AST_LITERAL_INT:
+        {
+            // TODO: automatically select width based on int value
+            return GetIntType(INT64);
+        }
+        case AST_ID:
+        {
+            // TODO: look up the ID 
+            break;
+        }
+        case AST_STMT_BIND:
+        {
+            // TODO: 
+        }
+        default:
+        {
+            if (DEBUG) {
+                assert(0 && "Not implemented: TypeNode for AST node kind <?>");
+            }
         }
     }
 }

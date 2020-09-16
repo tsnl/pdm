@@ -208,6 +208,9 @@ AstNode* CreateAstParen(Loc loc, AstNode* it) {
     parenNode->info.Paren = it;
     return parenNode;
 }
+AstNode* CreateAstUnit(Loc loc) {
+    return allocateNode(loc, AST_UNIT);
+}
 
 AstNode* CreateAstTuple(Loc loc) {
     AstNode* tupleNode = allocateNode(loc, AST_TUPLE);
@@ -543,6 +546,7 @@ void SetAstIdScopeP(AstNode* node, void* scopeP) {
 
 inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb) {
     switch (GetAstNodeKind(node)) {
+        case AST_UNIT:
         case AST_LITERAL_INT:
         case AST_LITERAL_FLOAT:
         case AST_LITERAL_STRING:

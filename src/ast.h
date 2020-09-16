@@ -18,9 +18,10 @@ enum AstKind {
     AST_MODULE,
     AST_ID,
     AST_LITERAL_INT, AST_LITERAL_FLOAT, AST_LITERAL_STRING, 
-    AST_PAREN,
-    AST_TUPLE, AST_STRUCT, AST_CHAIN,  AST_ITE,
+    AST_UNIT, AST_PAREN, AST_TUPLE, 
+    AST_STRUCT, AST_CHAIN,
     AST_LAMBDA,
+    AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME,
     AST_STMT_BIND, AST_STMT_CHECK, AST_STMT_RETURN,
     AST_CALL,
@@ -56,6 +57,7 @@ AstNode* CreateAstIntLiteral(Loc loc, size_t value, int base);
 AstNode* CreateAstFloatLiteral(Loc loc, long double value);
 AstNode* CreateAstStringLiteral(Loc loc, int* valueSb);
 AstNode* CreateAstParen(Loc loc, AstNode* it);
+AstNode* CreateAstUnit(Loc loc);
 
 AstNode* CreateAstTuple(Loc loc);
 AstNode* CreateAstStruct(Loc loc);

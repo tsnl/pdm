@@ -42,6 +42,11 @@ void PrintFormattedText(CodePrinter* printer, char const* fmt, ...) {
 void PrintNode(CodePrinter* cp, AstNode* node) {
     switch (GetAstNodeKind(node))
     {
+        case AST_UNIT:
+        {
+            PrintText(cp, "()");
+            break;
+        }
         case AST_MODULE:
         {
             int length = GetAstModuleLength(node);

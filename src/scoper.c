@@ -4,6 +4,7 @@
 
 #include "symbols.h"
 #include "config.h"
+#include "typer.h"
 
 // The scoper performs `Lexical Analysis`, which involves traversing the AST, building a tree of
 // contexts from linked list node stored in stack frames, and using this tree to look up symbols'
@@ -168,8 +169,8 @@ int preScopeAstNode(void* rawScoper, AstNode* node) {
         case AST_STMT_BIND:
         {
             SymbolID defnID = GetAstBindStmtLhs(node);
-            void* valueTypeP = NULL;
-            void* typingTypeP = NULL;
+            void* valueTypeP = CreateMetaType();
+            void* typingTypeP = CreateMetaType();
             scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
             break;
         }
@@ -198,16 +199,16 @@ int preScopeAstNode(void* rawScoper, AstNode* node) {
                 case CRUMB_MODULE_FIELD_PATTERN:
                 {
                     SymbolID defnID = GetAstFieldName(node);
-                    void* valueTypeP = NULL;
-                    void* typingTypeP = NULL;
+                    void* valueTypeP = CreateMetaType();
+                    void* typingTypeP = CreateMetaType();
                     scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
                     break;
                 }
                 case CRUMB_LAMBDA_PATTERN:
                 {
                     SymbolID defnID = GetAstFieldName(node);
-                    void* valueTypeP = NULL;
-                    void* typingTypeP = NULL;
+                    void* valueTypeP = CreateMetaType();
+                    void* typingTypeP = CreateMetaType();
                     scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
                     break;
                 }
@@ -271,7 +272,7 @@ int ScopeModule(Scoper* scoperP, AstNode* module) {
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
         AstNode* field = GetAstModuleFieldAt(module, index);
-        void* valueTypeP = NULL;    // TODO: set valueTypeP
+        void* valueTypeP = ;    // TODO: set valueTypeP
         void* typingTypeP = NULL;   // TODO: set typingTypeP
         scoperP->currentScopeP = defineSymbol(scoperP->currentScopeP, GetAstFieldName(field), valueTypeP, typingTypeP);
         scoperP->currentModuleDefEndP = scoperP->currentScopeP;

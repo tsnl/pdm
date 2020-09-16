@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+#include "ast.h"
+
 typedef enum IntWidth IntWidth;
 typedef enum FloatWidth FloatWidth;
 typedef enum TypeKind TypeKind;
@@ -59,6 +61,12 @@ size_t GetMetatypeID(Type* typeP);
 // Substitution:
 //
 
-Type* GetTypeAfterSubs(Type* arg, TypeSub* firstSub);
+Type* SubstituteType(Type* arg, TypeSub* firstSub);
+
+//
+// Recursively typing:
+//
+
+Type* TypeNode(AstNode* node);
 
 #endif  // INCLUDED_TYPER_H

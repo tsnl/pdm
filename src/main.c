@@ -5,9 +5,9 @@
 
 int main() {
     Interp* interp = CreateInterp();
-    Source* scriptSource = CreateSource("test/test2.hub");
+    Source* scriptSource = CreateSource("test/test3.hub");
     
-    int result = ExecuteScript(interp, scriptSource);
+    int result = LoadScript(interp, scriptSource);
     int exitCode;
     if (result) {
         printf("Execution succeeded.\n");

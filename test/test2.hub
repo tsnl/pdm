@@ -60,3 +60,7 @@ mulImage(t): [i: Image t, x: u8] -> {
         data: map scalePixelByX i.data
     }
 };
+
+
+UnitA: ();
+UnitB: ();

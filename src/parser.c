@@ -291,6 +291,10 @@ static AstNode* tryParsePrimaryExpr(Parser* p) {
                 return NULL;
             }
 
+            if (match(p, TK_RPAREN)) {
+                return CreateAstUnit(loc);
+            }
+
             AstNode* expr = parseExpr(p);
             if (!expr) {
                 return NULL;
