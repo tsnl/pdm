@@ -146,18 +146,21 @@ Type* TypeNode(AstNode* node) {
         }
         case AST_ID:
         {
-            // TODO: look up the ID 
-            break;
+            // using the type already provided by `scoper`
+            return GetAstNodeTypeP(node);
         }
         case AST_STMT_BIND:
         {
             // TODO: 
+            break;
         }
         default:
         {
             if (DEBUG) {
                 assert(0 && "Not implemented: TypeNode for AST node kind <?>");
             }
+            break;
         }
     }
+    return NULL;
 }

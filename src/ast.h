@@ -151,7 +151,9 @@ void* GetAstNodeTypeP(AstNode* node);
 void SetAstNodeTypeP(AstNode* node, void* typeP);
 
 void* GetAstIdScopeP(AstNode* node);
+int GetAstIdLookupContext(AstNode* node);
 void SetAstIdScopeP(AstNode* node, void* scopeP);
+void SetAstIdLookupContext(AstNode* node, int context);
 
 // Visitor API: calls a 'VisitorCb' function pre- and post- visiting children.
 // - `context` can be used to propagate contextual information as the visitor recurses.

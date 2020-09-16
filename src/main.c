@@ -10,15 +10,20 @@ int main() {
     int result = LoadScript(interp, scriptSource);
     int exitCode;
     if (result) {
-        printf("Execution succeeded.\n");
+        printf("Loading succeeded.\n");
         exitCode = 0;
     } else {
-        printf("Execution failed.\n");
+        printf("Loading failed.\n");
         exitCode = 1;
+        goto finish;
     }
     
-    DestroyInterp(interp);
-    return exitCode;
+    FinalizeLoadedScripts(interp);
+
+    finish: {
+        DestroyInterp(interp);
+        return exitCode;
+    }
 }
 
 

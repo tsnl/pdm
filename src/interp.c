@@ -91,10 +91,23 @@ int LoadScript(Interp* interp, Source* scriptSource) {
 }
 
 int FinalizeLoadedScripts(Interp* interp) {
-    // TODO: link loaded modules
-    // TODO: link IDs and post scoper feedback
-    // TODO: typecheck, runcheck, and fill output types
-    return 0;
+    int loadedSourceCount = sb_count(interp->loadedSourceSb);
+    for (int i = 0; i < loadedSourceCount; i++) {
+        LoadedSource loadedSource = interp->loadedSourceSb[i];
+        if (!ResolveScopedModule(loadedSource.moduleAstNode)) {
+            return 0;
+        }
+    }
+    
+    // todo: rather than just type each module sequentially, do so on-demand.
+    for (int i = 0; i < loadedSourceCount; i++) {
+        LoadedSource loadedSource = interp->loadedSourceSb[i];
+        void* moduleType = TypeNode(loadedSource.moduleAstNode);
+        if (!moduleType) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 int Execute(Interp* interp, Source* scriptSource, SymbolID entryPointName) {

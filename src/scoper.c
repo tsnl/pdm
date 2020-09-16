@@ -39,7 +39,7 @@ struct Scoper {
 enum Breadcrumb {
     CRUMB_MODULE_FIELDS,
     CRUMB_MODULE_FIELD_PATTERN,
-    CRUMB_LAMBDA_PATTERN,
+    CRUMB_PATTERN,
     CRUMB_STRUCT
 };
 
@@ -57,6 +57,7 @@ struct Scope {
 };
 
 enum LookupContext {
+    LOOKUP_NONE = 0,
     LOOKUP_TYPING,
     LOOKUP_VALUE
 };
@@ -154,16 +155,21 @@ void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, Looku
 // Implementation:
 //
 
-static int preScopeAstNode(void* scoper, AstNode* node);
-static int postScopeAstNode(void* scoper, AstNode* node);
+static int scoper_pre(void* scoper, AstNode* node);
+static int scoper_post(void* scoper, AstNode* node);
 
-int preScopeAstNode(void* rawScoper, AstNode* node) {
+int scoper_pre(void* rawScoper, AstNode* node) {
     Scoper* scoper = rawScoper;
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_ID:
         {
             SetAstIdScopeP(node, scoper->currentScopeP);
+            if (topBreadcrumb(scoper) == CRUMB_PATTERN) {
+                SetAstIdLookupContext(node, LOOKUP_TYPING);
+            } else {
+                SetAstIdLookupContext(node, LOOKUP_VALUE);
+            }
             break;
         }
         case AST_STMT_BIND:
@@ -179,9 +185,9 @@ int preScopeAstNode(void* rawScoper, AstNode* node) {
             pushBreadcrumb(scoper, CRUMB_STRUCT);
             break;
         }
-        case AST_LAMBDA:
+        case AST_PATTERN:
         {
-            pushBreadcrumb(scoper, CRUMB_LAMBDA_PATTERN);
+            pushBreadcrumb(scoper, CRUMB_PATTERN);
             break;
         }
         case AST_FIELD:
@@ -204,7 +210,7 @@ int preScopeAstNode(void* rawScoper, AstNode* node) {
                     scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
                     break;
                 }
-                case CRUMB_LAMBDA_PATTERN:
+                case CRUMB_PATTERN:
                 {
                     SymbolID defnID = GetAstFieldName(node);
                     void* valueTypeP = CreateMetaType();
@@ -214,7 +220,7 @@ int preScopeAstNode(void* rawScoper, AstNode* node) {
                 }
                 case CRUMB_STRUCT:
                 {
-                    // do nothing, handle in typing
+                    // TODO: define a symbol chain similar to modules.
                     break;
                 }
                 default:
@@ -234,12 +240,12 @@ int preScopeAstNode(void* rawScoper, AstNode* node) {
     return 1;
 }
 
-int postScopeAstNode(void* rawScoper, AstNode* node) {
+int scoper_post(void* rawScoper, AstNode* node) {
     Scoper* scoper = rawScoper;
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_STRUCT:
-        case AST_LAMBDA:
+        case AST_PATTERN:
         {
             popBreadcrumb(scoper);
             break;
@@ -272,7 +278,7 @@ int ScopeModule(Scoper* scoperP, AstNode* module) {
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
         AstNode* field = GetAstModuleFieldAt(module, index);
-        void* valueTypeP = ;    // TODO: set valueTypeP
+        void* valueTypeP = NULL;    // TODO: set valueTypeP
         void* typingTypeP = NULL;   // TODO: set typingTypeP
         scoperP->currentScopeP = defineSymbol(scoperP->currentScopeP, GetAstFieldName(field), valueTypeP, typingTypeP);
         scoperP->currentModuleDefEndP = scoperP->currentScopeP;
@@ -283,11 +289,38 @@ int ScopeModule(Scoper* scoperP, AstNode* module) {
 
     // visiting the AST:
     pushBreadcrumb(scoperP, CRUMB_MODULE_FIELDS);
-    if (!visit(scoperP, module, preScopeAstNode, postScopeAstNode)) {
+    if (!visit(scoperP, module, scoper_pre, scoper_post)) {
         return 0;
     }
     popBreadcrumb(scoperP);
     return 1;
+}
+
+static int resolver_pre(void* source, AstNode* node);
+
+static int resolver_pre(void* source, AstNode* node) {
+    if (GetAstNodeKind(node) == AST_ID) {
+        Loc loc = GetAstNodeLoc(node);
+        SymbolID name = GetAstIdName(node);
+        Scope* scope = GetAstIdScopeP(node);
+        LookupContext lookupContext = GetAstIdLookupContext(node);
+        void* typeP = lookupSymbol(scope, name, lookupContext);
+        if (!typeP) {
+            FeedbackNote* note = CreateFeedbackNote("here...", source, loc, NULL);
+            PostFeedback(
+                FBK_ERROR, note,
+                "Symbol '%s' not defined in this context",
+                GetSymbolText(name)
+            );
+            return 0;
+        }
+        SetAstNodeTypeP(node, typeP);
+    }
+    return 1;
+}
+
+int ResolveScopedModule(AstNode* module) {
+    return visit(NULL, module, resolver_pre, NULL);
 }
 
 // After definition, IDs are looked up, map to type IDs.

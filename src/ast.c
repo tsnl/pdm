@@ -41,6 +41,7 @@ struct AstModule {
 struct AstID {
     SymbolID name;
     void* scopeP;
+    int lookupContext;
 };
 struct AstField {
     SymbolID name;
@@ -185,6 +186,7 @@ AstNode* CreateAstId(Loc loc, SymbolID symbolID) {
     AstNode* idNode = allocateNode(loc, AST_ID);
     idNode->info.ID.name = symbolID;
     idNode->info.ID.scopeP = NULL;
+    idNode->info.ID.lookupContext = 0;
     return idNode;
 }
 AstNode* CreateAstIntLiteral(Loc loc, size_t value, int base) {
@@ -532,6 +534,12 @@ void* GetAstNodeTypeP(AstNode* node) {
 }
 void SetAstNodeTypeP(AstNode* node, void* typeP) {
     node->typeP = typeP;
+}
+int GetAstIdLookupContext(AstNode* node) {
+    return node->info.ID.lookupContext;
+}
+void SetAstIdLookupContext(AstNode* node, int context) {
+    node->info.ID.lookupContext = context;
 }
 void* GetAstIdScopeP(AstNode* node) {
     return node->info.ID.scopeP;
