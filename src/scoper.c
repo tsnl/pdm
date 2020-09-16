@@ -34,14 +34,12 @@ struct Scoper {
     Scope* currentModuleDefEndP;
 };
 
+// Breadcrumbs are used to determine AST_FIELD usage.
 enum Breadcrumb {
-    CRUMB_MODULE,
-    CRUMB_BIND,
-    CRUMB_LAMBDA,
-    CRUMB_CHAIN,
-    CRUMB_STRUCT,
-    CRUMB_TUPLE,
-    CRUMB_PATTERN
+    CRUMB_MODULE_FIELDS,
+    CRUMB_MODULE_FIELD_PATTERN,
+    CRUMB_LAMBDA_PATTERN,
+    CRUMB_STRUCT
 };
 
 struct BreadcrumbFrame {
@@ -167,29 +165,12 @@ int preScopeAstNode(void* rawScoper, AstNode* node) {
             SetAstIdScopeP(node, scoper->currentScopeP);
             break;
         }
-        case AST_CHAIN:
-        {
-            pushBreadcrumb(scoper, CRUMB_CHAIN);
-            break;
-        }
-        case AST_LAMBDA:
-        {
-            pushBreadcrumb(scoper, CRUMB_LAMBDA);
-            break;
-        }
         case AST_STMT_BIND:
         {
-            pushBreadcrumb(scoper, CRUMB_BIND);
-            break;
-        }
-        case AST_TUPLE:
-        {
-            pushBreadcrumb(scoper, CRUMB_TUPLE);
-            break;
-        }
-        case AST_PATTERN:
-        {
-            pushBreadcrumb(scoper, CRUMB_PATTERN);
+            SymbolID defnID = GetAstBindStmtLhs(node);
+            void* valueTypeP = NULL;
+            void* typingTypeP = NULL;
+            scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
             break;
         }
         case AST_STRUCT:
@@ -197,22 +178,42 @@ int preScopeAstNode(void* rawScoper, AstNode* node) {
             pushBreadcrumb(scoper, CRUMB_STRUCT);
             break;
         }
+        case AST_LAMBDA:
+        {
+            pushBreadcrumb(scoper, CRUMB_LAMBDA_PATTERN);
+            break;
+        }
         case AST_FIELD:
         {
             switch (topBreadcrumb(scoper)) {
-                case CRUMB_MODULE:
+                case CRUMB_MODULE_FIELDS:
                 {
-                    // TODO: lookup the symbol defined before.
-                    // TODO: define template arguments here.
+                    // symbol already defined ahead of time.
+
+                    if (GetAstFieldPattern(node)) {
+                        pushBreadcrumb(scoper, CRUMB_MODULE_FIELD_PATTERN);
+                    }
                     break;
                 }
-                case CRUMB_TUPLE:
-                case CRUMB_PATTERN:
-                case CRUMB_STRUCT:
-                case CRUMB_LAMBDA:
-                case CRUMB_BIND:
+                case CRUMB_MODULE_FIELD_PATTERN:
                 {
-                    // TODO: define a symbol here (see AST_STMT_BIND)
+                    SymbolID defnID = GetAstFieldName(node);
+                    void* valueTypeP = NULL;
+                    void* typingTypeP = NULL;
+                    scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
+                    break;
+                }
+                case CRUMB_LAMBDA_PATTERN:
+                {
+                    SymbolID defnID = GetAstFieldName(node);
+                    void* valueTypeP = NULL;
+                    void* typingTypeP = NULL;
+                    scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
+                    break;
+                }
+                case CRUMB_STRUCT:
+                {
+                    // do nothing, handle in typing
                     break;
                 }
                 default:
@@ -237,13 +238,16 @@ int postScopeAstNode(void* rawScoper, AstNode* node) {
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_STRUCT:
-        case AST_CHAIN:
         case AST_LAMBDA:
-        case AST_STMT_BIND:
-        case AST_PATTERN:
         {
             popBreadcrumb(scoper);
             break;
+        }
+        case AST_FIELD:
+        {
+            if (GetAstFieldPattern(node)) {
+                popBreadcrumb(scoper);
+            }
         }
         default:
         {
@@ -277,15 +281,13 @@ int ScopeModule(Scoper* scoperP, AstNode* module) {
     }
 
     // visiting the AST:
-    pushBreadcrumb(scoperP, CRUMB_MODULE);
+    pushBreadcrumb(scoperP, CRUMB_MODULE_FIELDS);
     if (!visit(scoperP, module, preScopeAstNode, postScopeAstNode)) {
         return 0;
     }
     popBreadcrumb(scoperP);
     return 1;
 }
-
-// TODO: lookup symbols.
 
 // After definition, IDs are looked up, map to type IDs.
 // These type IDs can be stored in the AST.

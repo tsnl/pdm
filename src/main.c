@@ -20,3 +20,10 @@ int main() {
     DestroyInterp(interp);
     return exitCode;
 }
+
+
+// TODO: lookup all ID nodes
+// TODO: initialize definitions to valid types
+// TODO: apply typer to obtain and check set of substitutions
+// TODO: generate LLVM IR
+// TODO: generate SMT checking assertions
