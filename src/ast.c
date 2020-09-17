@@ -63,6 +63,8 @@ struct AstLambda {
 struct AstBind {
     SymbolID lhs;
     AstNode* rhs;
+    void* valueTypeP;
+    void* typingTypeP;
 };
 struct AstCheck {
     AstNode* checked;
@@ -122,7 +124,7 @@ struct AstNode {
 //
 
 static size_t allocatedNodeCount = 0;
-static AstNode allocatedNodes[MAX_AST_NODE_COUNT];
+static AstNode allocatedNodes[MAX_AST_LIST_COUNT];
 
 static size_t allocatedListCount = 0;
 static AstNodeList allocatedLists[MAX_AST_LIST_COUNT];
@@ -301,6 +303,8 @@ AstNode* CreateAstBindStmt(Loc loc, SymbolID lhs, AstNode* rhs) {
     AstNode* bindNode = allocateNode(loc, AST_STMT_BIND);
     bindNode->info.Bind.lhs = lhs;
     bindNode->info.Bind.rhs = rhs;
+    bindNode->info.Bind.valueTypeP = NULL;
+    bindNode->info.Bind.typingTypeP = NULL;
     return bindNode;
 }
 
@@ -541,6 +545,19 @@ int GetAstIdLookupContext(AstNode* node) {
 void SetAstIdLookupContext(AstNode* node, int context) {
     node->info.ID.lookupContext = context;
 }
+void SetAstBindStmtValueTypeP(AstNode* node, void* valueTypeP) {
+    node->info.Bind.valueTypeP = valueTypeP;
+}
+void SetAstBindStmtTypingTypeP(AstNode* node, void* typingTypeP) {
+    node->info.Bind.typingTypeP = typingTypeP;
+}
+void* GetAstBindStmtValueTypeP(AstNode* node) {
+    return node->info.Bind.valueTypeP;
+}
+void* GetAstBindStmtTypingTypeP(AstNode* node) {
+    return node->info.Bind.typingTypeP;
+}
+
 void* GetAstIdScopeP(AstNode* node) {
     return node->info.ID.scopeP;
 }

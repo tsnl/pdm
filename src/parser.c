@@ -180,7 +180,6 @@ static AstNode* parseBindStmt(Parser* p) {
 
     TokenInfo idTokenInfo = lookaheadInfo(p, 0);
     SymbolID lhs = SYM_NULL;
-    AstNode* templatePattern = NULL;
     AstNode* rhs = NULL;
 
     if (expect(p, TK_ID, "the defined (lhs) identifier")) {

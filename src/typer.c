@@ -1,9 +1,21 @@
 #include "typer.h"
 
 #include <stddef.h>
+#include <stdarg.h>
 #include <assert.h>
+#include <string.h>
+
+#include "stb/stretchy_buffer.h"
 
 #include "config.h"
+
+typedef struct MetaInfo MetaInfo;
+typedef struct TypeList TypeList;
+
+struct MetaInfo {
+    size_t id;
+    char* name;
+};
 
 struct Type {
     TypeKind kind;
@@ -11,30 +23,41 @@ struct Type {
         IntWidth Int;
         FloatWidth Float;
         Type* Ptr;
-        size_t Meta;
+        MetaInfo Meta;
     } as;
+    Type** supTypesSb;
 };
 
-static Type builtinUnitType = {T_UNIT, {}};
+static Type builtinUnitType = {T_UNIT, {}, NULL};
 static Type builtinIntTypeBuffer[] = {
-    {T_INT, {.Int = INT8}},
-    {T_INT, {.Int = INT16}},
-    {T_INT, {.Int = INT32}},
-    {T_INT, {.Int = INT64}}
+    {T_INT, {.Int = INT8}, NULL},
+    {T_INT, {.Int = INT16}, NULL},
+    {T_INT, {.Int = INT32}, NULL},
+    {T_INT, {.Int = INT64}, NULL}
 };
 static Type builtinFloatTypeBuffer[] = {
-    {T_FLOAT, {.Float = FLOAT32}},
-    {T_FLOAT, {.Float = FLOAT64}}
+    {T_FLOAT, {.Float = FLOAT32}, NULL},
+    {T_FLOAT, {.Float = FLOAT64}, NULL}
 };
 
-static const size_t MAX_PTR_STRUCTURE_COUNT = (16*1024);
-static const size_t MAX_METAVAR_COUNT       = (16*1024);
+static const size_t MAX_PTR_COUNT = (16*1024);
+static const size_t MAX_METAVAR_COUNT = (MAX_AST_NODE_COUNT);
 
 static size_t ptrTypeBufferCount = 0;
-static Type ptrTypeBuffer[MAX_PTR_STRUCTURE_COUNT];
+static Type ptrTypeBuffer[MAX_PTR_COUNT];
 
 static size_t metaTypeBufferCount = 0;
 static Type metaTypeBuffer[MAX_METAVAR_COUNT];
+
+void pushSuperType(Type* sub, Type* sup) {
+    int count = sb_count(sub->supTypesSb);
+    for (int i = 0; i < count; i++) {
+        if (sub->supTypesSb[i] == sup) {
+            return;
+        }
+    }
+    sb_push(sub->supTypesSb, sup);
+}
 
 //
 // API:
@@ -66,10 +89,22 @@ Type* GetPtrType(Type* pointee) {
     return ptrTypeP;
 }
 
-Type* CreateMetaType(void) {
+Type* CreateMetatype(char const* format, ...) {
     Type* metaTypeP = &metaTypeBuffer[metaTypeBufferCount++];
     metaTypeP->kind = T_META;
-    metaTypeP->as.Meta = metaTypeBufferCount;   // using the buffer count as a unique ID.
+    metaTypeP->supTypesSb = NULL;
+    metaTypeP->as.Meta.id = metaTypeBufferCount;   // using the buffer count as a unique ID.
+    {  // metaTypeP->as.Meta.name
+        char nameBuffer[1024];
+        va_list args;
+        va_start(args, format);
+        int writeCount = vsnprintf(nameBuffer, 1024, format, args);
+        if (DEBUG && writeCount > 1024) {
+            assert(0 && "Metatype name too long");
+        }
+        va_end(args);
+        metaTypeP->as.Meta.name = strdup(nameBuffer);
+    }
     return metaTypeP;
 }
 
@@ -90,7 +125,10 @@ Type* GetPtrTypePointee(Type* typeP) {
     return typeP->as.Ptr;
 }
 size_t GetMetatypeID(Type* typeP) {
-    return typeP->as.Meta;
+    return typeP->as.Meta.id;
+}
+char const* GetMetatypeName(Type* typeP) {
+    return typeP->as.Meta.name;
 }
 
 //
@@ -146,13 +184,23 @@ Type* TypeNode(AstNode* node) {
         }
         case AST_ID:
         {
-            // using the type already provided by `scoper`
+            // using the type already provided by `scoper` based on the context used
             return GetAstNodeTypeP(node);
+        }
+        case AST_MODULE:
+        {
+            // TODO: type a module
+            break;
         }
         case AST_STMT_BIND:
         {
-            // TODO: 
-            break;
+            void* lhsType = GetAstBindStmtValueTypeP(node);
+            void* rhsType = TypeNode(GetAstBindStmtRhs(node));
+            if (!lhsType || !rhsType) {
+                return NULL;
+            }
+            // TODO: set a subtyping relation between lhs and rhs types here.
+            return NULL;
         }
         default:
         {

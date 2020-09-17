@@ -8,6 +8,6 @@ typedef struct Scoper Scoper;
 Scoper* CreateScoper(void);
 
 int ScopeModule(Scoper* scoper, AstNode* node);
-int ResolveScopedModule(AstNode* module);
+int ResolveScopedModule(Source* source, AstNode* module);
 
 #endif  // INCLUDED_SCOPER_H

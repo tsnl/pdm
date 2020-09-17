@@ -94,7 +94,7 @@ int FinalizeLoadedScripts(Interp* interp) {
     int loadedSourceCount = sb_count(interp->loadedSourceSb);
     for (int i = 0; i < loadedSourceCount; i++) {
         LoadedSource loadedSource = interp->loadedSourceSb[i];
-        if (!ResolveScopedModule(loadedSource.moduleAstNode)) {
+        if (!ResolveScopedModule(loadedSource.source, loadedSource.moduleAstNode)) {
             return 0;
         }
     }

@@ -144,10 +144,11 @@ void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, Looku
         return NULL;
     } else {
         // try repeating on parent
-        if (DEBUG && scope->parent) {
+        if (scope->parent) {
+            return lookupSymbolUntil(scope->parent, lookupID, endScopeP, context);
+        } else {
             return NULL;
         }
-        return lookupSymbolUntil(scope->parent, lookupID, endScopeP, context);
     }
 }
 
@@ -175,9 +176,11 @@ int scoper_pre(void* rawScoper, AstNode* node) {
         case AST_STMT_BIND:
         {
             SymbolID defnID = GetAstBindStmtLhs(node);
-            void* valueTypeP = CreateMetaType();
-            void* typingTypeP = CreateMetaType();
+            void* valueTypeP = CreateMetatype("let %s", GetSymbolText(defnID));
+            void* typingTypeP = CreateMetatype("let %s", GetSymbolText(defnID));
             scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
+            SetAstBindStmtValueTypeP(node, valueTypeP);
+            SetAstBindStmtTypingTypeP(node, typingTypeP);
             break;
         }
         case AST_STRUCT:
@@ -205,16 +208,16 @@ int scoper_pre(void* rawScoper, AstNode* node) {
                 case CRUMB_MODULE_FIELD_PATTERN:
                 {
                     SymbolID defnID = GetAstFieldName(node);
-                    void* valueTypeP = CreateMetaType();
-                    void* typingTypeP = CreateMetaType();
+                    void* valueTypeP = CreateMetatype("template %s", GetSymbolText(defnID));
+                    void* typingTypeP = CreateMetatype("template %s", GetSymbolText(defnID));
                     scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
                     break;
                 }
                 case CRUMB_PATTERN:
                 {
                     SymbolID defnID = GetAstFieldName(node);
-                    void* valueTypeP = CreateMetaType();
-                    void* typingTypeP = CreateMetaType();
+                    void* valueTypeP = CreateMetatype("pattern %s", GetSymbolText(defnID));
+                    void* typingTypeP = CreateMetatype("pattern %s", GetSymbolText(defnID));
                     scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
                     break;
                 }
@@ -278,8 +281,8 @@ int ScopeModule(Scoper* scoperP, AstNode* module) {
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
         AstNode* field = GetAstModuleFieldAt(module, index);
-        void* valueTypeP = NULL;    // TODO: set valueTypeP
-        void* typingTypeP = NULL;   // TODO: set typingTypeP
+        void* valueTypeP = CreateMetatype("define %s", GetSymbolText(GetAstFieldName(field)));
+        void* typingTypeP = CreateMetatype("define %s", GetSymbolText(GetAstFieldName(field)));
         scoperP->currentScopeP = defineSymbol(scoperP->currentScopeP, GetAstFieldName(field), valueTypeP, typingTypeP);
         scoperP->currentModuleDefEndP = scoperP->currentScopeP;
         if (scoperP->currentModuleDefBegP == NULL) {
@@ -312,15 +315,19 @@ static int resolver_pre(void* source, AstNode* node) {
                 "Symbol '%s' not defined in this context",
                 GetSymbolText(name)
             );
-            return 0;
         }
         SetAstNodeTypeP(node, typeP);
     }
     return 1;
 }
 
-int ResolveScopedModule(AstNode* module) {
-    return visit(NULL, module, resolver_pre, NULL);
+int ResolveScopedModule(Source* source, AstNode* module) {
+    visit(source, module, resolver_pre, NULL);
+    if (GetErrorPosted()) {
+        return 0;
+    }
+
+    return 1;
 }
 
 // After definition, IDs are looked up, map to type IDs.

@@ -74,7 +74,7 @@ TokenKind lexOneToken(Source* source, TokenInfo* infoP) {
         if (ReadSourceReaderHead(source) == '#') {
             do {
                 AdvanceSourceReaderHead(source);
-            } while (ReadSourceReaderHead(source) != '\n');
+            } while (ReadSourceReaderHead(source) != '\n' && !SourceReaderAtEof(source));
         }
         skipWhitespace(source);
     }

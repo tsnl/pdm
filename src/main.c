@@ -4,11 +4,15 @@
 #include "interp.h"
 
 int main() {
+    int exitCode;
     Interp* interp = CreateInterp();
     Source* scriptSource = CreateSource("test/test3.hub");
-    
+    if (!scriptSource) {
+        printf("File not found.\n");
+        exitCode = 0;
+        goto finish;
+    }
     int result = LoadScript(interp, scriptSource);
-    int exitCode;
     if (result) {
         printf("Loading succeeded.\n");
         exitCode = 0;
@@ -18,7 +22,12 @@ int main() {
         goto finish;
     }
     
-    FinalizeLoadedScripts(interp);
+    if (!FinalizeLoadedScripts(interp)) {
+        exitCode = 1;
+        goto finish;
+    }
+
+    // TODO: execute, emit an executable, or just exit after reporting the program's validity.
 
     finish: {
         DestroyInterp(interp);

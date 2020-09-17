@@ -45,7 +45,7 @@ Type* GetUnitType(void);
 Type* GetIntType(IntWidth width);
 Type* GetFloatType(FloatWidth width);
 Type* GetPtrType(Type* pointee);
-Type* CreateMetaType(void);
+Type* CreateMetatype(char const* format, ...);
 
 //
 // Getters for type info:
@@ -56,6 +56,7 @@ IntWidth GetIntTypeWidth(Type* typeP);
 FloatWidth GetFloatTypeWidth(Type* typeP);
 Type* GetPtrTypePointee(Type* typeP);
 size_t GetMetatypeID(Type* typeP);
+char const* GetMetatypeName(Type* typeP);
 
 //
 // Substitution:
