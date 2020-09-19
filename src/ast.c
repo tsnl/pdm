@@ -46,7 +46,7 @@ struct AstID {
 struct AstField {
     SymbolID name;
     AstNode* rhs;
-    AstNode* pattern;
+    AstNode* optPattern;
 };
 struct AstDotIndex {
     AstNode* lhs;
@@ -63,8 +63,6 @@ struct AstLambda {
 struct AstBind {
     SymbolID lhs;
     AstNode* rhs;
-    void* valueTypeP;
-    void* typingTypeP;
 };
 struct AstCheck {
     AstNode* checked;
@@ -116,7 +114,8 @@ struct AstNode {
     Loc loc;
     AstKind kind;
     AstInfo info;
-    void* typeP;
+    void* typingType;
+    void* valueType;
 };
 
 //
@@ -171,17 +170,25 @@ AstNode* CreateAstModule(Loc loc, SymbolID moduleID) {
 void AttachImportHeaderToAstModule(AstNode* module, AstNode* mapping) {
     module->info.Module.importHeader = mapping;
 }
-
 void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping) {
     module->info.Module.exportHeader = mapping;
 }
-
-void PushFieldToAstModule(Loc loc, AstNode* module, SymbolID name, AstNode* templatePattern, AstNode* value) {
-    AstNode* field = allocateNode(loc, AST_FIELD);
-    field->info.Field.name = name;
-    field->info.Field.pattern = templatePattern;
-    field->info.Field.rhs = value;
+void PushFieldToAstModule(Loc loc, AstNode* module, SymbolID lhs, AstNode* optPattern, AstNode* rhs) {
+    AstNode* field = allocateNode(loc, AST_FIELD__MODULE_ITEM);
+    field->info.Field.name = lhs;
+    field->info.Field.optPattern = optPattern;
+    field->info.Field.rhs = rhs;
     pushListElement(module->info.Module.items, field);
+
+    if (optPattern) {
+        int patternCount = GetAstPatternLength(optPattern);
+        for (int index = 0; index < patternCount; index++) {
+            AstNode* field = GetAstPatternFieldAt(optPattern, index);
+            
+            assert(field->kind == AST_FIELD__PATTERN_ITEM);
+            field->kind = AST_FIELD__TEMPLATE_ITEM;
+        }
+    }
 }
 
 AstNode* CreateAstId(Loc loc, SymbolID symbolID) {
@@ -242,23 +249,23 @@ AstNode* CreateAstPattern(Loc loc) {
 }
 
 void PushFieldToAstTuple(Loc loc, AstNode* tuple, AstNode* value) {
-    AstNode* field = allocateNode(loc, AST_FIELD);
+    AstNode* field = allocateNode(loc, AST_FIELD__TUPLE_ITEM);
     field->info.Field.name = SYM_NULL;
-    field->info.Field.pattern = NULL;
+    field->info.Field.optPattern = NULL;
     field->info.Field.rhs = value;
     pushListElement(tuple->info.Items, field);
 }
 void PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value) {
-    AstNode* field = allocateNode(loc, AST_FIELD);
+    AstNode* field = allocateNode(loc, AST_FIELD__STRUCT_ITEM);
     field->info.Field.name = name;
-    field->info.Field.pattern = NULL;
+    field->info.Field.optPattern = NULL;
     field->info.Field.rhs = value;
     pushListElement(struct_->info.Items, field);
 }
 void PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec) {
-    AstNode* field = allocateNode(loc, AST_FIELD);
+    AstNode* field = allocateNode(loc, AST_FIELD__PATTERN_ITEM);
     field->info.Field.name = name;
-    field->info.Field.pattern = NULL;
+    field->info.Field.optPattern = NULL;
     field->info.Field.rhs = typespec;
     pushListElement(pattern->info.Items, field);
 }
@@ -303,8 +310,6 @@ AstNode* CreateAstBindStmt(Loc loc, SymbolID lhs, AstNode* rhs) {
     AstNode* bindNode = allocateNode(loc, AST_STMT_BIND);
     bindNode->info.Bind.lhs = lhs;
     bindNode->info.Bind.rhs = rhs;
-    bindNode->info.Bind.valueTypeP = NULL;
-    bindNode->info.Bind.typingTypeP = NULL;
     return bindNode;
 }
 
@@ -433,99 +438,187 @@ AstNode* GetAstChainResult(AstNode* node) {
 }
 
 AstNode* GetAstTupleItemAt(AstNode* node, int index) {
+    if (DEBUG) {
+        assert(node->kind == AST_TUPLE);
+    }
     return getListItemAt(node->info.Items, index);
 }
 AstNode* GetAstStructFieldAt(AstNode* node, int index) {
+    if (DEBUG) {
+        assert(node->kind == AST_STRUCT);
+    }
     return getListItemAt(node->info.Items, index);
 }
 AstNode* GetAstPatternFieldAt(AstNode* node, int index) {
+    if (DEBUG) {
+        assert(node->kind == AST_PATTERN);
+    }
     return getListItemAt(node->info.Items, index);
 }
 AstNode* GetAstChainPrefixStmtAt(AstNode* node, int index) {
+    if (DEBUG) {
+        assert(node->kind == AST_CHAIN);
+    }
     return getListItemAt(node->info.Chain.prefix, index);
 }
 
 AstNode* GetAstIteCond(AstNode* ite) {
+    if (DEBUG) {
+        assert(ite->kind == AST_ITE);
+    }
     return getListItemAt(ite->info.Items, 0);
 }
-
 AstNode* GetAstIteIfTrue(AstNode* ite) {
+    if (DEBUG) {
+        assert(ite->kind == AST_ITE);
+    }
     return getListItemAt(ite->info.Items, 1);
 }
-
 AstNode* GetAstIteIfFalse(AstNode* ite) {
+    if (DEBUG) {
+        assert(ite->kind == AST_ITE);
+    }
     return getListItemAt(ite->info.Items, 2);
 }
+
 AstNode* GetAstDotIndexLhs(AstNode* dot) {
+    if (DEBUG) {
+        assert(dot->kind == AST_DOT_INDEX);
+    }
     return dot->info.DotIx.lhs;
 }
 size_t GetAstDotIndexRhs(AstNode* dot) {
+    if (DEBUG) {
+        assert(dot->kind == AST_DOT_INDEX);
+    }
     return dot->info.DotIx.index;
 }
+
 AstNode* GetAstDotNameLhs(AstNode* dot) {
+    if (DEBUG) {
+        assert(dot->kind == AST_DOT_NAME);
+    }
     return dot->info.DotNm.lhs;
 }
 SymbolID GetAstDotNameRhs(AstNode* dot) {
+    if (DEBUG) {
+        assert(dot->kind == AST_DOT_NAME);
+    }
     return dot->info.DotNm.symbol;
 }
 
 AstNode* GetAstLambdaPattern(AstNode* node) {
+    if (DEBUG) {
+        assert(node->kind == AST_LAMBDA);
+    }
     return node->info.Lambda.pattern;
 }
 AstNode* GetAstLambdaBody(AstNode* node) {
+    if (DEBUG) {
+        assert(node->kind == AST_LAMBDA);
+    }
     return node->info.Lambda.body;
 }
 
 SymbolID GetAstBindStmtLhs(AstNode* bindStmt) {
+    if (DEBUG) {
+        assert(bindStmt->kind == AST_STMT_BIND);
+    }
     return bindStmt->info.Bind.lhs;
 }
 AstNode* GetAstBindStmtRhs(AstNode* bindStmt) {
+    if (DEBUG) {
+        assert(bindStmt->kind == AST_STMT_BIND);
+    }
     return bindStmt->info.Bind.rhs;
 }
 
 AstNode* GetAstCheckStmtChecked(AstNode* checkStmt) {
+    if (DEBUG) {
+        assert(checkStmt->kind == AST_STMT_CHECK);
+    }
     return checkStmt->info.Check.checked;
 }
 AstNode* GetAstCheckStmtMessage(AstNode* checkStmt) {
+    if (DEBUG) {
+        assert(checkStmt->kind == AST_STMT_CHECK);
+    }
     return checkStmt->info.Check.message;
 }
 
 AstNode* GetAstCallLhs(AstNode* call) {
+    if (DEBUG) {
+        assert(call->kind == AST_CALL);
+    }
     return call->info.Call.lhs;
 }
 AstNode* GetAstCallRhs(AstNode* call) {
+    if (DEBUG) {
+        assert(call->kind == AST_CALL);
+    }
     return call->info.Call.rhs;
 }
 
 SymbolID GetAstFieldName(AstNode* field) {
     if (DEBUG) {
-        assert(field->kind == AST_FIELD);
+        assert(
+            field->kind == AST_FIELD__MODULE_ITEM ||
+            field->kind == AST_FIELD__PATTERN_ITEM ||
+            field->kind == AST_FIELD__STRUCT_ITEM ||
+            field->kind == AST_FIELD__TEMPLATE_ITEM ||
+            field->kind == AST_FIELD__TUPLE_ITEM
+        );
     }
     return field->info.Field.name;
 }
-AstNode* GetAstFieldPattern(AstNode* field) {
-    return field->info.Field.pattern;
+AstNode* GetAstModuleFieldPattern(AstNode* field) {
+    if (DEBUG) {
+        assert(field->kind == AST_FIELD__MODULE_ITEM);
+    }
+    return field->info.Field.optPattern;
 }
 AstNode* GetAstFieldRhs(AstNode* field) {
     if (DEBUG) {
-        assert(field->kind == AST_FIELD);
+        assert(
+            field->kind == AST_FIELD__MODULE_ITEM ||
+            field->kind == AST_FIELD__PATTERN_ITEM ||
+            field->kind == AST_FIELD__STRUCT_ITEM ||
+            field->kind == AST_FIELD__TEMPLATE_ITEM ||
+            field->kind == AST_FIELD__TUPLE_ITEM
+        );
     }
     return field->info.Field.rhs;
 }
 
 AstUnaryOperator GetAstUnaryOperator(AstNode* unary) {
+    if (DEBUG) {
+        assert(unary->kind == AST_UNARY);
+    }
     return unary->info.Unary.operator;
 }
 AstNode* GetAstUnaryOperand(AstNode* unary) {
+    if (DEBUG) {
+        assert(unary->kind == AST_UNARY);
+    }
     return unary->info.Unary.operand;
 }
+
 AstBinaryOperator GetAstBinaryOperator(AstNode* binary) {
+    if (DEBUG) {
+        assert(binary->kind == AST_BINARY);
+    }
     return binary->info.Binary.operator;
 }
 AstNode* GetAstBinaryLtOperand(AstNode* binary) {
+    if (DEBUG) {
+        assert(binary->kind == AST_BINARY);
+    }
     return binary->info.Binary.ltOperand;
 }
 AstNode* GetAstBinaryRtOperand(AstNode* binary) {
+    if (DEBUG) {
+        assert(binary->kind == AST_BINARY);
+    }
     return binary->info.Binary.rtOperand;
 }
 
@@ -533,31 +626,25 @@ AstNode* GetAstBinaryRtOperand(AstNode* binary) {
 // Scoper and typer storage:
 //
 
-void* GetAstNodeTypeP(AstNode* node) {
-    return node->typeP;
+void* GetAstNodeTypingType(AstNode* node) {
+    return node->typingType;
 }
-void SetAstNodeTypeP(AstNode* node, void* typeP) {
-    node->typeP = typeP;
+void* GetAstNodeValueType(AstNode* node) {
+    return node->valueType;
 }
+void SetAstNodeValueType(AstNode* node, void* type) {
+    node->valueType = type;
+}
+void SetAstNodeTypingType(AstNode* node, void* type) {
+    node->typingType = type;
+}
+
 int GetAstIdLookupContext(AstNode* node) {
     return node->info.ID.lookupContext;
 }
-void SetAstIdLookupContext(AstNode* node, int context) {
+void SetAstIdLookupContext(AstNode* node, AstContext context) {
     node->info.ID.lookupContext = context;
 }
-void SetAstBindStmtValueTypeP(AstNode* node, void* valueTypeP) {
-    node->info.Bind.valueTypeP = valueTypeP;
-}
-void SetAstBindStmtTypingTypeP(AstNode* node, void* typingTypeP) {
-    node->info.Bind.typingTypeP = typingTypeP;
-}
-void* GetAstBindStmtValueTypeP(AstNode* node) {
-    return node->info.Bind.valueTypeP;
-}
-void* GetAstBindStmtTypingTypeP(AstNode* node) {
-    return node->info.Bind.typingTypeP;
-}
-
 void* GetAstIdScopeP(AstNode* node) {
     return node->info.ID.scopeP;
 }
@@ -691,14 +778,21 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             }
             return 1;
         }
-        case AST_FIELD:
+        case AST_FIELD__MODULE_ITEM:
         {
-            AstNode* pattern = GetAstFieldPattern(node);
+            AstNode* pattern = GetAstModuleFieldPattern(node);
             if (pattern) {
                 if (!visit(context, pattern, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }
+            // !!- don't break here!! keep going for generic fields.
+        }
+        case AST_FIELD__PATTERN_ITEM:
+        case AST_FIELD__STRUCT_ITEM:
+        case AST_FIELD__TEMPLATE_ITEM:
+        case AST_FIELD__TUPLE_ITEM:
+        {
             AstNode* rhs = GetAstFieldRhs(node);
             if (rhs && !visit(context, rhs, preVisitorCb, postVisitorCb)) {
                 return 0;
@@ -719,6 +813,8 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         case AST_NULL:
         {
             if (DEBUG) {
+                printf("!!- Cannot visit a NULL AST node.");
+            } else {
                 assert(0 && "Cannot visit a NULL AST node.");
             }
             return 0;
@@ -726,6 +822,8 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         case AST_ERROR:
         {
             if (DEBUG) {
+                printf("!!- Cannot visit an ERROR AST node.\n");
+            } else {
                 assert(0 && "Cannot visit an ERROR AST node.");
             }
             return 0;
@@ -733,6 +831,8 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         default:
         {
             if (DEBUG) {
+                printf("!!- Unsupported AST node in 'visit' of type <?>\n;");
+            } else {
                 assert(0 && "Unsupported AST node in 'visit'");
             }
             return 0;

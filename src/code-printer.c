@@ -70,6 +70,8 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             } else if (base == 16) {
                 PrintFormattedText(cp, "0x%zx", GetAstIntLiteralValue(node));
             } else if (DEBUG) {
+                printf("!!- invalid base %d while printing literal int", base);
+            } else {
                 assert(0 && "invalid 'base' while printing literal int.");
             }
             break;
@@ -103,24 +105,30 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintChar(cp, '"');
             break;
         }
-        case AST_FIELD:
+        case AST_FIELD__MODULE_ITEM:
+        case AST_FIELD__PATTERN_ITEM:
+        case AST_FIELD__STRUCT_ITEM:
+        case AST_FIELD__TEMPLATE_ITEM:
+        case AST_FIELD__TUPLE_ITEM:
         {
             SymbolID lhs = GetAstFieldName(node);
             if (lhs != SYM_NULL) {
                 PrintText(cp, GetSymbolText(lhs));
-                AstNode* pattern = GetAstFieldPattern(node);
-                if (pattern) {
-                    PrintChar(cp, '(');
-                    int patternCount = GetAstPatternLength(pattern);
-                    for (int patternIndex = 0; patternIndex < patternCount; patternIndex++) {
-                        AstNode* patternFieldAtIndex = GetAstPatternFieldAt(pattern, patternIndex);
-                        SymbolID patternNameAtIndex = GetAstFieldName(patternFieldAtIndex);
-                        PrintText(cp, GetSymbolText(patternNameAtIndex));
-                        if (patternIndex+1 != patternCount) {
-                            PrintChar(cp, ',');
+                if (GetAstNodeKind(node) == AST_FIELD__MODULE_ITEM) {
+                    AstNode* pattern = GetAstModuleFieldPattern(node);
+                    if (pattern) {
+                        PrintChar(cp, '(');
+                        int patternCount = GetAstPatternLength(pattern);
+                        for (int patternIndex = 0; patternIndex < patternCount; patternIndex++) {
+                            AstNode* patternFieldAtIndex = GetAstPatternFieldAt(pattern, patternIndex);
+                            SymbolID patternNameAtIndex = GetAstFieldName(patternFieldAtIndex);
+                            PrintText(cp, GetSymbolText(patternNameAtIndex));
+                            if (patternIndex+1 != patternCount) {
+                                PrintChar(cp, ',');
+                            }
                         }
+                        PrintChar(cp, ')');
                     }
-                    PrintChar(cp, ')');
                 }
                 PrintText(cp, ": ");
             }

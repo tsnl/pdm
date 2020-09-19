@@ -282,6 +282,8 @@ TokenKind lexOneIntChunk(Source* source, TokenInfo* optInfoP, int noPrefix) {
             } else {
                 break;
             }
+        } else if (DEBUG) {
+            printf("!!- Invalid state.\n");
         } else {
             assert(0 && "Invalid state.");
         }
@@ -341,9 +343,12 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
     if (kwID == kwWithSymbolID) { return TK_KW_WITH; }
     if (kwID == kwReturnSymbolID) { return TK_KW_RETURN; }
     if (kwID == kwCheckSymbolID) { return TK_KW_CHECK; }
-    else {
+    if (DEBUG) {
+        printf("!!- Keyword not implemented: '%s' (id=%d)\n", strings_lookup_id(symbolsDict, kwID), kwID);
+    } else {
         assert(0 && "Unimplemented keyword");
     }
+    return TK_NULL;
 }
 static TokenKind lexOneString(Source* source, TokenInfo* infoP) {
     // reading the first character, i.e., the quote character:

@@ -61,6 +61,5 @@ mulImage(t): [i: Image t, x: u8] -> {
     }
 };
 
-
 UnitA: ();
 UnitB: ();

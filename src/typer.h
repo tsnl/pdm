@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 
+#include "source.h"
 #include "ast.h"
 
 typedef enum IntWidth IntWidth;
@@ -15,6 +16,7 @@ enum TypeKind {
     T_FLOAT,
     T_PTR,
     T_META,
+    T_FUNC
 };
 enum IntWidth {
     INT8,
@@ -45,7 +47,9 @@ Type* GetUnitType(void);
 Type* GetIntType(IntWidth width);
 Type* GetFloatType(FloatWidth width);
 Type* GetPtrType(Type* pointee);
+Type* GetFuncType(Type* domain, Type* image);
 Type* CreateMetatype(char const* format, ...);
+
 
 //
 // Getters for type info:
@@ -62,12 +66,12 @@ char const* GetMetatypeName(Type* typeP);
 // Substitution:
 //
 
-Type* SubstituteType(Type* arg, TypeSub* firstSub);
+Type* TypeSubstitution(Type* arg, TypeSub* firstSub);
 
 //
 // Recursively typing:
 //
 
-Type* TypeNode(AstNode* node);
+void TypeNode(Source* source, AstNode* node);
 
 #endif  // INCLUDED_TYPER_H

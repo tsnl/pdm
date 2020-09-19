@@ -6,6 +6,7 @@
 
 #include "lexer.h"
 #include "parser.h"
+#include "primer.h"
 #include "scoper.h"
 #include "typer.h"
 #include "code-printer.h"
@@ -47,13 +48,11 @@ Interp* CreateInterp(void) {
     interp->scoper = CreateScoper();
     return interp;
 }
-
 void DestroyInterp(Interp* interp) {
     free(interp);
     DeInitSymbols();
     DeInitLexer();
 }
-
 int LoadScript(Interp* interp, Source* scriptSource) {
     int alreadyLoadedSourceIndex = lookupLoadedSource(interp, scriptSource);
     if (alreadyLoadedSourceIndex >= 0) {
@@ -67,7 +66,7 @@ int LoadScript(Interp* interp, Source* scriptSource) {
         LoadedSource loadedSource;
         
         loadedSource.source = scriptSource;
-        loadedSource.moduleAstNode = ParseSource(scriptSource);
+        loadedSource.moduleAstNode = PrimeAst(ParseSource(scriptSource));
         if (!loadedSource.moduleAstNode) {
             return 0;
         }
@@ -83,6 +82,9 @@ int LoadScript(Interp* interp, Source* scriptSource) {
         if (!ScopeModule(interp->scoper, loadedSource.moduleAstNode)) {
             return 0;
         }
+        if (GetErrorPosted()) {
+            return 0;
+        }
 
         // All ok! Pushing and returning OK.
         sb_push(interp->loadedSourceSb, loadedSource);
@@ -91,29 +93,17 @@ int LoadScript(Interp* interp, Source* scriptSource) {
 }
 
 int FinalizeLoadedScripts(Interp* interp) {
+    // todo: rather than just type each module sequentially, do so on-demand.
     int loadedSourceCount = sb_count(interp->loadedSourceSb);
     for (int i = 0; i < loadedSourceCount; i++) {
         LoadedSource loadedSource = interp->loadedSourceSb[i];
-        if (!ResolveScopedModule(loadedSource.source, loadedSource.moduleAstNode)) {
-            return 0;
-        }
-    }
-    
-    // todo: rather than just type each module sequentially, do so on-demand.
-    for (int i = 0; i < loadedSourceCount; i++) {
-        LoadedSource loadedSource = interp->loadedSourceSb[i];
-        void* moduleType = TypeNode(loadedSource.moduleAstNode);
-        if (!moduleType) {
-            return 0;
-        }
+        TypeNode(loadedSource.source, loadedSource.moduleAstNode);
     }
     return 1;
 }
-
 int Execute(Interp* interp, Source* scriptSource, SymbolID entryPointName) {
     return 0;
 }
-
 int Compile(Interp* interp, Source* scriptSource, SymbolID optEntryPointName) {
     return 0;
 }

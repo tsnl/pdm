@@ -8,9 +8,12 @@
 #include "symbols.h"
 
 typedef struct AstNode AstNode;
+typedef struct AstNode RawAstNode;
+
 typedef enum AstKind AstKind;
 typedef enum AstUnaryOperator AstUnaryOperator;
 typedef enum AstBinaryOperator AstBinaryOperator;
+typedef enum AstContext AstContext;
 
 enum AstKind {
     AST_ERROR = -1,
@@ -26,7 +29,8 @@ enum AstKind {
     AST_STMT_BIND, AST_STMT_CHECK, AST_STMT_RETURN,
     AST_CALL,
     AST_UNARY, AST_BINARY,
-    AST_PATTERN, AST_FIELD
+    AST_PATTERN, 
+    AST_FIELD__MODULE_ITEM,AST_FIELD__TEMPLATE_ITEM,AST_FIELD__TUPLE_ITEM,AST_FIELD__STRUCT_ITEM,AST_FIELD__PATTERN_ITEM
 };
 
 enum AstUnaryOperator {
@@ -43,6 +47,12 @@ enum AstBinaryOperator {
     __BOP_COUNT
 };
 
+enum AstContext {
+    ASTCTX_TYPING,
+    ASTCTX_VALUE,
+    __ASTCTX_COUNT
+};
+
 //
 // Constructors:
 //
@@ -50,7 +60,7 @@ enum AstBinaryOperator {
 AstNode* CreateAstModule(Loc loc, SymbolID moduleID);
 void AttachImportHeaderToAstModule(AstNode* module, AstNode* mapping);
 void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping);
-void PushFieldToAstModule(Loc loc, AstNode* module, SymbolID fieldID, AstNode* pattern, AstNode* value);
+void PushFieldToAstModule(Loc loc, AstNode* module, SymbolID fieldID, AstNode* optTemplatePattern, AstNode* value);
 
 AstNode* CreateAstId(Loc loc, SymbolID symbolID);
 AstNode* CreateAstIntLiteral(Loc loc, size_t value, int base);
@@ -134,7 +144,7 @@ AstNode* GetAstCallLhs(AstNode* call);
 AstNode* GetAstCallRhs(AstNode* call);
 
 SymbolID GetAstFieldName(AstNode* field);
-AstNode* GetAstFieldPattern(AstNode* field);
+AstNode* GetAstModuleFieldPattern(AstNode* field);
 AstNode* GetAstFieldRhs(AstNode* field);
 
 AstUnaryOperator GetAstUnaryOperator(AstNode* unary);
@@ -147,19 +157,16 @@ AstNode* GetAstBinaryRtOperand(AstNode* binary);
 // Symbol and type storage:
 //
 
-void* GetAstNodeTypeP(AstNode* node);
-void SetAstNodeTypeP(AstNode* node, void* typeP);
+void SetAstNodeTypingType(AstNode* node, void* type);
+void SetAstNodeValueType(AstNode* node, void* type);
+
+void* GetAstNodeTypingType(AstNode* node);
+void* GetAstNodeValueType(AstNode* node);
 
 void* GetAstIdScopeP(AstNode* node);
 int GetAstIdLookupContext(AstNode* node);
-void SetAstIdScopeP(AstNode* node, void* scopeP);
-void SetAstIdLookupContext(AstNode* node, int context);
-
-void SetAstBindStmtValueTypeP(AstNode* node, void* valueTypeP);
-void SetAstBindStmtTypingTypeP(AstNode* node, void* typingTypeP);
-void* GetAstBindStmtValueTypeP(AstNode* node);
-void* GetAstBindStmtTypingTypeP(AstNode* node);
-
+void SetAstIdScopeP(AstNode* node, void* scope);
+void SetAstIdLookupContext(AstNode* node, AstContext context);
 
 // Visitor API: calls a 'VisitorCb' function pre- and post- visiting children.
 // - `context` can be used to propagate contextual information as the visitor recurses.
