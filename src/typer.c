@@ -13,15 +13,35 @@
 
 typedef struct MetaInfo MetaInfo;
 typedef struct FuncInfo FuncInfo;
-typedef struct TypeList TypeList;
+typedef struct TypefuncInfo TypefuncInfo;
+
+typedef struct TypeSub TypeSub;
 
 typedef enum AdtOperator AdtOperator;
 typedef struct AdtTrieNode AdtTrieNode;
 typedef struct AdtTrieEdge AdtTrieEdge;
 
-//
-// Types
-//
+enum AdtOperator {
+    ADT_MUL,
+    ADT_SUM
+};
+struct AdtTrieNode {
+    AdtTrieEdge* edgesSb;
+    AdtTrieNode* parent;
+    Type* owner;
+};
+struct AdtTrieEdge {
+    AdtOperator operator;
+    SymbolID name;
+    Type* type;
+    AdtTrieNode* result;
+};
+
+struct TypeSub {
+    Type* old;
+    Type* new;
+    TypeSub* next;
+};
 
 struct MetaInfo {
     size_t id;
@@ -31,6 +51,10 @@ struct FuncInfo {
     Type* domain;
     Type* image;
 };
+struct TypefuncInfo {
+    Type* arg;
+    Type* body;
+};
 struct Type {
     TypeKind kind;
     union {
@@ -39,9 +63,10 @@ struct Type {
         Type* Ptr;
         MetaInfo Meta;
         FuncInfo Func;
+        TypefuncInfo Typefunc;
         AdtTrieNode* AdtTrieNode;
     } as;
-    Type** supTypesSb;
+    Type** requiredSubTypesSb;
 };
 
 static Type builtinUnitType = {T_UNIT, {}, NULL};
@@ -57,11 +82,12 @@ static Type builtinFloatTypeBuffer[] = {
 };
 
 static const size_t MAX_METAVAR_COUNT = MAX_AST_NODE_COUNT;
-static const size_t MAX_PTR_COUNT = MAX_AST_NODE_COUNT / 3;
-static const size_t MAX_FUNC_COUNT = MAX_AST_NODE_COUNT / 2;
-static const size_t MAX_MODULE_COUNT = MAX_AST_NODE_COUNT / 2;
-static const size_t MAX_STRUCT_COUNT = MAX_AST_NODE_COUNT / 2;
-static const size_t MAX_UNION_COUNT = MAX_AST_NODE_COUNT / 2;
+static const size_t MAX_PTR_COUNT = MAX_AST_NODE_COUNT;
+static const size_t MAX_TYPEFUNC_COUNT = MAX_AST_NODE_COUNT;
+static const size_t MAX_FUNC_COUNT = MAX_AST_NODE_COUNT;
+static const size_t MAX_MODULE_COUNT = MAX_AST_NODE_COUNT;
+static const size_t MAX_STRUCT_COUNT = MAX_AST_NODE_COUNT;
+static const size_t MAX_UNION_COUNT = MAX_AST_NODE_COUNT;
 
 static size_t ptrTypeBufferCount = 0;
 static Type ptrTypeBuffer[MAX_PTR_COUNT];
@@ -72,6 +98,9 @@ static Type metaTypeBuffer[MAX_METAVAR_COUNT];
 static size_t funcTypeBufferCount = 0;
 static Type funcTypeBuffer[MAX_FUNC_COUNT];
 
+static size_t typefuncTypeBufferCount = 0;
+static Type typefuncTypeBuffer[MAX_TYPEFUNC_COUNT];
+
 static size_t moduleTypeBufferCount = 0;
 static Type moduleTypeBuffer[MAX_MODULE_COUNT];
 
@@ -81,42 +110,65 @@ static Type structTypeBuffer[MAX_STRUCT_COUNT];
 static size_t unionTypeBufferCount = 0;
 static Type unionTypeBuffer[MAX_UNION_COUNT];
 
-static void assertSubtypes(Type* sup, Type* sub) {
-    int count = sb_count(sub->supTypesSb);
+static void requireSubtyping(Type* sup, Type* sub);
+static Type* substitution(Type* arg, TypeSub* firstTypeSubP);
+
+static AdtTrieNode* createTrieNode(AdtTrieNode* parent, Type* owner);
+static AdtTrieNode* getTrieNodeChild(AdtTrieNode* root, AdtOperator operator, InputTypeFieldNode const* inputFieldList, int noNewEdges);
+static AdtTrieNode* getCommonSuperTrieNode(AdtTrieNode* a, AdtTrieNode* b);
+static int isSubTrieNode(AdtTrieNode* sup, AdtTrieNode* sub);
+
+static AdtTrieNode unitTTN = {NULL, NULL, &builtinUnitType};
+
+void requireSubtyping(Type* sup, Type* sub) {
+    int count = sb_count(sup->requiredSubTypesSb);
     for (int i = 0; i < count; i++) {
-        if (sub->supTypesSb[i] == sup) {
+        if (sup->requiredSubTypesSb[i] == sub) {
             return;
         }
     }
-    sb_push(sub->supTypesSb, sup);
+    sb_push(sup->requiredSubTypesSb, sub);
+}
+Type* substitution(Type* arg, TypeSub* firstTypeSubP) {
+    switch (arg->kind) {
+        case T_INT:
+        case T_FLOAT:
+        case T_UNIT:
+        {
+            return arg;
+        }
+        case T_PTR:
+        {
+            return GetPtrType(substitution(arg->as.Ptr, firstTypeSubP));
+        }
+        case T_META:
+        {
+            for (TypeSub* typeSubP = firstTypeSubP; typeSubP; typeSubP = typeSubP->next) {
+                if (DEBUG) {
+                    assert(typeSubP->old->kind == T_META);
+                }
+                if (typeSubP->old == arg) {
+                    return typeSubP->new;
+                }
+            }
+            return arg;
+        }
+        default:
+        {
+            if (DEBUG) {
+                printf("!!- NotImplemented: ApplySubstitution for X type kind.\n");
+            } else {
+                assert(0 && "!!- NotImplemented: ApplySubstitution for X type kind.");
+            }
+            return NULL;
+        }
+    }
 }
 
-//
-// ADT type tries
-//
-
-enum AdtOperator {
-    ADT_MUL,
-    ADT_SUM
-};
-struct AdtTrieNode {
-    AdtTrieEdge* edgesSb;
-    Type* owner;
-};
-struct AdtTrieEdge {
-    AdtOperator operator;
-    SymbolID name;
-    Type* type;
-    AdtTrieNode* result;
-};
-
-static AdtTrieNode unitTTN = {NULL, &builtinUnitType};
-
-static AdtTrieNode* createTrieNode(Type* owner);
-static AdtTrieNode* getTrieNodeChild(AdtTrieNode* root, AdtOperator operator, InputTypeFieldNode const* inputFieldList, int noNewEdges);
-static AdtTrieNode* createTrieNode(Type* owner) {
+AdtTrieNode* createTrieNode(AdtTrieNode* parent, Type* owner) {
     AdtTrieNode* trieNode = malloc(sizeof(AdtTrieNode));
     trieNode->edgesSb = NULL;
+    trieNode->parent = parent;
     trieNode->owner = NULL;
     return trieNode;
 }
@@ -150,15 +202,26 @@ AdtTrieNode* getTrieNodeChild(AdtTrieNode* parent, AdtOperator operator, InputTy
         if (noNewEdges) {
             return NULL;
         } else {
-            AdtTrieNode* infant = createTrieNode(NULL);
+            AdtTrieNode* infant = createTrieNode(parent, NULL);
             AdtTrieEdge edge = {operator, inputField->name, inputField->type, infant};
             sb_push(parent->edgesSb, edge);
             return infant;
         }
     }
 }
-
-
+AdtTrieNode* getCommonSuperTrieNode(AdtTrieNode* a, AdtTrieNode* b) {
+    if (a == b) {
+        return a;
+    } else {
+        return getCommonSuperTrieNode(
+            getCommonSuperTrieNode(a->parent, b),
+            getCommonSuperTrieNode(a, b->parent)
+        );
+    }
+}
+int isSubTrieNode(AdtTrieNode* sup, AdtTrieNode* sub) {
+    return getCommonSuperTrieNode(sub,sup) == sup;
+}
 
 //
 // API:
@@ -200,10 +263,27 @@ Type* GetFuncType(Type* domain, Type* image) {
     ptrTypeP->as.Func.image = image;
     return ptrTypeP;
 }
+Type* GetTypefuncType(Type* arg, Type* body) {
+    Type* typefuncType = &typefuncTypeBuffer[typefuncTypeBufferCount++];
+    typefuncType->as.Typefunc.arg = arg;
+    typefuncType->as.Typefunc.body = body;
+    return typefuncType;
+}
+Type* GetStruct(InputTypeFieldList const* inputFieldList) {
+    Type* structType = &structTypeBuffer[structTypeBufferCount++];
+    structType->as.AdtTrieNode = getTrieNodeChild(&unitTTN, ADT_MUL, inputFieldList, 0);
+    return structType;
+}
+Type* GetUnion(InputTypeFieldList const* inputFieldList) {
+    Type* unionType = &unionTypeBuffer[unionTypeBufferCount++];
+    unionType->as.AdtTrieNode = getTrieNodeChild(&unitTTN, ADT_MUL, inputFieldList, 0);
+    return unionType;
+}
+
 Type* CreateMetatype(char const* format, ...) {
     Type* metaTypeP = &metaTypeBuffer[metaTypeBufferCount++];
     metaTypeP->kind = T_META;
-    metaTypeP->supTypesSb = NULL;
+    metaTypeP->requiredSubTypesSb = NULL;
     metaTypeP->as.Meta.id = metaTypeBufferCount;   // using the buffer count as a unique ID.
     {  // metaTypeP->as.Meta.name
         char nameBuffer[1024];
@@ -221,16 +301,6 @@ Type* CreateMetatype(char const* format, ...) {
         metaTypeP->as.Meta.name = strdup(nameBuffer);
     }
     return metaTypeP;
-}
-Type* GetStruct(InputTypeFieldList const* inputFieldList) {
-    Type* structType = &structTypeBuffer[structTypeBufferCount++];
-    structType->as.AdtTrieNode = getTrieNodeChild(&unitTTN, ADT_MUL, inputFieldList, 0);
-    return structType;
-}
-Type* GetUnion(InputTypeFieldList const* inputFieldList) {
-    Type* unionType = &unionTypeBuffer[unionTypeBufferCount++];
-    unionType->as.AdtTrieNode = getTrieNodeChild(&unitTTN, ADT_MUL, inputFieldList, 0);
-    return unionType;
 }
 
 //
@@ -257,44 +327,8 @@ char const* GetMetatypeName(Type* typeP) {
 }
 
 //
-// Substitutions:
+// Typer visitor:
 //
-
-Type* TypeSubstitution(Type* arg, TypeSub* firstTypeSubP) {
-    switch (arg->kind) {
-        case T_INT:
-        case T_FLOAT:
-        case T_UNIT:
-        {
-            return arg;
-        }
-        case T_PTR:
-        {
-            return GetPtrType(TypeSubstitution(arg->as.Ptr, firstTypeSubP));
-        }
-        case T_META:
-        {
-            for (TypeSub* typeSubP = firstTypeSubP; typeSubP; typeSubP = typeSubP->next) {
-                if (DEBUG) {
-                    assert(typeSubP->old->kind == T_META);
-                }
-                if (typeSubP->old == arg) {
-                    return typeSubP->new;
-                }
-            }
-            return arg;
-        }
-        default:
-        {
-            if (DEBUG) {
-                printf("!!- NotImplemented: ApplySubstitution for X type kind.\n");
-            } else {
-                assert(0 && "!!- NotImplemented: ApplySubstitution for X type kind.");
-            }
-            return NULL;
-        }
-    }
-}
 
 int typeNodePostVisitor(void* source, AstNode* node) {
     switch (GetAstNodeKind(node)) {
@@ -352,7 +386,7 @@ int typeNodePostVisitor(void* source, AstNode* node) {
             void* lhsType = GetAstNodeValueType(node);
             void* rhsType = GetAstNodeValueType(node);
             if (lhsType && rhsType) {
-                assertSubtypes(lhsType, rhsType);
+                requireSubtyping(lhsType, rhsType);
             }
             break;
         }
@@ -392,7 +426,8 @@ int typeNodePostVisitor(void* source, AstNode* node) {
         }
         case AST_FIELD__MODULE_ITEM:
         {
-            // modules can be used in value and typing contexts
+            // module items can be used in value and typing contexts
+            // todo: make these types the results of type functions
             SetAstNodeValueType(node, GetAstNodeValueType(GetAstFieldRhs(node)));
             SetAstNodeTypingType(node, GetAstNodeTypingType(GetAstFieldRhs(node)));
             break;
@@ -463,3 +498,11 @@ void TypeNode(Source* source, AstNode* node) {
     visit(source, node, NULL, typeNodePostVisitor);
 }
 
+int Typecheck(void) {
+    // todo: check requirements for each non-metatype.
+    // todo: synthesize solutions for each metatype.
+    if (DEBUG) {
+        printf("!!- Not implemented: `typecheck` for type kind <*>\n.");
+    }
+    return 0;
+}

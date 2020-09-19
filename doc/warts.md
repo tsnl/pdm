@@ -5,3 +5,4 @@
   - variadic functions using templates (like C++, Scala List(...)) can address this gap.
 - Unions removed for now, can be figured out later. Symbols may suffice?
 - Explicit return statements are optional.
+- No clear mechanism to call template parameters

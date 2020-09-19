@@ -31,15 +31,9 @@ enum FloatWidth {
 };
 
 typedef struct Type Type;
-typedef struct TypeSub TypeSub;
 typedef struct InputTypeFieldNode InputTypeFieldNode;
 typedef struct InputTypeFieldNode InputTypeFieldList;
 
-struct TypeSub {
-    Type* old;
-    Type* new;
-    TypeSub* next;
-};
 struct InputTypeFieldNode {
     SymbolID name;
     Type* type;
@@ -56,10 +50,11 @@ Type* GetIntType(IntWidth width);
 Type* GetFloatType(FloatWidth width);
 Type* GetPtrType(Type* pointee);
 Type* GetFuncType(Type* domain, Type* image);
-Type* CreateMetatype(char const* format, ...);
-
+Type* GetTypefuncType(Type* arg, Type* body);
 Type* GetStruct(InputTypeFieldList const* inputFieldList);
 Type* GetUnion(InputTypeFieldList const* inputFieldList);
+
+Type* CreateMetatype(char const* format, ...);
 
 //
 // Getters for type info:
@@ -73,15 +68,15 @@ size_t GetMetatypeID(Type* typeP);
 char const* GetMetatypeName(Type* typeP);
 
 //
-// Substitution:
-//
-
-Type* TypeSubstitution(Type* arg, TypeSub* firstSub);
-
-//
 // Recursively typing:
 //
 
 void TypeNode(Source* source, AstNode* node);
+
+//
+// Once nodes are typed, ready to typecheck:
+//
+
+int Typecheck(void);
 
 #endif  // INCLUDED_TYPER_H
