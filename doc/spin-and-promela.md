@@ -11,4 +11,4 @@
 
 - We should experiment with Promela before generating it
   - Try on `moon-river`, the toy raytracer?
-  - 
+

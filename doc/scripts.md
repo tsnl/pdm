@@ -15,13 +15,8 @@ Scripts may use file resources that are **static** or **dynamic**
 # Packages
 
 When a script is executed, all static resources are added to a package for that script.
-This is not a user-oriented feature; packages are ad-hoc bundles of required resources that correspond to an entry point.
+**This is not a user-oriented feature;** packages are ad-hoc bundles of required resources that correspond to an entry point.
 
 ```Script -> Package (after pulling in all resources) -> Application/Library```
-- Scripts are FS references in terms of the developer's machine
-- Packages normalize all these references and shake redundant ones
-- Packages are then compiled to scripts
-
-# Example
-
-*The 'dev.app.hub' program below prints `(...)\n\n` to stdout.*
+- Package contents are FS references to the compiler process
+- Packages normalize all these references, shake redundant ones, and read/optimize where necessary
