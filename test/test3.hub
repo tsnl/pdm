@@ -1,4 +1,4 @@
-hi: [x: Float] -> {
-    x = 42;
-    x * x
+hi(t): [x: t] -> {
+    a: x,
+    y: x
 };

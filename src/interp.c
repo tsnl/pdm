@@ -102,8 +102,11 @@ int FinalizeLoadedScripts(Interp* interp) {
     return 1;
 }
 int Execute(Interp* interp, Source* scriptSource, SymbolID entryPointName) {
+    // todo: execute code from the interpreter
+    // todo: see if 'Compile' was called before 'Execute' to provide JIT functionality unless in debug mode.
     return 0;
 }
 int Compile(Interp* interp, Source* scriptSource, SymbolID optEntryPointName) {
+    // todo: compile code and store output in a pointer.
     return 0;
 }

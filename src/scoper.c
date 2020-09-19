@@ -38,6 +38,7 @@ struct Scope {
 size_t allocatedScopersCount = 0;
 Scoper allocatedScopers[MAX_SCOPER_COUNT];
 static size_t allocatedScopeStackFramesCount = 0;
+
 static Scoper* createScoper(void);
 
 static size_t allocatedScopeCount = 0;
@@ -166,7 +167,7 @@ int scoper_pre(void* rawScoper, AstNode* node) {
         }
         case AST_FIELD__STRUCT_ITEM:
         {
-            // TODO: define a symbol chain similar to modules.
+            // todo: define a scoper symbol chain for structs similar to modules.
             break;
         }
         default:
@@ -229,3 +230,5 @@ void* LookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstCo
 
 // After definition, IDs are looked up, map to type IDs.
 // These type IDs can be stored in the AST.
+
+// todo: define builtin IDs

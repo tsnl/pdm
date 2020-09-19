@@ -16,7 +16,8 @@ enum TypeKind {
     T_FLOAT,
     T_PTR,
     T_META,
-    T_FUNC
+    T_FUNC,
+    T_MODULE, T_STRUCT, T_TUPLE
 };
 enum IntWidth {
     INT8,
@@ -31,11 +32,18 @@ enum FloatWidth {
 
 typedef struct Type Type;
 typedef struct TypeSub TypeSub;
+typedef struct InputTypeFieldNode InputTypeFieldNode;
+typedef struct InputTypeFieldNode InputTypeFieldList;
 
 struct TypeSub {
     Type* old;
     Type* new;
     TypeSub* next;
+};
+struct InputTypeFieldNode {
+    SymbolID name;
+    Type* type;
+    InputTypeFieldNode* next;
 };
 
 //
@@ -50,6 +58,8 @@ Type* GetPtrType(Type* pointee);
 Type* GetFuncType(Type* domain, Type* image);
 Type* CreateMetatype(char const* format, ...);
 
+Type* GetStruct(InputTypeFieldList const* inputFieldList);
+Type* GetUnion(InputTypeFieldList const* inputFieldList);
 
 //
 // Getters for type info:
