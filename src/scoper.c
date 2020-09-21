@@ -26,6 +26,9 @@ struct Scoper {
     // - `end` points to the last INCLUSIVE element
     Scope* currentModuleDefBegP;
     Scope* currentModuleDefEndP;
+
+    // the typer is used by the scoper to create metatypes.
+    Typer* typer;
 };
 
 struct Scope {
@@ -39,7 +42,7 @@ size_t allocatedScopersCount = 0;
 Scoper allocatedScopers[MAX_SCOPER_COUNT];
 static size_t allocatedScopeStackFramesCount = 0;
 
-static Scoper* createScoper(void);
+static Scoper* createScoper(Typer* typer);
 
 static size_t allocatedScopeCount = 0;
 static Scope allocatedScopes[MAX_AST_NODE_COUNT];
@@ -52,7 +55,7 @@ static void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP
 // Static implementation:
 //
 
-Scoper* createScoper() {
+Scoper* createScoper(Typer* typer) {
     Scoper* scoper = NULL;
     if (allocatedScopersCount < MAX_SCOPER_COUNT) {
         scoper = &allocatedScopers[allocatedScopersCount++];
@@ -62,6 +65,7 @@ Scoper* createScoper() {
     scoper->currentScopeP = NULL;
     scoper->currentModuleDefBegP = NULL;
     scoper->currentModuleDefEndP = NULL;
+    scoper->typer = typer;
     return scoper;
 }
 
@@ -117,8 +121,8 @@ int scoper_pre(void* rawScoper, AstNode* node) {
         case AST_STMT_BIND:
         {
             SymbolID defnID = GetAstBindStmtLhs(node);
-            void* valueTypeP = CreateMetatype("let<v> %s", GetSymbolText(defnID));
-            void* typingTypeP = CreateMetatype("let<t> %s", GetSymbolText(defnID));
+            void* valueTypeP = CreateMetatype(scoper->typer, "let<v> %s", GetSymbolText(defnID));
+            void* typingTypeP = CreateMetatype(scoper->typer, "let<t> %s", GetSymbolText(defnID));
             scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
             SetAstNodeValueType(node, valueTypeP);
             SetAstNodeTypingType(node, typingTypeP);
@@ -152,16 +156,16 @@ int scoper_pre(void* rawScoper, AstNode* node) {
         case AST_FIELD__TEMPLATE_ITEM:
         {
             SymbolID defnID = GetAstFieldName(node);
-            void* valueTypeP = CreateMetatype("template %s", GetSymbolText(defnID));
-            void* typingTypeP = CreateMetatype("template %s", GetSymbolText(defnID));
+            void* valueTypeP = CreateMetatype(scoper->typer, "template %s", GetSymbolText(defnID));
+            void* typingTypeP = CreateMetatype(scoper->typer, "template %s", GetSymbolText(defnID));
             scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
             break;
         }
         case AST_FIELD__PATTERN_ITEM:
         {
             SymbolID defnID = GetAstFieldName(node);
-            void* valueTypeP = CreateMetatype("pattern %s", GetSymbolText(defnID));
-            void* typingTypeP = CreateMetatype("pattern %s", GetSymbolText(defnID));
+            void* valueTypeP = CreateMetatype(scoper->typer, "pattern %s", GetSymbolText(defnID));
+            void* typingTypeP = CreateMetatype(scoper->typer, "pattern %s", GetSymbolText(defnID));
             scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
             break;
         }
@@ -190,11 +194,11 @@ int scoper_post(void* rawScoper, AstNode* node) {
     return 1;
 }
 
-Scoper* CreateScoper(void) {
-    return createScoper();
+Scoper* CreateScoper(void* typer) {
+    return createScoper(typer);
 }
 
-int ScopeModule(Scoper* scoperP, AstNode* module) {
+int ScopeModule(Scoper* scoper, AstNode* module) {
     if (DEBUG) {
         assert(GetAstNodeKind(module) == AST_MODULE);
     }
@@ -204,17 +208,17 @@ int ScopeModule(Scoper* scoperP, AstNode* module) {
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
         AstNode* field = GetAstModuleFieldAt(module, index);
-        void* valueTypeP = CreateMetatype("define<v> %s", GetSymbolText(GetAstFieldName(field)));
-        void* typingTypeP = CreateMetatype("define<t> %s", GetSymbolText(GetAstFieldName(field)));
-        scoperP->currentScopeP = defineSymbol(scoperP->currentScopeP, GetAstFieldName(field), valueTypeP, typingTypeP);
-        scoperP->currentModuleDefEndP = scoperP->currentScopeP;
-        if (scoperP->currentModuleDefBegP == NULL) {
-            scoperP->currentModuleDefBegP = scoperP->currentScopeP;
+        void* valueTypeP = CreateMetatype(scoper->typer, "define<v> %s", GetSymbolText(GetAstFieldName(field)));
+        void* typingTypeP = CreateMetatype(scoper->typer, "define<t> %s", GetSymbolText(GetAstFieldName(field)));
+        scoper->currentScopeP = defineSymbol(scoper->currentScopeP, GetAstFieldName(field), valueTypeP, typingTypeP);
+        scoper->currentModuleDefEndP = scoper->currentScopeP;
+        if (scoper->currentModuleDefBegP == NULL) {
+            scoper->currentModuleDefBegP = scoper->currentScopeP;
         }
     }
 
     // visiting the AST:
-    if (!visit(scoperP, module, scoper_pre, scoper_post)) {
+    if (!visit(scoper, module, scoper_pre, scoper_post)) {
         return 0;
     }
     return 1;

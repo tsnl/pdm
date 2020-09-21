@@ -6,6 +6,9 @@
 #include "source.h"
 #include "ast.h"
 
+typedef struct Typer Typer;
+typedef struct TyperCfg TyperCfg;
+
 typedef enum IntWidth IntWidth;
 typedef enum FloatWidth FloatWidth;
 typedef enum TypeKind TypeKind;
@@ -20,14 +23,17 @@ enum TypeKind {
     T_MODULE, T_STRUCT, T_TUPLE
 };
 enum IntWidth {
-    INT8,
-    INT16,
-    INT32,
-    INT64
+    INT_1,
+    INT_8,
+    INT_16,
+    INT_32,
+    INT_64,
+    __INT_COUNT
 };
 enum FloatWidth {
-    FLOAT32,
-    FLOAT64
+    FLOAT_32,
+    FLOAT_64,
+    __FLOAT_COUNT
 };
 
 typedef struct Type Type;
@@ -42,22 +48,39 @@ struct InputTypeFieldNode {
 
 //
 // To obtain types,
+// - only types from the same typer are interoperable.
 // - if two types are structurally equivalent, they are also pointer equivalent
 //
 
-Type* GetUnitType(void);
-Type* GetIntType(IntWidth width);
-Type* GetFloatType(FloatWidth width);
-Type* GetPtrType(Type* pointee);
-Type* GetFuncType(Type* domain, Type* image);
-Type* GetTypefuncType(Type* arg, Type* body);
-Type* GetStruct(InputTypeFieldList const* inputFieldList);
-Type* GetUnion(InputTypeFieldList const* inputFieldList);
-
-Type* CreateMetatype(char const* format, ...);
+struct TyperCfg {
+    size_t maxMetavarCount;
+    size_t maxPtrCount;
+    size_t maxTypefuncCount;
+    size_t maxFuncCount;
+    size_t maxModuleCount;
+    size_t maxStructCount;
+    size_t maxUnionCount;
+};
+TyperCfg CreateDefaultTyperCfg(void);
+Typer* CreateTyper(TyperCfg config);
 
 //
-// Getters for type info:
+// Constructor methods:
+//
+
+Type* GetUnitType(Typer* typer);
+Type* GetIntType(Typer* typer, IntWidth width);
+Type* GetFloatType(Typer* typer, FloatWidth width);
+Type* GetPtrType(Typer* typer, Type* pointee);
+Type* GetFuncType(Typer* typer, Type* domain, Type* image);
+Type* GetTypefuncType(Typer* typer, Type* arg, Type* body);
+Type* GetStruct(Typer* typer, InputTypeFieldList const* inputFieldList);
+Type* GetUnion(Typer* typer, InputTypeFieldList const* inputFieldList);
+
+Type* CreateMetatype(Typer* typer, char const* format, ...);
+
+//
+// Getter methods for type info:
 //
 
 TypeKind GetTypeKind(Type* typeP);

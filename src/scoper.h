@@ -7,7 +7,7 @@
 typedef struct Scoper Scoper;
 typedef struct Scope Scope;
 
-Scoper* CreateScoper(void);
+Scoper* CreateScoper(void* typer);
 int ScopeModule(Scoper* scoper, AstNode* node);
 
 void* LookupSymbol(Scope* scope, SymbolID lookupID, AstContext context);

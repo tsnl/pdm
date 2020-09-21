@@ -129,7 +129,7 @@ TokenKind lexOneToken(Source* source, TokenInfo* infoP) {
     //
     
     char offendingChar = ReadSourceReaderHead(source);
-    FeedbackNote note = {"here...", source, infoP->loc, NULL};
+    FeedbackNote note = {"here...", infoP->loc, NULL};
     PostFeedback(FBK_ERROR, &note, "Before '%c' (%d), expected a valid token.", offendingChar, (int)offendingChar);
 
     return TK_NULL;
@@ -394,7 +394,7 @@ static TokenKind lexOneString(Source* source, TokenInfo* infoP) {
                 char invalidSecondChar = ReadSourceReaderHead(source);
                 
                 // invalid escape sequence!
-                FeedbackNote note = {"here...", source, escapeSequenceLoc, NULL};
+                FeedbackNote note = {"here...", escapeSequenceLoc, NULL};
 
                 if (invalidSecondChar == EOF) {
                     PostFeedback(FBK_ERROR, &note, "Invalid escape sequence at EOF");
@@ -417,7 +417,7 @@ static TokenKind lexOneString(Source* source, TokenInfo* infoP) {
         infoP->as.UnicodeStringSb = contentStretchyBuffer;
         return tokenKind;
     } else {
-        FeedbackNote firstNote = {"here...", source, infoP->loc, NULL};
+        FeedbackNote firstNote = {"here...", infoP->loc, NULL};
         PostFeedback(FBK_ERROR, &firstNote, "Invalid string literal");
         return TK_NULL;
     }

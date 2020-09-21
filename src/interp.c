@@ -20,6 +20,7 @@ struct LoadedSource {
 
 struct Interp {
     LoadedSource* loadedSourceSb;
+    Typer* typer;
     Scoper* scoper;
 };
 
@@ -45,7 +46,8 @@ Interp* CreateInterp(void) {
 
     Interp* interp = malloc(sizeof(Interp));
     interp->loadedSourceSb = NULL;
-    interp->scoper = CreateScoper();
+    interp->typer = CreateTyper(CreateDefaultTyperCfg());
+    interp->scoper = CreateScoper(interp->typer);
     return interp;
 }
 void DestroyInterp(Interp* interp) {

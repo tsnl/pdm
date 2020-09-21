@@ -24,10 +24,10 @@ struct Loc {
     ssize_t offset;
     int lineIndex;
     int colIndex;
+    Source* source;
 };
 struct FeedbackNote {
     char const* message;
-    Source* sourceP;
     Loc loc;
     FeedbackNote* nextP;
 };
@@ -45,7 +45,7 @@ struct Source {
 Source* CreateSource(char const* path);
 Source* DupSource(Source* old);
 
-FeedbackNote* CreateFeedbackNote(char const* message, Source* source, Loc loc, FeedbackNote* next);
+FeedbackNote* CreateFeedbackNote(char const* message, Loc loc, FeedbackNote* next);
 void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, ...);
 int GetErrorPosted(void);
 

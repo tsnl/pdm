@@ -129,7 +129,7 @@ inline static void expectError(Parser* p, char const* expectedDesc) {
     TokenInfo info = lookaheadInfo(p,0);
     TokenToText(kind, &info, errorText, 512);
     
-    FeedbackNote* note = CreateFeedbackNote("here...", p->source, info.loc, NULL);
+    FeedbackNote* note = CreateFeedbackNote("here...", info.loc, NULL);
     PostFeedback(FBK_ERROR, note, "Before '%s' expected %s.", errorText, expectedDesc);
 }
 static int expect(Parser* p, TokenKind tokenKind, char const* expectedDesc) {
@@ -159,7 +159,6 @@ static RawAstNode* parseStmt(Parser* p) {
 
     FeedbackNote note = {
         .message = "here...",
-        .sourceP = p->source,
         .loc = loc,
         .nextP = NULL
     };
@@ -234,7 +233,6 @@ static RawAstNode* parseExpr(Parser* p) {
 
     FeedbackNote note = {
         .message = "here...",
-        .sourceP = p->source,
         .loc = loc,
         .nextP = NULL
     };
@@ -395,7 +393,6 @@ static RawAstNode* tryParsePrimaryExpr(Parser* p) {
                     fatal_error: {
                         FeedbackNote note = {
                             .message = "chain here...",
-                            .sourceP = p->source,
                             .loc = loc,
                             .nextP = NULL
                         };
@@ -562,8 +559,8 @@ static void parsePatternElementWithTail(Parser* p, RawAstNode* pattern, int* okP
         }
     } else {
         *okP = 0;
-        FeedbackNote noteParent = {"in pattern...", p->source, patternLoc, NULL};
-        FeedbackNote noteHere = {"here...", p->source, rhsLoc, &noteParent};
+        FeedbackNote noteParent = {"in pattern...", patternLoc, NULL};
+        FeedbackNote noteHere = {"here...", rhsLoc, &noteParent};
         PostFeedback(FBK_ERROR, &noteHere, "Expected a field RHS");
     }
 }

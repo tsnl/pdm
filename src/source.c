@@ -19,10 +19,9 @@ char const* prefix(FeedbackKind kind) {
     }
 }
 
-FeedbackNote* CreateFeedbackNote(char const* message, Source* source, Loc loc, FeedbackNote* next) {
+FeedbackNote* CreateFeedbackNote(char const* message, Loc loc, FeedbackNote* next) {
     FeedbackNote* note = malloc(sizeof(FeedbackNote));
     note->message = message;
-    note->sourceP = source;
     note->loc = loc;
     note->nextP = next;
     return note;
@@ -48,7 +47,7 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
             fprintf(stderr, "- %s: %s\n", prefix(kind), feedbackBuf);
         }
         fprintf(stderr, "  %s\n", noteP->message);
-        fprintf(stderr, "  in [%s]\n", noteP->sourceP->path);
+        fprintf(stderr, "  in [%s]\n", noteP->loc.source->path);
     }
 }
 int GetErrorPosted(void) {
@@ -78,6 +77,7 @@ Source* CreateSource(char const* path) {
     sourceP->peekLoc.offset = -1;
     sourceP->peekLoc.lineIndex = 0;
     sourceP->peekLoc.colIndex = -1;  // if LF is first char, line&col refreshed. else, colIndex++ => (0)
+    sourceP->peekLoc.source = sourceP;
 
     sourceP->peekChar = EOF;
     sourceP->promisedChar = EOF;
