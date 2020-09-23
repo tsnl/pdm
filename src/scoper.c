@@ -121,8 +121,8 @@ int scoper_pre(void* rawScoper, AstNode* node) {
         case AST_STMT_BIND:
         {
             SymbolID defnID = GetAstBindStmtLhs(node);
-            void* valueTypeP = CreateMetatype(scoper->typer, "let<v> %s", GetSymbolText(defnID));
-            void* typingTypeP = CreateMetatype(scoper->typer, "let<t> %s", GetSymbolText(defnID));
+            void* valueTypeP = CreateMetatype(scoper->typer, "let<v>%s", GetSymbolText(defnID));
+            void* typingTypeP = CreateMetatype(scoper->typer, "let<t>%s", GetSymbolText(defnID));
             scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
             SetAstNodeValueType(node, valueTypeP);
             SetAstNodeTypingType(node, typingTypeP);
@@ -156,22 +156,29 @@ int scoper_pre(void* rawScoper, AstNode* node) {
         case AST_FIELD__TEMPLATE_ITEM:
         {
             SymbolID defnID = GetAstFieldName(node);
-            void* valueTypeP = CreateMetatype(scoper->typer, "template %s", GetSymbolText(defnID));
-            void* typingTypeP = CreateMetatype(scoper->typer, "template %s", GetSymbolText(defnID));
+            // todo: valueTypeP encodes a first-order type
+            void* valueTypeP = CreateMetatype(scoper->typer, "template<v>%s", GetSymbolText(defnID));
+            void* typingTypeP = CreateMetatype(scoper->typer, "template<t>%s", GetSymbolText(defnID));
             scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
+            SetAstNodeValueType(node, valueTypeP);
+            SetAstNodeTypingType(node, typingTypeP);
             break;
         }
         case AST_FIELD__PATTERN_ITEM:
         {
             SymbolID defnID = GetAstFieldName(node);
-            void* valueTypeP = CreateMetatype(scoper->typer, "pattern %s", GetSymbolText(defnID));
-            void* typingTypeP = CreateMetatype(scoper->typer, "pattern %s", GetSymbolText(defnID));
+            void* valueTypeP = CreateMetatype(scoper->typer, "pattern<v>%s", GetSymbolText(defnID));
+            // void* typingTypeP = CreateMetatype(scoper->typer, "pattern<t> %s", GetSymbolText(defnID));
+            void* typingTypeP = NULL;
             scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
+            SetAstNodeValueType(node, valueTypeP);
+            SetAstNodeTypingType(node, typingTypeP);
             break;
         }
         case AST_FIELD__STRUCT_ITEM:
         {
-            // todo: define a scoper symbol chain for structs similar to modules.
+            SymbolID defnID = GetAstFieldName(node);
+            SetAstNodeValueType(node, GetAstNodeTypingType(GetAstFieldRhs(node)));
             break;
         }
         default:
@@ -208,8 +215,8 @@ int ScopeModule(Scoper* scoper, AstNode* module) {
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
         AstNode* field = GetAstModuleFieldAt(module, index);
-        void* valueTypeP = CreateMetatype(scoper->typer, "define<v> %s", GetSymbolText(GetAstFieldName(field)));
-        void* typingTypeP = CreateMetatype(scoper->typer, "define<t> %s", GetSymbolText(GetAstFieldName(field)));
+        void* valueTypeP = CreateMetatype(scoper->typer, "define<v>%s", GetSymbolText(GetAstFieldName(field)));
+        void* typingTypeP = CreateMetatype(scoper->typer, "define<t>%s", GetSymbolText(GetAstFieldName(field)));
         scoper->currentScopeP = defineSymbol(scoper->currentScopeP, GetAstFieldName(field), valueTypeP, typingTypeP);
         scoper->currentModuleDefEndP = scoper->currentScopeP;
         if (scoper->currentModuleDefBegP == NULL) {

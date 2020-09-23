@@ -10,6 +10,8 @@ add_executable(pc
     src/code-printer.c
     src/code-printer.h
     src/config.h
+    src/debugger.c
+    src/debugger.h
     src/interp.c
     src/interp.h
     src/lexer.c

@@ -327,9 +327,9 @@ static RawAstNode* tryParsePrimaryExpr(Parser* p) {
             if (!pattern) {
                 return NULL;
             }
-            if (!expect(p, TK_ARROW, "'->'")) {
-                return NULL;
-            }
+            // if (!expect(p, TK_ARROW, "'->'")) {
+            //     return NULL;
+            // }
             RawAstNode* body = parseExpr(p);
             if (!body) {
                 return NULL;
@@ -466,13 +466,13 @@ static RawAstNode* tryParseBinaryExprAtPrecedence(Parser* p, BinaryOpPrecedenceN
     } else {
         lhs = tryParseUnaryExpr(p);
     }
-
-    if (match(p, highestPrecedenceNode->tokenKind)) {
-        RawAstNode* rhs = tryParseBinaryExprAtPrecedence(p, highestPrecedenceNode);
-        return CreateAstBinary(GetAstNodeLoc(lhs), highestPrecedenceNode->bop, lhs, rhs);
-    } else {
-        return lhs;
+    if (lhs) {
+        if (match(p, highestPrecedenceNode->tokenKind)) {
+            RawAstNode* rhs = tryParseBinaryExprAtPrecedence(p, highestPrecedenceNode);
+            return CreateAstBinary(GetAstNodeLoc(lhs), highestPrecedenceNode->bop, lhs, rhs);
+        }
     }
+    return lhs;
 }
 static RawAstNode* tryParseCallExpr(Parser* p) {
     RawAstNode* lhs = tryParseBinaryExpr(p);
@@ -598,15 +598,15 @@ RawAstNode* ParseSource(Source* source) {
             SymbolID lhsID = tokenInfo.as.ID;
 
             RawAstNode* templatePattern = NULL;
-            if (lookaheadKind(&p,0) == TK_LPAREN) {
-                templatePattern = parsePattern(&p, TK_LPAREN, TK_RPAREN, 0);
+            if (lookaheadKind(&p,0) == TK_LSQBRK) {
+                templatePattern = parsePattern(&p, TK_LSQBRK, TK_RSQBRK, 0);
                 if (!templatePattern) {
                     // bad pattern
                     return NULL;
                 }
             }
 
-            if (!expect(&p, TK_COLON, "a label's colon")) {
+            if (!expect(&p, TK_DBL_COLON, "a module label '::' suffix")) {
                 return NULL;
             }
             

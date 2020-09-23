@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "stb/stretchy_buffer.h"
 
@@ -14,6 +15,7 @@
 typedef struct MetaInfo MetaInfo;
 typedef struct FuncInfo FuncInfo;
 typedef struct TypefuncInfo TypefuncInfo;
+typedef struct ModuleInfo ModuleInfo;
 
 typedef struct TypeSub TypeSub;
 typedef struct TypeBuf TypeBuf;
@@ -30,6 +32,8 @@ struct AdtTrieNode {
     AdtTrieEdge* edgesSb;
     AdtTrieNode* parent;
     Type* owner;
+    int parentEdgeIndex;
+    int depth;
 };
 struct AdtTrieEdge {
     AdtOperator operator;
@@ -62,16 +66,20 @@ struct TypefuncInfo {
     Type* arg;
     Type* body;
 };
+struct ModuleInfo {
+    // todo: implement type ModuleInfo
+};
 struct Type {
     TypeKind kind;
     union {
-        IntWidth Int;
-        FloatWidth Float;
+        IntWidth Int_width;
+        FloatWidth Float_width;
         Type* Ptr_pointee;
         MetaInfo Meta;
         FuncInfo Func;
         TypefuncInfo Typefunc;
-        AdtTrieNode* Compound_trieNode;
+        ModuleInfo Module;
+        AdtTrieNode* Compound_atn;
     } as;
     Type** requiredSubTypesSb;
 };
@@ -100,6 +108,10 @@ static TypeBuf createTypeBuf(char const* name, size_t capacity);
 static Type* tryPushTypeBuf(TypeBuf* buf);
 static Type* pushTypeBuf(TypeBuf* buf);
 
+static int typerPostVisitor(void* rawTyper, AstNode* node);
+static int typecheckSingle(Typer* typer, Type* type);
+static void printType(Typer* typer, Type* type);
+
 TyperCfg createDefaultTyperCfg(void) {
     return (TyperCfg) {
         .maxMetavarCount = MAX_AST_NODE_COUNT,
@@ -117,13 +129,13 @@ Typer* createTyper(TyperCfg config) {
     typer->backupCfg = config;
     
     typer->unitType = (Type) {T_UNIT, {}, NULL};
-    typer->floatType[FLOAT_32] = (Type) {T_FLOAT, {.Float = FLOAT_32}, NULL};
-    typer->floatType[FLOAT_64] = (Type) {T_FLOAT, {.Float = FLOAT_64}, NULL};
-    typer->intType[INT_8] = (Type) {T_INT, {.Int = INT_8}, NULL};
-    typer->intType[INT_16] = (Type) {T_INT, {.Int = INT_16}, NULL};
-    typer->intType[INT_32] = (Type) {T_INT, {.Int = INT_32}, NULL};
-    typer->intType[INT_64] = (Type) {T_INT, {.Int = INT_64}, NULL};
-    typer->intType[INT_64] = (Type) {T_INT, {.Int = INT_64}, NULL};
+    typer->floatType[FLOAT_32] = (Type) {T_FLOAT, {.Float_width = FLOAT_32}, NULL};
+    typer->floatType[FLOAT_64] = (Type) {T_FLOAT, {.Float_width = FLOAT_64}, NULL};
+    typer->intType[INT_8] = (Type) {T_INT, {.Int_width = INT_8}, NULL};
+    typer->intType[INT_16] = (Type) {T_INT, {.Int_width = INT_16}, NULL};
+    typer->intType[INT_32] = (Type) {T_INT, {.Int_width = INT_32}, NULL};
+    typer->intType[INT_64] = (Type) {T_INT, {.Int_width = INT_64}, NULL};
+    typer->intType[INT_64] = (Type) {T_INT, {.Int_width = INT_64}, NULL};
     
     typer->metaTypeBuf = createTypeBuf("metaTypeBuf", typer->backupCfg.maxMetavarCount);
     typer->ptrTypeBuf = createTypeBuf("ptrTypeBuf", typer->backupCfg.maxPtrCount);
@@ -133,7 +145,9 @@ Typer* createTyper(TyperCfg config) {
     typer->structTypeBuf = createTypeBuf("structTypeBuf", typer->backupCfg.maxStructCount);
     typer->unionTypeBuf = createTypeBuf("unionTypeBuf", typer->backupCfg.maxUnionCount);
     
-    typer->unitATN = (AdtTrieNode) {NULL,NULL,&typer->unitType};
+    typer->unitATN = (AdtTrieNode) {NULL,NULL,&typer->unitType,-1,0};
+    // todo: singleton structs and tuples / unions == identity operation (!!)
+    // todo: integer promotion must be implemented somehow
     return typer;
 }
 TypeBuf createTypeBuf(char const* name, size_t capacity) {
@@ -167,10 +181,10 @@ Type* pushTypeBuf(TypeBuf* buf) {
 static void requireSubtyping(Type* sup, Type* sub);
 static Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP);
 
-static AdtTrieNode* createTrieNode(AdtTrieNode* parent, Type* owner);
-static AdtTrieNode* getTrieNodeChild(AdtTrieNode* root, AdtOperator operator, InputTypeFieldNode const* inputFieldList, int noNewEdges);
-static AdtTrieNode* getCommonSuperTrieNode(AdtTrieNode* a, AdtTrieNode* b);
-static int isSubTrieNode(AdtTrieNode* sup, AdtTrieNode* sub);
+static AdtTrieNode* createATN(AdtTrieNode* parent, Type* owner);
+static AdtTrieNode* getATN(AdtTrieNode* root, AdtOperator operator, InputTypeFieldNode const* inputFieldList, int noNewEdges);
+static AdtTrieNode* getCommonSuperATN(AdtTrieNode* a, AdtTrieNode* b);
+static int isSubATN(AdtTrieNode* sup, AdtTrieNode* sub);
 
 void requireSubtyping(Type* sup, Type* sub) {
     int count = sb_count(sup->requiredSubTypesSb);
@@ -217,33 +231,54 @@ Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP) {
     }
 }
 
-AdtTrieNode* createTrieNode(AdtTrieNode* parent, Type* owner) {
+AdtTrieNode* createATN(AdtTrieNode* parent, Type* owner) {
     AdtTrieNode* trieNode = malloc(sizeof(AdtTrieNode));
     trieNode->edgesSb = NULL;
     trieNode->parent = parent;
     trieNode->owner = NULL;
+    if (trieNode->parent) {
+        trieNode->depth = 1+trieNode->parent->depth;
+        trieNode->parentEdgeIndex = sb_count(parent->edgesSb);
+    } else {
+        trieNode->depth = -1;
+        trieNode->parentEdgeIndex = -1;
+    }
     return trieNode;
 }
-AdtTrieNode* getTrieNodeChild(AdtTrieNode* parent, AdtOperator operator, InputTypeFieldNode const* inputField, int noNewEdges) {
+AdtTrieNode* getATN(AdtTrieNode* parent, AdtOperator operator, InputTypeFieldNode const* inputField, int noNewEdges) {
     if (inputField == NULL) {
         return parent;
     } else {
+        if (DEBUG) {
+            if (!parent) {
+                printf("!!- cannot `getATN` from a NULL parent.\n");
+            }
+        } else {
+            assert(parent && "cannot `getATN` from a NULL parent... give us something...");
+        }
+
         // searching children for an existing edge:
         int edgeCount = sb_count(parent->edgesSb);
         for (int i = 0; i < edgeCount; i++) {
             AdtTrieEdge edge = parent->edgesSb[i];
-            int operatorMatch = (operator == edge.operator);
-            int nameMatch = 1;
-            if (inputField->name != SYM_NULL) {
-                nameMatch = (inputField->name == edge.name);
+            AdtTrieNode* child = edge.result;
+            if (DEBUG) {
+                if (child->parentEdgeIndex != i) {
+                    printf("!!- ATN Tree property violated: a child's parent edge index does not match the found index.\n");
+                }
+            } else {
+                assert(child->parentEdgeIndex == i);
             }
+                
+            int operatorMatch = (operator == edge.operator);
+            int nameMatch = (inputField->name == edge.name);
             int typeMatch = 1;
             if (inputField->type != NULL) {
                 typeMatch = (inputField->type == edge.type);
             }
             if (operatorMatch && nameMatch && typeMatch) {
-                return getTrieNodeChild(
-                    edge.result,
+                return getATN(
+                    child,
                     operator,
                     inputField->next,
                     noNewEdges
@@ -254,25 +289,30 @@ AdtTrieNode* getTrieNodeChild(AdtTrieNode* parent, AdtOperator operator, InputTy
         if (noNewEdges) {
             return NULL;
         } else {
-            AdtTrieNode* infant = createTrieNode(parent, NULL);
+            AdtTrieNode* infant = createATN(parent, NULL);
             AdtTrieEdge edge = {operator, inputField->name, inputField->type, infant};
             sb_push(parent->edgesSb, edge);
-            return infant;
+            return getATN(
+                infant,
+                operator,
+                inputField->next,
+                noNewEdges
+            );
         }
     }
 }
-AdtTrieNode* getCommonSuperTrieNode(AdtTrieNode* a, AdtTrieNode* b) {
+AdtTrieNode* getCommonSuperATN(AdtTrieNode* a, AdtTrieNode* b) {
     if (a == b) {
         return a;
     } else {
-        return getCommonSuperTrieNode(
-            getCommonSuperTrieNode(a->parent, b),
-            getCommonSuperTrieNode(a, b->parent)
+        return getCommonSuperATN(
+            getCommonSuperATN(a->parent, b),
+            getCommonSuperATN(a, b->parent)
         );
     }
 }
-int isSubTrieNode(AdtTrieNode* sup, AdtTrieNode* sub) {
-    return getCommonSuperTrieNode(sub,sup) == sup;
+int isSubATN(AdtTrieNode* sup, AdtTrieNode* sub) {
+    return getCommonSuperATN(sub,sup) == sup;
 }
 
 //
@@ -308,6 +348,7 @@ Type* GetPtrType(Typer* typer, Type* pointee) {
     Type* ptrType = pushTypeBuf(&typer->ptrTypeBuf);
     ptrType->kind = T_PTR;
     ptrType->as.Ptr_pointee = pointee;
+    ptrType->requiredSubTypesSb = NULL;
     return ptrType;
 }
 Type* GetFuncType(Typer* typer, Type* domain, Type* image) {
@@ -324,30 +365,39 @@ Type* GetFuncType(Typer* typer, Type* domain, Type* image) {
     funcType->kind = T_FUNC;
     funcType->as.Func.domain = domain;
     funcType->as.Func.image = image;
+    funcType->requiredSubTypesSb = NULL;
     return funcType;
 }
 Type* GetTypefuncType(Typer* typer, Type* arg, Type* body) {
     Type* typefuncType = pushTypeBuf(&typer->typefuncTypeBuf);
+    typefuncType->kind = T_TYPEFUNC;
     typefuncType->as.Typefunc.arg = arg;
     typefuncType->as.Typefunc.body = body;
+    typefuncType->requiredSubTypesSb = NULL;
     return typefuncType;
 }
-Type* GetStruct(Typer* typer, InputTypeFieldList const* inputFieldList) {
+Type* GetStructType(Typer* typer, InputTypeFieldList const* inputFieldList) {
     Type* structType = pushTypeBuf(&typer->structTypeBuf);
-    structType->as.Compound_trieNode = getTrieNodeChild(&typer->unitATN, ADT_MUL, inputFieldList, 0);
+    structType->kind = T_STRUCT;
+    structType->as.Compound_atn = getATN(&typer->unitATN, ADT_MUL, inputFieldList, 0);
+    structType->as.Compound_atn->owner = structType;
+    structType->requiredSubTypesSb = NULL;
     return structType;
 }
-Type* GetUnion(Typer* typer, InputTypeFieldList const* inputFieldList) {
+Type* GetUnionType(Typer* typer, InputTypeFieldList const* inputFieldList) {
     Type* unionType = pushTypeBuf(&typer->unionTypeBuf);
-    unionType->as.Compound_trieNode = getTrieNodeChild(&typer->unitATN, ADT_MUL, inputFieldList, 0);
+    unionType->kind = T_UNION;
+    unionType->as.Compound_atn = getATN(&typer->unitATN, ADT_SUM, inputFieldList, 0);
+    unionType->as.Compound_atn->owner = unionType;
+    unionType->requiredSubTypesSb = NULL;
     return unionType;
 }
 
 Type* CreateMetatype(Typer* typer, char const* format, ...) {
-    Type* metaTypeP = pushTypeBuf(&typer->metaTypeBuf);
-    metaTypeP->kind = T_META;
-    metaTypeP->requiredSubTypesSb = NULL;
-    metaTypeP->as.Meta.id = typer->metaTypeBuf.count;   // using the buffer count as a unique ID.
+    Type* metatype = pushTypeBuf(&typer->metaTypeBuf);
+    metatype->kind = T_META;
+    metatype->requiredSubTypesSb = NULL;
+    metatype->as.Meta.id = typer->metaTypeBuf.count;   // using the buffer count as a unique ID.
     {  // metaTypeP->as.Meta.name
         char nameBuffer[1024];
         va_list args;
@@ -361,9 +411,10 @@ Type* CreateMetatype(Typer* typer, char const* format, ...) {
             }
         }
         va_end(args);
-        metaTypeP->as.Meta.name = strdup(nameBuffer);
+        metatype->as.Meta.name = strdup(nameBuffer);
     }
-    return metaTypeP;
+    metatype->requiredSubTypesSb = NULL;
+    return metatype;
 }
 
 //
@@ -374,14 +425,21 @@ TypeKind GetTypeKind(Type* typeP) {
     return typeP->kind;
 }
 IntWidth GetIntTypeWidth(Type* typeP) {
-    return typeP->as.Int;
+    return typeP->as.Int_width;
 }
 FloatWidth GetFloatTypeWidth(Type* typeP) {
-    return typeP->as.Float;
+    return typeP->as.Float_width;
 }
 Type* GetPtrTypePointee(Type* typeP) {
     return typeP->as.Ptr_pointee;
 }
+int GetStructTypeLength(Type* type) {
+    return type->as.Compound_atn->depth;
+}
+int GetUnionTypeLength(Type* type) {
+    return type->as.Compound_atn->depth;
+}
+
 size_t GetMetatypeID(Type* typeP) {
     return typeP->as.Meta.id;
 }
@@ -393,7 +451,7 @@ char const* GetMetatypeName(Type* typeP) {
 // Typer visitor:
 //
 
-int typeNodePostVisitor(void* rawTyper, AstNode* node) {
+int typerPostVisitor(void* rawTyper, AstNode* node) {
     Typer* typer = rawTyper;
     switch (GetAstNodeKind(node)) {
         case AST_UNIT:
@@ -463,6 +521,36 @@ int typeNodePostVisitor(void* rawTyper, AstNode* node) {
             }
             break;
         }
+
+        case AST_FIELD__MODULE_ITEM:
+        {
+            // module items can be used in value and typing contexts
+            // todo: make these types the results of type functions
+            SetAstNodeValueType(node, GetAstNodeValueType(GetAstFieldRhs(node)));
+            SetAstNodeTypingType(node, GetAstNodeTypingType(GetAstFieldRhs(node)));
+            break;
+        }
+        case AST_FIELD__TEMPLATE_ITEM:
+        {
+            // templates can be used in typing contexts only
+            SetAstNodeTypingType(node, GetAstNodeTypingType(node));
+            
+            // todo: and should give type reflection/actual template arg in value contexts
+            SetAstNodeValueType(node, NULL);
+            break;
+        }
+        case AST_FIELD__PATTERN_ITEM:
+        {
+            // pattern items (in lambdas, match expressions) can only be used in value contexts
+            SetAstNodeValueType(node, GetAstNodeTypingType(GetAstFieldRhs(node)));
+            break;
+        }
+        case AST_FIELD__STRUCT_ITEM:
+        case AST_FIELD__TUPLE_ITEM:
+        {
+            // todo: prepare field types for parent
+            break;
+        }
         case AST_PATTERN:
         {
             int patternCount = GetAstPatternLength(node);
@@ -482,39 +570,46 @@ int typeNodePostVisitor(void* rawTyper, AstNode* node) {
             break;
         }
         case AST_STRUCT:
+        {
+            int ignoreTypingContext = 0;
+            int ignoreValueContext = 0;
+            InputTypeFieldNode* inputTypingFieldHead = NULL;
+            InputTypeFieldNode* inputValueFieldHead = NULL;
+            for (int index = GetAstStructLength(node)-1; index >= 0; --index) {
+                AstNode* field = GetAstStructFieldAt(node, index);
+                SymbolID fieldName = GetAstFieldName(field);
+                
+                // creating a new input type field node, updating the list:
+                if (!ignoreValueContext) {
+                    InputTypeFieldNode* valueITF = malloc(sizeof(InputTypeFieldNode));
+                    valueITF->name = fieldName;
+                    valueITF->type = GetAstNodeValueType(field);
+                    valueITF->next = inputTypingFieldHead;
+                    inputValueFieldHead = valueITF;
+                }
+                
+                if (!ignoreTypingContext) {
+                    InputTypeFieldNode* typingITF = malloc(sizeof(InputTypeFieldNode));
+                    typingITF->name = fieldName;
+                    typingITF->type = GetAstNodeTypingType(field);
+                    typingITF->next = inputTypingFieldHead;
+                    inputTypingFieldHead = typingITF;
+                }
+            }
+            if (!ignoreTypingContext) {
+                SetAstNodeTypingType(node, GetStructType(typer, inputTypingFieldHead));
+            }
+            if (!ignoreValueContext) {
+                SetAstNodeValueType(node, GetStructType(typer, inputValueFieldHead));
+            }
+            break;
+        }
         case AST_TUPLE:
         {
-            // todo: create a struct type here.
-            // todo: add types of fields.
-            break;
-        }
-        case AST_FIELD__MODULE_ITEM:
-        {
-            // module items can be used in value and typing contexts
-            // todo: make these types the results of type functions
-            SetAstNodeValueType(node, GetAstNodeValueType(GetAstFieldRhs(node)));
-            SetAstNodeTypingType(node, GetAstNodeTypingType(GetAstFieldRhs(node)));
-            break;
-        }
-        case AST_FIELD__TEMPLATE_ITEM:
-        {
-            // templates can be used in typing contexts only
-            SetAstNodeTypingType(node, CreateMetatype(typer, "template %s", GetSymbolText(GetAstFieldName(node))));
-            
-            // todo: and should give type reflection/actual template arg in value contexts
-            SetAstNodeValueType(node, NULL);
-            break;
-        }
-        case AST_FIELD__PATTERN_ITEM:
-        {
-            // pattern items (in lambdas, match expressions) can only be used in value contexts
-            SetAstNodeValueType(node, GetAstNodeTypingType(GetAstFieldRhs(node)));
-            break;
-        }
-        case AST_FIELD__STRUCT_ITEM:
-        case AST_FIELD__TUPLE_ITEM:
-        {
-            // todo: prepare field types for parent
+            int tupleCount = GetAstTupleLength(node);
+            for (int index = 0; index < tupleCount; index++) {
+                AstNode* node = GetAstTupleItemAt(node, index);
+            }
             break;
         }
         case AST_CHAIN:
@@ -557,16 +652,150 @@ int typeNodePostVisitor(void* rawTyper, AstNode* node) {
     }
     return 1;
 }
-
-void TypeNode(Source* source, AstNode* node) {
-    visit(source, node, NULL, typeNodePostVisitor);
+void TypeNode(Typer* typer, AstNode* node) {
+    visit(typer, node, NULL, typerPostVisitor);
 }
 
-int Typecheck(void) {
+int typecheckSingle(Typer* typer, Type* type) {
+    if (DEBUG) {
+        printf("!!- Not actually typechecking type in `typecheckSingle`... \n\t");
+        printType(typer, type);
+        printf("\n");
+    } else {
+        assert(0 && "Not implemented: typecheckSingle for any type.");
+    }
+    return 1;
+}
+void printType(Typer* typer, Type* type) {
+    // prints an s-expression: (<kind> <args...>)
+    printf("(");
+    switch (type->kind)
+    {
+        case T_UNIT:
+        {
+            printf("unit");
+            break;
+        }
+        case T_INT:
+        {
+            IntWidth width = type->as.Int_width;
+            if (width == INT_8) {
+                printf("int 8");
+            } else if (width == INT_16) {
+                printf("int 16");
+            } else if (width == INT_32) {
+                printf("int 32");
+            } else if (width == INT_64) {
+                printf("int 64");
+            } else {
+                printf("int ?");
+            }
+            break;
+        }
+        case T_FLOAT:
+        {
+            FloatWidth width = type->as.Float_width;
+            if (width == FLOAT_32) {
+                printf("float 32");
+            } else if (width == FLOAT_64) {
+                printf("float 64");
+            } else {
+                printf("float ?");
+            }
+            break;
+        }
+        case T_PTR:
+        {
+            puts("ptr ");
+            printType(typer, type->as.Ptr_pointee);
+            break;
+        }
+        case T_META:
+        {
+            printf("meta %zu %s", type->as.Meta.id, type->as.Meta.name);
+            break;
+        }
+        case T_FUNC:
+        {
+            puts("func ");
+            printType(typer, type->as.Func.domain);
+            puts(" ");
+            printType(typer, type->as.Func.image);
+            break;
+        }
+        case T_MODULE:
+        {
+            // todo: implement printType for T_MODULE.
+            break;
+        }
+        case T_STRUCT:
+        {
+            int atnDepth = GetStructTypeLength(type);
+            printf("struct (%d)", atnDepth);
+            for (AdtTrieNode* atn = type->as.Compound_atn; atn && atn->parentEdgeIndex >= 0; atn = atn->parent) {
+                AdtTrieEdge edge = atn->parent->edgesSb[atn->parentEdgeIndex];
+                printf(" (");
+                if (edge.name != SYM_NULL) {
+                    printf("%s:", GetSymbolText(edge.name));
+                }
+                if (edge.type) {
+                    printType(typer, edge.type);
+                } else {
+                    printf("?");
+                }
+                printf(")");
+            }
+            break;
+        }
+        case T_UNION:
+        {
+            int atnDepth = GetStructTypeLength(type);
+            printf("union (count:%d)", atnDepth);
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+    printf(")");
+}
+int Typecheck(Typer* typer) {
     // todo: check requirements for each non-metatype.
     // todo: synthesize solutions for each metatype.
-    if (DEBUG) {
-        printf("!!- Not implemented: `typecheck` for type kind <*>\n.");
+
+    int it;
+    int res = 1;
+
+    res = typecheckSingle(typer, &typer->intType[INT_8]) && res;
+    res = typecheckSingle(typer, &typer->intType[INT_16]) && res;
+    res = typecheckSingle(typer, &typer->intType[INT_32]) && res;
+    res = typecheckSingle(typer, &typer->intType[INT_64]) && res;
+    res = typecheckSingle(typer, &typer->floatType[FLOAT_32]) && res;
+    res = typecheckSingle(typer, &typer->floatType[FLOAT_64]) && res;
+
+    for (it = 0; it < typer->ptrTypeBuf.count; it++) {
+        res = typecheckSingle(typer, &typer->ptrTypeBuf.ptr[it]) && res;
     }
-    return 0;
+    for (it = 0; it < typer->typefuncTypeBuf.count; it++) {
+        res = typecheckSingle(typer, &typer->ptrTypeBuf.ptr[it]) && res;
+    }
+    for (it = 0; it < typer->funcTypeBuf.count; it++) {
+        res = typecheckSingle(typer, &typer->funcTypeBuf.ptr[it]) && res;
+    }
+    for (it = 0; it < typer->moduleTypeBuf.count; it++) {
+        res = typecheckSingle(typer, &typer->moduleTypeBuf.ptr[it]) && res;
+    }
+    for (it = 0; it < typer->structTypeBuf.count; it++) {
+        res = typecheckSingle(typer, &typer->structTypeBuf.ptr[it]) && res;
+    }
+    for (it = 0; it < typer->unionTypeBuf.count; it++) {
+        res = typecheckSingle(typer, &typer->unionTypeBuf.ptr[it]) && res;
+    }
+
+    for (it = 0; it < typer->metaTypeBuf.count; it++) {
+        res = typecheckSingle(typer, &typer->metaTypeBuf.ptr[it]) && res;
+    }
+
+    return res;
 }

@@ -55,7 +55,7 @@ void DestroyInterp(Interp* interp) {
     DeInitSymbols();
     DeInitLexer();
 }
-int LoadScript(Interp* interp, Source* scriptSource) {
+int InterpLoadModuleSource(Interp* interp, Source* scriptSource) {
     int alreadyLoadedSourceIndex = lookupLoadedSource(interp, scriptSource);
     if (alreadyLoadedSourceIndex >= 0) {
         // Already loaded, returning OK.
@@ -94,21 +94,28 @@ int LoadScript(Interp* interp, Source* scriptSource) {
     }
 }
 
-int FinalizeLoadedScripts(Interp* interp) {
+int InterpTypecheckModules(Interp* interp) {
     // todo: rather than just type each module sequentially, do so on-demand.
     int loadedSourceCount = sb_count(interp->loadedSourceSb);
     for (int i = 0; i < loadedSourceCount; i++) {
         LoadedSource loadedSource = interp->loadedSourceSb[i];
-        TypeNode(loadedSource.source, loadedSource.moduleAstNode);
+        TypeNode(interp->typer, loadedSource.moduleAstNode);
     }
-    return 1;
+    return Typecheck(interp->typer);
 }
-int Execute(Interp* interp, Source* scriptSource, SymbolID entryPointName) {
+int InterpExecute(Interp* interp, Source* scriptSource, SymbolID entryPointName) {
     // todo: execute code from the interpreter
     // todo: see if 'Compile' was called before 'Execute' to provide JIT functionality unless in debug mode.
     return 0;
 }
-int Compile(Interp* interp, Source* scriptSource, SymbolID optEntryPointName) {
+int InterpCompile(Interp* interp, Source* scriptSource, SymbolID optEntryPointName) {
     // todo: compile code and store output in a pointer.
     return 0;
+}
+
+Source* GetLoadedModuleSourceAt(Interp* interp, int index) {
+    return interp->loadedSourceSb[index].source;
+}
+AstNode* GetLoadedModuleAstNodeAt(Interp* interp, int index) {
+    return interp->loadedSourceSb[index].moduleAstNode;
 }

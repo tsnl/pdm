@@ -41,7 +41,8 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
     // Printing a message to stderr:
     for (FeedbackNote* noteP = firstNote; noteP; noteP = noteP->nextP) {
         Loc loc = noteP->loc;
-        if (loc.lineIndex > 0 && loc.colIndex > 0) {
+        // if (loc.lineIndex > 0 && loc.colIndex > 0) {
+        if (1) {
             fprintf(stderr, "- %s [%d:%d]: %s\n", prefix(kind), 1+loc.lineIndex, 1+loc.colIndex, feedbackBuf);
         } else {
             fprintf(stderr, "- %s: %s\n", prefix(kind), feedbackBuf);
@@ -99,7 +100,7 @@ int ReadSourceReaderHead(Source* sourceP) {
     return sourceP->peekChar;
 }
 
-int AdvanceSourceReaderHead(Source* sourceP) {
+int AdvanceSourceReaderHead(Source* source) {
     // Reading a character from the file, or just returning a promised
     // char if stored.
     // If a second char was read and not used, it is 'promised' for later.
@@ -112,44 +113,47 @@ int AdvanceSourceReaderHead(Source* sourceP) {
     // |- (*), false: reading from the file
 
     char readChar;
-    if (sourceP->promisedChar != EOF) {
+    if (source->promisedChar != EOF) {
         // using the promised char
-        readChar = sourceP->promisedChar;
-        sourceP->promisedChar = EOF;
+        readChar = source->promisedChar;
+        source->promisedChar = EOF;
+    } else if (SourceReaderAtEof(source)) {
+        // already at EOF, cannot move further, returning 0
+        return 0;
     } else {
         // reading a fresh char
-        readChar = fgetc(sourceP->fp);
+        readChar = fgetc(source->fp);
         if (readChar < 0) {
-            // EOF
-            sourceP->peekChar = EOF;
-            sourceP->atEof = 1;
-            return 0;
+            // found EOF, but read a char
+            source->peekChar = EOF;
+            source->atEof = 1;
+            return 1;
         }
     }
 
     // Updating the peekChar, loc, and other attributes:
-    sourceP->peekChar = readChar;
-    sourceP->atEof = 0;
-    sourceP->peekLoc.offset += 1;
+    source->peekChar = readChar;
+    source->atEof = 0;
+    source->peekLoc.offset += 1;
     if (readChar == '\n' || readChar == '\r') {
-        sourceP->peekLoc.lineIndex++;
-        sourceP->peekLoc.colIndex = 0;
+        source->peekLoc.lineIndex++;
+        source->peekLoc.colIndex = 0;
         
         // normalizing CRLF and CR line-endings to LF:
         if (readChar == '\r') {
-            if (!feof(sourceP->fp)) {
+            if (!feof(source->fp)) {
                 // reading the next char (for an LF)
-                char nextChar = fgetc(sourceP->fp);
+                char nextChar = fgetc(source->fp);
                 if (nextChar != '\n') {
                     // Whoops! Not a Windows CRLF.
                     // Let's promise the read character for later:
-                    sourceP->promisedChar = nextChar;
+                    source->promisedChar = nextChar;
                 }
             }
-            sourceP->peekChar = '\n';
+            source->peekChar = '\n';
         }
     } else {
-        sourceP->peekLoc.colIndex++;
+        source->peekLoc.colIndex++;
     }
     return 1;
 }

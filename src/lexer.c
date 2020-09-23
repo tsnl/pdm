@@ -137,81 +137,194 @@ TokenKind lexOneToken(Source* source, TokenInfo* infoP) {
 
 TokenKind lexOneSimpleToken(Source* source, TokenInfo* optInfoP) {
     TokenKind tk = helpLexOneSimpleToken(source, optInfoP);
-    if (tk != TK_NULL) {
-        AdvanceSourceReaderHead(source);
-    }
+    // if (tk != TK_NULL) {
+    //     AdvanceSourceReaderHead(source);
+    // }
     return tk;
 }
 TokenKind helpLexOneSimpleToken(Source* source, TokenInfo* optInfoP) {
-    // lexes all of a simple token, advances EXCEPT the last character.
+    // lexes all of a simple token
+    // - return 'NULL' and do not advance characters at all to opt-out, leaving reader head as is.
     switch (ReadSourceReaderHead(source)) {
-        case '.': return TK_DOT;
-        case ':': return TK_COLON;
-        case ',': return TK_COMMA;
-        case ';': return TK_SEMICOLON;
-        case '(': return TK_LPAREN;
-        case ')': return TK_RPAREN;
-        case '[': return TK_LSQBRK;
-        case ']': return TK_RSQBRK;
-        case '{': return TK_LCYBRK;
-        case '}': return TK_RCYBRK;
-        case '*': return TK_ASTERISK;
-        case '/': return TK_FSLASH;
-        case '%': return TK_PERCENT;
-        case '+': return TK_PLUS;
-        case '^': return TK_CARET;
-        case '&': return TK_AND;
-        case '|': return TK_OR;
+        case '.':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_DOT;
+            }
+            break;
+        }
+        case ',':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_COMMA;
+            }
+            break;
+        }
+        case ';':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_SEMICOLON;
+            }
+            break;
+        }
+        case '(':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_LPAREN;
+            }
+            break;
+        }
+        case ')':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_RPAREN;
+            }
+            break;
+        }
+        case '[':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_LSQBRK;
+            }
+            break;
+        }
+        case ']':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_RSQBRK;
+            }
+            break;
+        }
+        case '{':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_LCYBRK;
+            }
+            break;
+        }
+        case '}':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_RCYBRK;
+            }
+            break;
+        }
+        case '*':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_ASTERISK;
+            }
+            break;
+        }
+        case '/':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_FSLASH;
+            }
+            break;
+        }
+        case '%':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_PERCENT;
+            }
+            break;
+        }
+        case '+':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_PLUS;
+            }
+            break;
+        }
+        case '^':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_CARET;
+            }
+            break;
+        }
+        case '&':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_AND;
+            }
+            break;
+        }
+        case '|':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_OR;
+            }
+            break;
+        }
+
+        case ':': 
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                if (ReadSourceReaderHead(source) == ':' && AdvanceSourceReaderHead(source)) {
+                    return TK_DBL_COLON;
+                }
+                return TK_COLON;
+            }
+            break;
+        }
         case '=':
         {
             if (AdvanceSourceReaderHead(source)) {
-                if (ReadSourceReaderHead(source) == '=') {
+                if (ReadSourceReaderHead(source) == '=' && AdvanceSourceReaderHead(source)) {
                     return TK_EQUALS;
                 }
+                return TK_BIND;
             }
-            return TK_BIND;
+            break;
         }
         case '!':
         {
             if (AdvanceSourceReaderHead(source)) {
-                if (ReadSourceReaderHead(source) == '=') {
+                if (ReadSourceReaderHead(source) == '=' && AdvanceSourceReaderHead(source)) {
                     return TK_NEQUALS;
                 }
+                return TK_NOT;
             }
-            return TK_NOT;
+            break;
         }
         case '-': 
         {
             if (AdvanceSourceReaderHead(source)) {
-                if (ReadSourceReaderHead(source) == '>') {
+                if (ReadSourceReaderHead(source) == '>' && AdvanceSourceReaderHead(source)) {
                     return TK_ARROW;
                 }
+                return TK_MINUS;
             }
-            return TK_MINUS;
+            break;
         }
         case '<': 
         {
             if (AdvanceSourceReaderHead(source)) {
-                if (ReadSourceReaderHead(source) == '=') {
+                if (ReadSourceReaderHead(source) == '=' && AdvanceSourceReaderHead(source)) {
                     return TK_LETHAN;
                 }
+                return TK_LTHAN;
             }
-            return TK_LTHAN;
+            break;
         }
         case '>':
         {
             if (AdvanceSourceReaderHead(source)) {
-                if (ReadSourceReaderHead(source) == '=') {
+                if (ReadSourceReaderHead(source) == '=' && AdvanceSourceReaderHead(source)) {
                     return TK_GETHAN;
                 }
+                return TK_GTHAN;
             }
-            return TK_GTHAN;
+            break;
         }
         default:
         {
-            return TK_NULL;
+            break;
         }
     }
+    return TK_NULL;
 }
 TokenKind lexOneNumber(Source* source, TokenInfo* optInfoP) {
     TokenInfo prefixTokenInfo;
@@ -301,26 +414,23 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
     // The longest supported ID is (MAX_ID_LEN) characters long.
     size_t index;
     char charBuf[MAX_ID_LEN+1];
-    for (index = 0; index < MAX_ID_LEN; index++) {
+    for (index = 0; index < MAX_ID_LEN;) {
         // reading the next character:
         char ch = ReadSourceReaderHead(source);
         
         // adding the character to the charBuf:
-        if (isIdChar(ch)) {
-            charBuf[index] = ch;
-            if (!AdvanceSourceReaderHead(source)) {
-                break;
-            }
+        if (isIdChar(ch) && AdvanceSourceReaderHead(source)) {
+            charBuf[index++] = ch;
         } else {
             break;
         }
     }
-    charBuf[index] = '\0';
     if (isIdChar(ReadSourceReaderHead(source))) {
-        // ID too long, error.
+        // ID too long, so ID char after end of ID, so error.
         PostFeedback(FBK_ERROR, NULL, "ID '%s...' exceeds the maximum supported ID length of (%d) characters.", charBuf, MAX_ID_LEN);
         return TK_NULL;
     }
+    charBuf[index] = '\0';
 
     // Looking up charBuf as a keyword or symbol:
     SymbolID kwID = strings_lookup(symbolsDict, charBuf);
@@ -498,6 +608,11 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
         case TK_COLON:
         {
             name = ":";
+            break;
+        }
+        case TK_DBL_COLON:
+        {
+            name = "::";
             break;
         }
         case TK_LPAREN:
