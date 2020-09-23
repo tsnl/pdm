@@ -26,9 +26,6 @@ int main() {
         return 1;
     }
 
-    // TODO: typecheck from entry point
-
-
     // TODO: execute, emit an executable, or just exit after reporting the program's validity.
     DestroyInterp(interp);
     return 0;

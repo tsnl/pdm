@@ -57,6 +57,7 @@ struct TypeBuf {
 struct MetaInfo {
     size_t id;
     char* name;
+    Type** suptypesSB;
 };
 struct FuncInfo {
     Type* domain;
@@ -81,7 +82,7 @@ struct Type {
         ModuleInfo Module;
         AdtTrieNode* Compound_atn;
     } as;
-    Type** requiredSubTypesSb;
+    Type** requiredSubTypesSB;
 };
 
 struct Typer {
@@ -107,9 +108,42 @@ static Typer* createTyper(TyperCfg config);
 static TypeBuf createTypeBuf(char const* name, size_t capacity);
 static Type* tryPushTypeBuf(TypeBuf* buf);
 static Type* pushTypeBuf(TypeBuf* buf);
+static void pushMetavarSuptype(Type* metavar, Type* suptype);
+
+static void requireSubtyping(Type* sup, Type* sub);
+static Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP);
+
+static AdtTrieNode* createATN(AdtTrieNode* parent, Type* owner);
+static AdtTrieNode* getATN(AdtTrieNode* root, AdtOperator operator, InputTypeFieldNode const* inputFieldList, int noNewEdges);
+static AdtTrieNode* getCommonSuperATN(AdtTrieNode* a, AdtTrieNode* b);
+static int isSubATN(AdtTrieNode* sup, AdtTrieNode* sub);
+
+//
+// Type solution occurs in THREE PHASES:
+// - TYPER: 
+//   - initialize types for the AST, create metavars where not already created by `scoper`
+//   - first layer of `requireSubtyping` applied
+// - TYPECHECK1: 
+//   - iterates existing subtyping
+//   - propagates 
+//
 
 static int typerPostVisitor(void* rawTyper, AstNode* node);
-static int typecheckSingle(Typer* typer, Type* type);
+
+static int typecheck1(Typer* typer, Type* type);
+static int typecheck2(Typer* typer, Type* type);
+typedef int(*CheckReqSubtypeCB)(Typer* typer, Type* type, Type* reqSubtype);
+static int tc1_int(Typer* typer, Type* type, Type* reqSubtype);
+static int tc1_float(Typer* typer, Type* type, Type* reqSubtype);
+static int tc1_ptr(Typer* typer, Type* type, Type* reqSubtype);
+static int tc1_typefunc(Typer* typer, Type* type, Type* reqSubtype);
+static int tc1_func(Typer* typer, Type* type, Type* reqSubtype);
+static int tc1_module(Typer* typer, Type* type, Type* reqSubtype);
+static int tc1_tuple(Typer* typer, Type* type, Type* reqSubtype);
+static int tc1_union(Typer* typer, Type* type, Type* reqSubtype);
+static int tc1_metavar_sub(Typer* typer, Type* metatype, Type* subtype);
+static int tc1_metavar_sup(Type* metatype, Type* supertype);
+
 static void printType(Typer* typer, Type* type);
 
 TyperCfg createDefaultTyperCfg(void) {
@@ -177,23 +211,27 @@ Type* pushTypeBuf(TypeBuf* buf) {
         return NULL;
     }
 }
-
-static void requireSubtyping(Type* sup, Type* sub);
-static Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP);
-
-static AdtTrieNode* createATN(AdtTrieNode* parent, Type* owner);
-static AdtTrieNode* getATN(AdtTrieNode* root, AdtOperator operator, InputTypeFieldNode const* inputFieldList, int noNewEdges);
-static AdtTrieNode* getCommonSuperATN(AdtTrieNode* a, AdtTrieNode* b);
-static int isSubATN(AdtTrieNode* sup, AdtTrieNode* sub);
-
-void requireSubtyping(Type* sup, Type* sub) {
-    int count = sb_count(sup->requiredSubTypesSb);
-    for (int i = 0; i < count; i++) {
-        if (sup->requiredSubTypesSb[i] == sub) {
+void pushMetavarSuptype(Type* metavar, Type* suptype) {
+    // searching for an existing element, returning early if found
+    int count = sb_count(metavar->as.Meta.suptypesSB);
+    for (int index = 0; index < count; index++) {
+        if (metavar->as.Meta.suptypesSB[index] == suptype) {
             return;
         }
     }
-    sb_push(sup->requiredSubTypesSb, sub);
+
+    // pushing the supertype since it wasn't found:
+    sb_push(metavar->as.Meta.suptypesSB, suptype);
+}
+
+void requireSubtyping(Type* sup, Type* sub) {
+    int count = sb_count(sup->requiredSubTypesSB);
+    for (int i = 0; i < count; i++) {
+        if (sup->requiredSubTypesSB[i] == sub) {
+            return;
+        }
+    }
+    sb_push(sup->requiredSubTypesSB, sub);
 }
 Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP) {
     switch (arg->kind) {
@@ -315,142 +353,6 @@ int isSubATN(AdtTrieNode* sup, AdtTrieNode* sub) {
     return getCommonSuperATN(sub,sup) == sup;
 }
 
-//
-// API:
-//
-
-TyperCfg CreateDefaultTyperCfg(void) {
-    return createDefaultTyperCfg();
-}
-
-Typer* CreateTyper(TyperCfg config) {
-    return createTyper(config);
-}
-
-Type* GetUnitType(Typer* typer) {
-    return &typer->unitType;
-}
-Type* GetIntType(Typer* typer, IntWidth width) {
-    return &typer->intType[width];
-}
-Type* GetFloatType(Typer* typer, FloatWidth width) {
-    return &typer->floatType[width];
-}
-Type* GetPtrType(Typer* typer, Type* pointee) {
-    // searching for an existing, structurally equivalent type:
-    for (size_t index = 0; index < typer->ptrTypeBuf.count; index++) {
-        Type* cmpType = &typer->ptrTypeBuf.ptr[index];
-        if (cmpType->as.Ptr_pointee == pointee) {
-            return cmpType;
-        }
-    }
-    // allocating and a new type:
-    Type* ptrType = pushTypeBuf(&typer->ptrTypeBuf);
-    ptrType->kind = T_PTR;
-    ptrType->as.Ptr_pointee = pointee;
-    ptrType->requiredSubTypesSb = NULL;
-    return ptrType;
-}
-Type* GetFuncType(Typer* typer, Type* domain, Type* image) {
-    // searching for an existing, structurally equivalent type:
-    TypeBuf funcTypeBuf = typer->funcTypeBuf;
-    for (size_t index = 0; index < funcTypeBuf.count; index++) {
-        FuncInfo itemInfo = funcTypeBuf.ptr[index].as.Func;
-        if (itemInfo.domain == domain && itemInfo.image == image) {
-            return &funcTypeBuf.ptr[index];
-        }
-    }
-    // allocating and a new type:
-    Type* funcType = pushTypeBuf(&typer->ptrTypeBuf);
-    funcType->kind = T_FUNC;
-    funcType->as.Func.domain = domain;
-    funcType->as.Func.image = image;
-    funcType->requiredSubTypesSb = NULL;
-    return funcType;
-}
-Type* GetTypefuncType(Typer* typer, Type* arg, Type* body) {
-    Type* typefuncType = pushTypeBuf(&typer->typefuncTypeBuf);
-    typefuncType->kind = T_TYPEFUNC;
-    typefuncType->as.Typefunc.arg = arg;
-    typefuncType->as.Typefunc.body = body;
-    typefuncType->requiredSubTypesSb = NULL;
-    return typefuncType;
-}
-Type* GetTupleType(Typer* typer, InputTypeFieldList const* inputFieldList) {
-    Type* tupleType = pushTypeBuf(&typer->tupleTypeBuf);
-    tupleType->kind = T_TUPLE;
-    tupleType->as.Compound_atn = getATN(&typer->unitATN, ADT_MUL, inputFieldList, 0);
-    tupleType->as.Compound_atn->owner = tupleType;
-    tupleType->requiredSubTypesSb = NULL;
-    return tupleType;
-}
-Type* GetUnionType(Typer* typer, InputTypeFieldList const* inputFieldList) {
-    Type* unionType = pushTypeBuf(&typer->unionTypeBuf);
-    unionType->kind = T_UNION;
-    unionType->as.Compound_atn = getATN(&typer->unitATN, ADT_SUM, inputFieldList, 0);
-    unionType->as.Compound_atn->owner = unionType;
-    unionType->requiredSubTypesSb = NULL;
-    return unionType;
-}
-
-Type* CreateMetatype(Typer* typer, char const* format, ...) {
-    Type* metatype = pushTypeBuf(&typer->metaTypeBuf);
-    metatype->kind = T_META;
-    metatype->requiredSubTypesSb = NULL;
-    metatype->as.Meta.id = typer->metaTypeBuf.count;   // using the buffer count as a unique ID.
-    {  // metaTypeP->as.Meta.name
-        char nameBuffer[1024];
-        va_list args;
-        va_start(args, format);
-        int writeCount = vsnprintf(nameBuffer, 1024, format, args);
-        if (writeCount > 1024) {
-            if (DEBUG) {
-                printf("!!- Metatype name too long! Greater than maximum length 1024.\n");
-            } else {
-                assert(0 && "Metatype name too long");
-            }
-        }
-        va_end(args);
-        metatype->as.Meta.name = strdup(nameBuffer);
-    }
-    metatype->requiredSubTypesSb = NULL;
-    return metatype;
-}
-
-//
-// Getters:
-//
-
-TypeKind GetTypeKind(Type* typeP) {
-    return typeP->kind;
-}
-IntWidth GetIntTypeWidth(Type* typeP) {
-    return typeP->as.Int_width;
-}
-FloatWidth GetFloatTypeWidth(Type* typeP) {
-    return typeP->as.Float_width;
-}
-Type* GetPtrTypePointee(Type* typeP) {
-    return typeP->as.Ptr_pointee;
-}
-int GetTupleTypeLength(Type* type) {
-    return type->as.Compound_atn->depth;
-}
-int GetUnionTypeLength(Type* type) {
-    return type->as.Compound_atn->depth;
-}
-
-size_t GetMetatypeID(Type* typeP) {
-    return typeP->as.Meta.id;
-}
-char const* GetMetatypeName(Type* typeP) {
-    return typeP->as.Meta.name;
-}
-
-//
-// Typer visitor:
-//
-
 int typerPostVisitor(void* rawTyper, AstNode* node) {
     Typer* typer = rawTyper;
     switch (GetAstNodeKind(node)) {
@@ -465,7 +367,7 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
         {
             Type* t = GetFloatType(typer, FLOAT_64);
             SetAstNodeValueType(node,t);
-            SetAstNodeTypingType(node,t);
+            // SetAstNodeTypingType(node,t);
             break;
         }
         case AST_LITERAL_INT:
@@ -473,7 +375,7 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
             // TODO: automatically select width based on int value
             Type* t = GetIntType(typer, INT_64);
             SetAstNodeValueType(node,t);
-            SetAstNodeTypingType(node,t);
+            // SetAstNodeTypingType(node,t);
             break;
         }
         case AST_ID:
@@ -531,32 +433,34 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
         case AST_FIELD__MODULE_ITEM:
         {
             // module items can be used in value and typing contexts
-            // todo: make these types the results of type functions
+            // todo: make these types the results of Typefunc instances
             SetAstNodeValueType(node, GetAstNodeValueType(GetAstFieldRhs(node)));
             SetAstNodeTypingType(node, GetAstNodeTypingType(GetAstFieldRhs(node)));
             break;
         }
         case AST_FIELD__TEMPLATE_ITEM:
-        {
-            // templates can be used in typing contexts only
-            SetAstNodeTypingType(node, GetAstNodeTypingType(node));
-            
-            // todo: and should give type reflection/actual template arg in value contexts
-            SetAstNodeValueType(node, NULL);
-            break;
-        }
         case AST_FIELD__PATTERN_ITEM:
         {
-            // pattern items (in lambdas, match expressions) can only be used in value contexts
-            SetAstNodeValueType(node, GetAstNodeTypingType(GetAstFieldRhs(node)));
+            // metatypes created by scoper (since lexically scoped)
+            // AstNodeTypingType and ValueType already set.
             break;
         }
         case AST_FIELD__STRUCT_ITEM:
         case AST_FIELD__TUPLE_ITEM:
         {
-            AstNode* field = GetAstFieldRhs(node);
-            SetAstNodeTypingType(node, GetAstNodeTypingType(field));
-            SetAstNodeValueType(node, GetAstNodeValueType(field));
+            AstNode* rhs = GetAstFieldRhs(node);
+            Type* tv;
+            Type* tt;
+            if (rhs) {
+                tv = GetAstNodeValueType(rhs);
+                tt = GetAstNodeTypingType(rhs);
+            } else {
+                char const* nameText = GetSymbolText(GetAstFieldName(node));
+                tv = CreateMetatype(typer, "field<t>%s", nameText);
+                tt = CreateMetatype(typer, "field<t>%s", nameText);
+            }
+            SetAstNodeTypingType(node,tt);
+            SetAstNodeValueType(node,tv);
             break;
         }
         case AST_PATTERN:
@@ -688,20 +592,216 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
     }
     return 1;
 }
-void TypeNode(Typer* typer, AstNode* node) {
-    visit(typer, node, NULL, typerPostVisitor);
-}
 
-int typecheckSingle(Typer* typer, Type* type) {
-    if (DEBUG) {
-        printf("!!- Not actually typechecking type in `typecheckSingle`... \n\t");
-        printType(typer, type);
-        printf("\n");
-    } else {
-        assert(0 && "Not implemented: typecheckSingle for any type.");
+int typecheck1(Typer* typer, Type* type) {
+    // If `type` is a metavar, do nothing in `typecheck1`.
+    if (type->kind == T_META) {
+        if (DEBUG) {
+            printf("!!- Metavar must be typechecked and solved separately after concrete types.\n");
+        }
+        return 1;
     }
+
+    // selecting the right callback based on the type node's kind:
+    CheckReqSubtypeCB callback = NULL;
+    switch (type->kind) {
+        case T_INT:
+        {
+            callback = tc1_int;
+            break;
+        }
+        case T_FLOAT:
+        {
+            callback = tc1_float;
+            break;
+        }
+        case T_PTR:
+        {
+            callback = tc1_ptr;
+            break;
+        }
+        case T_TYPEFUNC:
+        {
+            callback = tc1_typefunc;
+            break;
+        }
+        case T_FUNC:
+        {
+            callback = tc1_func;
+            break;
+        }
+        case T_MODULE:
+        {
+            callback = tc1_module;
+            break;
+        }
+        case T_TUPLE:
+        {
+            callback = tc1_tuple;
+            break;
+        }
+        case T_UNION:
+        {
+            callback = tc1_union;
+            break;
+        }
+        case T_META:
+        {
+            callback = tc1_metavar_sub;
+            break;
+        }
+        default:
+        {
+            if (DEBUG) {
+                printf("!!- Not implemented: typecheck for type kind <?>.\n");
+                printType(typer, type);
+                printf("\n");
+            } else {
+                assert(0 && "Not implemented: typecheck for type kind <?>.");
+            }
+            break;
+        }
+    }
+
+    // iterating through each required subtype and applying the chosen callback:
+    if (callback) {
+        int result = 1;
+        int reqSubtypeCount = sb_count(type->requiredSubTypesSB);
+        for (int subtypeIndex = 0; subtypeIndex < reqSubtypeCount; subtypeIndex++) {
+            Type* reqSubtype = type->requiredSubTypesSB[subtypeIndex];
+            result = callback(typer,type,reqSubtype) && result;
+        }
+        return result;
+    } else {
+        return 0;
+    }
+}
+int tc1_int(Typer* typer, Type* type, Type* reqSubtype) {
+    int result = 1;
+    switch (reqSubtype->kind) {
+        case T_INT:
+        {
+            if (reqSubtype->as.Int_width < type->as.Int_width) {
+                // todo: while typechecking int type, get loc (here) to report type errors.
+                // FeedbackNote* note = CreateFeedbackNote("here...", reqSubtype->loc);
+                PostFeedback(FBK_ERROR, NULL, "Implicit integer truncation");
+                result = 0;
+            }
+            break;
+        }
+        case T_FLOAT:
+        {
+            // todo: while typechecking int type, get loc (here) to report type errors.
+            PostFeedback(FBK_ERROR, NULL, "Implicit float to integer conversion");
+            result = 0;
+            break;
+        }
+        case T_META:
+        {
+            tc1_metavar_sup(reqSubtype,type);
+            break;
+        }
+        default:
+        {
+            // todo: implement TypeKindToText to make error reporting more descriptive (see here).
+            PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different 'kinds': int and <?>.");
+            result = 0;
+            break;
+        }
+    }
+    return result;
+}
+int tc1_float(Typer* typer, Type* type, Type* reqSubtype) {
+    int result = 1;
+    switch (reqSubtype->kind) {
+        case T_FLOAT:
+        {
+            if (reqSubtype->as.Float_width < type->as.Float_width) {
+                // todo: while typechecking float type, get loc (here) to report type errors.
+                PostFeedback(FBK_ERROR, NULL, "Implicit float to integer conversion");
+                result = 0;
+            }
+            break;
+        }
+        case T_META:
+        {
+            tc1_metavar_sup(reqSubtype,type);
+            break;
+        }
+        default:
+        {
+            // todo: implement TypeKindToText to make error reporting more descriptive (see here).
+            // todo: while typechecking float type, get loc (here) to report type errors.
+            PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different 'kinds': float and <?>.");
+            result = 0;
+            break;
+        }
+    }
+    return result;
+}
+int tc1_ptr(Typer* typer, Type* type, Type* reqSubtype) {
+    int result = 1;
+    switch (reqSubtype->kind) {
+        case T_PTR:
+        {
+            result = typecheck1(typer, type->as.Ptr_pointee) && result;
+            requireSubtyping(type->as.Ptr_pointee, reqSubtype->as.Ptr_pointee);
+            break;
+        }
+        case T_META:
+        {
+            tc1_metavar_sup(reqSubtype,type);
+            break;
+        }
+        default:
+        {
+            // todo: while typechecking float type, get loc (here) to report type errors.
+            // todo: implement TypeKindToText to make error reporting more descriptive (see here).
+            PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different 'kinds': ptr and <?>.");
+            result = 0;
+            break;
+        }
+    }
+    return result;
+}
+int tc1_typefunc(Typer* typer, Type* type, Type* reqSubtype) {
     return 1;
 }
+int tc1_func(Typer* typer, Type* type, Type* reqSubtype) {
+    return 1;
+}
+int tc1_module(Typer* typer, Type* type, Type* reqSubtype) {
+    return 1;
+}
+int tc1_tuple(Typer* typer, Type* type, Type* reqSubtype) {
+    return 1;
+}
+int tc1_union(Typer* typer, Type* type, Type* reqSubtype) {
+    return 1;
+}
+int tc1_metavar_sub(Typer* typer, Type* metatype, Type* subtype) {
+    requireSubtyping(metatype,subtype);
+    return 1;
+}
+int tc1_metavar_sup(Type* metatype, Type* supertype) {
+    // adding 'type' as a supertype of this metatype, for resolution in `typecheck2`
+    sb_push(supertype->as.Meta.suptypesSB,metatype);
+    return 1;
+}
+int typecheck2(Typer* typer, Type* metavar) {
+    if (metavar->kind != T_META) {
+        // typecheck2 can only be called on metavars.
+        if (DEBUG) {
+            printf("!!- typecheck2 should only be called on `metavar` types.\n");
+        }
+        return 0;
+    }
+
+    // todo: iterate through supertypes, select least general unifier based on subtypes, return 0 if kind mismatch found.
+
+    return 1;
+}
+
 void printType(Typer* typer, Type* type) {
     // prints an s-expression: (<kind> <args...>)
     printf("(");
@@ -796,6 +896,155 @@ void printType(Typer* typer, Type* type) {
     }
     printf(")");
 }
+
+//
+// API:
+//
+
+TyperCfg CreateDefaultTyperCfg(void) {
+    return createDefaultTyperCfg();
+}
+
+Typer* CreateTyper(TyperCfg config) {
+    return createTyper(config);
+}
+
+Type* GetUnitType(Typer* typer) {
+    return &typer->unitType;
+}
+Type* GetIntType(Typer* typer, IntWidth width) {
+    return &typer->intType[width];
+}
+Type* GetFloatType(Typer* typer, FloatWidth width) {
+    return &typer->floatType[width];
+}
+Type* GetPtrType(Typer* typer, Type* pointee) {
+    // searching for an existing, structurally equivalent type:
+    for (size_t index = 0; index < typer->ptrTypeBuf.count; index++) {
+        Type* cmpType = &typer->ptrTypeBuf.ptr[index];
+        if (cmpType->as.Ptr_pointee == pointee) {
+            return cmpType;
+        }
+    }
+    // allocating and a new type:
+    Type* ptrType = pushTypeBuf(&typer->ptrTypeBuf);
+    ptrType->kind = T_PTR;
+    ptrType->as.Ptr_pointee = pointee;
+    ptrType->requiredSubTypesSB = NULL;
+    return ptrType;
+}
+Type* GetFuncType(Typer* typer, Type* domain, Type* image) {
+    // searching for an existing, structurally equivalent type:
+    TypeBuf funcTypeBuf = typer->funcTypeBuf;
+    for (size_t index = 0; index < funcTypeBuf.count; index++) {
+        FuncInfo itemInfo = funcTypeBuf.ptr[index].as.Func;
+        if (itemInfo.domain == domain && itemInfo.image == image) {
+            return &funcTypeBuf.ptr[index];
+        }
+    }
+    // allocating and a new type:
+    Type* funcType = pushTypeBuf(&typer->ptrTypeBuf);
+    funcType->kind = T_FUNC;
+    funcType->as.Func.domain = domain;
+    funcType->as.Func.image = image;
+    funcType->requiredSubTypesSB = NULL;
+    return funcType;
+}
+Type* GetTypefuncType(Typer* typer, Type* arg, Type* body) {
+    Type* typefuncType = pushTypeBuf(&typer->typefuncTypeBuf);
+    typefuncType->kind = T_TYPEFUNC;
+    typefuncType->as.Typefunc.arg = arg;
+    typefuncType->as.Typefunc.body = body;
+    typefuncType->requiredSubTypesSB = NULL;
+    return typefuncType;
+}
+Type* GetTupleType(Typer* typer, InputTypeFieldList const* inputFieldList) {
+    Type* tupleType = pushTypeBuf(&typer->tupleTypeBuf);
+    tupleType->kind = T_TUPLE;
+    tupleType->as.Compound_atn = getATN(&typer->unitATN, ADT_MUL, inputFieldList, 0);
+    tupleType->as.Compound_atn->owner = tupleType;
+    tupleType->requiredSubTypesSB = NULL;
+    return tupleType;
+}
+Type* GetUnionType(Typer* typer, InputTypeFieldList const* inputFieldList) {
+    Type* unionType = pushTypeBuf(&typer->unionTypeBuf);
+    unionType->kind = T_UNION;
+    unionType->as.Compound_atn = getATN(&typer->unitATN, ADT_SUM, inputFieldList, 0);
+    unionType->as.Compound_atn->owner = unionType;
+    unionType->requiredSubTypesSB = NULL;
+    return unionType;
+}
+
+Type* CreateMetatype(Typer* typer, char const* format, ...) {
+    Type* metatype = pushTypeBuf(&typer->metaTypeBuf);
+    metatype->kind = T_META;
+    metatype->requiredSubTypesSB = NULL;
+
+    metatype->as.Meta.id = typer->metaTypeBuf.count;   // using the buffer count as a unique ID.
+    {  // metaTypeP->as.Meta.name
+        char nameBuffer[1024];
+        va_list args;
+        va_start(args, format);
+        int writeCount = vsnprintf(nameBuffer, 1024, format, args);
+        if (writeCount > 1024) {
+            if (DEBUG) {
+                printf("!!- Metatype name too long! Greater than maximum length 1024.\n");
+            } else {
+                assert(0 && "Metatype name too long");
+            }
+        }
+        va_end(args);
+        metatype->as.Meta.name = strdup(nameBuffer);
+    }
+    metatype->as.Meta.suptypesSB = NULL;
+
+    metatype->requiredSubTypesSB = NULL;
+
+    return metatype;
+}
+
+//
+// Getters:
+//
+
+TypeKind GetTypeKind(Type* typeP) {
+    return typeP->kind;
+}
+IntWidth GetIntTypeWidth(Type* typeP) {
+    return typeP->as.Int_width;
+}
+FloatWidth GetFloatTypeWidth(Type* typeP) {
+    return typeP->as.Float_width;
+}
+Type* GetPtrTypePointee(Type* typeP) {
+    return typeP->as.Ptr_pointee;
+}
+int GetTupleTypeLength(Type* type) {
+    return type->as.Compound_atn->depth;
+}
+int GetUnionTypeLength(Type* type) {
+    return type->as.Compound_atn->depth;
+}
+
+size_t GetMetatypeID(Type* typeP) {
+    return typeP->as.Meta.id;
+}
+char const* GetMetatypeName(Type* typeP) {
+    return typeP->as.Meta.name;
+}
+
+//
+// Typer:
+//
+
+void TypeNode(Typer* typer, AstNode* node) {
+    visit(typer, node, NULL, typerPostVisitor);
+}
+
+//
+// Type checker:
+//
+
 int Typecheck(Typer* typer) {
     // todo: check requirements for each non-metatype.
     // todo: synthesize solutions for each metatype by first typechecking each candidate subtype, then selecting the most general solution.
@@ -803,34 +1052,39 @@ int Typecheck(Typer* typer) {
     int it;
     int res = 1;
 
-    res = typecheckSingle(typer, &typer->intType[INT_8]) && res;
-    res = typecheckSingle(typer, &typer->intType[INT_16]) && res;
-    res = typecheckSingle(typer, &typer->intType[INT_32]) && res;
-    res = typecheckSingle(typer, &typer->intType[INT_64]) && res;
-    res = typecheckSingle(typer, &typer->floatType[FLOAT_32]) && res;
-    res = typecheckSingle(typer, &typer->floatType[FLOAT_64]) && res;
+    res = typecheck1(typer, &typer->intType[INT_8]) && res;
+    res = typecheck1(typer, &typer->intType[INT_16]) && res;
+    res = typecheck1(typer, &typer->intType[INT_32]) && res;
+    res = typecheck1(typer, &typer->intType[INT_64]) && res;
+    res = typecheck1(typer, &typer->floatType[FLOAT_32]) && res;
+    res = typecheck1(typer, &typer->floatType[FLOAT_64]) && res;
 
     for (it = 0; it < typer->ptrTypeBuf.count; it++) {
-        res = typecheckSingle(typer, &typer->ptrTypeBuf.ptr[it]) && res;
+        res = typecheck1(typer, &typer->ptrTypeBuf.ptr[it]) && res;
     }
     for (it = 0; it < typer->typefuncTypeBuf.count; it++) {
-        res = typecheckSingle(typer, &typer->ptrTypeBuf.ptr[it]) && res;
+        res = typecheck1(typer, &typer->typefuncTypeBuf.ptr[it]) && res;
     }
     for (it = 0; it < typer->funcTypeBuf.count; it++) {
-        res = typecheckSingle(typer, &typer->funcTypeBuf.ptr[it]) && res;
+        res = typecheck1(typer, &typer->funcTypeBuf.ptr[it]) && res;
     }
     for (it = 0; it < typer->moduleTypeBuf.count; it++) {
-        res = typecheckSingle(typer, &typer->moduleTypeBuf.ptr[it]) && res;
+        res = typecheck1(typer, &typer->moduleTypeBuf.ptr[it]) && res;
     }
     for (it = 0; it < typer->tupleTypeBuf.count; it++) {
-        res = typecheckSingle(typer, &typer->tupleTypeBuf.ptr[it]) && res;
+        res = typecheck1(typer, &typer->tupleTypeBuf.ptr[it]) && res;
     }
     for (it = 0; it < typer->unionTypeBuf.count; it++) {
-        res = typecheckSingle(typer, &typer->unionTypeBuf.ptr[it]) && res;
+        res = typecheck1(typer, &typer->unionTypeBuf.ptr[it]) && res;
     }
 
-    for (it = 0; it < typer->metaTypeBuf.count; it++) {
-        res = typecheckSingle(typer, &typer->metaTypeBuf.ptr[it]) && res;
+    // always typecheck/solve metatypes last
+    // * lets us gather constraints in `typecheck` from all concrete/well-determined types.
+    // * lets us abort if system's constraints on concrete types are inconsistent.
+    if (res) {
+        for (it = 0; it < typer->metaTypeBuf.count; it++) {
+            res = typecheck2(typer, &typer->metaTypeBuf.ptr[it]) && res;
+        }
     }
 
     return res;
