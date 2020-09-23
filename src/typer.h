@@ -20,7 +20,7 @@ enum TypeKind {
     T_PTR,
     T_META,
     T_FUNC,
-    T_STRUCT, T_UNION,
+    T_TUPLE, T_UNION,
     T_TYPEFUNC,
     T_MODULE,
 };
@@ -76,7 +76,7 @@ Type* GetFloatType(Typer* typer, FloatWidth width);
 Type* GetPtrType(Typer* typer, Type* pointee);
 Type* GetFuncType(Typer* typer, Type* domain, Type* image);
 Type* GetTypefuncType(Typer* typer, Type* arg, Type* body);
-Type* GetStructType(Typer* typer, InputTypeFieldList const* inputFieldList);
+Type* GetTupleType(Typer* typer, InputTypeFieldList const* inputFieldList);
 Type* GetUnionType(Typer* typer, InputTypeFieldList const* inputFieldList);
 
 Type* CreateMetatype(Typer* typer, char const* format, ...);
@@ -89,7 +89,7 @@ TypeKind GetTypeKind(Type* typeP);
 IntWidth GetIntTypeWidth(Type* typeP);
 FloatWidth GetFloatTypeWidth(Type* typeP);
 Type* GetPtrTypePointee(Type* typeP);
-int GetStructTypeLength(Type* type);
+int GetTupleTypeLength(Type* type);
 int GetUnionTypeLength(Type* type);
 
 size_t GetMetatypeID(Type* typeP);

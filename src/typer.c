@@ -96,7 +96,7 @@ struct Typer {
     TypeBuf typefuncTypeBuf;
     TypeBuf funcTypeBuf;
     TypeBuf moduleTypeBuf;
-    TypeBuf structTypeBuf;
+    TypeBuf tupleTypeBuf;
     TypeBuf unionTypeBuf;
 
     AdtTrieNode unitATN;
@@ -142,7 +142,7 @@ Typer* createTyper(TyperCfg config) {
     typer->funcTypeBuf = createTypeBuf("funcTypeBuf", typer->backupCfg.maxFuncCount);
     typer->typefuncTypeBuf = createTypeBuf("typefuncTypeBuf", typer->backupCfg.maxTypefuncCount);
     typer->moduleTypeBuf = createTypeBuf("moduleTypeBuf", typer->backupCfg.maxModuleCount);
-    typer->structTypeBuf = createTypeBuf("structTypeBuf", typer->backupCfg.maxStructCount);
+    typer->tupleTypeBuf = createTypeBuf("structTypeBuf", typer->backupCfg.maxStructCount);
     typer->unionTypeBuf = createTypeBuf("unionTypeBuf", typer->backupCfg.maxUnionCount);
     
     typer->unitATN = (AdtTrieNode) {NULL,NULL,&typer->unitType,-1,0};
@@ -376,13 +376,13 @@ Type* GetTypefuncType(Typer* typer, Type* arg, Type* body) {
     typefuncType->requiredSubTypesSb = NULL;
     return typefuncType;
 }
-Type* GetStructType(Typer* typer, InputTypeFieldList const* inputFieldList) {
-    Type* structType = pushTypeBuf(&typer->structTypeBuf);
-    structType->kind = T_STRUCT;
-    structType->as.Compound_atn = getATN(&typer->unitATN, ADT_MUL, inputFieldList, 0);
-    structType->as.Compound_atn->owner = structType;
-    structType->requiredSubTypesSb = NULL;
-    return structType;
+Type* GetTupleType(Typer* typer, InputTypeFieldList const* inputFieldList) {
+    Type* tupleType = pushTypeBuf(&typer->tupleTypeBuf);
+    tupleType->kind = T_TUPLE;
+    tupleType->as.Compound_atn = getATN(&typer->unitATN, ADT_MUL, inputFieldList, 0);
+    tupleType->as.Compound_atn->owner = tupleType;
+    tupleType->requiredSubTypesSb = NULL;
+    return tupleType;
 }
 Type* GetUnionType(Typer* typer, InputTypeFieldList const* inputFieldList) {
     Type* unionType = pushTypeBuf(&typer->unionTypeBuf);
@@ -433,7 +433,7 @@ FloatWidth GetFloatTypeWidth(Type* typeP) {
 Type* GetPtrTypePointee(Type* typeP) {
     return typeP->as.Ptr_pointee;
 }
-int GetStructTypeLength(Type* type) {
+int GetTupleTypeLength(Type* type) {
     return type->as.Compound_atn->depth;
 }
 int GetUnionTypeLength(Type* type) {
@@ -456,18 +456,24 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
     switch (GetAstNodeKind(node)) {
         case AST_UNIT:
         {
-            SetAstNodeValueType(node, GetUnitType(typer));
+            Type* t = GetUnitType(typer);
+            SetAstNodeValueType(node,t);
+            SetAstNodeTypingType(node,t);
             break;
         }
         case AST_LITERAL_FLOAT:
         {
-            SetAstNodeValueType(node, GetFloatType(typer, FLOAT_64));
+            Type* t = GetFloatType(typer, FLOAT_64);
+            SetAstNodeValueType(node,t);
+            SetAstNodeTypingType(node,t);
             break;
         }
         case AST_LITERAL_INT:
         {
             // TODO: automatically select width based on int value
-            SetAstNodeValueType(node, GetIntType(typer, INT_64));
+            Type* t = GetIntType(typer, INT_64);
+            SetAstNodeValueType(node,t);
+            SetAstNodeTypingType(node,t);
             break;
         }
         case AST_ID:
@@ -548,7 +554,9 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
         case AST_FIELD__STRUCT_ITEM:
         case AST_FIELD__TUPLE_ITEM:
         {
-            // todo: prepare field types for parent
+            AstNode* field = GetAstFieldRhs(node);
+            SetAstNodeTypingType(node, GetAstNodeTypingType(field));
+            SetAstNodeValueType(node, GetAstNodeValueType(field));
             break;
         }
         case AST_PATTERN:
@@ -597,18 +605,46 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
                 }
             }
             if (!ignoreTypingContext) {
-                SetAstNodeTypingType(node, GetStructType(typer, inputTypingFieldHead));
+                SetAstNodeTypingType(node, GetTupleType(typer, inputTypingFieldHead));
             }
             if (!ignoreValueContext) {
-                SetAstNodeValueType(node, GetStructType(typer, inputValueFieldHead));
+                SetAstNodeValueType(node, GetTupleType(typer, inputValueFieldHead));
             }
             break;
         }
         case AST_TUPLE:
         {
+            int ignoreTypingContext = 0;
+            int ignoreValueContext = 0;
+            InputTypeFieldNode* inputTypingFieldHead = NULL;
+            InputTypeFieldNode* inputValueFieldHead = NULL;
             int tupleCount = GetAstTupleLength(node);
-            for (int index = 0; index < tupleCount; index++) {
-                AstNode* node = GetAstTupleItemAt(node, index);
+            for (int index = tupleCount-1; index >= 0; index--) {
+                AstNode* field = GetAstTupleItemAt(node, index);
+                SymbolID fieldName = GetAstFieldName(field);
+                
+                // creating a new input type field node, updating the list:
+                if (!ignoreValueContext) {
+                    InputTypeFieldNode* valueITF = malloc(sizeof(InputTypeFieldNode));
+                    valueITF->name = fieldName;
+                    valueITF->type = GetAstNodeValueType(field);
+                    valueITF->next = inputTypingFieldHead;
+                    inputValueFieldHead = valueITF;
+                }
+                
+                if (!ignoreTypingContext) {
+                    InputTypeFieldNode* typingITF = malloc(sizeof(InputTypeFieldNode));
+                    typingITF->name = fieldName;
+                    typingITF->type = GetAstNodeTypingType(field);
+                    typingITF->next = inputTypingFieldHead;
+                    inputTypingFieldHead = typingITF;
+                }
+            }
+            if (!ignoreTypingContext) {
+                SetAstNodeTypingType(node, GetTupleType(typer, inputTypingFieldHead));
+            }
+            if (!ignoreValueContext) {
+                SetAstNodeValueType(node, GetTupleType(typer, inputValueFieldHead));
             }
             break;
         }
@@ -728,10 +764,10 @@ void printType(Typer* typer, Type* type) {
             // todo: implement printType for T_MODULE.
             break;
         }
-        case T_STRUCT:
+        case T_TUPLE:
         {
-            int atnDepth = GetStructTypeLength(type);
-            printf("struct (%d)", atnDepth);
+            int atnDepth = GetTupleTypeLength(type);
+            printf("tuple (%d)", atnDepth);
             for (AdtTrieNode* atn = type->as.Compound_atn; atn && atn->parentEdgeIndex >= 0; atn = atn->parent) {
                 AdtTrieEdge edge = atn->parent->edgesSb[atn->parentEdgeIndex];
                 printf(" (");
@@ -749,7 +785,7 @@ void printType(Typer* typer, Type* type) {
         }
         case T_UNION:
         {
-            int atnDepth = GetStructTypeLength(type);
+            int atnDepth = GetTupleTypeLength(type);
             printf("union (count:%d)", atnDepth);
             break;
         }
@@ -762,7 +798,7 @@ void printType(Typer* typer, Type* type) {
 }
 int Typecheck(Typer* typer) {
     // todo: check requirements for each non-metatype.
-    // todo: synthesize solutions for each metatype.
+    // todo: synthesize solutions for each metatype by first typechecking each candidate subtype, then selecting the most general solution.
 
     int it;
     int res = 1;
@@ -786,8 +822,8 @@ int Typecheck(Typer* typer) {
     for (it = 0; it < typer->moduleTypeBuf.count; it++) {
         res = typecheckSingle(typer, &typer->moduleTypeBuf.ptr[it]) && res;
     }
-    for (it = 0; it < typer->structTypeBuf.count; it++) {
-        res = typecheckSingle(typer, &typer->structTypeBuf.ptr[it]) && res;
+    for (it = 0; it < typer->tupleTypeBuf.count; it++) {
+        res = typecheckSingle(typer, &typer->tupleTypeBuf.ptr[it]) && res;
     }
     for (it = 0; it < typer->unionTypeBuf.count; it++) {
         res = typecheckSingle(typer, &typer->unionTypeBuf.ptr[it]) && res;

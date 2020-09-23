@@ -744,7 +744,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         {
             int tupleLength = GetAstTupleLength(node);
             for (int i = 0; i < tupleLength; i++) {
-                AstNode* tupleField = GetAstPatternFieldAt(node, i);
+                AstNode* tupleField = GetAstTupleItemAt(node, i);
                 if (!visit(context, tupleField, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
