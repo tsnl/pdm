@@ -110,7 +110,6 @@ static Type* tryPushTypeBuf(TypeBuf* buf);
 static Type* pushTypeBuf(TypeBuf* buf);
 static void pushMetavarSuptype(Type* metavar, Type* suptype);
 
-static void requireSubtyping(Type* sup, Type* sub);
 static Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP);
 
 static AdtTrieNode* createATN(AdtTrieNode* parent, Type* owner);
@@ -118,31 +117,19 @@ static AdtTrieNode* getATN(AdtTrieNode* root, AdtOperator operator, InputTypeFie
 static AdtTrieNode* getCommonSuperATN(AdtTrieNode* a, AdtTrieNode* b);
 static int isSubATN(AdtTrieNode* sup, AdtTrieNode* sub);
 
-//
-// Type solution occurs in THREE PHASES:
-// - TYPER: 
-//   - initialize types for the AST, create metavars where not already created by `scoper`
-//   - first layer of `requireSubtyping` applied
-// - TYPECHECK1: 
-//   - iterates existing subtyping
-//   - propagates 
-//
-
 static int typerPostVisitor(void* rawTyper, AstNode* node);
-
-static int typecheck1(Typer* typer, Type* type);
-static int typecheck2(Typer* typer, Type* type);
-typedef int(*CheckReqSubtypeCB)(Typer* typer, Type* type, Type* reqSubtype);
-static int tc1_int(Typer* typer, Type* type, Type* reqSubtype);
-static int tc1_float(Typer* typer, Type* type, Type* reqSubtype);
-static int tc1_ptr(Typer* typer, Type* type, Type* reqSubtype);
-static int tc1_typefunc(Typer* typer, Type* type, Type* reqSubtype);
-static int tc1_func(Typer* typer, Type* type, Type* reqSubtype);
-static int tc1_module(Typer* typer, Type* type, Type* reqSubtype);
-static int tc1_tuple(Typer* typer, Type* type, Type* reqSubtype);
-static int tc1_union(Typer* typer, Type* type, Type* reqSubtype);
-static int tc1_metavar_sub(Typer* typer, Type* metatype, Type* subtype);
-static int tc1_metavar_sup(Type* metatype, Type* supertype);
+typedef int(*CheckReqSubtypeCB)(Loc loc, Type* type, Type* reqSubtype);
+static int requireSubtype(Loc loc, Type* sup, Type* sub);
+static int requireSubtype_int(Loc loc, Type* type, Type* reqSubtype);
+static int requireSubtype_float(Loc loc, Type* type, Type* reqSubtype);
+static int requireSubtype_ptr(Loc loc, Type* type, Type* reqSubtype);
+static int requireSubtype_typefunc(Loc loc, Type* type, Type* reqSubtype);
+static int requireSubtype_func(Loc loc, Type* type, Type* reqSubtype);
+static int requireSubtype_module(Loc loc, Type* type, Type* reqSubtype);
+static int requireSubtype_tuple(Loc loc, Type* type, Type* reqSubtype);
+static int requireSubtype_union(Loc loc, Type* type, Type* reqSubtype);
+static int requireSubtype_metavar(Loc loc, Type* metatype, Type* subtype);
+static int requireSupertype_metavar(Type* metatype, Type* supertype);
 
 static void printType(Typer* typer, Type* type);
 
@@ -224,15 +211,6 @@ void pushMetavarSuptype(Type* metavar, Type* suptype) {
     sb_push(metavar->as.Meta.suptypesSB, suptype);
 }
 
-void requireSubtyping(Type* sup, Type* sub) {
-    int count = sb_count(sup->requiredSubTypesSB);
-    for (int i = 0; i < count; i++) {
-        if (sup->requiredSubTypesSB[i] == sub) {
-            return;
-        }
-    }
-    sb_push(sup->requiredSubTypesSB, sub);
-}
 Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP) {
     switch (arg->kind) {
         case T_INT:
@@ -416,7 +394,7 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
             void* lhsType = GetAstNodeValueType(node);
             void* rhsType = GetAstNodeValueType(node);
             if (lhsType && rhsType) {
-                requireSubtyping(lhsType, rhsType);
+                requireSubtype(GetAstNodeLoc(node), lhsType, rhsType);
             }
             break;
         }
@@ -593,69 +571,81 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
     return 1;
 }
 
-int typecheck1(Typer* typer, Type* type) {
-    // If `type` is a metavar, do nothing in `typecheck1`.
-    if (type->kind == T_META) {
-        if (DEBUG) {
-            printf("!!- Metavar must be typechecked and solved separately after concrete types.\n");
+
+int requireSubtype(Loc loc, Type* sup, Type* sub) {
+    if (sup->kind != T_META && sub->kind != T_META) {
+        if (sup->kind != sub->kind) {
+            // todo: get type kind as text for a more descriptive message here
+            FeedbackNote* note = CreateFeedbackNote("in application here...", loc, NULL);
+            PostFeedback(FBK_ERROR, note, "Mismatched type kinds in `requireSubtype`");
+            return 0;
         }
-        return 1;
     }
 
-    // selecting the right callback based on the type node's kind:
+    int count = sb_count(sup->requiredSubTypesSB);
+    int found = 0;
+    for (int i = 0; i < count; i++) {
+        if (sup->requiredSubTypesSB[i] == sub) {
+            found = 1;
+            break;
+        }
+    }
+    if (found) {
+        sb_push(sup->requiredSubTypesSB, sub);
+    }
+
+    // selecting the right subtyping callback based on the type node's kind:
     CheckReqSubtypeCB callback = NULL;
-    switch (type->kind) {
+    switch (sup->kind) {
         case T_INT:
         {
-            callback = tc1_int;
+            callback = requireSubtype_int;
             break;
         }
         case T_FLOAT:
         {
-            callback = tc1_float;
+            callback = requireSubtype_float;
             break;
         }
         case T_PTR:
         {
-            callback = tc1_ptr;
+            callback = requireSubtype_ptr;
             break;
         }
         case T_TYPEFUNC:
         {
-            callback = tc1_typefunc;
+            callback = requireSubtype_typefunc;
             break;
         }
         case T_FUNC:
         {
-            callback = tc1_func;
+            callback = requireSubtype_func;
             break;
         }
         case T_MODULE:
         {
-            callback = tc1_module;
+            callback = requireSubtype_module;
             break;
         }
         case T_TUPLE:
         {
-            callback = tc1_tuple;
+            callback = requireSubtype_tuple;
             break;
         }
         case T_UNION:
         {
-            callback = tc1_union;
+            callback = requireSubtype_union;
             break;
         }
         case T_META:
         {
-            callback = tc1_metavar_sub;
+            callback = requireSubtype_metavar;
             break;
         }
         default:
         {
             if (DEBUG) {
                 printf("!!- Not implemented: typecheck for type kind <?>.\n");
-                printType(typer, type);
-                printf("\n");
             } else {
                 assert(0 && "Not implemented: typecheck for type kind <?>.");
             }
@@ -663,20 +653,14 @@ int typecheck1(Typer* typer, Type* type) {
         }
     }
 
-    // iterating through each required subtype and applying the chosen callback:
+    // running the chosen callback if found to further validate:
     if (callback) {
-        int result = 1;
-        int reqSubtypeCount = sb_count(type->requiredSubTypesSB);
-        for (int subtypeIndex = 0; subtypeIndex < reqSubtypeCount; subtypeIndex++) {
-            Type* reqSubtype = type->requiredSubTypesSB[subtypeIndex];
-            result = callback(typer,type,reqSubtype) && result;
-        }
-        return result;
+        return callback(loc, sup, sub);
     } else {
         return 0;
     }
 }
-int tc1_int(Typer* typer, Type* type, Type* reqSubtype) {
+int requireSubtype_int(Loc loc, Type* type, Type* reqSubtype) {
     int result = 1;
     switch (reqSubtype->kind) {
         case T_INT:
@@ -698,7 +682,7 @@ int tc1_int(Typer* typer, Type* type, Type* reqSubtype) {
         }
         case T_META:
         {
-            tc1_metavar_sup(reqSubtype,type);
+            result = requireSupertype_metavar(reqSubtype,type) && result;
             break;
         }
         default:
@@ -711,7 +695,7 @@ int tc1_int(Typer* typer, Type* type, Type* reqSubtype) {
     }
     return result;
 }
-int tc1_float(Typer* typer, Type* type, Type* reqSubtype) {
+int requireSubtype_float(Loc loc, Type* type, Type* reqSubtype) {
     int result = 1;
     switch (reqSubtype->kind) {
         case T_FLOAT:
@@ -725,7 +709,7 @@ int tc1_float(Typer* typer, Type* type, Type* reqSubtype) {
         }
         case T_META:
         {
-            tc1_metavar_sup(reqSubtype,type);
+            result = requireSupertype_metavar(reqSubtype,type) && result;
             break;
         }
         default:
@@ -739,18 +723,17 @@ int tc1_float(Typer* typer, Type* type, Type* reqSubtype) {
     }
     return result;
 }
-int tc1_ptr(Typer* typer, Type* type, Type* reqSubtype) {
+int requireSubtype_ptr(Loc loc, Type* type, Type* reqSubtype) {
     int result = 1;
     switch (reqSubtype->kind) {
         case T_PTR:
         {
-            result = typecheck1(typer, type->as.Ptr_pointee) && result;
-            requireSubtyping(type->as.Ptr_pointee, reqSubtype->as.Ptr_pointee);
+            result = requireSubtype(loc, type->as.Ptr_pointee, reqSubtype->as.Ptr_pointee) && result;
             break;
         }
         case T_META:
         {
-            tc1_metavar_sup(reqSubtype,type);
+            result = requireSupertype_metavar(reqSubtype,type) && result;
             break;
         }
         default:
@@ -764,41 +747,55 @@ int tc1_ptr(Typer* typer, Type* type, Type* reqSubtype) {
     }
     return result;
 }
-int tc1_typefunc(Typer* typer, Type* type, Type* reqSubtype) {
-    return 1;
-}
-int tc1_func(Typer* typer, Type* type, Type* reqSubtype) {
-    return 1;
-}
-int tc1_module(Typer* typer, Type* type, Type* reqSubtype) {
-    return 1;
-}
-int tc1_tuple(Typer* typer, Type* type, Type* reqSubtype) {
-    return 1;
-}
-int tc1_union(Typer* typer, Type* type, Type* reqSubtype) {
-    return 1;
-}
-int tc1_metavar_sub(Typer* typer, Type* metatype, Type* subtype) {
-    requireSubtyping(metatype,subtype);
-    return 1;
-}
-int tc1_metavar_sup(Type* metatype, Type* supertype) {
-    // adding 'type' as a supertype of this metatype, for resolution in `typecheck2`
-    sb_push(supertype->as.Meta.suptypesSB,metatype);
-    return 1;
-}
-int typecheck2(Typer* typer, Type* metavar) {
-    if (metavar->kind != T_META) {
-        // typecheck2 can only be called on metavars.
-        if (DEBUG) {
-            printf("!!- typecheck2 should only be called on `metavar` types.\n");
-        }
-        return 0;
+int requireSubtype_typefunc(Loc loc, Type* type, Type* reqSubtype) {
+    if (DEBUG) {
+        printf("!!- Not implemented: requireSubtype_typefunc\n");
+    } else {
+        assert(0 && "Not implemented: requireSubtype_typefunc");
     }
-
-    // todo: iterate through supertypes, select least general unifier based on subtypes, return 0 if kind mismatch found.
-
+    return 0;
+}
+int requireSubtype_func(Loc loc, Type* type, Type* reqSubtype) {
+    if (DEBUG) {
+        printf("!!- Not implemented: requireSubtype_func\n");
+    } else {
+        assert(0 && "Not implemented: requireSubtype_func");
+    }
+    return 0;
+}
+int requireSubtype_module(Loc loc, Type* type, Type* reqSubtype) {
+    if (DEBUG) {
+        printf("!!- Not implemented: requireSubtype_module\n");
+    } else {
+        assert(0 && "Not implemented: requireSubtype_module");
+    }
+    return 0;
+}
+int requireSubtype_tuple(Loc loc, Type* type, Type* reqSubtype) {
+    if (DEBUG) {
+        printf("!!- Not implemented: requireSubtype_tuple\n");
+    } else {
+        assert(0 && "Not implemented: requireSubtype_tuple");
+    }
+    return 0;
+}
+int requireSubtype_union(Loc loc, Type* type, Type* reqSubtype) {
+    if (DEBUG) {
+        printf("!!- Not implemented: requireSubtype_union\n");
+    } else {
+        assert(0 && "Not implemented: requireSubtype_union");
+    }
+    return 0;
+}
+int requireSubtype_metavar(Loc loc, Type* metatype, Type* subtype) {
+    // todo: in `requireSubtype_metavar`, check against hypothesis kind
+    // todo: in `requireSubtype_metavar`, if kind matches hypothesis, perform remaining checks/add more subtypes, else post feedback
+    // todo: in `requireSubtype_metavar`, distill each subtype to a super-most requirement that must then be iteratively matched against each available supertype.
+    return 0;
+}
+int requireSupertype_metavar(Type* metatype, Type* supertype) {
+    // adding 'type' as a supertype of this metatype
+    sb_push(supertype->as.Meta.suptypesSB,metatype);
     return 1;
 }
 
@@ -1046,46 +1043,57 @@ void TypeNode(Typer* typer, AstNode* node) {
 //
 
 int Typecheck(Typer* typer) {
-    // todo: check requirements for each non-metatype.
+    // note: typer has already been run, all constraints should have been applied to metatypes.
+    // todo: in Typecheck, select a suitable solution supertype that fits subtyping constraints for each metatype.
     // todo: synthesize solutions for each metatype by first typechecking each candidate subtype, then selecting the most general solution.
 
-    int it;
     int res = 1;
-
-    res = typecheck1(typer, &typer->intType[INT_8]) && res;
-    res = typecheck1(typer, &typer->intType[INT_16]) && res;
-    res = typecheck1(typer, &typer->intType[INT_32]) && res;
-    res = typecheck1(typer, &typer->intType[INT_64]) && res;
-    res = typecheck1(typer, &typer->floatType[FLOAT_32]) && res;
-    res = typecheck1(typer, &typer->floatType[FLOAT_64]) && res;
-
-    for (it = 0; it < typer->ptrTypeBuf.count; it++) {
-        res = typecheck1(typer, &typer->ptrTypeBuf.ptr[it]) && res;
-    }
-    for (it = 0; it < typer->typefuncTypeBuf.count; it++) {
-        res = typecheck1(typer, &typer->typefuncTypeBuf.ptr[it]) && res;
-    }
-    for (it = 0; it < typer->funcTypeBuf.count; it++) {
-        res = typecheck1(typer, &typer->funcTypeBuf.ptr[it]) && res;
-    }
-    for (it = 0; it < typer->moduleTypeBuf.count; it++) {
-        res = typecheck1(typer, &typer->moduleTypeBuf.ptr[it]) && res;
-    }
-    for (it = 0; it < typer->tupleTypeBuf.count; it++) {
-        res = typecheck1(typer, &typer->tupleTypeBuf.ptr[it]) && res;
-    }
-    for (it = 0; it < typer->unionTypeBuf.count; it++) {
-        res = typecheck1(typer, &typer->unionTypeBuf.ptr[it]) && res;
+    for (int index = 0; index < typer->metaTypeBuf.count; index++) {
+        Type* metatype = &typer->metaTypeBuf.ptr[index];
+        
+        // todo: select the super-most supertype.
+        // this runs only for tuples
+        // int supertypeCount = sb_count(metatype->as.Meta.suptypesSB);
+        // Type* supermost = NULL;
+        // for (int supertypeIndex = 0; supertypeIndex < supertypeCount; supertypeIndex++) {
+        //     Type* supertype = metainfo->suptypesSB[supertypeIndex];
+        //     // select superATN
+        // }
     }
 
-    // always typecheck/solve metatypes last
-    // * lets us gather constraints in `typecheck` from all concrete/well-determined types.
-    // * lets us abort if system's constraints on concrete types are inconsistent.
-    if (res) {
-        for (it = 0; it < typer->metaTypeBuf.count; it++) {
-            res = typecheck2(typer, &typer->metaTypeBuf.ptr[it]) && res;
-        }
-    }
+    // ignore, just do the above^
+    // res = typecheck1(typer, &typer->intType[INT_8]) && res;
+    // res = typecheck1(typer, &typer->intType[INT_16]) && res;
+    // res = typecheck1(typer, &typer->intType[INT_32]) && res;
+    // res = typecheck1(typer, &typer->intType[INT_64]) && res;
+    // res = typecheck1(typer, &typer->floatType[FLOAT_32]) && res;
+    // res = typecheck1(typer, &typer->floatType[FLOAT_64]) && res;
+
+    // for (it = 0; it < typer->ptrTypeBuf.count; it++) {
+    //     res = typecheck1(typer, &typer->ptrTypeBuf.ptr[it]) && res;
+    // }
+    // for (it = 0; it < typer->typefuncTypeBuf.count; it++) {
+    //     res = typecheck1(typer, &typer->typefuncTypeBuf.ptr[it]) && res;
+    // }
+    // for (it = 0; it < typer->funcTypeBuf.count; it++) {
+    //     res = typecheck1(typer, &typer->funcTypeBuf.ptr[it]) && res;
+    // }
+    // for (it = 0; it < typer->moduleTypeBuf.count; it++) {
+    //     res = typecheck1(typer, &typer->moduleTypeBuf.ptr[it]) && res;
+    // }
+    // for (it = 0; it < typer->tupleTypeBuf.count; it++) {
+    //     res = typecheck1(typer, &typer->tupleTypeBuf.ptr[it]) && res;
+    // }
+    // for (it = 0; it < typer->unionTypeBuf.count; it++) {
+    //     res = typecheck1(typer, &typer->unionTypeBuf.ptr[it]) && res;
+    // }
+
+    // // always typecheck/solve metatypes last
+    // // * lets us gather constraints in `typecheck` from all concrete/well-determined types.
+    // // * lets us abort if system's constraints on concrete types are inconsistent.
+    // if (res) {
+    
+    // }
 
     return res;
 }
