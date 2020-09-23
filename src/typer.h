@@ -23,6 +23,8 @@ enum TypeKind {
     T_TUPLE, T_UNION,
     T_TYPEFUNC,
     T_MODULE,
+    __T_COUNT,
+    __T_NONE, __T_INCONSISTENT
 };
 enum IntWidth {
     INT_1,

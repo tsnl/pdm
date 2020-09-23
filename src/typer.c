@@ -12,17 +12,24 @@
 #include "scoper.h"
 #include "symbols.h"
 
+typedef enum HypothesisFrom HypothesisFrom;
+
+typedef enum AdtOperator AdtOperator;
+typedef struct AdtTrieNode AdtTrieNode;
+typedef struct AdtTrieEdge AdtTrieEdge;
+
+typedef struct TypeSub TypeSub;
+typedef struct TypeBuf TypeBuf;
+
 typedef struct MetaInfo MetaInfo;
 typedef struct FuncInfo FuncInfo;
 typedef struct TypefuncInfo TypefuncInfo;
 typedef struct ModuleInfo ModuleInfo;
 
-typedef struct TypeSub TypeSub;
-typedef struct TypeBuf TypeBuf;
-
-typedef enum AdtOperator AdtOperator;
-typedef struct AdtTrieNode AdtTrieNode;
-typedef struct AdtTrieEdge AdtTrieEdge;
+enum HypothesisFrom {
+    HYPOTHESIS_FROM_SUBTYPES,
+    HYPOTHESIS_FROM_SUPERTYPES
+};
 
 enum AdtOperator {
     ADT_MUL,
@@ -108,7 +115,8 @@ static Typer* createTyper(TyperCfg config);
 static TypeBuf createTypeBuf(char const* name, size_t capacity);
 static Type* tryPushTypeBuf(TypeBuf* buf);
 static Type* pushTypeBuf(TypeBuf* buf);
-static void pushMetavarSuptype(Type* metavar, Type* suptype);
+static int pushMetavarSuptype(Type* metavar, Type* suptype);
+static TypeKind metavarHypothesisKind(Type* metavar, HypothesisFrom hypothesisFrom);
 
 static Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP);
 
@@ -198,17 +206,74 @@ Type* pushTypeBuf(TypeBuf* buf) {
         return NULL;
     }
 }
-void pushMetavarSuptype(Type* metavar, Type* suptype) {
+int pushMetavarSuptype(Type* metavar, Type* suptype) {
+    // todo: in `pushMetavarSuptype`, call `metavarHypothesisKind` to eliminate invalid supertypes (esp. instead of just returning '1')
+
     // searching for an existing element, returning early if found
     int count = sb_count(metavar->as.Meta.suptypesSB);
     for (int index = 0; index < count; index++) {
         if (metavar->as.Meta.suptypesSB[index] == suptype) {
-            return;
+            return 1;
         }
     }
 
     // pushing the supertype since it wasn't found:
     sb_push(metavar->as.Meta.suptypesSB, suptype);
+
+    return 1;
+}
+TypeKind metavarHypothesisKind(Type* metavar, HypothesisFrom hypothesisFrom) {
+    if (metavar->kind != T_META) {
+        if (DEBUG) {
+            printf("!!- metavarHypothesisKind invalid for non-metavar\n");
+        } else {
+            assert(0 && "metavarHypothesisKind invalid for non-metavar");
+        }
+        return __T_NONE;
+    }
+    
+    if (hypothesisFrom == HYPOTHESIS_FROM_SUBTYPES) {
+        Type** subtypesSB = metavar->requiredSubTypesSB;
+        if (subtypesSB) {
+            // subtypes are checked for kind-consistency before adding, so the first is as good as any other.
+            // see: `requireSubtype`
+            return subtypesSB[0]->kind;
+        } else {
+            return __T_NONE;
+        }
+    } else if (hypothesisFrom == HYPOTHESIS_FROM_SUPERTYPES) {
+        Type** supertypesSB = metavar->as.Meta.suptypesSB;
+        TypeKind finalHypothesisKind = __T_NONE;
+        int hypothesisTypeCount = sb_count(supertypesSB);
+        for (int hypothesisTypeIndex = 0; hypothesisTypeIndex < hypothesisTypeCount; hypothesisTypeIndex++) {
+            Type* supertype = supertypesSB[hypothesisTypeIndex];
+            TypeKind finalSupertypeKind = supertype->kind;
+            if (finalSupertypeKind == T_META) {
+                // todo: metavarHypothesisKind: check if a cycle has occurred in this recursive call
+                finalSupertypeKind = metavarHypothesisKind(supertype, HYPOTHESIS_FROM_SUPERTYPES);
+                if (finalSupertypeKind == __T_NONE || finalSupertypeKind == __T_INCONSISTENT) {
+                    finalHypothesisKind = finalSupertypeKind;
+                    break;
+                }
+            }
+
+            if (finalHypothesisKind == __T_NONE) {
+                finalHypothesisKind = finalSupertypeKind;
+            } else if (finalHypothesisKind != finalSupertypeKind) {
+                // inconsistent type kinds
+                finalHypothesisKind = __T_INCONSISTENT;
+                break;
+            }
+        }
+        return finalHypothesisKind;
+    } else {
+        if (DEBUG) {
+            printf("!!- metavarHypothesisKind: unknown `hypothesisFrom` value.\n");
+        } else {
+            assert(0 && "!!- metavarHypothesisKind: unknown `hypothesisFrom` value.");
+        }
+        return __T_NONE;
+    }
 }
 
 Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP) {
@@ -571,13 +636,12 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
     return 1;
 }
 
-
 int requireSubtype(Loc loc, Type* sup, Type* sub) {
     if (sup->kind != T_META && sub->kind != T_META) {
         if (sup->kind != sub->kind) {
             // todo: get type kind as text for a more descriptive message here
-            FeedbackNote* note = CreateFeedbackNote("in application here...", loc, NULL);
-            PostFeedback(FBK_ERROR, note, "Mismatched type kinds in `requireSubtype`");
+            FeedbackNote* note = CreateFeedbackNote("of different kinds here...", loc, NULL);
+            PostFeedback(FBK_ERROR, note, "Incompatible types in required subtyping");
             return 0;
         }
     }
@@ -788,15 +852,19 @@ int requireSubtype_union(Loc loc, Type* type, Type* reqSubtype) {
     return 0;
 }
 int requireSubtype_metavar(Loc loc, Type* metatype, Type* subtype) {
-    // todo: in `requireSubtype_metavar`, check against hypothesis kind
-    // todo: in `requireSubtype_metavar`, if kind matches hypothesis, perform remaining checks/add more subtypes, else post feedback
-    // todo: in `requireSubtype_metavar`, distill each subtype to a super-most requirement that must then be iteratively matched against each available supertype.
-    return 0;
+    TypeKind subtypeKind = metavarHypothesisKind(metatype,HYPOTHESIS_FROM_SUBTYPES);
+    if (subtypeKind == __T_NONE) {
+        // no subtypes so far, all ok.
+    } else if (subtypeKind == __T_INCONSISTENT) {
+        FeedbackNote* note = CreateFeedbackNote("of different kinds here...", loc, NULL);
+        PostFeedback(FBK_ERROR, note, "Incompatible types in required subtyping");
+        return 0;
+    }
+    return 1;
 }
 int requireSupertype_metavar(Type* metatype, Type* supertype) {
     // adding 'type' as a supertype of this metatype
-    sb_push(supertype->as.Meta.suptypesSB,metatype);
-    return 1;
+    return pushMetavarSuptype(metatype,supertype);
 }
 
 void printType(Typer* typer, Type* type) {

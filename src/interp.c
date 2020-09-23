@@ -4,6 +4,7 @@
 
 #include "stb/stretchy_buffer.h"
 
+#include "config.h"
 #include "lexer.h"
 #include "parser.h"
 #include "primer.h"

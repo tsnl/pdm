@@ -47,8 +47,7 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
         } else {
             fprintf(stderr, "- %s: %s\n", prefix(kind), feedbackBuf);
         }
-        fprintf(stderr, "  %s\n", noteP->message);
-        fprintf(stderr, "  in [%s]\n", noteP->loc.source->path);
+        fprintf(stderr, "  - %s in [%s]\n", noteP->message, noteP->loc.source->path);
     }
 }
 int GetErrorPosted(void) {
