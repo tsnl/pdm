@@ -40,7 +40,8 @@ void PrintFormattedText(CodePrinter* printer, char const* fmt, ...) {
     PrintText(printer, buffer);
 }
 void PrintNode(CodePrinter* cp, AstNode* node) {
-    switch (GetAstNodeKind(node))
+    AstKind kind = GetAstNodeKind(node);
+    switch (kind)
     {
         case AST_UNIT:
         {
@@ -117,7 +118,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                 if (GetAstNodeKind(node) == AST_FIELD__MODULE_ITEM) {
                     AstNode* pattern = GetAstModuleFieldPattern(node);
                     if (pattern) {
-                        PrintChar(cp, '(');
+                        PrintChar(cp, '[');
                         int patternCount = GetAstPatternLength(pattern);
                         for (int patternIndex = 0; patternIndex < patternCount; patternIndex++) {
                             AstNode* patternFieldAtIndex = GetAstPatternFieldAt(pattern, patternIndex);
@@ -127,10 +128,14 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                                 PrintChar(cp, ',');
                             }
                         }
-                        PrintChar(cp, ')');
+                        PrintChar(cp, ']');
                     }
                 }
-                PrintText(cp, ": ");
+                if (kind == AST_FIELD__MODULE_ITEM) {
+                    PrintText(cp, " :: ");
+                } else {
+                    PrintText(cp, ": ");
+                }
             }
             PrintNode(cp, GetAstFieldRhs(node));
             break;

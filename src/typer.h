@@ -14,6 +14,7 @@ typedef enum FloatWidth FloatWidth;
 typedef enum TypeKind TypeKind;
 
 enum TypeKind {
+    T_ANY,
     T_UNIT,
     T_INT,
     T_FLOAT,
@@ -24,7 +25,7 @@ enum TypeKind {
     T_TYPEFUNC,
     T_MODULE,
     __T_COUNT,
-    __T_NONE, __T_INCONSISTENT
+    __T_NONE
 };
 enum IntWidth {
     INT_1,
@@ -96,7 +97,6 @@ int GetUnionTypeLength(Type* type);
 
 size_t GetMetatypeID(Type* typeP);
 char const* GetMetatypeName(Type* typeP);
-
 
 //
 // Typing and type-checking:
