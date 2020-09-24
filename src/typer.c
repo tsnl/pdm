@@ -375,7 +375,7 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
             SymbolID name = GetAstIdName(node);
             Scope* scope = GetAstIdScopeP(node);
             AstContext lookupContext = GetAstIdLookupContext(node);
-            void* foundType = LookupSymbol(scope, name, lookupContext);
+            Type* foundType = LookupSymbol(scope, name, lookupContext);
             if (!foundType) {
                 FeedbackNote* note = CreateFeedbackNote("here...", loc, NULL);
                 PostFeedback(
@@ -434,6 +434,23 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
         {
             // metatypes created by scoper (since lexically scoped)
             // AstNodeTypingType and ValueType already set.
+            
+            // subtyping from RHS if present
+            AstNode* rhs = GetAstFieldRhs(node);
+            Type* fieldType = GetAstNodeValueType(node);
+            if (rhs && fieldType) {
+                Loc loc = GetAstNodeLoc(node);
+
+                Type* rhsValueType = GetAstNodeValueType(rhs);
+                if (rhsValueType) {
+                    requireSubtype(loc, rhsValueType, fieldType);
+                }
+
+                Type* rhsTypingType = GetAstNodeTypingType(rhs);
+                if (rhsTypingType) {
+                    requireSubtype(loc, rhsTypingType, fieldType);
+                }
+            }
             break;
         }
         case AST_FIELD__STRUCT_ITEM:
@@ -1308,3 +1325,6 @@ int Typecheck(Typer* typer) {
 void PrintTyper(Typer* typer) {
     printTyper(typer);
 }
+
+
+// FIXME: this premise is flipped; we must request supertypes and provide subtype solutions.
