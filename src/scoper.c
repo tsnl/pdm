@@ -141,7 +141,8 @@ int scoper_pre(void* rawScoper, AstNode* node) {
         {
             SymbolID defnID = GetAstBindStmtLhs(node);
             void* valueTypeP = CreateMetatype(scoper->typer, "let<v>%s", GetSymbolText(defnID));
-            void* typingTypeP = CreateMetatype(scoper->typer, "let<t>%s", GetSymbolText(defnID));
+            // void* typingTypeP = CreateMetatype(scoper->typer, "let<t>%s", GetSymbolText(defnID));
+            void* typingTypeP = NULL;
             scoper->currentScopeP = defineSymbol(scoper->currentScopeP, defnID, valueTypeP, typingTypeP);
             SetAstNodeValueType(node, valueTypeP);
             SetAstNodeTypingType(node, typingTypeP);
