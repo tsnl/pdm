@@ -404,10 +404,16 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
         }
         case AST_STMT_BIND:
         {
-            void* lhsType = GetAstNodeValueType(node);
-            void* rhsType = GetAstNodeValueType(node);
-            if (lhsType && rhsType) {
-                requireSubtype(GetAstNodeLoc(node), lhsType, rhsType);
+            Type* lhsValueType = GetAstNodeValueType(node);
+            Type* lhsTypingType = GetAstNodeTypingType(node);
+            Type* rhsType = GetAstNodeValueType(GetAstBindStmtRhs(node));
+            if (rhsType) {
+                if (lhsValueType) {
+                    requireSubtype(GetAstNodeLoc(node), rhsType, lhsValueType);
+                }
+                if (lhsTypingType) {
+                    requireSubtype(GetAstNodeLoc(node), rhsType, lhsTypingType);
+                }
             }
             break;
         }
