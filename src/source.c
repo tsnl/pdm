@@ -39,7 +39,7 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
     va_end(args);
 
     // Printing a message to stderr:
-    fprintf(stderr, "%s: %s", prefix(kind), feedbackBuf);
+    fprintf(stderr, "%s: %s\n", prefix(kind), feedbackBuf);
     for (FeedbackNote* noteP = firstNote; noteP; noteP = noteP->nextP) {
         Loc loc = noteP->loc;
         // if (loc.lineIndex > 0 && loc.colIndex > 0) {
