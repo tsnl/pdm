@@ -47,6 +47,7 @@ static Scoper* createScoper(Typer* typer);
 static size_t allocatedScopeCount = 0;
 static Scope allocatedScopes[MAX_AST_NODE_COUNT];
 inline static Scope* newScope(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP);
+static Scope* newRootScope(Typer* typer);
 static Scope* defineSymbol(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP);
 static void* lookupSymbol(Scope* scope, SymbolID lookupID, AstContext context);
 static void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context);
@@ -62,10 +63,11 @@ Scoper* createScoper(Typer* typer) {
     } else {
         return NULL;
     }
-    scoper->currentScopeP = NULL;
+    scoper->typer = typer;
+    scoper->root = newRootScope(typer);
+    scoper->currentScopeP = scoper->root;
     scoper->currentModuleDefBegP = NULL;
     scoper->currentModuleDefEndP = NULL;
-    scoper->typer = typer;
     return scoper;
 }
 
@@ -77,6 +79,19 @@ inline Scope* newScope(Scope* parent, SymbolID defnID, void* valueTypeP, void* t
     scopeP->typingTypeP = typingTypeP;
     return scopeP;
 }
+Scope* newRootScope(Typer* typer) {
+    Scope* root = NULL;
+    
+    root = newScope(root, Symbol("u8"), NULL, GetIntType(typer,INT_8));
+    root = newScope(root, Symbol("u16"), NULL, GetIntType(typer,INT_16));
+    root = newScope(root, Symbol("u32"), NULL, GetIntType(typer,INT_32));
+    root = newScope(root, Symbol("u64"), NULL, GetIntType(typer,INT_64));
+
+    root = newScope(root, Symbol("f32"), NULL, GetFloatType(typer,FLOAT_32));
+    root = newScope(root, Symbol("f64"), NULL, GetFloatType(typer,FLOAT_64));
+    
+    return root;
+}
 Scope* defineSymbol(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP) {
     return (Scope*)newScope(parent, defnID, valueTypeP, typingTypeP);
 }
@@ -85,7 +100,11 @@ void* lookupSymbol(Scope* scope, SymbolID lookupID, AstContext context) {
 }
 void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context) {
     if (scope->defnID == lookupID) {
-        return scope->valueTypeP;
+        if (context == ASTCTX_TYPING) {
+            return scope->typingTypeP;
+        } else {
+            return scope->valueTypeP;
+        }
     }
     if (scope == endScopeP) {
         // this is the last scope

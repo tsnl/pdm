@@ -104,4 +104,10 @@ char const* GetMetatypeName(Type* typeP);
 void TypeNode(Typer* typer, AstNode* node);
 int Typecheck(Typer* typer);
 
+//
+// Debug:
+//
+
+void PrintTyper(Typer* typer);
+
 #endif  // INCLUDED_TYPER_H

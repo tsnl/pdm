@@ -756,8 +756,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             size_t structLength = GetAstTupleLength(node);
             for (size_t index = 0; index < structLength; index++) {
                 AstNode* structField = GetAstStructFieldAt(node, index);
-                AstNode* fieldRhs = GetAstFieldRhs(structField);
-                if (!visit(context, fieldRhs, preVisitorCb, postVisitorCb)) {
+                if (!visit(context, structField, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }

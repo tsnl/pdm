@@ -49,6 +49,8 @@ FeedbackNote* CreateFeedbackNote(char const* message, Loc loc, FeedbackNote* nex
 void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, ...);
 int GetErrorPosted(void);
 
+Loc NullLoc(void);
+
 // The SourceReader API models strings as a finite tape with a traversing head capable of reading 1 char.
 // - AdvanceSourceReaderHead: advance head by (+1) bytes.
 // - ReadSourceReaderHead: read the char under the head.

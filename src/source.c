@@ -39,19 +39,24 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
     va_end(args);
 
     // Printing a message to stderr:
+    fprintf(stderr, "%s: %s", prefix(kind), feedbackBuf);
     for (FeedbackNote* noteP = firstNote; noteP; noteP = noteP->nextP) {
         Loc loc = noteP->loc;
         // if (loc.lineIndex > 0 && loc.colIndex > 0) {
-        if (1) {
-            fprintf(stderr, "- %s [%d:%d]: %s\n", prefix(kind), 1+loc.lineIndex, 1+loc.colIndex, feedbackBuf);
+        if (loc.offset >= 0) {
+            fprintf(stderr, "- [%d:%d]: %s\n", 1+loc.lineIndex, 1+loc.colIndex, noteP->message);
         } else {
-            fprintf(stderr, "- %s: %s\n", prefix(kind), feedbackBuf);
+            fprintf(stderr, "- %s: %s\n", prefix(kind), noteP->message);
         }
-        fprintf(stderr, "  - %s in [%s]\n", noteP->message, noteP->loc.source->path);
+        fprintf(stderr, "  in [%s]\n", noteP->loc.source->path);
     }
 }
 int GetErrorPosted(void) {
     return errorPosted;
+}
+
+Loc NullLoc(void) {
+    return (Loc) {-1,-1,-1,NULL};
 }
 
 Source* CreateSource(char const* path) {
