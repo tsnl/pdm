@@ -95,7 +95,6 @@ Type* GetPtrTypePointee(Type* typeP);
 int GetTupleTypeLength(Type* type);
 int GetUnionTypeLength(Type* type);
 
-size_t GetMetatypeID(Type* typeP);
 char const* GetMetatypeName(Type* typeP);
 
 //

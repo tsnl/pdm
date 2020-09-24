@@ -64,10 +64,10 @@ struct TypeBuf {
 };
 
 struct MetaInfo {
-    size_t id;
     char* name;
     SubOrSupTypeRec* subtypesSB;
     SubOrSupTypeRec* suptypesSB;
+    Type* soln;
 };
 struct FuncInfo {
     Type* domain;
@@ -148,7 +148,7 @@ static int requireSupertype_metavarSub(Loc loc, Type* metatype, Type* supertype)
 
 static void getConcreteTypesSB(Type* metavar, ConcreteFrom hypothesisFrom, Type*** visitedSB, Type*** out);
 static int checkConcreteSubtype(Loc loc, Type* concreteSup, Type* concreteSub);
-static Type* supermostConcreteSubtype(Loc loc, Type* type);
+static Type* getSupermostConcreteSubtype(Loc loc, Type* type);
 static int checkSubtype(Loc loc, Type* sup, Type* sub);
 
 static void printType(Typer* typer, Type* type);
@@ -910,7 +910,7 @@ int checkConcreteSubtype(Loc loc, Type* concreteSup, Type* concreteSub) {
         }
     }
 }
-Type* supermostConcreteSubtype(Loc loc, Type* type) {
+Type* getSupermostConcreteSubtype(Loc loc, Type* type) {
     if (type->kind != T_META) {
         return type;
     } else {
@@ -918,44 +918,66 @@ Type* supermostConcreteSubtype(Loc loc, Type* type) {
         Type** concreteSubtypesSB = NULL;
         getConcreteTypesSB(type, CONCRETE_SUBTYPES, &visitedSB, &concreteSubtypesSB);
         sb_free(visitedSB);
-        Type* outPtr = NULL;
-        
+
+        Type* chosenSupertype = NULL;
         int subtypesCount = sb_count(visitedSB);
         for (int index = 0; index < subtypesCount; index++) {
             Type* concreteSubtype = concreteSubtypesSB[index];
-            if (outPtr == NULL) {
-                outPtr = concreteSubtype;
+            if (chosenSupertype == NULL) {
+                chosenSupertype = concreteSubtype;
             } else {
                 // todo: update outPtr with the supermost type in supermostConcreteSubtype
-                
+                if (checkSubtype(loc,concreteSubtype,chosenSupertype)) {
+                    chosenSupertype = concreteSubtype;
+                }
             }
         }
 
-        finish: {
-            sb_free(concreteSubtypesSB);
-            return outPtr;
-        }
+        sb_free(concreteSubtypesSB);
+        return chosenSupertype;
     }
 }
 int checkSubtype(Loc loc, Type* sup, Type* sub) {
     if (sup->kind == T_META || sub->kind == T_META) {
-        
-        //
-        //
-        //
-        // todo: handle checkSubtype for 1 or 2 metatypes.
-        // - assemble lists of concrete subtypes required by 'sub'
-        // - select *EACH* provided supertype
-        // - check if each supertype matches sub, and *STORE THIS RESULT*
-        // - tally results after checking all
-        // - compare best result (multiple if template, single otherwise) (todo: add CreatePolymorphicMetatype) against each subtype
-        // todo: PostFeedback explaining why only one must be picked
-        // todo: PostFeedback explaining if 0, 1, or N>1 matches were found, and why this is a problem.
-        //
-        //
-        //
+        Type* supermostConcreteSubtype = getSupermostConcreteSubtype(loc,sub);
 
-        return 0;
+        Type** concreteSupertypesSB = NULL; {
+            Type** visitedSupertypesSB = NULL;
+            getConcreteTypesSB(sup, CONCRETE_SUPERTYPES, &visitedSupertypesSB, &concreteSupertypesSB);
+            sb_free(visitedSupertypesSB);
+        }
+
+        int superCount = sb_count(concreteSupertypesSB);
+        Type* chosenSupertype = NULL;
+        for (int superIndex = 0; superIndex < superCount; superIndex++) {
+            Type* supertype = concreteSupertypesSB[superIndex];
+            if (checkSubtype(loc, supertype, supermostConcreteSubtype)) {
+                // updating the chosenSupertype with the new supertype if required.
+                int update = (
+                    (chosenSupertype == NULL) ||
+                    (checkSubtype(loc, supertype, chosenSupertype))
+                );
+                if (update) {
+                    chosenSupertype = supertype;
+                }
+            }
+        }
+        
+        sb_free(concreteSupertypesSB);
+        
+        if (sup->kind == T_META) {
+            // if sup is a metavar, updating its solution:
+            Type* oldSoln = sup->as.Meta.soln;
+            int update = (
+                (sup->as.Meta.soln == NULL) ||
+                (checkSubtype(loc,chosenSupertype,sup->as.Meta.soln))
+            );
+            if (update) {
+                sup->as.Meta.soln = chosenSupertype;
+            }
+        } 
+        
+        return chosenSupertype != NULL;
     } else {
         return checkConcreteSubtype(loc, sup, sub);
     }
@@ -1007,7 +1029,7 @@ void printType(Typer* typer, Type* type) {
         }
         case T_META:
         {
-            printf("meta %zu %s", type->as.Meta.id, type->as.Meta.name);
+            printf("meta %s", type->as.Meta.name);
             break;
         }
         case T_FUNC:
@@ -1134,8 +1156,8 @@ Type* CreateMetatype(Typer* typer, char const* format, ...) {
     metatype->kind = T_META;
     metatype->as.Meta.subtypesSB = NULL;
     metatype->as.Meta.suptypesSB = NULL;
-    metatype->as.Meta.id = typer->metaTypeBuf.count;   // using the buffer count as a unique ID.
-    {  // metaTypeP->as.Meta.name
+    metatype->as.Meta.soln = NULL;
+    metatype->as.Meta.name = NULL; { 
         char nameBuffer[1024];
         va_list args;
         va_start(args, format);
@@ -1176,9 +1198,6 @@ int GetUnionTypeLength(Type* type) {
     return type->as.Compound_atn->depth;
 }
 
-size_t GetMetatypeID(Type* typeP) {
-    return typeP->as.Meta.id;
-}
 char const* GetMetatypeName(Type* typeP) {
     return typeP->as.Meta.name;
 }
@@ -1250,3 +1269,5 @@ int Typecheck(Typer* typer) {
 
     return res;
 }
+
+// TODO: implement a typer dump using 'printType'
