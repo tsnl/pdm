@@ -66,7 +66,7 @@ struct TypeBuf {
 struct MetaInfo {
     char* name;
     SubOrSupTypeRec* subtypesSB;
-    SubOrSupTypeRec* suptypesSB;
+    SubOrSupTypeRec* supertypesSB;
     Type* soln;
 };
 struct FuncInfo {
@@ -814,14 +814,15 @@ int requireSupertype_metavarSub_half(Loc loc, Type* metatype, Type* supertype) {
     // each real supertype is a possible solution.
     
     // searching for an existing supertype, returning early if found
-    int count = sb_count(metatype->as.Meta.suptypesSB);
+    int count = sb_count(metatype->as.Meta.supertypesSB);
     for (int index = 0; index < count; index++) {
-        if (metatype->as.Meta.suptypesSB[index].ptr == supertype) {
+        if (metatype->as.Meta.supertypesSB[index].ptr == supertype) {
             return 1;
         }
     }
     SubOrSupTypeRec typing = {loc,supertype};
-    sb_push(metatype->as.Meta.suptypesSB, typing);
+    sb_push(metatype->as.Meta.supertypesSB, typing);
+
     return 1;
 }
 
@@ -856,7 +857,7 @@ void getConcreteTypesSB_impl(Type* type, ConcreteFrom concreteFrom, Type*** visi
     if (concreteFrom == CONCRETE_SUBTYPES) {
         typingSB = type->as.Meta.subtypesSB;
     } else if (concreteFrom == CONCRETE_SUPERTYPES) {
-        typingSB = type->as.Meta.suptypesSB;
+        typingSB = type->as.Meta.supertypesSB;
     } else {
         if (DEBUG) {
             printf("!!- metavarHypothesisKind: unknown `metavarHypothesisKind` value.\n");
@@ -1023,15 +1024,30 @@ int checkSubtype(Loc loc, Type* sup, Type* sub) {
     }
 }
 int checkMetavar(Type* metavar) {
+    int useCachedSoln = 0;
+
     if (metavar->kind != T_META) {
         // not a metavar
         return 0;
     }
-    if (metavar->as.Meta.soln) {
+    if (useCachedSoln && metavar->as.Meta.soln) {
         return 1;
     }
-    metavar->as.Meta.soln = getSubmostConcreteSupertype(NullLoc(), metavar, NULL);
-    return metavar->as.Meta.soln != NULL;
+    Type* soln = metavar->as.Meta.soln = getSubmostConcreteSupertype(NullLoc(), metavar, NULL);
+    if (soln) {
+        // as soon as we've solved a metavar, we want to propagate information about it to other metavars:
+        int subtypeCount = sb_count(metavar->as.Meta.subtypesSB);
+        for (int subtypeIndex = 0; subtypeIndex < subtypeCount; subtypeIndex++) {
+            SubOrSupTypeRec subtypeRec = metavar->as.Meta.subtypesSB[subtypeIndex];
+            requireSubtype(subtypeRec.loc, soln, subtypeRec.ptr);
+        }
+        int supertypeCount = sb_count(metavar->as.Meta.supertypesSB);
+        for (int supertypeIndex = 0; supertypeIndex < supertypeCount; supertypeIndex++) {
+            SubOrSupTypeRec supertypeRec = metavar->as.Meta.supertypesSB[supertypeIndex];
+            requireSubtype(supertypeRec.loc, supertypeRec.ptr, soln);
+        }
+    }
+    return soln != NULL;
 }
 
 void printTyper(Typer* typer) {
@@ -1113,7 +1129,7 @@ void printType(Typer* typer, Type* type) {
         }
         case T_META:
         {
-            printf("meta %s", type->as.Meta.name);
+            printf("meta %s[%d,%d]", type->as.Meta.name, sb_count(type->as.Meta.supertypesSB), sb_count(type->as.Meta.subtypesSB));
             if (type->as.Meta.soln) {
                 printf(" = ");
                 printType(typer, type->as.Meta.soln);
@@ -1247,7 +1263,7 @@ Type* CreateMetatype(Typer* typer, char const* format, ...) {
     Type* metatype = pushTypeBuf(&typer->metaTypeBuf);
     metatype->kind = T_META;
     metatype->as.Meta.subtypesSB = NULL;
-    metatype->as.Meta.suptypesSB = NULL;
+    metatype->as.Meta.supertypesSB = NULL;
     metatype->as.Meta.soln = NULL;
     metatype->as.Meta.name = NULL; { 
         char nameBuffer[1024];
