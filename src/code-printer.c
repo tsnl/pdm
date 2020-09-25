@@ -143,7 +143,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         case AST_LAMBDA:
         {
             PrintNode(cp, GetAstLambdaPattern(node));
-            PrintText(cp, " -> ");
+            PrintText(cp, " ");
             PrintNode(cp, GetAstLambdaBody(node));
             break;
         }

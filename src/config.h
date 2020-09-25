@@ -11,8 +11,8 @@
 #define MAX_AST_NODES_PER_LIST (4)
 #define MAX_IDS_PER_SHARED_FIELD (128)
 
-#define MAX_JOB_COUNT (16)
-#define MAX_SCOPER_COUNT (16)
+#define MAX_JOB_COUNT (1)
+#define MAX_PRIMER_COUNT (MAX_JOB_COUNT)
 
 
 #endif  // INCLUDED_CONFIG_H

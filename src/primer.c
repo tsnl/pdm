@@ -15,25 +15,17 @@
 // typing/unification after analysis.
 // Crucially, each context contains at most *one* definition.
 
+typedef struct Frame Frame;
+
 struct Primer {
     Scope* root;
-
-    // stackBegP and stackEndP track scopes for chains and functions that can be pushed or popped.
-    Scope* currentScopeP;
-
-    // each module context tree starts forward declarations of [all] its symbols.
-    // the below 'beg' and 'end' pointers let us iterate through them.
-    // - import statements can use these pointers to map to another module.
-    // - `beg` points to the first INCLUSIVE element
-    // - `end` points to the last INCLUSIVE element
-    Scope* currentModuleDefBegP;
-    Scope* currentModuleDefEndP;
 
     // the typer is used by the primer to create metatypes.
     Typer* typer;
 
-    AstContext* contextStackSB;
-    int contextStackCount;
+    // new scopes can extend previous ones, and are organized into 'frames' stored in this stack:
+    Frame* frameStackSB;
+    int frameStackCount;
 };
 
 struct Scope {
@@ -43,20 +35,27 @@ struct Scope {
     void* type;
 };
 
-size_t allocatedScopersCount = 0;
-Primer allocatedScopers[MAX_SCOPER_COUNT];
+struct Frame {
+    AstContext context;
+    Scope* begScopeP;
+    Scope* endScopeP;
+};
+
+size_t allocatedPrimersCount = 0;
+Primer allocatedPrimers[MAX_PRIMER_COUNT];
 static size_t allocatedScopeStackFramesCount = 0;
 
 static Primer* createPrimer(Typer* typer);
-static void pushPrimerContext(Primer* primer, AstContext ctx);
-static AstContext topPrimerContext(Primer* primer);
-static void popPrimerContext(Primer* primer);
+static Scope* pushFrame(Primer* primer, Scope* scope, AstContext ctx);
+static void pushFrameSymbol(Primer* primer, SymbolID defnID, void* type, AstContext context);
+static Frame popFrame(Primer* primer);
+Scope* topFrameScope(Primer* primer);
+static AstContext topFrameContext(Primer* primer);
 
 static size_t allocatedScopeCount = 0;
 static Scope allocatedScopes[MAX_AST_NODE_COUNT];
 inline static Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstContext context);
 static Scope* newRootScope(Typer* typer);
-static Scope* defineSymbol(Scope* parent, SymbolID defnID, void* type, AstContext context);
 static void* lookupSymbol(Scope* scope, SymbolID lookupID, AstContext context);
 static void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context);
 
@@ -66,40 +65,95 @@ static void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP
 
 Primer* createPrimer(Typer* typer) {
     Primer* primer = NULL;
-    if (allocatedScopersCount < MAX_SCOPER_COUNT) {
-        primer = &allocatedScopers[allocatedScopersCount++];
+    if (allocatedPrimersCount < MAX_PRIMER_COUNT) {
+        primer = &allocatedPrimers[allocatedPrimersCount++];
     } else {
         return NULL;
     }
     primer->typer = typer;
-    primer->contextStackSB = NULL;
-    primer->contextStackCount = 0;
+    primer->frameStackSB = NULL;
+    primer->frameStackCount = 0;
     primer->root = newRootScope(typer);
-    primer->currentScopeP = primer->root;
-    primer->currentModuleDefBegP = NULL;
-    primer->currentModuleDefEndP = NULL;
+
+    pushFrame(primer,primer->root,ASTCTX_VALUE);
+
     return primer;
 }
-void pushPrimerContext(Primer* primer, AstContext ctx) {
-    int bufCount = sb_count(primer->contextStackSB);
-    if (primer->contextStackCount == bufCount) {
-        sb_push(primer->contextStackSB,ctx);
+Scope* pushFrame(Primer* primer, Scope* optNewScope, AstContext ctx) {
+    if (optNewScope == NULL) {
+        optNewScope = topFrameScope(primer);
+    } else {
+        int ok = (optNewScope->parent == topFrameScope(primer));
+        if (!ok) {
+            if (DEBUG) {
+                printf("primer: Invalid scope pushed; parent must be the top frame scope at push-time.\n");
+            } else {
+                assert(0 && "primer: Invalid scope pushed; parent must be the top frame scope at push-time.");
+            }
+            return NULL;
+        }
     }
-    primer->contextStackCount++;
+    Frame frame = {ctx,optNewScope,optNewScope};
+    int bufCount = sb_count(primer->frameStackSB);
+    if (primer->frameStackCount == bufCount) {
+        sb_push(primer->frameStackSB,frame);
+    } else {
+        primer->frameStackSB[primer->frameStackCount] = frame;
+    }
+    primer->frameStackCount++;
+    return optNewScope;
 }
-AstContext topPrimerContext(Primer* primer) {
-    if (!primer->contextStackSB) {
+void pushFrameSymbol(Primer* primer, SymbolID defnID, void* type, AstContext context) {
+    Scope* parent = topFrameScope(primer);
+    primer->frameStackSB[primer->frameStackCount-1].endScopeP = (Scope*)newScope(parent, defnID, type, context);
+}
+Frame popFrame(Primer* primer) {
+    if (primer->frameStackCount > 0) {
+        primer->frameStackCount--;
+        Frame frame = primer->frameStackSB[primer->frameStackCount];
+        primer->frameStackSB[primer->frameStackCount].context = __ASTCTX_NONE;
+        return frame;
+    } else {
         if (DEBUG) {
-            printf("!!- Primer context stack empty. Defaulting to value.\n");
+            printf("!!- primer: Cannot pop from an empty frame.\n");
+        } else {
+            assert(0 && "primer: Cannot pop from an empty frame.\n");
+        }
+        Frame frame;
+        frame.context = __ASTCTX_NONE;
+        return frame;
+    }
+}
+Scope* topFrameScope(Primer* primer) {
+    if (primer->frameStackCount > 0) {
+        Frame* topFrame = NULL;
+        for (int index = primer->frameStackCount-1; index >= 0; index--) {
+            Frame* frame = &primer->frameStackSB[index];
+            int isEmpty = (frame->begScopeP == frame->endScopeP && frame->begScopeP == NULL);
+            if (!isEmpty) {
+                topFrame = frame;
+                break;
+            }
+        }
+        if (topFrame) {
+            return topFrame->endScopeP;
+        } else {
+            return primer->root;
+        }
+    } else {
+        return NULL;
+    }
+}
+AstContext topFrameContext(Primer* primer) {
+    if (!primer->frameStackSB) {
+        if (DEBUG) {
+            printf("!!- Primer context stack empty.\n");
         } else {
             assert(0 && "Primer context stack empty.");
         }
-        return ASTCTX_VALUE;
+        return __ASTCTX_NONE;
     }
-    return primer->contextStackSB[primer->contextStackCount-1];
-}
-void popPrimerContext(Primer* primer) {
-    primer->contextStackCount--;
+    return primer->frameStackSB[primer->frameStackCount-1].context;
 }
 
 inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstContext context) {
@@ -122,9 +176,6 @@ Scope* newRootScope(Typer* typer) {
     root = newScope(root, Symbol("f64"), GetFloatType(typer,FLOAT_64), ASTCTX_TYPING);
     
     return root;
-}
-Scope* defineSymbol(Scope* parent, SymbolID defnID, void* type, AstContext context) {
-    return (Scope*)newScope(parent, defnID, type, context);
 }
 void* lookupSymbol(Scope* scope, SymbolID lookupID, AstContext context) {
     return lookupSymbolUntil(scope, lookupID, NULL, context);
@@ -157,20 +208,20 @@ static int primer_post(void* primer, AstNode* node);
 
 int primer_pre(void* rawPrimer, AstNode* node) {
     Primer* primer = rawPrimer;
-    SetAstNodeLookupContext(node,topPrimerContext(primer));
+    SetAstNodeLookupContext(node,topFrameContext(primer));
     
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_ID:
         {
-            SetAstIdScopeP(node, primer->currentScopeP);
+            SetAstIdScopeP(node, topFrameScope(primer));
             break;
         }
         case AST_STMT_BIND:
         {
             SymbolID defnID = GetAstBindStmtLhs(node);
             void* type = CreateMetatype(primer->typer, "let:%s", GetSymbolText(defnID));
-            primer->currentScopeP = defineSymbol(primer->currentScopeP, defnID, type, ASTCTX_VALUE);
+            pushFrameSymbol(primer, defnID, type, ASTCTX_VALUE);
             SetAstNodeType(node, type);
             break;
         }
@@ -180,18 +231,19 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         }
         case AST_PATTERN:
         {
-            pushPrimerContext(primer, ASTCTX_TYPING);
             break;
         }
+        case AST_PAREN:
         case AST_CHAIN:
         {
-            AstNode* result = GetAstChainResult(node);
+            pushFrame(primer, NULL, ASTCTX_VALUE);
             break;
         }
         case AST_FIELD__MODULE_ITEM:
         {
-            // already defined before running the visitor, doing nothing.
             void* type = GetAstNodeType(node);
+            // todo: (in primer_pre:__MODULE_ITEM) push a type frame if this is a type definition?
+            pushFrame(primer, NULL, ASTCTX_VALUE);
             break;
         }
         case AST_UNARY:
@@ -207,22 +259,32 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             SymbolID defnID = GetAstFieldName(node);
             // todo: valueTypeP encodes a first-order type
             void* type = CreateMetatype(primer->typer, "template:%s", GetSymbolText(defnID));
-            primer->currentScopeP = defineSymbol(primer->currentScopeP, defnID, type, ASTCTX_TYPING);
+            pushFrameSymbol(primer, defnID, type, ASTCTX_TYPING);
             SetAstNodeType(node, type);
             break;
         }
         case AST_FIELD__PATTERN_ITEM:
         {
+            // defining the formal arg symbol in the lambda scope:
             SymbolID defnID = GetAstFieldName(node);
             void* type = CreateMetatype(primer->typer, "pattern:%s", GetSymbolText(defnID));
-            primer->currentScopeP = defineSymbol(primer->currentScopeP, defnID, type, ASTCTX_VALUE);
+            pushFrameSymbol(primer, defnID, type, ASTCTX_VALUE);
             SetAstNodeType(node, type);
+
+            // pushing a typing frame for RHS
+            pushFrame(primer,NULL,ASTCTX_TYPING);
             break;
         }
         case AST_FIELD__STRUCT_ITEM:
         {
             SymbolID defnID = GetAstFieldName(node);
             SetAstNodeType(node, GetAstNodeType(GetAstFieldRhs(node)));
+            break;
+        }
+        case AST_LAMBDA:
+        {
+            // pushing a new frame for the function's contents:
+            pushFrame(primer,NULL,ASTCTX_VALUE);
             break;
         }
         default:
@@ -236,9 +298,13 @@ int primer_post(void* rawPrimer, AstNode* node) {
     Primer* primer = rawPrimer;
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
-        case AST_PATTERN:
+        case AST_CHAIN:
+        case AST_PAREN:
+        case AST_LAMBDA:
+        case AST_FIELD__PATTERN_ITEM:
+        case AST_FIELD__MODULE_ITEM:
         {
-            popPrimerContext(primer);
+            popFrame(primer);
             break;
         }
         default:
@@ -259,29 +325,24 @@ int PrimeModule(Primer* primer, AstNode* module) {
     }
 
     // defining all module-symbols in one binding group
-    // building primerP->currentModuleDef{Beg -> End}P before visiting
+    pushFrame(primer,NULL,ASTCTX_VALUE);
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
+        // todo: HACKY let the symbol define itself as type or value in `PrimeModule`
         AstNode* field = GetAstModuleFieldAt(module, index);
         void* type = CreateMetatype(primer->typer, "define:%s", GetSymbolText(GetAstFieldName(field)));
-        // todo: HACKY let the symbol define itself as type or value in `PrimeModule`
-        primer->currentScopeP = defineSymbol(primer->currentScopeP, GetAstFieldName(field), type, ASTCTX_VALUE);
-        primer->currentModuleDefEndP = primer->currentScopeP;
-        if (primer->currentModuleDefBegP == NULL) {
-            primer->currentModuleDefBegP = primer->currentScopeP;
-        }
-
+        pushFrameSymbol(primer, GetAstFieldName(field), type, ASTCTX_VALUE);
+        
         // storing the defined metatypes on the field:
         assert(GetAstNodeKind(field) == AST_FIELD__MODULE_ITEM);
         SetAstNodeType(field,type);
     }
-
+    
     // visiting the AST:
-    pushPrimerContext(primer,ASTCTX_VALUE);
     if (!visit(primer, module, primer_pre, primer_post)) {
         return 0;
     }
-    popPrimerContext(primer);
+    popFrame(primer);
     return 1;
 }
 
