@@ -41,7 +41,6 @@ struct AstModule {
 struct AstID {
     SymbolID name;
     void* scopeP;
-    int lookupContext;
 };
 struct AstField {
     SymbolID name;
@@ -114,8 +113,8 @@ struct AstNode {
     Loc loc;
     AstKind kind;
     AstInfo info;
-    void* typingType;
-    void* valueType;
+    void* type;
+    AstContext lookupContext;
 };
 
 //
@@ -128,17 +127,19 @@ static AstNode allocatedNodes[MAX_AST_LIST_COUNT];
 static size_t allocatedListCount = 0;
 static AstNodeList allocatedLists[MAX_AST_LIST_COUNT];
 
-static AstNode* allocateNode(Loc loc, AstKind kind);
-static AstNodeList* createList(void);
+static AstNode* newNode(Loc loc, AstKind kind);
+static AstNodeList* newNodeList(void);
 static void pushListElement(AstNodeList* list, AstNode* node);
 
-AstNode* allocateNode(Loc loc, AstKind kind) {
+AstNode* newNode(Loc loc, AstKind kind) {
     AstNode* node = &allocatedNodes[allocatedNodeCount++];
     node->loc = loc;
     node->kind = kind;
+    node->type = NULL;
+    node->lookupContext = __ASTCTX_NONE;
     return node;
 }
-AstNodeList* createList(void) {
+AstNodeList* newNodeList(void) {
     AstNodeList* listP = &allocatedLists[allocatedListCount++];
     listP->count = 0;
     listP->next = NULL;
@@ -147,7 +148,7 @@ AstNodeList* createList(void) {
 void pushListElement(AstNodeList* list, AstNode* node) {
     if (list->count == MAX_AST_NODES_PER_LIST) {
         if (!list->next) {
-            list->next = createList();
+            list->next = newNodeList();
         }
         return pushListElement(list->next, node);
     } else {
@@ -161,9 +162,9 @@ void pushListElement(AstNodeList* list, AstNode* node) {
 //
 
 AstNode* CreateAstModule(Loc loc, SymbolID moduleID) {
-    AstNode* node = allocateNode(loc, AST_MODULE);
+    AstNode* node = newNode(loc, AST_MODULE);
     node->info.Module.name = moduleID;
-    node->info.Module.items = createList();
+    node->info.Module.items = newNodeList();
     return node;
 }
 
@@ -174,7 +175,7 @@ void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping) {
     module->info.Module.exportHeader = mapping;
 }
 void PushFieldToAstModule(Loc loc, AstNode* module, SymbolID lhs, AstNode* optPattern, AstNode* rhs) {
-    AstNode* field = allocateNode(loc, AST_FIELD__MODULE_ITEM);
+    AstNode* field = newNode(loc, AST_FIELD__MODULE_ITEM);
     field->info.Field.name = lhs;
     field->info.Field.optPattern = optPattern;
     field->info.Field.rhs = rhs;
@@ -192,78 +193,77 @@ void PushFieldToAstModule(Loc loc, AstNode* module, SymbolID lhs, AstNode* optPa
 }
 
 AstNode* CreateAstId(Loc loc, SymbolID symbolID) {
-    AstNode* idNode = allocateNode(loc, AST_ID);
+    AstNode* idNode = newNode(loc, AST_ID);
     idNode->info.ID.name = symbolID;
     idNode->info.ID.scopeP = NULL;
-    idNode->info.ID.lookupContext = 0;
     return idNode;
 }
 AstNode* CreateAstIntLiteral(Loc loc, size_t value, int base) {
-    AstNode* intNode = allocateNode(loc, AST_LITERAL_INT);
+    AstNode* intNode = newNode(loc, AST_LITERAL_INT);
     intNode->info.Int.value = value;
     intNode->info.Int.base = base;
     return intNode;
 }
 AstNode* CreateAstFloatLiteral(Loc loc, long double value) {
-    AstNode* floatNode = allocateNode(loc, AST_LITERAL_FLOAT);
+    AstNode* floatNode = newNode(loc, AST_LITERAL_FLOAT);
     floatNode->info.Float = value;
     return floatNode;
 }
 AstNode* CreateAstStringLiteral(Loc loc, int* valueSb) {
-    AstNode* stringNode = allocateNode(loc, AST_LITERAL_STRING);
+    AstNode* stringNode = newNode(loc, AST_LITERAL_STRING);
     stringNode->info.UnicodeStringSb = valueSb;
     return stringNode;
 }
 AstNode* CreateAstParen(Loc loc, AstNode* it) {
-    AstNode* parenNode = allocateNode(loc, AST_PAREN);
+    AstNode* parenNode = newNode(loc, AST_PAREN);
     parenNode->info.Paren = it;
     return parenNode;
 }
 AstNode* CreateAstUnit(Loc loc) {
-    return allocateNode(loc, AST_UNIT);
+    return newNode(loc, AST_UNIT);
 }
 
 AstNode* CreateAstTuple(Loc loc) {
-    AstNode* tupleNode = allocateNode(loc, AST_TUPLE);
-    tupleNode->info.Items = createList();
+    AstNode* tupleNode = newNode(loc, AST_TUPLE);
+    tupleNode->info.Items = newNodeList();
     return tupleNode;
 }
 AstNode* CreateAstStruct(Loc loc) {
-    AstNode* structNode = allocateNode(loc, AST_STRUCT);
-    structNode->info.Items = createList();
+    AstNode* structNode = newNode(loc, AST_STRUCT);
+    structNode->info.Items = newNodeList();
     return structNode;
 }
 
 AstNode* CreateAstChain(Loc loc) {
-    AstNode* chainNode = allocateNode(loc, AST_CHAIN);
-    chainNode->info.Chain.prefix = createList();
+    AstNode* chainNode = newNode(loc, AST_CHAIN);
+    chainNode->info.Chain.prefix = newNodeList();
     chainNode->info.Chain.result = NULL;
     return chainNode;
 }
 
 AstNode* CreateAstPattern(Loc loc) {
-    AstNode* patternNode = allocateNode(loc, AST_PATTERN);
-    patternNode->info.Items = createList();
+    AstNode* patternNode = newNode(loc, AST_PATTERN);
+    patternNode->info.Items = newNodeList();
     patternNode->info.Items->count = 0;
     return patternNode;
 }
 
 void PushFieldToAstTuple(Loc loc, AstNode* tuple, AstNode* value) {
-    AstNode* field = allocateNode(loc, AST_FIELD__TUPLE_ITEM);
+    AstNode* field = newNode(loc, AST_FIELD__TUPLE_ITEM);
     field->info.Field.name = SYM_NULL;
     field->info.Field.optPattern = NULL;
     field->info.Field.rhs = value;
     pushListElement(tuple->info.Items, field);
 }
 void PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value) {
-    AstNode* field = allocateNode(loc, AST_FIELD__STRUCT_ITEM);
+    AstNode* field = newNode(loc, AST_FIELD__STRUCT_ITEM);
     field->info.Field.name = name;
     field->info.Field.optPattern = NULL;
     field->info.Field.rhs = value;
     pushListElement(struct_->info.Items, field);
 }
 void PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec) {
-    AstNode* field = allocateNode(loc, AST_FIELD__PATTERN_ITEM);
+    AstNode* field = newNode(loc, AST_FIELD__PATTERN_ITEM);
     field->info.Field.name = name;
     field->info.Field.optPattern = NULL;
     field->info.Field.rhs = typespec;
@@ -277,8 +277,8 @@ void SetAstChainResult(AstNode* chain, AstNode* result) {
 }
 
 AstNode* CreateAstIte(Loc loc, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse) {
-    AstNode* iteNode = allocateNode(loc, AST_ITE);
-    iteNode->info.Items = createList();
+    AstNode* iteNode = newNode(loc, AST_ITE);
+    iteNode->info.Items = newNodeList();
     pushListElement(iteNode->info.Items, cond);
     pushListElement(iteNode->info.Items, ifTrue);
     pushListElement(iteNode->info.Items, ifFalse);
@@ -286,54 +286,54 @@ AstNode* CreateAstIte(Loc loc, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse)
 }
 
 AstNode* CreateAstDotIndex(Loc loc, AstNode* lhs, size_t index) {
-    AstNode* dotNode = allocateNode(loc, AST_DOT_INDEX);
+    AstNode* dotNode = newNode(loc, AST_DOT_INDEX);
     dotNode->info.DotIx.lhs = lhs;
     dotNode->info.DotIx.index = index;
     return dotNode;
 }
 
 AstNode* CreateAstDotName(Loc loc, AstNode* lhs, SymbolID rhs) {
-    AstNode* dotNode = allocateNode(loc, AST_DOT_NAME);
+    AstNode* dotNode = newNode(loc, AST_DOT_NAME);
     dotNode->info.DotNm.lhs = lhs;
     dotNode->info.DotNm.symbol = rhs;
     return dotNode;
 }
 
 AstNode* CreateAstLambda(Loc loc, AstNode* pattern, AstNode* body) {
-    AstNode* lambdaNode = allocateNode(loc, AST_LAMBDA);
+    AstNode* lambdaNode = newNode(loc, AST_LAMBDA);
     lambdaNode->info.Lambda.pattern = pattern;
     lambdaNode->info.Lambda.body = body;
     return lambdaNode;
 }
 
 AstNode* CreateAstBindStmt(Loc loc, SymbolID lhs, AstNode* rhs) {
-    AstNode* bindNode = allocateNode(loc, AST_STMT_BIND);
+    AstNode* bindNode = newNode(loc, AST_STMT_BIND);
     bindNode->info.Bind.lhs = lhs;
     bindNode->info.Bind.rhs = rhs;
     return bindNode;
 }
 
 AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message) {
-    AstNode* checkNode = allocateNode(loc, AST_STMT_CHECK);
+    AstNode* checkNode = newNode(loc, AST_STMT_CHECK);
     checkNode->info.Check.checked = checked;
     checkNode->info.Check.message = message;
     return checkNode;
 }
 
 AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs) {
-    AstNode* callNode = allocateNode(loc, AST_CALL);
+    AstNode* callNode = newNode(loc, AST_CALL);
     callNode->info.Call.lhs = lhs;
     callNode->info.Call.rhs = rhs;
     return callNode;
 }
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg) {
-    AstNode* unaryNode = allocateNode(loc, AST_UNARY);
+    AstNode* unaryNode = newNode(loc, AST_UNARY);
     unaryNode->info.Unary.operator = op;
     unaryNode->info.Unary.operand = arg;
     return unaryNode;
 }
 AstNode* CreateAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg) {
-    AstNode* binaryNode = allocateNode(loc, AST_BINARY);
+    AstNode* binaryNode = newNode(loc, AST_BINARY);
     binaryNode->info.Binary.operator = op;
     binaryNode->info.Binary.ltOperand = ltArg;
     binaryNode->info.Binary.rtOperand = rtArg;
@@ -626,25 +626,20 @@ AstNode* GetAstBinaryRtOperand(AstNode* binary) {
 // Scoper and typer storage:
 //
 
-void* GetAstNodeTypingType(AstNode* node) {
-    return node->typingType;
+void* GetAstNodeType(AstNode* node) {
+    return node->type;
 }
-void* GetAstNodeValueType(AstNode* node) {
-    return node->valueType;
-}
-void SetAstNodeValueType(AstNode* node, void* type) {
-    node->valueType = type;
-}
-void SetAstNodeTypingType(AstNode* node, void* type) {
-    node->typingType = type;
+void SetAstNodeType(AstNode* node, void* type) {
+    node->type = type;
 }
 
-int GetAstIdLookupContext(AstNode* node) {
-    return node->info.ID.lookupContext;
+AstContext GetAstNodeLookupContext(AstNode* node) {
+    return node->lookupContext;
 }
-void SetAstIdLookupContext(AstNode* node, AstContext context) {
-    node->info.ID.lookupContext = context;
+void SetAstNodeLookupContext(AstNode* node, AstContext context) {
+    node->lookupContext = context;
 }
+
 void* GetAstIdScopeP(AstNode* node) {
     return node->info.ID.scopeP;
 }

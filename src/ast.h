@@ -50,7 +50,8 @@ enum AstBinaryOperator {
 enum AstContext {
     ASTCTX_TYPING,
     ASTCTX_VALUE,
-    __ASTCTX_COUNT
+    __ASTCTX_COUNT,
+    __ASTCTX_NONE
 };
 
 //
@@ -157,16 +158,14 @@ AstNode* GetAstBinaryRtOperand(AstNode* binary);
 // Symbol and type storage:
 //
 
-void SetAstNodeTypingType(AstNode* node, void* type);
-void SetAstNodeValueType(AstNode* node, void* type);
+void* GetAstNodeType(AstNode* node);
+void SetAstNodeType(AstNode* node, void* type);
 
-void* GetAstNodeTypingType(AstNode* node);
-void* GetAstNodeValueType(AstNode* node);
+AstContext GetAstNodeLookupContext(AstNode* node);
+void SetAstNodeLookupContext(AstNode* node, AstContext context);
 
 void* GetAstIdScopeP(AstNode* node);
-int GetAstIdLookupContext(AstNode* node);
 void SetAstIdScopeP(AstNode* node, void* scope);
-void SetAstIdLookupContext(AstNode* node, AstContext context);
 
 // Visitor API: calls a 'VisitorCb' function pre- and post- visiting children.
 // - `context` can be used to propagate contextual information as the visitor recurses.

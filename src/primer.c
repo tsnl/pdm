@@ -39,8 +39,8 @@ struct Primer {
 struct Scope {
     Scope* parent;
     SymbolID defnID;
-    void* valueTypeP;
-    void* typingTypeP;
+    AstContext context;
+    void* type;
 };
 
 size_t allocatedScopersCount = 0;
@@ -54,9 +54,9 @@ static void popPrimerContext(Primer* primer);
 
 static size_t allocatedScopeCount = 0;
 static Scope allocatedScopes[MAX_AST_NODE_COUNT];
-inline static Scope* newScope(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP);
+inline static Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstContext context);
 static Scope* newRootScope(Typer* typer);
-static Scope* defineSymbol(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP);
+static Scope* defineSymbol(Scope* parent, SymbolID defnID, void* type, AstContext context);
 static void* lookupSymbol(Scope* scope, SymbolID lookupID, AstContext context);
 static void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context);
 
@@ -102,40 +102,36 @@ void popPrimerContext(Primer* primer) {
     primer->contextStackCount--;
 }
 
-inline Scope* newScope(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP) {
+inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstContext context) {
     Scope* scopeP = &allocatedScopes[allocatedScopeCount++];
     scopeP->parent = parent;
     scopeP->defnID = defnID;
-    scopeP->valueTypeP = valueTypeP;
-    scopeP->typingTypeP = typingTypeP;
+    scopeP->type = type;
+    scopeP->context = context;
     return scopeP;
 }
 Scope* newRootScope(Typer* typer) {
     Scope* root = NULL;
     
-    root = newScope(root, Symbol("u8"), NULL, GetIntType(typer,INT_8));
-    root = newScope(root, Symbol("u16"), NULL, GetIntType(typer,INT_16));
-    root = newScope(root, Symbol("u32"), NULL, GetIntType(typer,INT_32));
-    root = newScope(root, Symbol("u64"), NULL, GetIntType(typer,INT_64));
+    root = newScope(root, Symbol("u8"), GetIntType(typer,INT_8), ASTCTX_TYPING);
+    root = newScope(root, Symbol("u16"), GetIntType(typer,INT_16), ASTCTX_TYPING);
+    root = newScope(root, Symbol("u32"), GetIntType(typer,INT_32), ASTCTX_TYPING);
+    root = newScope(root, Symbol("u64"), GetIntType(typer,INT_64), ASTCTX_TYPING);
 
-    root = newScope(root, Symbol("f32"), NULL, GetFloatType(typer,FLOAT_32));
-    root = newScope(root, Symbol("f64"), NULL, GetFloatType(typer,FLOAT_64));
+    root = newScope(root, Symbol("f32"), GetFloatType(typer,FLOAT_32), ASTCTX_TYPING);
+    root = newScope(root, Symbol("f64"), GetFloatType(typer,FLOAT_64), ASTCTX_TYPING);
     
     return root;
 }
-Scope* defineSymbol(Scope* parent, SymbolID defnID, void* valueTypeP, void* typingTypeP) {
-    return (Scope*)newScope(parent, defnID, valueTypeP, typingTypeP);
+Scope* defineSymbol(Scope* parent, SymbolID defnID, void* type, AstContext context) {
+    return (Scope*)newScope(parent, defnID, type, context);
 }
 void* lookupSymbol(Scope* scope, SymbolID lookupID, AstContext context) {
     return lookupSymbolUntil(scope, lookupID, NULL, context);
 }
 void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context) {
-    if (scope->defnID == lookupID) {
-        if (context == ASTCTX_TYPING) {
-            return scope->typingTypeP;
-        } else {
-            return scope->valueTypeP;
-        }
+    if (scope->context == context && scope->defnID == lookupID) {
+        return scope->type;
     }
     if (scope == endScopeP) {
         // this is the last scope
@@ -161,23 +157,21 @@ static int primer_post(void* primer, AstNode* node);
 
 int primer_pre(void* rawPrimer, AstNode* node) {
     Primer* primer = rawPrimer;
+    SetAstNodeLookupContext(node,topPrimerContext(primer));
+    
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_ID:
         {
             SetAstIdScopeP(node, primer->currentScopeP);
-            SetAstIdLookupContext(node,topPrimerContext(primer));
             break;
         }
         case AST_STMT_BIND:
         {
             SymbolID defnID = GetAstBindStmtLhs(node);
-            void* valueTypeP = CreateMetatype(primer->typer, "let<v>%s", GetSymbolText(defnID));
-            // void* typingTypeP = CreateMetatype(primer->typer, "let<t>%s", GetSymbolText(defnID));
-            void* typingTypeP = NULL;
-            primer->currentScopeP = defineSymbol(primer->currentScopeP, defnID, valueTypeP, typingTypeP);
-            SetAstNodeValueType(node, valueTypeP);
-            SetAstNodeTypingType(node, typingTypeP);
+            void* type = CreateMetatype(primer->typer, "let:%s", GetSymbolText(defnID));
+            primer->currentScopeP = defineSymbol(primer->currentScopeP, defnID, type, ASTCTX_VALUE);
+            SetAstNodeType(node, type);
             break;
         }
         case AST_STRUCT:
@@ -197,8 +191,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         case AST_FIELD__MODULE_ITEM:
         {
             // already defined before running the visitor, doing nothing.
-            void* typingType = GetAstNodeTypingType(node);
-            void* valueType = GetAstNodeValueType(node);
+            void* type = GetAstNodeType(node);
             break;
         }
         case AST_UNARY:
@@ -213,28 +206,23 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         {
             SymbolID defnID = GetAstFieldName(node);
             // todo: valueTypeP encodes a first-order type
-            void* valueTypeP = CreateMetatype(primer->typer, "template<v>%s", GetSymbolText(defnID));
-            void* typingTypeP = CreateMetatype(primer->typer, "template<t>%s", GetSymbolText(defnID));
-            primer->currentScopeP = defineSymbol(primer->currentScopeP, defnID, valueTypeP, typingTypeP);
-            SetAstNodeValueType(node, valueTypeP);
-            SetAstNodeTypingType(node, typingTypeP);
+            void* type = CreateMetatype(primer->typer, "template:%s", GetSymbolText(defnID));
+            primer->currentScopeP = defineSymbol(primer->currentScopeP, defnID, type, ASTCTX_TYPING);
+            SetAstNodeType(node, type);
             break;
         }
         case AST_FIELD__PATTERN_ITEM:
         {
             SymbolID defnID = GetAstFieldName(node);
-            void* valueTypeP = CreateMetatype(primer->typer, "pattern<v>%s", GetSymbolText(defnID));
-            // void* typingTypeP = CreateMetatype(primer->typer, "pattern<t> %s", GetSymbolText(defnID));
-            void* typingTypeP = NULL;
-            primer->currentScopeP = defineSymbol(primer->currentScopeP, defnID, valueTypeP, typingTypeP);
-            SetAstNodeValueType(node, valueTypeP);
-            SetAstNodeTypingType(node, typingTypeP);
+            void* type = CreateMetatype(primer->typer, "pattern:%s", GetSymbolText(defnID));
+            primer->currentScopeP = defineSymbol(primer->currentScopeP, defnID, type, ASTCTX_VALUE);
+            SetAstNodeType(node, type);
             break;
         }
         case AST_FIELD__STRUCT_ITEM:
         {
             SymbolID defnID = GetAstFieldName(node);
-            SetAstNodeValueType(node, GetAstNodeValueType(GetAstFieldRhs(node)));
+            SetAstNodeType(node, GetAstNodeType(GetAstFieldRhs(node)));
             break;
         }
         default:
@@ -275,9 +263,9 @@ int PrimeModule(Primer* primer, AstNode* module) {
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
         AstNode* field = GetAstModuleFieldAt(module, index);
-        void* valueTypeP = CreateMetatype(primer->typer, "define<v>%s", GetSymbolText(GetAstFieldName(field)));
-        void* typingTypeP = CreateMetatype(primer->typer, "define<t>%s", GetSymbolText(GetAstFieldName(field)));
-        primer->currentScopeP = defineSymbol(primer->currentScopeP, GetAstFieldName(field), valueTypeP, typingTypeP);
+        void* type = CreateMetatype(primer->typer, "define:%s", GetSymbolText(GetAstFieldName(field)));
+        // todo: HACKY let the symbol define itself as type or value in `PrimeModule`
+        primer->currentScopeP = defineSymbol(primer->currentScopeP, GetAstFieldName(field), type, ASTCTX_VALUE);
         primer->currentModuleDefEndP = primer->currentScopeP;
         if (primer->currentModuleDefBegP == NULL) {
             primer->currentModuleDefBegP = primer->currentScopeP;
@@ -285,8 +273,7 @@ int PrimeModule(Primer* primer, AstNode* module) {
 
         // storing the defined metatypes on the field:
         assert(GetAstNodeKind(field) == AST_FIELD__MODULE_ITEM);
-        SetAstNodeValueType(field,valueTypeP);
-        SetAstNodeTypingType(field,typingTypeP);
+        SetAstNodeType(field,type);
     }
 
     // visiting the AST:

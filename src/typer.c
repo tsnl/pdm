@@ -145,6 +145,7 @@ static int requireSubtype_tupleSup(Loc loc, Type* type, Type* reqSubtype);
 static int requireSubtype_unionSup(Loc loc, Type* type, Type* reqSubtype);
 static int requireSubtype_metavarSup(Loc loc, Type* metatype, Type* subtype);
 static int requireSupertype_metavarSub(Loc loc, Type* metatype, Type* supertype);
+static int requireCallable(Loc loc, Type* lhs, Type* rhs, Type* ret);
 
 static Type** getConcreteTypesSB(Type* metavar, ConcreteFrom hypothesisFrom);
 static void getConcreteTypesSB_impl(Type* metavar, ConcreteFrom hypothesisFrom, Type*** visitedSB, Type*** out);
@@ -350,23 +351,20 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
         case AST_UNIT:
         {
             Type* t = GetUnitType(typer);
-            SetAstNodeValueType(node,t);
-            SetAstNodeTypingType(node,t);
+            SetAstNodeType(node,t);
             break;
         }
         case AST_LITERAL_FLOAT:
         {
             Type* t = GetFloatType(typer, FLOAT_64);
-            SetAstNodeValueType(node,t);
-            // SetAstNodeTypingType(node,t);
+            SetAstNodeType(node,t);
             break;
         }
         case AST_LITERAL_INT:
         {
             // TODO: automatically select width based on int value
             Type* t = GetIntType(typer, INT_64);
-            SetAstNodeValueType(node,t);
-            // SetAstNodeTypingType(node,t);
+            SetAstNodeType(node,t);
             break;
         }
         case AST_ID:
@@ -374,7 +372,7 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
             Loc loc = GetAstNodeLoc(node);
             SymbolID name = GetAstIdName(node);
             Scope* scope = GetAstIdScopeP(node);
-            AstContext lookupContext = GetAstIdLookupContext(node);
+            AstContext lookupContext = GetAstNodeLookupContext(node);
             Type* foundType = LookupSymbol(scope, name, lookupContext);
             if (!foundType) {
                 FeedbackNote* note = CreateFeedbackNote("here...", loc, NULL);
@@ -384,17 +382,7 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
                     GetSymbolText(name), (lookupContext == ASTCTX_TYPING ? "typing" : "value")
                 );
             }
-            if (lookupContext == ASTCTX_TYPING) {
-                SetAstNodeTypingType(node, foundType);
-                SetAstNodeValueType(node, NULL);
-            } else if (lookupContext == ASTCTX_VALUE) {
-                SetAstNodeValueType(node, foundType);
-                SetAstNodeTypingType(node, NULL);
-            } else if (DEBUG) {
-                printf("!!- Invalid ID lookupContext in typeNodePostVisitor\n");
-            } else {
-                assert(0 && "Invalid ID lookupContext in typeNodePostVisitor\n");
-            }
+            SetAstNodeType(node, foundType);
             break;
         }
         case AST_MODULE:
@@ -404,25 +392,19 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
         }
         case AST_STMT_BIND:
         {
-            Type* lhsValueType = GetAstNodeValueType(node);
-            Type* lhsTypingType = GetAstNodeTypingType(node);
-            Type* rhsType = GetAstNodeValueType(GetAstBindStmtRhs(node));
-            if (rhsType) {
-                if (lhsValueType) {
-                    requireSubtype(GetAstNodeLoc(node), rhsType, lhsValueType);
-                }
-                if (lhsTypingType) {
-                    requireSubtype(GetAstNodeLoc(node), rhsType, lhsTypingType);
-                }
+            Type* lhsValueType = GetAstNodeType(node);
+            Type* rhsType = GetAstNodeType(GetAstBindStmtRhs(node));
+            if (lhsValueType && rhsType) {
+                requireSubtype(GetAstNodeLoc(node), rhsType, lhsValueType);
             }
             break;
         }
         case AST_LAMBDA:
         {
-            void* lhsType = GetAstNodeTypingType(GetAstLambdaPattern(node));
-            void* rhsType = GetAstNodeValueType(GetAstLambdaBody(node));
+            void* lhsType = GetAstNodeType(GetAstLambdaPattern(node));
+            void* rhsType = GetAstNodeType(GetAstLambdaBody(node));
             if (lhsType && rhsType) {
-                SetAstNodeValueType(node, GetFuncType(typer, lhsType, rhsType));
+                SetAstNodeType(node, GetFuncType(typer, lhsType, rhsType));
             }
             break;
         }
@@ -431,8 +413,8 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
         {
             // module items can be used in value and typing contexts
             // todo: make these types the results of Typefunc instances
-            SetAstNodeValueType(node, GetAstNodeValueType(GetAstFieldRhs(node)));
-            SetAstNodeTypingType(node, GetAstNodeTypingType(GetAstFieldRhs(node)));
+            Loc loc = GetAstNodeLoc(node);
+            requireSubtype(loc, GetAstNodeType(GetAstFieldRhs(node)), GetAstNodeType(node));
             break;
         }
         case AST_FIELD__TEMPLATE_ITEM:
@@ -443,16 +425,16 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
             
             // subtyping from RHS if present
             AstNode* rhs = GetAstFieldRhs(node);
-            Type* fieldType = GetAstNodeValueType(node);
+            Type* fieldType = GetAstNodeType(node);
             if (rhs && fieldType) {
                 Loc loc = GetAstNodeLoc(node);
 
-                Type* rhsValueType = GetAstNodeValueType(rhs);
+                Type* rhsValueType = GetAstNodeType(rhs);
                 if (rhsValueType) {
                     requireSubtype(loc, rhsValueType, fieldType);
                 }
 
-                Type* rhsTypingType = GetAstNodeTypingType(rhs);
+                Type* rhsTypingType = GetAstNodeType(rhs);
                 if (rhsTypingType) {
                     requireSubtype(loc, rhsTypingType, fieldType);
                 }
@@ -466,26 +448,23 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
             Type* tv;
             Type* tt;
             if (rhs) {
-                tv = GetAstNodeValueType(rhs);
-                tt = GetAstNodeTypingType(rhs);
+                tv = GetAstNodeType(rhs);
             } else {
                 char const* nameText = GetSymbolText(GetAstFieldName(node));
-                tv = CreateMetatype(typer, "field<v>%s", nameText);
-                tt = CreateMetatype(typer, "field<t>%s", nameText);
+                tv = CreateMetatype(typer, "field:%s", nameText);
             }
-            SetAstNodeValueType(node,tv);
-            SetAstNodeTypingType(node,tt);
+            SetAstNodeType(node,tv);
             break;
         }
         case AST_PATTERN:
         {
             int patternCount = GetAstPatternLength(node);
             if (patternCount == 0) {
-                SetAstNodeTypingType(node, GetUnitType(typer));
+                SetAstNodeType(node, GetUnitType(typer));
             } else if (patternCount == 1) {
-                SetAstNodeTypingType(
+                SetAstNodeType(
                     node,
-                    GetAstNodeValueType(GetAstPatternFieldAt(node,0))
+                    GetAstNodeType(GetAstPatternFieldAt(node,0))
                 );
             } else if (DEBUG) {
                 // todo: create a tuple type here.
@@ -497,84 +476,44 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
         }
         case AST_STRUCT:
         {
-            int ignoreTypingContext = 1;
-            int ignoreValueContext = 0;
-            InputTypeFieldNode* inputTypingFieldHead = NULL;
-            InputTypeFieldNode* inputValueFieldHead = NULL;
+            InputTypeFieldNode* inputTypeFieldHead = NULL;
             for (int index = GetAstStructLength(node)-1; index >= 0; --index) {
                 AstNode* field = GetAstStructFieldAt(node, index);
                 SymbolID fieldName = GetAstFieldName(field);
                 
-                // creating a new input type field node, updating the list:
-                if (!ignoreValueContext) {
-                    InputTypeFieldNode* valueITF = malloc(sizeof(InputTypeFieldNode));
-                    valueITF->name = fieldName;
-                    valueITF->type = GetAstNodeValueType(field);
-                    valueITF->next = inputValueFieldHead;
-                    inputValueFieldHead = valueITF;
-                }
-                
-                if (!ignoreTypingContext) {
-                    InputTypeFieldNode* typingITF = malloc(sizeof(InputTypeFieldNode));
-                    typingITF->name = fieldName;
-                    typingITF->type = GetAstNodeTypingType(field);
-                    typingITF->next = inputTypingFieldHead;
-                    inputTypingFieldHead = typingITF;
-                }
+                InputTypeFieldNode* typingITF = malloc(sizeof(InputTypeFieldNode));
+                typingITF->name = fieldName;
+                typingITF->type = GetAstNodeType(field);
+                typingITF->next = inputTypeFieldHead;
+                inputTypeFieldHead = typingITF;
             }
-            if (!ignoreTypingContext) {
-                Type* tuple = GetTupleType(typer, inputTypingFieldHead);
-                SetAstNodeTypingType(node,tuple);
-            }
-            if (!ignoreValueContext) {
-                Type* tuple = GetTupleType(typer, inputValueFieldHead);
-                SetAstNodeValueType(node,tuple);
-            }
+            Type* tuple = GetTupleType(typer, inputTypeFieldHead);
+            SetAstNodeType(node,tuple);
             break;
         }
         case AST_TUPLE:
         {
-            int ignoreTypingContext = 1;
-            int ignoreValueContext = 0;
-            InputTypeFieldNode* inputTypingFieldHead = NULL;
-            InputTypeFieldNode* inputValueFieldHead = NULL;
+            InputTypeFieldNode* inputTypeFieldHead = NULL;
             int tupleCount = GetAstTupleLength(node);
             for (int index = tupleCount-1; index >= 0; index--) {
                 AstNode* field = GetAstTupleItemAt(node, index);
                 SymbolID fieldName = GetAstFieldName(field);
-                
-                // creating a new input type field node, updating the list:
-                if (!ignoreValueContext) {
-                    InputTypeFieldNode* valueITF = malloc(sizeof(InputTypeFieldNode));
-                    valueITF->name = fieldName;
-                    valueITF->type = GetAstNodeValueType(field);
-                    valueITF->next = inputTypingFieldHead;
-                    inputValueFieldHead = valueITF;
-                }
-                
-                if (!ignoreTypingContext) {
-                    InputTypeFieldNode* typingITF = malloc(sizeof(InputTypeFieldNode));
-                    typingITF->name = fieldName;
-                    typingITF->type = GetAstNodeTypingType(field);
-                    typingITF->next = inputTypingFieldHead;
-                    inputTypingFieldHead = typingITF;
-                }
+                InputTypeFieldNode* typingITF = malloc(sizeof(InputTypeFieldNode));
+                typingITF->name = fieldName;
+                typingITF->type = GetAstNodeType(field);
+                typingITF->next = inputTypeFieldHead;
+                inputTypeFieldHead = typingITF;
             }
-            if (!ignoreTypingContext) {
-                SetAstNodeTypingType(node, GetTupleType(typer, inputTypingFieldHead));
-            }
-            if (!ignoreValueContext) {
-                SetAstNodeValueType(node, GetTupleType(typer, inputValueFieldHead));
-            }
+            SetAstNodeType(node, GetTupleType(typer, inputTypeFieldHead));
             break;
         }
         case AST_CHAIN:
         {
             AstNode* result = GetAstChainResult(node);
             if (result) {
-                SetAstNodeValueType(node, GetAstNodeValueType(result));
+                SetAstNodeType(node, GetAstNodeType(result));
             } else {
-                SetAstNodeValueType(node, GetUnitType(typer));
+                SetAstNodeType(node, GetUnitType(typer));
             }
             break;
         }
@@ -590,7 +529,11 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
         }
         case AST_CALL:
         {
-            // todo: TypeNode for postfix function call
+            Loc loc = GetAstNodeLoc(node);
+            AstNode* lhs = GetAstCallLhs(node);
+            AstNode* rhs = GetAstCallRhs(node);
+            Type* ret = CreateMetatype(typer, "ret");
+            requireCallable(loc, GetAstNodeType(lhs),GetAstNodeType(rhs),ret);
             break;
         }
         default:
@@ -774,12 +717,30 @@ int requireSubtype_typefuncSup(Loc loc, Type* type, Type* reqSubtype) {
     return 0;
 }
 int requireSubtype_funcSup(Loc loc, Type* type, Type* reqSubtype) {
-    if (DEBUG) {
-        printf("!!- Not implemented: requireSubtype_func\n");
-    } else {
-        assert(0 && "Not implemented: requireSubtype_func");
+    int result = 1;
+    switch (reqSubtype->kind)
+    {
+        case T_FUNC:
+        {
+            result = requireSubtype(loc,type->as.Func.domain,reqSubtype->as.Func.domain) && result;
+            result = requireSubtype(loc,type->as.Func.image,reqSubtype->as.Func.image) && result;
+            break;
+        }
+        case T_META:
+        {
+            requireSupertype_metavarSub(loc,reqSubtype,type);
+            break;
+        }
+        default:
+        {
+            // todo: while typechecking func types, get loc (here) to report type errors.
+            // todo: implement TypeKindToText to make error reporting more descriptive (see here).
+            PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different 'kinds': func and <?>.");
+            result = 0;
+            break;
+        }
     }
-    return 0;
+    return result;
 }
 int requireSubtype_moduleSup(Loc loc, Type* type, Type* reqSubtype) {
     if (DEBUG) {
@@ -831,6 +792,10 @@ int requireSupertype_metavarSub(Loc loc, Type* metatype, Type* supertype) {
     SubOrSupTypeRec typing = {loc,supertype};
     sb_push(metatype->as.Meta.suptypesSB, typing);
     return 1;
+}
+int requireCallable(Loc loc, Type* lhs, Type* rhs, Type* ret) {
+    // todo: implement requireCallable
+    return 0;
 }
 
 Type** getConcreteTypesSB(Type* type, ConcreteFrom concreteFrom) {
