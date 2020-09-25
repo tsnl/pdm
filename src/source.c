@@ -43,12 +43,11 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
     for (FeedbackNote* noteP = firstNote; noteP; noteP = noteP->nextP) {
         Loc loc = noteP->loc;
         // if (loc.lineIndex > 0 && loc.colIndex > 0) {
+        fprintf(stderr, "- %s", noteP->message);
         if (loc.offset >= 0) {
-            fprintf(stderr, "- [%d:%d]: %s\n", 1+loc.lineIndex, 1+loc.colIndex, noteP->message);
-        } else {
-            fprintf(stderr, "- %s: %s\n", prefix(kind), noteP->message);
+            fprintf(stderr, " [%s:%d:%d]", noteP->loc.source->path, 1+loc.lineIndex, 1+loc.colIndex);
         }
-        fprintf(stderr, "  in [%s]\n", noteP->loc.source->path);
+        fprintf(stderr, "\n");
     }
 }
 int GetErrorPosted(void) {

@@ -8,7 +8,6 @@
 #include "lexer.h"
 #include "parser.h"
 #include "primer.h"
-#include "scoper.h"
 #include "typer.h"
 #include "code-printer.h"
 
@@ -22,7 +21,7 @@ struct LoadedSource {
 struct Interp {
     LoadedSource* loadedSourceSb;
     Typer* typer;
-    Scoper* scoper;
+    Primer* primer;
 };
 
 static int lookupLoadedSource(Interp* interp, Source* source) {
@@ -48,7 +47,7 @@ Interp* CreateInterp(void) {
     Interp* interp = malloc(sizeof(Interp));
     interp->loadedSourceSb = NULL;
     interp->typer = CreateTyper(CreateDefaultTyperCfg());
-    interp->scoper = CreateScoper(interp->typer);
+    interp->primer = CreatePrimer(interp->typer);
     return interp;
 }
 void DestroyInterp(Interp* interp) {
@@ -69,7 +68,7 @@ int InterpLoadModuleSource(Interp* interp, Source* scriptSource) {
         LoadedSource loadedSource;
         
         loadedSource.source = scriptSource;
-        loadedSource.moduleAstNode = PrimeAst(ParseSource(scriptSource));
+        loadedSource.moduleAstNode = ParseSource(scriptSource);
         if (!loadedSource.moduleAstNode) {
             return 0;
         }
@@ -82,7 +81,7 @@ int InterpLoadModuleSource(Interp* interp, Source* scriptSource) {
             printf("\nEnd of Module dump.\n");
         }
 
-        if (!ScopeModule(interp->scoper, loadedSource.moduleAstNode)) {
+        if (!PrimeModule(interp->primer, loadedSource.moduleAstNode)) {
             return 0;
         }
         if (GetErrorPosted()) {

@@ -21,8 +21,6 @@ add_executable(pc
     src/parser.h
     src/primer.c
     src/primer.h
-    src/scoper.c
-    src/scoper.h
     src/source.c
     src/source.h
     src/symbols.c

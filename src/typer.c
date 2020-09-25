@@ -9,7 +9,7 @@
 #include "stb/stretchy_buffer.h"
 
 #include "config.h"
-#include "scoper.h"
+#include "primer.h"
 #include "symbols.h"
 
 typedef enum ConcreteFrom ConcreteFrom;
