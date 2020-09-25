@@ -131,7 +131,7 @@ static AdtTrieNode* getAtnChild(AdtTrieNode* root, AdtOperator operator, InputTy
 static AdtTrieNode* getCommonSuperATN(AdtTrieNode* a, AdtTrieNode* b);
 static int isSubATN(AdtTrieNode* sup, AdtTrieNode* sub);
 
-static int typerPostVisitor(void* rawTyper, AstNode* node);
+static int typer_post(void* rawTyper, AstNode* node);
 typedef int(*CheckReqSubtypeCB)(Loc loc, Type* type, Type* reqSubtype);
 static int requireSubtype(Loc loc, Type* sup, Type* sub);
 static int requireSubtype_genericPush(Loc, Type* sup, Type* sub);
@@ -145,7 +145,8 @@ static int requireSubtype_tupleSup(Loc loc, Type* type, Type* reqSubtype);
 static int requireSubtype_unionSup(Loc loc, Type* type, Type* reqSubtype);
 static int requireSubtype_metavarSup(Loc loc, Type* metatype, Type* subtype);
 static int requireSupertype_metavarSub(Loc loc, Type* metatype, Type* supertype);
-static int requireCallable(Loc loc, Type* lhs, Type* rhs, Type* ret);
+static int requireSubtype_metavarSup_half(Loc loc, Type* metatype, Type* subtype);
+static int requireSupertype_metavarSub_half(Loc loc, Type* metatype, Type* supertype);
 
 static Type** getConcreteTypesSB(Type* metavar, ConcreteFrom hypothesisFrom);
 static void getConcreteTypesSB_impl(Type* metavar, ConcreteFrom hypothesisFrom, Type*** visitedSB, Type*** out);
@@ -345,7 +346,7 @@ int isSubATN(AdtTrieNode* sup, AdtTrieNode* sub) {
     return getCommonSuperATN(sub,sup) == sup;
 }
 
-int typerPostVisitor(void* rawTyper, AstNode* node) {
+int typer_post(void* rawTyper, AstNode* node) {
     Typer* typer = rawTyper;
     switch (GetAstNodeKind(node)) {
         case AST_UNIT:
@@ -401,8 +402,8 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
         }
         case AST_LAMBDA:
         {
-            void* lhsType = GetAstNodeType(GetAstLambdaPattern(node));
-            void* rhsType = GetAstNodeType(GetAstLambdaBody(node));
+            Type* lhsType = GetAstNodeType(GetAstLambdaPattern(node));
+            Type* rhsType = GetAstNodeType(GetAstLambdaBody(node));
             if (lhsType && rhsType) {
                 SetAstNodeType(node, GetFuncType(typer, lhsType, rhsType));
             }
@@ -414,7 +415,19 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
             // module items can be used in value and typing contexts
             // todo: make these types the results of Typefunc instances
             Loc loc = GetAstNodeLoc(node);
-            requireSubtype(loc, GetAstNodeType(GetAstFieldRhs(node)), GetAstNodeType(node));
+            AstNode* rhs = GetAstFieldRhs(node);
+            
+            Type* rhsType = GetAstNodeType(rhs);
+            Type* itemType = GetAstNodeType(node);
+            if (rhsType && itemType) {
+                requireSubtype(loc, rhsType, itemType);
+            } else {
+                if (DEBUG) {
+                    printf("!!- Skipping `define` subtyping\n");
+                } else {
+                    assert(0 && "Skipping 'define' subtyping.");
+                }
+            }
             break;
         }
         case AST_FIELD__TEMPLATE_ITEM:
@@ -532,8 +545,12 @@ int typerPostVisitor(void* rawTyper, AstNode* node) {
             Loc loc = GetAstNodeLoc(node);
             AstNode* lhs = GetAstCallLhs(node);
             AstNode* rhs = GetAstCallRhs(node);
-            Type* ret = CreateMetatype(typer, "ret");
-            requireCallable(loc, GetAstNodeType(lhs),GetAstNodeType(rhs),ret);
+            Type* ret = CreateMetatype(typer, "inret");
+            
+            Type* calledFuncType = GetFuncType(typer, GetAstNodeType(rhs),ret);
+            requireSubtype(loc, GetAstNodeType(lhs), calledFuncType);
+            
+            SetAstNodeType(node,ret);
             break;
         }
         default:
@@ -766,7 +783,20 @@ int requireSubtype_unionSup(Loc loc, Type* type, Type* reqSubtype) {
     }
     return 0;
 }
-int requireSubtype_metavarSup(Loc loc, Type* metatype, Type* subtype) {
+int requireSubtype_metavarSup(Loc loc, Type* sup, Type* sub) {
+    int result = 1;
+    if (sup->kind == T_META) {
+        result = requireSubtype_metavarSup_half(loc,sup,sub) && result;
+    }
+    if (sub->kind == T_META) {
+        result = requireSupertype_metavarSub_half(loc,sub,sup) && result;
+    }
+    return 1;
+}
+int requireSupertype_metavarSub(Loc loc, Type* sub, Type* sup) {
+    return requireSubtype_metavarSup(loc,sup,sub);
+}
+int requireSubtype_metavarSup_half(Loc loc, Type* metatype, Type* subtype) {
     int subtypeCount = sb_count(metatype->as.Meta.subtypesSB);
     for (int index = 0; index < subtypeCount; index++) {
         Type* oldSubtype = metatype->as.Meta.subtypesSB[index].ptr;
@@ -776,9 +806,10 @@ int requireSubtype_metavarSup(Loc loc, Type* metatype, Type* subtype) {
     }
     SubOrSupTypeRec typing = {loc,subtype};
     sb_push(metatype->as.Meta.subtypesSB, typing);
+
     return 1;
 }
-int requireSupertype_metavarSub(Loc loc, Type* metatype, Type* supertype) {
+int requireSupertype_metavarSub_half(Loc loc, Type* metatype, Type* supertype) {
     // adding 'type' as a supertype of this metatype. 
     // each real supertype is a possible solution.
     
@@ -792,10 +823,6 @@ int requireSupertype_metavarSub(Loc loc, Type* metatype, Type* supertype) {
     SubOrSupTypeRec typing = {loc,supertype};
     sb_push(metatype->as.Meta.suptypesSB, typing);
     return 1;
-}
-int requireCallable(Loc loc, Type* lhs, Type* rhs, Type* ret) {
-    // todo: implement requireCallable
-    return 0;
 }
 
 Type** getConcreteTypesSB(Type* type, ConcreteFrom concreteFrom) {
@@ -849,12 +876,21 @@ void getConcreteTypesSB_impl(Type* type, ConcreteFrom concreteFrom, Type*** visi
     }
 }
 int checkConcreteSubtype(Loc loc, Type* concreteSup, Type* concreteSub) {
-    if (DEBUG) {
-        printf("!!- concreteSup not actually concrete.\n");
-        printf("!!- concreteSub not actually concrete.\n");
-    } else {
-        assert(concreteSup->kind != T_META && "concreteSup not actually concrete.");
-        assert(concreteSub->kind != T_META && "concreteSub not actually concrete.");
+    if (concreteSup->kind == T_META) {
+        if (DEBUG) {
+            printf("!!- concreteSup not actually concrete.\n");
+        } else {
+            assert(concreteSup->kind != T_META && "concreteSup not actually concrete.");
+        }
+        return 0;
+    }
+    if (concreteSub->kind == T_META) {
+        if (DEBUG) {
+            printf("!!- concreteSub not actually concrete.\n");
+        } else {
+            assert(concreteSub->kind != T_META && "concreteSub not actually concrete.");
+        }
+        return 0;
     }
 
     // checking for mismatched kinds:
@@ -899,6 +935,13 @@ int checkConcreteSubtype(Loc loc, Type* concreteSup, Type* concreteSub) {
         {
             // todo: checkConcreteSubtype for modules
             return 0;
+        }
+        case T_FUNC:
+        {
+            return (
+                checkSubtype(loc, concreteSup->as.Func.domain, concreteSub->as.Func.domain) &&
+                checkSubtype(loc, concreteSup->as.Func.image, concreteSub->as.Func.image)
+            );
         }
         default:
         {
@@ -1256,7 +1299,7 @@ char const* GetMetatypeName(Type* typeP) {
 //
 
 void TypeNode(Typer* typer, AstNode* node) {
-    visit(typer, node, NULL, typerPostVisitor);
+    visit(typer, node, NULL, typer_post);
 }
 
 //
@@ -1264,11 +1307,7 @@ void TypeNode(Typer* typer, AstNode* node) {
 //
 
 int Typecheck(Typer* typer) {
-    
-    // note: typer has already been run, all constraints should have been applied to metatypes.
-    // todo: in Typecheck, select a suitable solution supertype that fits subtyping constraints for each metatype.
-    // todo: synthesize solutions for each metatype by first typechecking each candidate subtype, then selecting the most general solution.
-
+    // todo: sort these solutions by dependency order
     int res = 1;
     int failureCount = 0;
     for (int index = 0; index < typer->metaTypeBuf.count; index++) {
