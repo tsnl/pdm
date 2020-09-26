@@ -43,7 +43,6 @@ struct Frame {
 
 size_t allocatedPrimersCount = 0;
 Primer allocatedPrimers[MAX_PRIMER_COUNT];
-static size_t allocatedScopeStackFramesCount = 0;
 
 static Primer* createPrimer(Typer* typer);
 static Scope* pushFrame(Primer* primer, Scope* scope, AstContext ctx);
@@ -241,7 +240,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         }
         case AST_FIELD__MODULE_ITEM:
         {
-            void* type = GetAstNodeType(node);
+            // void* type = GetAstNodeType(node);
             // todo: (in primer_pre:__MODULE_ITEM) push a type frame if this is a type definition?
             pushFrame(primer, NULL, ASTCTX_VALUE);
             break;
@@ -277,7 +276,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         }
         case AST_FIELD__STRUCT_ITEM:
         {
-            SymbolID defnID = GetAstFieldName(node);
+            // SymbolID defnID = GetAstFieldName(node);
             SetAstNodeType(node, GetAstNodeType(GetAstFieldRhs(node)));
             break;
         }

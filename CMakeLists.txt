@@ -1,10 +1,41 @@
 cmake_minimum_required(VERSION 3.18)
-
 project(pandemonium)
 
+#
+# Adding LLVM and Clang as dependencies:
+#
+
+# RESOURCES:
+# - https://lowlevelbits.org/building-an-llvm-based-tool.-lessons-learned/
+# - https://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
+
+# set (LLVM_DIR ${PATH_TO_LLVM_PROJECT}/llvm/cmake/modules)
+# find_package(
+#     LLVM REQUIRED CONFIG
+#     NO_DEFAULT_PATH
+# )
+
+find_package(LLVM REQUIRED CONFIG)
+# find_package(Clang REQUIRED CONFIG)
+
+message(STATUS "... Found LLVM version (${LLVM_PACKAGE_VERSION})")
+message(STATUS "... Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
+# message(STATUS "... Found LLVM ${LLVM_PACKAGE_VERSION}")
+# message(STATUS "... Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
+# set (LLVM_ENABLE_PROJECTS "clang;clang-tools-extra;compiler-rt;libc")
+# set (CMAKE_CURRENT_BINARY_DIR "build")
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
+
+include_directories("/usr/local/Cellar/llvm/10.0.1_1/include/")
+add_definitions(${LLVM_DEFINITIONS})
 add_executable(pc
     src/ast.c
     src/ast.h
+    src/cgen.c
+    src/cgen.h
     src/checker.c
     src/checker.h
     src/code-printer.c
@@ -31,10 +62,26 @@ add_executable(pc
 )
 
 #
+# LLVM
+# - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt
+#
+
+# target_link_libraries(pc LLVM)
+# target_include_directories(pc PUBLIC "${LLVM_INCLUDE_DIRS}")
+# target_link_libraries(pc LLVMSupport clangTooling)
+
+# Find the libraries that correspond to the LLVM components
+# that we wish to use
+llvm_map_components_to_libnames(llvm_libs core irreader)
+
+# Link against LLVM libraries
+target_link_libraries(pc ${llvm_libs})
+
+#
 # Intern library:
 #
 
 add_subdirectory(src/intern)
-target_link_libraries(pc 
+target_link_libraries(pc
     intern
 )

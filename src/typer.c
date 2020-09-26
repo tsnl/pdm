@@ -459,7 +459,6 @@ int typer_post(void* rawTyper, AstNode* node) {
         {
             AstNode* rhs = GetAstFieldRhs(node);
             Type* tv;
-            Type* tt;
             if (rhs) {
                 tv = GetAstNodeType(rhs);
             } else {
@@ -768,12 +767,29 @@ int requireSubtype_moduleSup(Loc loc, Type* type, Type* reqSubtype) {
     return 0;
 }
 int requireSubtype_tupleSup(Loc loc, Type* type, Type* reqSubtype) {
-    if (DEBUG) {
-        printf("!!- Not implemented: requireSubtype_tuple\n");
-    } else {
-        assert(0 && "Not implemented: requireSubtype_tuple");
+    int result = 1;
+    switch (reqSubtype->kind) {
+        case T_TUPLE:
+        {
+            // comparing ATNs
+            result = isSubATN(type->as.Compound_atn,reqSubtype->as.Compound_atn) && result;
+            break;
+        }
+        case T_META:
+        {
+            result = requireSupertype_metavarSub(loc,reqSubtype,type) && result;
+            break;
+        }
+        default:
+        {
+            // todo: implement TypeKindToText to make error reporting more descriptive (see here).
+            FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
+            PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different 'kinds': tuple and <?>.");
+            result = 0;
+            break;
+        }
     }
-    return 0;
+    return result;
 }
 int requireSubtype_unionSup(Loc loc, Type* type, Type* reqSubtype) {
     if (DEBUG) {
@@ -791,7 +807,7 @@ int requireSubtype_metavarSup(Loc loc, Type* sup, Type* sub) {
     if (sub->kind == T_META) {
         result = requireSupertype_metavarSub_half(loc,sub,sup) && result;
     }
-    return 1;
+    return result;
 }
 int requireSupertype_metavarSub(Loc loc, Type* sub, Type* sup) {
     return requireSubtype_metavarSup(loc,sup,sub);
@@ -1004,8 +1020,8 @@ Type* getSubmostConcreteSupertype(Loc loc, Type* sup, Type* optSupermostConcrete
         Type* oldSoln = sup->as.Meta.soln;
         int update = (
             (chosenSupertype != NULL) &&
-            ((sup->as.Meta.soln == NULL) ||
-             (checkSubtype(loc,chosenSupertype,sup->as.Meta.soln)))
+            ((oldSoln == NULL) ||
+             (checkSubtype(loc,chosenSupertype,oldSoln)))
         );
         if (update) {
             sup->as.Meta.soln = chosenSupertype;

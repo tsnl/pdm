@@ -5,7 +5,7 @@
 
 int main() {
     Interp* interp = CreateInterp();
-    Source* scriptSource = CreateSource("test/test3.hub");
+    Source* scriptSource = CreateSource("test/test1.hub");
     if (!scriptSource) {
         printf("File not found.\n");
         return 1;
