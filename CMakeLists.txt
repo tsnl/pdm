@@ -72,7 +72,7 @@ add_executable(pc
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use
-llvm_map_components_to_libnames(llvm_libs core irreader)
+llvm_map_components_to_libnames(llvm_libs Core ExecutionEngine Interpreter MCJIT Support nativecodegen IRReader)
 
 # Link against LLVM libraries
 target_link_libraries(pc ${llvm_libs})
