@@ -24,9 +24,9 @@ static TokenInfo lookaheadInfo(Parser* p, int index);
 static Loc lookaheadLoc(Parser* p, int index);
 static void advance(Parser* p);
 static int match(Parser* p, TokenKind tokenKind);
-static int matchIf(Parser* p, TokenKindPredicate tokenKindPredicate);
+// static int matchIf(Parser* p, TokenKindPredicate tokenKindPredicate);
 static int expect(Parser* p, TokenKind tokenKind, char const* expectedDesc);
-static int expectIf(Parser* p, TokenKindPredicate tokenKindPredicate, char const* expectedDesc);
+// static int expectIf(Parser* p, TokenKindPredicate tokenKindPredicate, char const* expectedDesc);
 
 typedef struct BinaryOpPrecedenceNode BinaryOpPrecedenceNode;
 typedef struct BinaryOpPrecedenceNode BinaryOpPrecedenceList;
@@ -51,7 +51,7 @@ BinaryOpPrecedenceNode xorBinaryOpPrecedenceNode = {&andBinaryOpPrecedenceNode, 
 BinaryOpPrecedenceNode orBinaryOpPrecedenceNode = {&xorBinaryOpPrecedenceNode, TK_OR, BOP_OR};
 BinaryOpPrecedenceNode* binaryOpPrecedenceListHead = &orBinaryOpPrecedenceNode;
 
-static RawAstNode* parseStmt(Parser* p);
+// static RawAstNode* parseStmt(Parser* p);
 static RawAstNode* tryParseStmt(Parser* p);
 static RawAstNode* parseBindStmt(Parser* p);
 static RawAstNode* parseCheckStmt(Parser* p);
@@ -115,14 +115,14 @@ static int match(Parser* p, TokenKind tokenKind) {
         return 0;
     }
 }
-static int matchIf(Parser* p, TokenKindPredicate tokenKindPredicate) {
-    if (tokenKindPredicate(lookaheadKind(p,0))) {
-        advance(p);
-        return 1;
-    } else {
-        return 0;
-    }
-}
+// static int matchIf(Parser* p, TokenKindPredicate tokenKindPredicate) {
+//     if (tokenKindPredicate(lookaheadKind(p,0))) {
+//         advance(p);
+//         return 1;
+//     } else {
+//         return 0;
+//     }
+// }
 inline static void expectError(Parser* p, char const* expectedDesc) {
     char errorText[512];
     TokenKind kind = lookaheadKind(p,0);
@@ -140,31 +140,31 @@ static int expect(Parser* p, TokenKind tokenKind, char const* expectedDesc) {
         return 0;
     }
 }
-static int expectIf(Parser* p, TokenKindPredicate tokenKindPredicate, char const* expectedDesc) {
-    if (matchIf(p, tokenKindPredicate)) {
-        return 1;
-    } else {
-        expectError(p, expectedDesc);
-        return 0;
-    }
-}
+// static int expectIf(Parser* p, TokenKindPredicate tokenKindPredicate, char const* expectedDesc) {
+//     if (matchIf(p, tokenKindPredicate)) {
+//         return 1;
+//     } else {
+//         expectError(p, expectedDesc);
+//         return 0;
+//     }
+// }
 
-static RawAstNode* parseStmt(Parser* p) {
-    Loc loc = lookaheadLoc(p,0);
+// static RawAstNode* parseStmt(Parser* p) {
+//     Loc loc = lookaheadLoc(p,0);
 
-    RawAstNode* stmt = tryParseStmt(p);
-    if (stmt) {
-        return stmt;
-    }
+//     RawAstNode* stmt = tryParseStmt(p);
+//     if (stmt) {
+//         return stmt;
+//     }
 
-    FeedbackNote note = {
-        .message = "here...",
-        .loc = loc,
-        .nextP = NULL
-    };
-    PostFeedback(FBK_ERROR, &note, "Expected a statement");
-    return NULL;
-}
+//     FeedbackNote note = {
+//         .message = "here...",
+//         .loc = loc,
+//         .nextP = NULL
+//     };
+//     PostFeedback(FBK_ERROR, &note, "Expected a statement");
+//     return NULL;
+// }
 static RawAstNode* tryParseStmt(Parser* p) {
     if (lookaheadKind(p,0) == TK_KW_CHECK) {
         return parseCheckStmt(p);

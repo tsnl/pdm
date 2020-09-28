@@ -6,11 +6,17 @@
 
 typedef struct Primer Primer;
 typedef struct Scope Scope;
+typedef struct Scope Defn;
 
 Primer* CreatePrimer(void* typer);
 int PrimeModule(Primer* primer, AstNode* node);
 
-void* LookupSymbol(Scope* scope, SymbolID lookupID, AstContext context);
-void* LookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context);
+Defn* LookupSymbol(Scope* scope, SymbolID lookupID, AstContext context);
+Defn* LookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context);
+
+SymbolID GetDefnName(Defn* defn);
+AstNode* GetDefnNode(Defn* defn);
+AstContext GetDefnContext(Defn* defn);
+void* GetDefnType(Defn* defn);
 
 #endif  // INCLUDED_PRIMER_H

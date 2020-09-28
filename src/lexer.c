@@ -330,26 +330,25 @@ TokenKind lexOneNumber(Source* source, TokenInfo* optInfoP) {
     TokenInfo prefixTokenInfo;
     TokenKind prefixTokenKind = lexOneIntChunk(source, &prefixTokenInfo, 0);
     if (prefixTokenKind == TK_DINT_LIT) {
-        if (ReadSourceReaderHead(source) == '.') {
+        if (ReadSourceReaderHead(source) == '.' && AdvanceSourceReaderHead(source)) {
             // float
-            if (AdvanceSourceReaderHead(source)) {
-                TokenInfo suffixTokenInfo;
-                TokenKind suffixTokenKind = lexOneIntChunk(source, &suffixTokenInfo, true);
-                
-                // converting prefix and suffix ints into a double value:
-                if (optInfoP) {
-                    double dotPrefix = prefixTokenInfo.as.Int;
-                    double dotSuffix = suffixTokenInfo.as.Int;
-                    while (dotSuffix >= 1.0) {
-                        dotSuffix /= 10;
-                    }
-                    double value = dotPrefix + dotSuffix;
-                    if (optInfoP) {
-                        optInfoP->as.Float = value;
-                    }
+            TokenInfo suffixTokenInfo;
+            lexOneIntChunk(source, &suffixTokenInfo, true);
+            
+            // converting prefix and suffix ints into a double value:
+            if (optInfoP) {
+                double dotPrefix = prefixTokenInfo.as.Int;
+                double dotSuffix = suffixTokenInfo.as.Int;
+                while (dotSuffix >= 1.0) {
+                    dotSuffix /= 10;
                 }
-                return TK_FLOAT_LIT;
+                double value = dotPrefix + dotSuffix;
+                if (optInfoP) {
+                    optInfoP->as.Float = value;
+                }
             }
+            return TK_FLOAT_LIT;
+        
         }
     }
     if (optInfoP) {

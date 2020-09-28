@@ -13,6 +13,7 @@
 #include "stb/stretchy_buffer.h"
 
 #include "source.h"
+#include "primer.h"
 #include "typer.h"
 
 // See Paul Smith's "How to Get Started with LLVM C API"
@@ -26,21 +27,37 @@ struct Emitter {
     Typer* typer;
     AstNode* astModule;
     LLVMModuleRef llvmModule;
+    LLVMBuilderRef llvmBuilder;
 };
 static Emitter newEmitter(Typer* typer, AstNode* astModule, char const* moduleName);
-static LLVMTypeRef emitType(Typer* typer, Type* typerType);
+static LLVMTypeRef emitType(Typer* emitter, Type* typerType);
+static LLVMTypeRef helpEmitType(Typer* emitter, Type* typerType);
+static LLVMValueRef emitExpr(Emitter* emitter, AstNode* expr);
+static LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr);
 static void buildLlvmField(Typer* typer, void* sb, SymbolID name, Type* type);
-static int emitLlvmModule_preVisitor(void* emitter, AstNode* node);
-static int emitLlvmModule_postVisitor(void* emitter, AstNode* node);
+static LLVMValueRef getDefnValue(Emitter* emitter, AstNode* defnNode);
 
 Emitter newEmitter(Typer* typer, AstNode* astModule, char const* moduleName) {
     Emitter emitter;
     emitter.typer = typer;
     emitter.astModule = astModule;
     emitter.llvmModule = LLVMModuleCreateWithName(moduleName);
+    emitter.llvmBuilder = LLVMCreateBuilder();
     return emitter;
 }
 LLVMTypeRef emitType(Typer* typer, Type* typerType) {
+    LLVMTypeRef llvmType;
+    llvmType = GetTypeLlvmRepr(typerType);
+    if (llvmType) {
+        return llvmType;
+    }
+    llvmType = helpEmitType(typer,typerType);
+    if (llvmType) {
+        SetTypeLlvmRepr(typerType,llvmType);
+    }
+    return llvmType;
+}
+LLVMTypeRef helpEmitType(Typer* typer, Type* typerType) {
     Type* concrete = GetConcreteType(typerType);
     switch (GetTypeKind(concrete))
     {
@@ -114,6 +131,211 @@ void buildLlvmField(Typer* typer, void* rawSB, SymbolID name, Type* type) {
     LLVMTypeRef** sb = rawSB;
     LLVMTypeRef fieldTypeRef = emitType(typer,type);
     sb_push((*sb),fieldTypeRef);
+}
+LLVMValueRef getDefnValue(Emitter* emitter, AstNode* defnNode) {
+    AstKind defnKind = GetAstNodeKind(defnNode);
+    switch (defnKind)
+    {
+        case AST_STMT_BIND:
+        {
+            AstNode* rhs = GetAstBindStmtRhs(defnNode);
+            return emitExpr(emitter,rhs);
+        }
+        case AST_FIELD__MODULE_ITEM:
+        case AST_FIELD__PATTERN_ITEM:
+        {
+            AstNode* rhs = GetAstFieldRhs(defnNode);
+            return emitExpr(emitter,rhs);
+        }
+        default:
+        {
+            if (DEBUG) {
+                printf("!!- getDefnRhs not implemented for defnNode of kind <?>.");
+            } else {
+                assert(0 && "getDefnRhs not implemented for defnNode of kind <?>.");
+            }
+            return NULL;
+        }
+    }
+}
+LLVMValueRef emitExpr(Emitter* emitter, AstNode* expr) {
+    LLVMValueRef value;
+    value = GetAstNodeLlvmRepr(expr);
+    if (value) {
+        return value;
+    }
+    value = helpEmitExpr(emitter,expr);
+    if (value) {
+        SetAstNodeLlvmRepr(expr,value);
+    }
+    return value;
+}
+LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
+    switch (GetAstNodeKind(expr))
+    {
+        case AST_ID:
+        {
+            Defn* defn = GetAstIdDefn(expr);
+            AstNode* defnNode = GetDefnNode(defn);
+            return getDefnValue(emitter,defnNode);
+        }
+        case AST_LITERAL_INT:
+        {
+            Type* type = GetAstNodeType(expr);
+            size_t value = GetAstIntLiteralValue(expr);
+            LLVMTypeRef llvmType = emitType(emitter->typer,type);
+            return LLVMConstInt(llvmType,value,0);
+        }
+        case AST_LITERAL_FLOAT:
+        {
+            Type* type = GetAstNodeType(expr);
+            LLVMTypeRef llvmType = emitType(emitter->typer,type);
+            long double value = GetAstFloatLiteralValue(expr);
+            return LLVMConstReal(llvmType,value);
+        }
+        case AST_LITERAL_STRING:
+        {
+            int const* chars = GetAstStringLiteralValue(expr);
+            int length = 0;
+            for (;chars[length];length++);
+            char* charsSB = NULL;
+            for (int index = 0; index < length; index++) {
+                int ch_int = chars[index];
+                char ch = ch_int;
+                sb_push(charsSB, ch);
+            }
+            LLVMValueRef string = LLVMConstString(charsSB, sb_count(charsSB), 1);
+            sb_free(charsSB);
+            return string;
+        }
+        case AST_CALL:
+        {
+            // todo: pass captured arguments here
+            // todo: destructure tuple types for function calls
+            Type* callType = GetAstNodeType(expr);
+            LLVMTypeRef callLlvmType = emitType(emitter->typer,callType);
+            AstNode* lhs = GetAstCallLhs(expr);
+            AstNode* rhs = GetAstCallRhs(expr);
+            LLVMValueRef lhsLlvmValue = emitExpr(emitter,lhs);
+            LLVMValueRef rhsLlvmValue = emitExpr(emitter,rhs);
+            return LLVMBuildCall2(
+                emitter->llvmBuilder,
+                callLlvmType,
+                lhsLlvmValue,
+                &rhsLlvmValue,1,
+                "call"
+            );
+        }
+        case AST_UNARY:
+        {
+            // todo: emitExpr for AST_UNARY
+            return NULL;
+        }
+        case AST_BINARY:
+        {
+            // todo: emitExpr for AST_BINARY
+            return NULL;
+        }
+        case AST_PAREN:
+        {
+            return emitExpr(emitter,GetAstParenItem(expr));
+        }
+        case AST_CHAIN:
+        {
+            AstNode* exprResult = GetAstChainResult(expr);
+            return emitExpr(emitter,exprResult);
+        }
+        case AST_LAMBDA:
+        case AST_FIELD__PATTERN_ITEM:
+        {
+            // set by `emitLlvmModulePrefix_preVisitor`
+            // we should not reach this point
+
+            if (DEBUG) {
+                printf("!!- error: should not evaluate node of kind <?> in `emitExpr`\n");
+            } else {
+                assert(0 && "error: should not evaluate node of kind <?> in `emitExpr`");
+            }
+            return NULL;
+        }
+        case AST_DOT_NAME:
+        case AST_DOT_INDEX:
+        {
+            if (DEBUG) {
+                printf("!!- NotImplemented: AST_DOT_NAME/AST_DOT_INDEX in `emitExpr`\n");
+            } else {
+                assert(0 && "NotImplemented: AST_DOT_NAME/AST_DOT_INDEX in `emitExpr`");
+            }
+            return NULL;
+        }
+        default:
+        {
+            if (DEBUG) {
+                printf("!!- Invalid kind in `emitExpr`.\n");
+            } else {
+                assert(0 && "Invalid kind in `emitExpr`");
+            }
+            return NULL;
+        }
+    }
+}
+
+int emitLlvmModulePrefix_preVisitor(void* rawEmitter, AstNode* node) {
+    Emitter* emitter = rawEmitter;
+    AstKind nodeKind = GetAstNodeKind(node);
+    switch (nodeKind) {
+        case AST_LAMBDA:
+        {
+            // todo: add captured arguments.
+
+            AstNode* pattern = GetAstLambdaPattern(node);
+            // AstNode* body = GetAstLambdaBody(node);
+            int patternLength = GetAstPatternLength(pattern);
+
+            Type* funcType = GetAstNodeType(node);
+            Type* funcDomainType = GetFuncTypeDomain(funcType);
+            Type* funcImageType = GetFuncTypeImage(funcType);
+
+            LLVMTypeRef funcImageLlvmType = emitType(emitter->typer,funcImageType);
+
+            LLVMTypeRef funcLlvmType = NULL;
+            if (patternLength == 0) {
+                funcLlvmType = LLVMFunctionType(funcImageLlvmType,NULL,0,0);
+            } else if (patternLength == 1) {
+                LLVMTypeRef funcDomainLlvmType = emitType(emitter->typer,funcDomainType);
+                funcLlvmType = LLVMFunctionType(funcImageLlvmType,&funcDomainLlvmType,1,0);
+            } else {
+                // todo: destructure tuple arguments:
+                // for (int index = 0; index < patternLength; index++) {
+                //     AstNode* field = GetAstPatternFieldAt(pattern,index);
+                // }
+                if (DEBUG) {
+                    printf("!!- NotImplemented: lambdas with patterns of length > 1\n");
+                } else {
+                    assert(0 && "NotImplemented: lambdas with patterns of length > 1");
+                }
+                funcLlvmType = NULL;
+            }
+
+            // storing the defined LLVM function reference:
+            LLVMValueRef funcLlvmValue = LLVMAddFunction(emitter->llvmModule,"__anonymous_function__",funcLlvmType);
+            SetAstNodeLlvmRepr(node,funcLlvmValue);
+
+            // storing formal argument references:
+            for (int index = 0; index < patternLength; index++) {
+                AstNode* patternArg = GetAstPatternFieldAt(pattern,index);
+                LLVMValueRef llvmArg = LLVMGetParam(funcLlvmValue,index);
+                SetAstNodeLlvmRepr(patternArg,llvmArg);
+            }
+        
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+    return 1;
 }
 int emitLlvmModule_preVisitor(void* emitter, AstNode* node) {
     // todo: implement 'emitLlvmModule_preVisitor' [using 'emitType']
@@ -192,3 +414,9 @@ int EmitLlvmModule(Typer* typer, AstNode* module) {
 
 
 // }
+
+// todo: implement a lambda-only visitor to define lambdas and map them to calls
+// todo: implement constructors for ad-hoc struct and union literals?
+// todo: implement a final emitter that...
+//  - uses previously emitted definitions
+//  - writes definitions in a 1:1 form from our source code.

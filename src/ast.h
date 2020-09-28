@@ -164,14 +164,23 @@ void SetAstNodeType(AstNode* node, void* type);
 AstContext GetAstNodeLookupContext(AstNode* node);
 void SetAstNodeLookupContext(AstNode* node, AstContext context);
 
-void* GetAstIdScopeP(AstNode* node);
-void SetAstIdScopeP(AstNode* node, void* scope);
+void* GetAstIdLookupScope(AstNode* node);
+void* GetAstIdDefn(AstNode* node);
+void SetAstIdLookupScope(AstNode* node, void* scope);
+void SetAstIdDefn(AstNode* node, void* defn);
 
 // Visitor API: calls a 'VisitorCb' function pre- and post- visiting children.
 // - `context` can be used to propagate contextual information as the visitor recurses.
 typedef int(*VisitorCb)(void* context, AstNode* node);
 
 int RecursivelyVisitAstNode(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb);
+
+//
+// LLVM representations
+//
+
+void SetAstNodeLlvmRepr(AstNode* node, void* repr);
+void* GetAstNodeLlvmRepr(AstNode* node);
 
 //
 // Reflection:

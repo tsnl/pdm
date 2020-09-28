@@ -32,9 +32,9 @@ static int lookupLoadedSource(Interp* interp, Source* source) {
     }
     return -1;
 }
-static LoadedSource loadedSource(Interp* interp, int index) {
-    return interp->loadedSourceSb[index];
-}
+// static LoadedSource loadedSource(Interp* interp, int index) {
+//     return interp->loadedSourceSb[index];
+// }
 
 //
 // Implementation:

@@ -113,6 +113,13 @@ void TypeNode(Typer* typer, AstNode* node);
 int Typecheck(Typer* typer);
 
 //
+// Emitter output:
+//
+
+void* GetTypeLlvmRepr(Type* type);
+void SetTypeLlvmRepr(Type* type, void* repr);
+
+//
 // Debug:
 //
 

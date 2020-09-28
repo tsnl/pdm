@@ -92,6 +92,7 @@ struct Type {
         ModuleInfo Module;
         AdtTrieNode* Compound_atn;
     } as;
+    void* llvmRepr;
 };
 
 struct Typer {
@@ -102,7 +103,7 @@ struct Typer {
     Type intType[__INT_COUNT];
     Type floatType[__FLOAT_COUNT];
     
-    TypeBuf metaTypeBuf;
+    TypeBuf metatypeBuf;
     TypeBuf ptrTypeBuf;
     TypeBuf typefuncTypeBuf;
     TypeBuf funcTypeBuf;
@@ -124,7 +125,7 @@ static TypeBuf createTypeBuf(char const* name, size_t capacity);
 static Type* tryPushTypeBuf(TypeBuf* buf);
 static Type* pushTypeBuf(TypeBuf* buf);
 
-static Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP);
+// static Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP);
 
 static AdtTrieNode* createATN(AdtTrieNode* parent, Type* owner);
 static AdtTrieNode* getAtnChild(AdtTrieNode* root, AdtOperator operator, InputTypeFieldNode const* inputFieldList, int noNewEdges);
@@ -134,7 +135,6 @@ static int isSubATN(AdtTrieNode* sup, AdtTrieNode* sub);
 static int typer_post(void* rawTyper, AstNode* node);
 typedef int(*CheckReqSubtypeCB)(Loc loc, Type* type, Type* reqSubtype);
 static int requireSubtype(Loc loc, Type* sup, Type* sub);
-static int requireSubtype_genericPush(Loc, Type* sup, Type* sub);
 static int requireSubtype_intSup(Loc loc, Type* type, Type* reqSubtype);
 static int requireSubtype_floatSup(Loc loc, Type* type, Type* reqSubtype);
 static int requireSubtype_ptrSup(Loc loc, Type* type, Type* reqSubtype);
@@ -175,17 +175,17 @@ Typer* createTyper(TyperCfg config) {
     
     typer->backupCfg = config;
     
-    typer->anyType = (Type) {T_ANY, {}};
-    typer->unitType = (Type) {T_UNIT, {}};
-    typer->floatType[FLOAT_32] = (Type) {T_FLOAT, {.Float_width = FLOAT_32}};
-    typer->floatType[FLOAT_64] = (Type) {T_FLOAT, {.Float_width = FLOAT_64}};
-    typer->intType[INT_8] = (Type) {T_INT, {.Int_width = INT_8}};
-    typer->intType[INT_16] = (Type) {T_INT, {.Int_width = INT_16}};
-    typer->intType[INT_32] = (Type) {T_INT, {.Int_width = INT_32}};
-    typer->intType[INT_64] = (Type) {T_INT, {.Int_width = INT_64}};
-    typer->intType[INT_64] = (Type) {T_INT, {.Int_width = INT_64}};
+    typer->anyType = (Type) {T_ANY, {}, NULL};
+    typer->unitType = (Type) {T_UNIT, {}, NULL};
+    typer->floatType[FLOAT_32] = (Type) {T_FLOAT, {.Float_width = FLOAT_32}, NULL};
+    typer->floatType[FLOAT_64] = (Type) {T_FLOAT, {.Float_width = FLOAT_64}, NULL};
+    typer->intType[INT_8] = (Type) {T_INT, {.Int_width = INT_8}, NULL};
+    typer->intType[INT_16] = (Type) {T_INT, {.Int_width = INT_16}, NULL};
+    typer->intType[INT_32] = (Type) {T_INT, {.Int_width = INT_32}, NULL};
+    typer->intType[INT_64] = (Type) {T_INT, {.Int_width = INT_64}, NULL};
+    typer->intType[INT_64] = (Type) {T_INT, {.Int_width = INT_64}, NULL};
     
-    typer->metaTypeBuf = createTypeBuf("metaTypeBuf", typer->backupCfg.maxMetavarCount);
+    typer->metatypeBuf = createTypeBuf("metatypeBuf", typer->backupCfg.maxMetavarCount);
     typer->ptrTypeBuf = createTypeBuf("ptrTypeBuf", typer->backupCfg.maxPtrCount);
     typer->funcTypeBuf = createTypeBuf("funcTypeBuf", typer->backupCfg.maxFuncCount);
     typer->typefuncTypeBuf = createTypeBuf("typefuncTypeBuf", typer->backupCfg.maxTypefuncCount);
@@ -226,41 +226,41 @@ Type* pushTypeBuf(TypeBuf* buf) {
     }
 }
 
-Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP) {
-    switch (arg->kind) {
-        case T_INT:
-        case T_FLOAT:
-        case T_UNIT:
-        {
-            return arg;
-        }
-        case T_PTR:
-        {
-            return GetPtrType(typer, substitution(typer, arg->as.Ptr_pointee, firstTypeSubP));
-        }
-        case T_META:
-        {
-            for (TypeSub* typeSubP = firstTypeSubP; typeSubP; typeSubP = typeSubP->next) {
-                if (DEBUG) {
-                    assert(typeSubP->old->kind == T_META);
-                }
-                if (typeSubP->old == arg) {
-                    return typeSubP->new;
-                }
-            }
-            return arg;
-        }
-        default:
-        {
-            if (DEBUG) {
-                printf("!!- NotImplemented: ApplySubstitution for X type kind.\n");
-            } else {
-                assert(0 && "!!- NotImplemented: ApplySubstitution for X type kind.");
-            }
-            return NULL;
-        }
-    }
-}
+// Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP) {
+//     switch (arg->kind) {
+//         case T_INT:
+//         case T_FLOAT:
+//         case T_UNIT:
+//         {
+//             return arg;
+//         }
+//         case T_PTR:
+//         {
+//             return GetPtrType(typer, substitution(typer, arg->as.Ptr_pointee, firstTypeSubP));
+//         }
+//         case T_META:
+//         {
+//             for (TypeSub* typeSubP = firstTypeSubP; typeSubP; typeSubP = typeSubP->next) {
+//                 if (DEBUG) {
+//                     assert(typeSubP->old->kind == T_META);
+//                 }
+//                 if (typeSubP->old == arg) {
+//                     return typeSubP->new;
+//                 }
+//             }
+//             return arg;
+//         }
+//         default:
+//         {
+//             if (DEBUG) {
+//                 printf("!!- NotImplemented: ApplySubstitution for X type kind.\n");
+//             } else {
+//                 assert(0 && "!!- NotImplemented: ApplySubstitution for X type kind.");
+//             }
+//             return NULL;
+//         }
+//     }
+// }
 
 AdtTrieNode* createATN(AdtTrieNode* parent, Type* owner) {
     AdtTrieNode* trieNode = malloc(sizeof(AdtTrieNode));
@@ -355,12 +355,6 @@ int typer_post(void* rawTyper, AstNode* node) {
             SetAstNodeType(node,t);
             break;
         }
-        case AST_LITERAL_FLOAT:
-        {
-            Type* t = GetFloatType(typer, FLOAT_64);
-            SetAstNodeType(node,t);
-            break;
-        }
         case AST_LITERAL_INT:
         {
             // TODO: automatically select width based on int value
@@ -368,13 +362,20 @@ int typer_post(void* rawTyper, AstNode* node) {
             SetAstNodeType(node,t);
             break;
         }
+        case AST_LITERAL_FLOAT:
+        {
+            Type* t = GetFloatType(typer, FLOAT_64);
+            SetAstNodeType(node,t);
+            break;
+        }
         case AST_ID:
         {
             Loc loc = GetAstNodeLoc(node);
             SymbolID name = GetAstIdName(node);
-            Scope* scope = GetAstIdScopeP(node);
+            Scope* scope = GetAstIdLookupScope(node);
             AstContext lookupContext = GetAstNodeLookupContext(node);
-            Type* foundType = LookupSymbol(scope, name, lookupContext);
+            Defn* foundDefn = LookupSymbol(scope, name, lookupContext);
+            Type* foundType = GetDefnType(foundDefn);
             if (!foundType) {
                 FeedbackNote* note = CreateFeedbackNote("here...", loc, NULL);
                 PostFeedback(
@@ -383,7 +384,8 @@ int typer_post(void* rawTyper, AstNode* node) {
                     GetSymbolText(name), (lookupContext == ASTCTX_TYPING ? "typing" : "value")
                 );
             }
-            SetAstNodeType(node, foundType);
+            SetAstIdDefn(node,foundDefn);
+            SetAstNodeType(node,foundType);
             break;
         }
         case AST_MODULE:
@@ -665,7 +667,7 @@ int requireSubtype_intSup(Loc loc, Type* type, Type* reqSubtype) {
         {
             // todo: implement TypeKindToText to make error reporting more descriptive (see here).
             FeedbackNote* note = CreateFeedbackNote("in subtype here...", loc, NULL);
-            PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different 'kinds': int and <?>.");
+            PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different kinds: int and <?>.");
             result = 0;
             break;
         }
@@ -692,8 +694,8 @@ int requireSubtype_floatSup(Loc loc, Type* type, Type* reqSubtype) {
         default:
         {
             // todo: implement TypeKindToText to make error reporting more descriptive (see here).
-            // todo: while typechecking float type, get loc (here) to report type errors.
-            PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different 'kinds': float and <?>.");
+            FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
+            PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different kinds: float and <?>.");
             result = 0;
             break;
         }
@@ -717,7 +719,7 @@ int requireSubtype_ptrSup(Loc loc, Type* type, Type* reqSubtype) {
         {
             // todo: while typechecking float type, get loc (here) to report type errors.
             // todo: implement TypeKindToText to make error reporting more descriptive (see here).
-            PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different 'kinds': ptr and <?>.");
+            PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different kinds: ptr and <?>.");
             result = 0;
             break;
         }
@@ -751,7 +753,7 @@ int requireSubtype_funcSup(Loc loc, Type* type, Type* reqSubtype) {
         {
             // todo: while typechecking func types, get loc (here) to report type errors.
             // todo: implement TypeKindToText to make error reporting more descriptive (see here).
-            PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different 'kinds': func and <?>.");
+            PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different kinds: func and <?>.");
             result = 0;
             break;
         }
@@ -784,7 +786,7 @@ int requireSubtype_tupleSup(Loc loc, Type* type, Type* reqSubtype) {
         {
             // todo: implement TypeKindToText to make error reporting more descriptive (see here).
             FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
-            PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different 'kinds': tuple and <?>.");
+            PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different kinds: tuple and <?>.");
             result = 0;
             break;
         }
@@ -1095,8 +1097,8 @@ void printTyper(Typer* typer) {
         printTypeLn(typer, &typer->unionTypeBuf.ptr[it]);
     }
 
-    for (it = 0; it < typer->metaTypeBuf.count; it++) {
-        printTypeLn(typer, &typer->metaTypeBuf.ptr[it]);
+    for (it = 0; it < typer->metatypeBuf.count; it++) {
+        printTypeLn(typer, &typer->metatypeBuf.ptr[it]);
     }
 }
 void printType(Typer* typer, Type* type) {
@@ -1235,6 +1237,7 @@ Type* GetPtrType(Typer* typer, Type* pointee) {
     Type* ptrType = pushTypeBuf(&typer->ptrTypeBuf);
     ptrType->kind = T_PTR;
     ptrType->as.Ptr_pointee = pointee;
+    ptrType->llvmRepr = NULL;
     return ptrType;
 }
 Type* GetFuncType(Typer* typer, Type* domain, Type* image) {
@@ -1251,6 +1254,7 @@ Type* GetFuncType(Typer* typer, Type* domain, Type* image) {
     funcType->kind = T_FUNC;
     funcType->as.Func.domain = domain;
     funcType->as.Func.image = image;
+    funcType->llvmRepr = NULL;
     return funcType;
 }
 Type* GetTypefuncType(Typer* typer, Type* arg, Type* body) {
@@ -1258,6 +1262,7 @@ Type* GetTypefuncType(Typer* typer, Type* arg, Type* body) {
     typefuncType->kind = T_TYPEFUNC;
     typefuncType->as.Typefunc.arg = arg;
     typefuncType->as.Typefunc.body = body;
+    typefuncType->llvmRepr = NULL;
     return typefuncType;
 }
 Type* GetTupleType(Typer* typer, InputTypeFieldList const* inputFieldList) {
@@ -1265,6 +1270,7 @@ Type* GetTupleType(Typer* typer, InputTypeFieldList const* inputFieldList) {
     tupleType->kind = T_TUPLE;
     tupleType->as.Compound_atn = getAtnChild(&typer->anyATN, ADT_MUL, inputFieldList, 0);
     tupleType->as.Compound_atn->owner = tupleType;
+    tupleType->llvmRepr = NULL;
     return tupleType;
 }
 Type* GetUnionType(Typer* typer, InputTypeFieldList const* inputFieldList) {
@@ -1272,11 +1278,12 @@ Type* GetUnionType(Typer* typer, InputTypeFieldList const* inputFieldList) {
     unionType->kind = T_UNION;
     unionType->as.Compound_atn = getAtnChild(&typer->anyATN, ADT_SUM, inputFieldList, 0);
     unionType->as.Compound_atn->owner = unionType;
+    unionType->llvmRepr = NULL;
     return unionType;
 }
 
 Type* CreateMetatype(Typer* typer, char const* format, ...) {
-    Type* metatype = pushTypeBuf(&typer->metaTypeBuf);
+    Type* metatype = pushTypeBuf(&typer->metatypeBuf);
     metatype->kind = T_META;
     metatype->as.Meta.subtypesSB = NULL;
     metatype->as.Meta.supertypesSB = NULL;
@@ -1296,6 +1303,7 @@ Type* CreateMetatype(Typer* typer, char const* format, ...) {
         va_end(args);
         metatype->as.Meta.name = strdup(nameBuffer);
     }
+    metatype->llvmRepr = NULL;
     return metatype;
 }
 
@@ -1384,8 +1392,8 @@ int Typecheck(Typer* typer) {
     // todo: sort these solutions by dependency order
     int res = 1;
     int failureCount = 0;
-    for (int index = 0; index < typer->metaTypeBuf.count; index++) {
-        Type* metatype = &typer->metaTypeBuf.ptr[index];        
+    for (int index = 0; index < typer->metatypeBuf.count; index++) {
+        Type* metatype = &typer->metatypeBuf.ptr[index];        
         int metatypeRes = checkMetavar(metatype);
         if (!metatypeRes) {
             failureCount++;
@@ -1400,6 +1408,18 @@ int Typecheck(Typer* typer) {
     }
 
     return res;
+}
+
+//
+// LLVM representation:
+//
+
+void* GetTypeLlvmRepr(Type* type) {
+    return type->llvmRepr;
+}
+
+void SetTypeLlvmRepr(Type* type, void* repr) {
+    type->llvmRepr = repr;
 }
 
 //

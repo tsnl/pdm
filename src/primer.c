@@ -31,6 +31,7 @@ struct Primer {
 struct Scope {
     Scope* parent;
     SymbolID defnID;
+    AstNode* defnAstNode;
     AstContext context;
     void* type;
 };
@@ -46,17 +47,16 @@ Primer allocatedPrimers[MAX_PRIMER_COUNT];
 
 static Primer* createPrimer(Typer* typer);
 static Scope* pushFrame(Primer* primer, Scope* scope, AstContext ctx);
-static void pushFrameSymbol(Primer* primer, SymbolID defnID, void* type, AstContext context);
+static void pushFrameSymbol(Primer* primer, SymbolID defnID, void* type, AstNode* node, AstContext context);
 static Frame popFrame(Primer* primer);
 Scope* topFrameScope(Primer* primer);
 static AstContext topFrameContext(Primer* primer);
 
 static size_t allocatedScopeCount = 0;
 static Scope allocatedScopes[MAX_AST_NODE_COUNT];
-inline static Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstContext context);
+inline static Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn, AstContext context);
 static Scope* newRootScope(Typer* typer);
-static void* lookupSymbol(Scope* scope, SymbolID lookupID, AstContext context);
-static void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context);
+static Defn* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context);
 
 //
 // Static implementation:
@@ -102,9 +102,9 @@ Scope* pushFrame(Primer* primer, Scope* optNewScope, AstContext ctx) {
     primer->frameStackCount++;
     return optNewScope;
 }
-void pushFrameSymbol(Primer* primer, SymbolID defnID, void* type, AstContext context) {
+void pushFrameSymbol(Primer* primer, SymbolID defnID, void* type, AstNode* defn, AstContext context) {
     Scope* parent = topFrameScope(primer);
-    primer->frameStackSB[primer->frameStackCount-1].endScopeP = (Scope*)newScope(parent, defnID, type, context);
+    primer->frameStackSB[primer->frameStackCount-1].endScopeP = (Scope*)newScope(parent, defnID, type, defn, context);
 }
 Frame popFrame(Primer* primer) {
     if (primer->frameStackCount > 0) {
@@ -155,34 +155,34 @@ AstContext topFrameContext(Primer* primer) {
     return primer->frameStackSB[primer->frameStackCount-1].context;
 }
 
-inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstContext context) {
-    Scope* scopeP = &allocatedScopes[allocatedScopeCount++];
-    scopeP->parent = parent;
-    scopeP->defnID = defnID;
-    scopeP->type = type;
-    scopeP->context = context;
-    return scopeP;
+inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn, AstContext context) {
+    Scope* scope = &allocatedScopes[allocatedScopeCount++];
+    scope->parent = parent;
+    scope->defnID = defnID;
+    scope->type = type;
+    scope->context = context;
+    return scope;
 }
 Scope* newRootScope(Typer* typer) {
     Scope* root = NULL;
     
-    root = newScope(root, Symbol("u8"), GetIntType(typer,INT_8), ASTCTX_TYPING);
-    root = newScope(root, Symbol("u16"), GetIntType(typer,INT_16), ASTCTX_TYPING);
-    root = newScope(root, Symbol("u32"), GetIntType(typer,INT_32), ASTCTX_TYPING);
-    root = newScope(root, Symbol("u64"), GetIntType(typer,INT_64), ASTCTX_TYPING);
-    root = newScope(root, Symbol("u128"), GetIntType(typer,INT_128), ASTCTX_TYPING);
+    root = newScope(root, Symbol("u8"), GetIntType(typer,INT_8), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("u16"), GetIntType(typer,INT_16), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("u32"), GetIntType(typer,INT_32), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("u64"), GetIntType(typer,INT_64), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("u128"), GetIntType(typer,INT_128), NULL, ASTCTX_TYPING);
 
-    root = newScope(root, Symbol("f32"), GetFloatType(typer,FLOAT_32), ASTCTX_TYPING);
-    root = newScope(root, Symbol("f64"), GetFloatType(typer,FLOAT_64), ASTCTX_TYPING);
+    root = newScope(root, Symbol("f32"), GetFloatType(typer,FLOAT_32), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("f64"), GetFloatType(typer,FLOAT_64), NULL, ASTCTX_TYPING);
     
     return root;
 }
-void* lookupSymbol(Scope* scope, SymbolID lookupID, AstContext context) {
-    return lookupSymbolUntil(scope, lookupID, NULL, context);
-}
-void* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context) {
+Defn* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context) {
+    if (lookupID == SYM_NULL) {
+        return NULL;
+    }
     if (scope->context == context && scope->defnID == lookupID) {
-        return scope->type;
+        return scope;
     }
     if (scope == endScopeP) {
         // this is the last scope
@@ -214,14 +214,14 @@ int primer_pre(void* rawPrimer, AstNode* node) {
     switch (kind) {
         case AST_ID:
         {
-            SetAstIdScopeP(node, topFrameScope(primer));
+            SetAstIdLookupScope(node, topFrameScope(primer));
             break;
         }
         case AST_STMT_BIND:
         {
             SymbolID defnID = GetAstBindStmtLhs(node);
             void* type = CreateMetatype(primer->typer, "let:%s", GetSymbolText(defnID));
-            pushFrameSymbol(primer, defnID, type, ASTCTX_VALUE);
+            pushFrameSymbol(primer, defnID, type, node, ASTCTX_VALUE);
             SetAstNodeType(node, type);
             break;
         }
@@ -259,7 +259,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             SymbolID defnID = GetAstFieldName(node);
             // todo: valueTypeP encodes a first-order type
             void* type = CreateMetatype(primer->typer, "template:%s", GetSymbolText(defnID));
-            pushFrameSymbol(primer, defnID, type, ASTCTX_TYPING);
+            pushFrameSymbol(primer, defnID, type, node, ASTCTX_TYPING);
             SetAstNodeType(node, type);
             break;
         }
@@ -268,7 +268,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             // defining the formal arg symbol in the lambda scope:
             SymbolID defnID = GetAstFieldName(node);
             void* type = CreateMetatype(primer->typer, "pattern:%s", GetSymbolText(defnID));
-            pushFrameSymbol(primer, defnID, type, ASTCTX_VALUE);
+            pushFrameSymbol(primer, defnID, type, node, ASTCTX_VALUE);
             SetAstNodeType(node, type);
 
             // pushing a typing frame for RHS
@@ -331,7 +331,7 @@ int PrimeModule(Primer* primer, AstNode* module) {
         // todo: HACKY let the symbol define itself as type or value in `PrimeModule`
         AstNode* field = GetAstModuleFieldAt(module, index);
         void* type = CreateMetatype(primer->typer, "define:%s", GetSymbolText(GetAstFieldName(field)));
-        pushFrameSymbol(primer, GetAstFieldName(field), type, ASTCTX_VALUE);
+        pushFrameSymbol(primer, GetAstFieldName(field), type, field, ASTCTX_VALUE);
         
         // storing the defined metatypes on the field:
         assert(GetAstNodeKind(field) == AST_FIELD__MODULE_ITEM);
@@ -346,15 +346,26 @@ int PrimeModule(Primer* primer, AstNode* module) {
     return 1;
 }
 
-void* LookupSymbol(Scope* scope, SymbolID lookupID, AstContext context) {
-    return lookupSymbol(scope, lookupID, context);
+Defn* LookupSymbol(Scope* scope, SymbolID lookupID, AstContext context) {
+    return lookupSymbolUntil(scope, lookupID, NULL, context);
 }
 
-void* LookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context) {
+Defn* LookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context) {
     return lookupSymbolUntil(scope, lookupID, endScopeP, context);
 }
 
 // After definition, IDs are looked up, map to type IDs.
 // These type IDs can be stored in the AST.
 
-// todo: define builtin IDs
+SymbolID GetDefnName(Defn* defn) {
+    return defn->defnID;
+}
+AstNode* GetDefnNode(Defn* defn) {
+    return defn->defnAstNode;
+}
+AstContext GetDefnContext(Defn* defn) {
+    return defn->context;
+}
+void* GetDefnType(Defn* defn) {
+    return defn->type;
+}

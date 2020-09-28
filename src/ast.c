@@ -40,7 +40,8 @@ struct AstModule {
 };
 struct AstID {
     SymbolID name;
-    void* scopeP;
+    void* lookupScope;
+    void* defn;
 };
 struct AstField {
     SymbolID name;
@@ -115,6 +116,7 @@ struct AstNode {
     AstInfo info;
     void* type;
     AstContext lookupContext;
+    void* llvmRepr;
 };
 
 //
@@ -137,6 +139,7 @@ AstNode* newNode(Loc loc, AstKind kind) {
     node->kind = kind;
     node->type = NULL;
     node->lookupContext = __ASTCTX_NONE;
+    node->llvmRepr = NULL;
     return node;
 }
 AstNodeList* newNodeList(void) {
@@ -195,7 +198,8 @@ void PushFieldToAstModule(Loc loc, AstNode* module, SymbolID lhs, AstNode* optPa
 AstNode* CreateAstId(Loc loc, SymbolID symbolID) {
     AstNode* idNode = newNode(loc, AST_ID);
     idNode->info.ID.name = symbolID;
-    idNode->info.ID.scopeP = NULL;
+    idNode->info.ID.lookupScope = NULL;
+    idNode->info.ID.defn = NULL;
     return idNode;
 }
 AstNode* CreateAstIntLiteral(Loc loc, size_t value, int base) {
@@ -640,11 +644,17 @@ void SetAstNodeLookupContext(AstNode* node, AstContext context) {
     node->lookupContext = context;
 }
 
-void* GetAstIdScopeP(AstNode* node) {
-    return node->info.ID.scopeP;
+void* GetAstIdLookupScope(AstNode* node) {
+    return node->info.ID.lookupScope;
 }
-void SetAstIdScopeP(AstNode* node, void* scopeP) {
-    node->info.ID.scopeP = scopeP;
+void SetAstIdLookupScope(AstNode* node, void* scopeP) {
+    node->info.ID.lookupScope = scopeP;
+}
+void* GetAstIdDefn(AstNode* node) {
+    return node->info.ID.defn;
+}
+void SetAstIdDefn(AstNode* node, void* defn) {
+    node->info.ID.defn = defn;
 }
 
 //
@@ -849,6 +859,18 @@ int RecursivelyVisitAstNode(void* context, AstNode* node, VisitorCb preVisitorCb
         }
     }
     return 1;
+}
+
+//
+// LLVM representations
+//
+
+void SetAstNodeLlvmRepr(AstNode* node, void* repr) {
+    node->llvmRepr = repr;
+}
+
+void* GetAstNodeLlvmRepr(AstNode* node) {
+    return node->llvmRepr;
 }
 
 //
