@@ -663,63 +663,63 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         }
         case AST_PAREN:
         {
-            visit(context, node->info.Paren, preVisitorCb, postVisitorCb);
+            RecursivelyVisitAstNode(context, node->info.Paren, preVisitorCb, postVisitorCb);
             return 1;
         }
         case AST_ITE:
         {
             return (
-                visit(context, GetAstIteCond(node), preVisitorCb, postVisitorCb) &&
-                visit(context, GetAstIteIfTrue(node), preVisitorCb, postVisitorCb) &&
-                visit(context, GetAstIteIfFalse(node), preVisitorCb, postVisitorCb)
+                RecursivelyVisitAstNode(context, GetAstIteCond(node), preVisitorCb, postVisitorCb) &&
+                RecursivelyVisitAstNode(context, GetAstIteIfTrue(node), preVisitorCb, postVisitorCb) &&
+                RecursivelyVisitAstNode(context, GetAstIteIfFalse(node), preVisitorCb, postVisitorCb)
             );
         }
         case AST_LAMBDA:
         {
             return (
-                visit(context, GetAstLambdaPattern(node), preVisitorCb, postVisitorCb) &&
-                visit(context, GetAstLambdaBody(node), preVisitorCb, postVisitorCb)
+                RecursivelyVisitAstNode(context, GetAstLambdaPattern(node), preVisitorCb, postVisitorCb) &&
+                RecursivelyVisitAstNode(context, GetAstLambdaBody(node), preVisitorCb, postVisitorCb)
             );
         }
         case AST_DOT_INDEX:
         {
             return (
-                visit(context, GetAstDotIndexLhs(node), preVisitorCb, postVisitorCb)
+                RecursivelyVisitAstNode(context, GetAstDotIndexLhs(node), preVisitorCb, postVisitorCb)
                 // visit(context, GetAstDotIndexRhs(node), preVisitorCb, postVisitorCb)
             );
         }
         case AST_DOT_NAME:
         {
             return (
-                visit(context, GetAstDotNameLhs(node), preVisitorCb, postVisitorCb)
+                RecursivelyVisitAstNode(context, GetAstDotNameLhs(node), preVisitorCb, postVisitorCb)
                 // visit(context, GetAstDotNameRhs(node), preVisitorCb, postVisitorCb)
             );
         }
         case AST_UNARY:
         {
-            return visit(context, GetAstUnaryOperand(node), preVisitorCb, postVisitorCb);
+            return RecursivelyVisitAstNode(context, GetAstUnaryOperand(node), preVisitorCb, postVisitorCb);
         }
         case AST_BINARY:
         {
             return (
-                visit(context, GetAstBinaryLtOperand(node), preVisitorCb, postVisitorCb) &&
-                visit(context, GetAstBinaryRtOperand(node), preVisitorCb, postVisitorCb)
+                RecursivelyVisitAstNode(context, GetAstBinaryLtOperand(node), preVisitorCb, postVisitorCb) &&
+                RecursivelyVisitAstNode(context, GetAstBinaryRtOperand(node), preVisitorCb, postVisitorCb)
             );
         }
         case AST_STMT_BIND:
         {
-            return visit(context, GetAstBindStmtRhs(node), preVisitorCb, postVisitorCb);
+            return RecursivelyVisitAstNode(context, GetAstBindStmtRhs(node), preVisitorCb, postVisitorCb);
         }
         case AST_STMT_CHECK:
         {
-            return visit(context, GetAstCheckStmtChecked(node), preVisitorCb, postVisitorCb);
+            return RecursivelyVisitAstNode(context, GetAstCheckStmtChecked(node), preVisitorCb, postVisitorCb);
         }
         case AST_CALL:
         {
-            if (!visit(context, GetAstCallLhs(node), preVisitorCb, postVisitorCb)) {
+            if (!RecursivelyVisitAstNode(context, GetAstCallLhs(node), preVisitorCb, postVisitorCb)) {
                 return 0;
             }
-            if (!visit(context, GetAstCallRhs(node), preVisitorCb, postVisitorCb)) {
+            if (!RecursivelyVisitAstNode(context, GetAstCallRhs(node), preVisitorCb, postVisitorCb)) {
                 return 0;
             }
             return 1;
@@ -729,7 +729,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             int patternLength = GetAstPatternLength(node);
             for (int i = 0; i < patternLength; i++) {
                 AstNode* patternField = GetAstPatternFieldAt(node, i);
-                if (!visit(context, patternField, preVisitorCb, postVisitorCb)) {
+                if (!RecursivelyVisitAstNode(context, patternField, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }
@@ -740,7 +740,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             int tupleLength = GetAstTupleLength(node);
             for (int i = 0; i < tupleLength; i++) {
                 AstNode* tupleField = GetAstTupleItemAt(node, i);
-                if (!visit(context, tupleField, preVisitorCb, postVisitorCb)) {
+                if (!RecursivelyVisitAstNode(context, tupleField, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }
@@ -751,7 +751,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             size_t structLength = GetAstTupleLength(node);
             for (size_t index = 0; index < structLength; index++) {
                 AstNode* structField = GetAstStructFieldAt(node, index);
-                if (!visit(context, structField, preVisitorCb, postVisitorCb)) {
+                if (!RecursivelyVisitAstNode(context, structField, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }
@@ -762,12 +762,12 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             size_t chainLength = GetAstChainPrefixLength(node);
             for (size_t index = 0; index < chainLength; index++) {
                 AstNode* chainStmt = GetAstChainPrefixStmtAt(node, index);
-                if (!visit(context, chainStmt, preVisitorCb, postVisitorCb)) {
+                if (!RecursivelyVisitAstNode(context, chainStmt, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }
             AstNode* result = GetAstChainResult(node);
-            if (result && !visit(context, result, preVisitorCb, postVisitorCb)) {
+            if (result && !RecursivelyVisitAstNode(context, result, preVisitorCb, postVisitorCb)) {
                 return 0;
             }
             return 1;
@@ -776,7 +776,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         {
             AstNode* pattern = GetAstModuleFieldPattern(node);
             if (pattern) {
-                if (!visit(context, pattern, preVisitorCb, postVisitorCb)) {
+                if (!RecursivelyVisitAstNode(context, pattern, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }
@@ -788,7 +788,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         case AST_FIELD__TUPLE_ITEM:
         {
             AstNode* rhs = GetAstFieldRhs(node);
-            if (rhs && !visit(context, rhs, preVisitorCb, postVisitorCb)) {
+            if (rhs && !RecursivelyVisitAstNode(context, rhs, preVisitorCb, postVisitorCb)) {
                 return 0;
             }
             return 1;
@@ -798,7 +798,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             int moduleLength = GetAstModuleLength(node);
             for (int i = 0; i < moduleLength; i++) {
                 AstNode* moduleField = GetAstModuleFieldAt(node, i);
-                if (!visit(context, moduleField, preVisitorCb, postVisitorCb)) {
+                if (!RecursivelyVisitAstNode(context, moduleField, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }
@@ -834,7 +834,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
     }
 }
 
-int visit(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb) {
+int RecursivelyVisitAstNode(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb) {
     if (preVisitorCb) {
         if (!preVisitorCb(context, node)) {
             return 0;

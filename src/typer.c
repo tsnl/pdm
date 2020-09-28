@@ -1303,17 +1303,50 @@ Type* CreateMetatype(Typer* typer, char const* format, ...) {
 // Getters:
 //
 
-TypeKind GetTypeKind(Type* typeP) {
-    return typeP->kind;
+Type* GetConcreteType(Type* type) {
+    if (type->kind == T_META) {
+        return type->as.Meta.soln;
+    } else {
+        return type;
+    }
 }
-IntWidth GetIntTypeWidth(Type* typeP) {
-    return typeP->as.Int_width;
+TypeKind GetTypeKind(Type* type) {
+    return type->kind;
 }
-FloatWidth GetFloatTypeWidth(Type* typeP) {
-    return typeP->as.Float_width;
+IntWidth GetIntTypeWidth(Type* type) {
+    return type->as.Int_width;
 }
-Type* GetPtrTypePointee(Type* typeP) {
-    return typeP->as.Ptr_pointee;
+int GetIntTypeWidthInBits(Type* type) {
+    assert(type->kind == T_INT);
+    switch (type->as.Int_width)
+    {
+        case INT_8: return 8;
+        case INT_16: return 16;
+        case INT_32: return 32;
+        case INT_64: return 64;
+        default: return 0;
+    }
+}
+FloatWidth GetFloatTypeWidth(Type* type) {
+    return type->as.Float_width;
+}
+int GetFloatTypeWidthInBits(Type* type) {
+    assert(type->kind == T_FLOAT);
+    switch (type->as.Float_width)
+    {
+        case FLOAT_32: return 32;
+        case FLOAT_64: return 64;
+        default: return 0;
+    }
+}
+Type* GetPtrTypePointee(Type* type) {
+    return type->as.Ptr_pointee;
+}
+Type* GetFuncTypeDomain(Type* func) {
+    return func->as.Func.domain;
+}
+Type* GetFuncTypeImage(Type* func) {
+    return func->as.Func.image;
 }
 int GetTupleTypeLength(Type* type) {
     return type->as.Compound_atn->depth;
@@ -1321,9 +1354,18 @@ int GetTupleTypeLength(Type* type) {
 int GetUnionTypeLength(Type* type) {
     return type->as.Compound_atn->depth;
 }
+void MapCompoundType(Typer* typer, Type* compound, FieldCB cb, void* sb) {
+    if (compound != NULL && compound->as.Compound_atn != &typer->anyATN) {
+        MapCompoundType(typer, compound, cb, sb);
+        AdtTrieNode* node = compound->as.Compound_atn;
+        AdtTrieEdge* edge = &node->parent->edgesSb[node->parentEdgeIndex];
+        cb(typer,sb,edge->name,edge->type);
+    }
 
-char const* GetMetatypeName(Type* typeP) {
-    return typeP->as.Meta.name;
+}
+
+char const* GetMetatypeName(Type* type) {
+    return type->as.Meta.name;
 }
 
 //
@@ -1331,7 +1373,7 @@ char const* GetMetatypeName(Type* typeP) {
 //
 
 void TypeNode(Typer* typer, AstNode* node) {
-    visit(typer, node, NULL, typer_post);
+    RecursivelyVisitAstNode(typer, node, NULL, typer_post);
 }
 
 //

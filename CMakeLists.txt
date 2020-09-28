@@ -34,8 +34,8 @@ add_definitions(${LLVM_DEFINITIONS})
 add_executable(pc
     src/ast.c
     src/ast.h
-    src/cgen.c
-    src/cgen.h
+    src/llvm-emitter.c
+    src/llvm-emitter.h
     src/checker.c
     src/checker.h
     src/code-printer.c

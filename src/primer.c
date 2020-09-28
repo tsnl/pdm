@@ -170,6 +170,7 @@ Scope* newRootScope(Typer* typer) {
     root = newScope(root, Symbol("u16"), GetIntType(typer,INT_16), ASTCTX_TYPING);
     root = newScope(root, Symbol("u32"), GetIntType(typer,INT_32), ASTCTX_TYPING);
     root = newScope(root, Symbol("u64"), GetIntType(typer,INT_64), ASTCTX_TYPING);
+    root = newScope(root, Symbol("u128"), GetIntType(typer,INT_128), ASTCTX_TYPING);
 
     root = newScope(root, Symbol("f32"), GetFloatType(typer,FLOAT_32), ASTCTX_TYPING);
     root = newScope(root, Symbol("f64"), GetFloatType(typer,FLOAT_64), ASTCTX_TYPING);
@@ -338,7 +339,7 @@ int PrimeModule(Primer* primer, AstNode* module) {
     }
     
     // visiting the AST:
-    if (!visit(primer, module, primer_pre, primer_post)) {
+    if (!RecursivelyVisitAstNode(primer, module, primer_pre, primer_post)) {
         return 0;
     }
     popFrame(primer);

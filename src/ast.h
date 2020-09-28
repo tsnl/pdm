@@ -171,7 +171,7 @@ void SetAstIdScopeP(AstNode* node, void* scope);
 // - `context` can be used to propagate contextual information as the visitor recurses.
 typedef int(*VisitorCb)(void* context, AstNode* node);
 
-int visit(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb);
+int RecursivelyVisitAstNode(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb);
 
 //
 // Reflection:

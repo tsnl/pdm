@@ -33,6 +33,7 @@ enum IntWidth {
     INT_16,
     INT_32,
     INT_64,
+    INT_128,
     __INT_COUNT
 };
 enum FloatWidth {
@@ -42,6 +43,7 @@ enum FloatWidth {
 };
 
 typedef struct Type Type;
+typedef void(*FieldCB)(Typer* typer, void* sb, SymbolID name, Type* type);
 typedef struct InputTypeFieldNode InputTypeFieldNode;
 typedef struct InputTypeFieldNode InputTypeFieldList;
 
@@ -88,12 +90,18 @@ Type* CreateMetatype(Typer* typer, char const* format, ...);
 // Getter methods for type info:
 //
 
+Type* GetConcreteType(Type* type);
 TypeKind GetTypeKind(Type* typeP);
 IntWidth GetIntTypeWidth(Type* typeP);
+int GetIntTypeWidthInBits(Type* type);
 FloatWidth GetFloatTypeWidth(Type* typeP);
+int GetFloatTypeWidthInBits(Type* type);
 Type* GetPtrTypePointee(Type* typeP);
+Type* GetFuncTypeDomain(Type* func);
+Type* GetFuncTypeImage(Type* func);
 int GetTupleTypeLength(Type* type);
 int GetUnionTypeLength(Type* type);
+void MapCompoundType(Typer* typer, Type* compound, FieldCB cb, void* sb);
 
 char const* GetMetatypeName(Type* typeP);
 
