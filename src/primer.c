@@ -79,15 +79,16 @@ Primer* createPrimer(Typer* typer) {
     return primer;
 }
 Scope* pushFrame(Primer* primer, Scope* optNewScope, AstContext ctx) {
+    Scope* topScope = topFrameScope(primer);
     if (optNewScope == NULL) {
-        optNewScope = topFrameScope(primer);
-    } else {
-        int ok = (optNewScope->parent == topFrameScope(primer));
+        optNewScope = topScope;
+    } else if (topScope) {
+        int ok = (optNewScope->parent == topScope);
         if (!ok) {
             if (DEBUG) {
-                printf("primer: Invalid scope pushed; parent must be the top frame scope at push-time.\n");
+                printf("!!- Invalid scope pushed in primer; parent must be the top frame scope at push-time.\n");
             } else {
-                assert(0 && "primer: Invalid scope pushed; parent must be the top frame scope at push-time.");
+                assert(0 && "primer: invalid scope pushed; parent must be the top frame scope at push-time.");
             }
             return NULL;
         }

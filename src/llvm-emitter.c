@@ -268,6 +268,36 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             }
             return NULL;
         }
+        case AST_MODULE:
+        {
+            // todo: store an integer ID mapping modules
+            if (DEBUG) {
+                printf("!!- NotImplemented: AST_MODULE in `emitExpr`\n");
+            } else {
+                assert(0 && "NotImplemented: AST_MODULE in `emitExpr`");
+            }
+            return NULL;
+        }
+        case AST_TUPLE:
+        {
+            // todo: store an integer ID mapping modules
+            if (DEBUG) {
+                printf("!!- NotImplemented: handler for AST_TUPLE in `emitExpr`\n");
+            } else {
+                assert(0 && "NotImplemented: handler for AST_TUPLE in `emitExpr`");
+            }
+            return NULL;
+        }
+        case AST_STRUCT:
+        {
+            // todo: store an integer ID mapping modules
+            if (DEBUG) {
+                printf("!!- NotImplemented: handler for AST_STRUCT in `emitExpr`\n");
+            } else {
+                assert(0 && "NotImplemented: handler for AST_STRUCT in `emitExpr`");
+            }
+            return NULL;
+        }
         default:
         {
             if (DEBUG) {
@@ -289,7 +319,7 @@ int emitLlvmModulePrefix_preVisitor(void* rawEmitter, AstNode* node) {
             // todo: add captured arguments.
 
             AstNode* pattern = GetAstLambdaPattern(node);
-            // AstNode* body = GetAstLambdaBody(node);
+            AstNode* body = GetAstLambdaBody(node);
             int patternLength = GetAstPatternLength(pattern);
 
             Type* funcType = GetAstNodeType(node);
@@ -317,17 +347,29 @@ int emitLlvmModulePrefix_preVisitor(void* rawEmitter, AstNode* node) {
                 funcLlvmType = NULL;
             }
 
-            // storing the defined LLVM function reference:
-            LLVMValueRef funcLlvmValue = LLVMAddFunction(emitter->llvmModule,"__anonymous_function__",funcLlvmType);
-            SetAstNodeLlvmRepr(node,funcLlvmValue);
-
+            // adding the defined LLVM function reference:
+            LLVMValueRef funcLlvmExpr = LLVMAddFunction(emitter->llvmModule,"__anonymous_function__",funcLlvmType);
+            
             // storing formal argument references:
             for (int index = 0; index < patternLength; index++) {
                 AstNode* patternArg = GetAstPatternFieldAt(pattern,index);
-                LLVMValueRef llvmArg = LLVMGetParam(funcLlvmValue,index);
+                LLVMValueRef llvmArg = LLVMGetParam(funcLlvmExpr,index);
                 SetAstNodeLlvmRepr(patternArg,llvmArg);
             }
-        
+
+            // emitting the body or void:
+            LLVMBasicBlockRef entry = LLVMAppendBasicBlock(funcLlvmExpr,"entry");
+            LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entry);
+            if (GetTypeKind(GetAstNodeType(body)) == T_UNIT) {
+                LLVMBuildRet(emitter->llvmBuilder,NULL);
+            } else {
+                LLVMValueRef bodyLlvmExpr = emitExpr(emitter,body);
+                LLVMBuildRet(emitter->llvmBuilder,bodyLlvmExpr);
+            }
+            
+            // storing the LLVM function reference on the Lambda:
+            SetAstNodeLlvmRepr(node,funcLlvmExpr);
+
             break;
         }
         default:
@@ -337,13 +379,38 @@ int emitLlvmModulePrefix_preVisitor(void* rawEmitter, AstNode* node) {
     }
     return 1;
 }
-int emitLlvmModule_preVisitor(void* emitter, AstNode* node) {
-    // todo: implement 'emitLlvmModule_preVisitor' [using 'emitType']
-    return 0;
-}
-int emitLlvmModule_postVisitor(void* emitter, AstNode* node) {
-    // todo: implement 'emitLlvmModule_postVisitor' [using 'emitType']
-    return 0;
+int emitLlvmModule_preVisitor(void* rawEmitter, AstNode* node) {
+    Emitter* emitter = rawEmitter;
+    AstKind nodeKind = GetAstNodeKind(node);
+    switch (nodeKind) {
+        case AST_FIELD__MODULE_ITEM:
+        {
+            AstNode* rhs = GetAstFieldRhs(node);
+            SetAstNodeLlvmRepr(node,emitExpr(emitter,rhs));
+            break;
+        }
+        case AST_UNIT:
+        case AST_LITERAL_FLOAT:
+        case AST_LITERAL_INT:
+        case AST_LITERAL_STRING:
+        case AST_LAMBDA:
+        case AST_STRUCT:
+        case AST_TUPLE:
+        case AST_UNARY:
+        case AST_BINARY:
+        case AST_CALL:
+        case AST_PAREN:
+        {
+            AstNode* expr = node;
+            emitExpr(emitter,expr);
+        }
+        default:
+        {
+            // do nothing.
+            break;
+        }
+    }
+    return 1;
 }
 
 //
@@ -352,7 +419,12 @@ int emitLlvmModule_postVisitor(void* emitter, AstNode* node) {
 
 int EmitLlvmModule(Typer* typer, AstNode* module) {
     Emitter emitter = newEmitter(typer,module,"testmodule");
-    int result = RecursivelyVisitAstNode(&emitter, module, emitLlvmModule_preVisitor, emitLlvmModule_postVisitor);
+    int result = RecursivelyVisitAstNode(&emitter, module, emitLlvmModule_preVisitor, NULL);
+    
+    LLVMVerifierFailureAction failureAction = (DEBUG ? LLVMPrintMessageAction : LLVMReturnStatusAction);
+    char* errorMessage = NULL;
+    result = LLVMVerifyModule(emitter.llvmModule,failureAction,&errorMessage) && result;
+    // todo: PostFeedback from LLVMVerifyModule
     return result;
 }
 
