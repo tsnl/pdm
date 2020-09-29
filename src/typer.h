@@ -14,16 +14,20 @@ typedef enum FloatWidth FloatWidth;
 typedef enum TypeKind TypeKind;
 
 enum TypeKind {
+    // concrete:
     T_ANY,
     T_UNIT,
     T_INT,
     T_FLOAT,
     T_PTR,
-    T_META,
     T_FUNC,
     T_TUPLE, T_UNION,
     T_TYPEFUNC,
     T_MODULE,
+
+    // abstract:
+    T_META,
+    
     __T_COUNT,
     __T_NONE
 };
@@ -67,6 +71,9 @@ struct TyperCfg {
     size_t maxModuleCount;
     size_t maxStructCount;
     size_t maxUnionCount;
+    size_t maxUnaryIntrinsicCount;
+    size_t maxBinaryIntrinsicCount;
+    size_t maxPhiCount;
 };
 TyperCfg CreateDefaultTyperCfg(void);
 Typer* CreateTyper(TyperCfg config);
@@ -83,6 +90,9 @@ Type* GetFuncType(Typer* typer, Type* domain, Type* image);
 Type* GetTypefuncType(Typer* typer, Type* arg, Type* body);
 Type* GetTupleType(Typer* typer, InputTypeFieldList const* inputFieldList);
 Type* GetUnionType(Typer* typer, InputTypeFieldList const* inputFieldList);
+Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* arg);
+Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* ltArg, Type* rtArg);
+Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse);
 
 Type* CreateMetatype(Typer* typer, char const* format, ...);
 
@@ -126,3 +136,5 @@ void SetTypeLlvmRepr(Type* type, void* repr);
 void PrintTyper(Typer* typer);
 
 #endif  // INCLUDED_TYPER_H
+
+// todo: implement T_TEMPLATE

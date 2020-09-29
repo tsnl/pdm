@@ -25,6 +25,8 @@ typedef struct MetaInfo MetaInfo;
 typedef struct FuncInfo FuncInfo;
 typedef struct TypefuncInfo TypefuncInfo;
 typedef struct ModuleInfo ModuleInfo;
+typedef struct IntrinsicInfo IntrinsicInfo;
+typedef struct PhiInfo PhiInfo;
 
 typedef struct SubOrSupTypeRec SubOrSupTypeRec;
 
@@ -80,6 +82,16 @@ struct TypefuncInfo {
 struct ModuleInfo {
     // todo: implement type ModuleInfo
 };
+struct IntrinsicInfo {
+    int operator;
+    Type* t1;
+    Type* t2;
+};
+struct PhiInfo {
+    Type* cond;
+    Type* ifTrue;
+    Type* ifFalse;
+};
 struct Type {
     TypeKind kind;
     union {
@@ -90,6 +102,8 @@ struct Type {
         FuncInfo Func;
         TypefuncInfo Typefunc;
         ModuleInfo Module;
+        IntrinsicInfo Intrinsic;
+        PhiInfo Phi;
         AdtTrieNode* Compound_atn;
     } as;
     void* llvmRepr;
@@ -110,6 +124,9 @@ struct Typer {
     TypeBuf moduleTypeBuf;
     TypeBuf tupleTypeBuf;
     TypeBuf unionTypeBuf;
+    TypeBuf unaryIntrinsicTypeBuf;
+    TypeBuf binaryIntrinsicTypeBuf;
+    TypeBuf phiTypeBuf;
 
     AdtTrieNode anyATN;
 };
@@ -160,14 +177,18 @@ static void printType(Typer* typer, Type* type);
 static void printTypeLn(Typer* typer, Type* type);
 
 TyperCfg createDefaultTyperCfg(void) {
+    int const chunkSize = MAX_AST_NODE_COUNT / 8;
     return (TyperCfg) {
-        .maxMetavarCount = MAX_AST_NODE_COUNT,
-        .maxPtrCount = MAX_AST_NODE_COUNT,
-        .maxTypefuncCount = MAX_AST_NODE_COUNT,
-        .maxFuncCount = MAX_AST_NODE_COUNT,
-        .maxModuleCount = MAX_AST_NODE_COUNT,
-        .maxStructCount = MAX_AST_NODE_COUNT,
-        .maxUnionCount = MAX_AST_NODE_COUNT
+        .maxMetavarCount = chunkSize,
+        .maxPtrCount = chunkSize,
+        .maxTypefuncCount = chunkSize,
+        .maxFuncCount = chunkSize,
+        .maxModuleCount = chunkSize,
+        .maxStructCount = chunkSize,
+        .maxUnionCount = chunkSize,
+        .maxUnaryIntrinsicCount = chunkSize,
+        .maxBinaryIntrinsicCount = chunkSize,
+        .maxPhiCount = chunkSize
     };
 }
 Typer* createTyper(TyperCfg config) {
@@ -179,12 +200,16 @@ Typer* createTyper(TyperCfg config) {
     typer->unitType = (Type) {T_UNIT, {}, NULL};
     typer->floatType[FLOAT_32] = (Type) {T_FLOAT, {.Float_width = FLOAT_32}, NULL};
     typer->floatType[FLOAT_64] = (Type) {T_FLOAT, {.Float_width = FLOAT_64}, NULL};
+    typer->intType[INT_1] = (Type) {T_INT, {.Int_width = INT_1}, NULL};
     typer->intType[INT_8] = (Type) {T_INT, {.Int_width = INT_8}, NULL};
     typer->intType[INT_16] = (Type) {T_INT, {.Int_width = INT_16}, NULL};
     typer->intType[INT_32] = (Type) {T_INT, {.Int_width = INT_32}, NULL};
     typer->intType[INT_64] = (Type) {T_INT, {.Int_width = INT_64}, NULL};
     typer->intType[INT_64] = (Type) {T_INT, {.Int_width = INT_64}, NULL};
+    typer->intType[INT_128] = (Type) {T_INT, {.Int_width = INT_128}, NULL};
     
+    // todo: establish subtyping chain between primitive numbers
+
     typer->metatypeBuf = createTypeBuf("metatypeBuf", typer->backupCfg.maxMetavarCount);
     typer->ptrTypeBuf = createTypeBuf("ptrTypeBuf", typer->backupCfg.maxPtrCount);
     typer->funcTypeBuf = createTypeBuf("funcTypeBuf", typer->backupCfg.maxFuncCount);
@@ -192,6 +217,9 @@ Typer* createTyper(TyperCfg config) {
     typer->moduleTypeBuf = createTypeBuf("moduleTypeBuf", typer->backupCfg.maxModuleCount);
     typer->tupleTypeBuf = createTypeBuf("structTypeBuf", typer->backupCfg.maxStructCount);
     typer->unionTypeBuf = createTypeBuf("unionTypeBuf", typer->backupCfg.maxUnionCount);
+    typer->unaryIntrinsicTypeBuf = createTypeBuf("unaryIntrinsicTypeBuf", typer->backupCfg.maxUnaryIntrinsicCount);
+    typer->binaryIntrinsicTypeBuf = createTypeBuf("binaryIntrinsicTypeBuf", typer->backupCfg.maxBinaryIntrinsicCount);
+    typer->phiTypeBuf = createTypeBuf("phiTypeBuf", typer->backupCfg.maxPhiCount);
     
     typer->anyATN = (AdtTrieNode) {NULL,NULL,&typer->anyType,-1,0};
     // todo: singleton structs and tuples / unions == identity operation (!!)
@@ -348,6 +376,7 @@ int isSubATN(AdtTrieNode* sup, AdtTrieNode* sub) {
 
 int typer_post(void* rawTyper, AstNode* node) {
     Typer* typer = rawTyper;
+    Loc nodeLoc = GetAstNodeLoc(node);
     switch (GetAstNodeKind(node)) {
         case AST_UNIT:
         {
@@ -533,12 +562,34 @@ int typer_post(void* rawTyper, AstNode* node) {
         }
         case AST_UNARY:
         {
-            // todo: TypeNode for unary function call
+            AstUnaryOperator operator = GetAstUnaryOperator(node);
+            AstNode* arg = GetAstUnaryOperand(node);
+            Type* argType = GetAstNodeType(arg);
+            Type* type = GetUnaryIntrinsicType(typer,nodeLoc,operator,argType);
+            SetAstNodeType(node,type);
             break;
         }
         case AST_BINARY:
         {
-            // todo: TypeNode for binary function call
+            AstBinaryOperator binop = GetAstBinaryOperator(node);
+            AstNode* ltArg = GetAstBinaryLtOperand(node);
+            AstNode* rtArg = GetAstBinaryRtOperand(node);
+            Type* ltArgType = GetAstNodeType(ltArg);
+            Type* rtArgType = GetAstNodeType(rtArg);
+            Type* type = GetBinaryIntrinsicType(typer,nodeLoc,binop,ltArgType,rtArgType);
+            SetAstNodeType(node,type);
+            break;
+        }
+        case AST_ITE:
+        {
+            AstNode* cond = GetAstIteCond(node);
+            AstNode* ifTrue = GetAstIteIfTrue(node);
+            AstNode* ifFalse = GetAstIteIfFalse(node);
+            Type* condType = GetAstNodeType(cond);
+            Type* ifTrueType = GetAstNodeType(ifTrue);
+            Type* ifFalseType = ifFalse ? GetAstNodeType(ifFalse) : GetUnitType(typer);
+            Type* type = GetPhiType(typer,nodeLoc,condType,ifTrueType,ifFalseType);
+            SetAstNodeType(node,type);
             break;
         }
         case AST_CALL:
@@ -546,7 +597,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             Loc loc = GetAstNodeLoc(node);
             AstNode* lhs = GetAstCallLhs(node);
             AstNode* rhs = GetAstCallRhs(node);
-            Type* ret = CreateMetatype(typer, "inret");
+            Type* ret = CreateMetatype(typer, "in-ret");
             
             Type* calledFuncType = GetFuncType(typer, GetAstNodeType(rhs),ret);
             requireSubtype(loc, GetAstNodeType(lhs), calledFuncType);
@@ -624,9 +675,9 @@ int requireSubtype(Loc loc, Type* sup, Type* sub) {
         default:
         {
             if (DEBUG) {
-                printf("!!- Not implemented: typecheck for type kind <?>.\n");
+                printf("!!- Not implemented: requireSubtype for type kind <?>.\n");
             } else {
-                assert(0 && "Not implemented: typecheck for type kind <?>.");
+                assert(0 && "Not implemented: requireSubtype for type kind <?>.");
             }
             break;
         }
@@ -1154,7 +1205,7 @@ void printType(Typer* typer, Type* type) {
                 printf("meta %s", type->as.Meta.name);
             }
             if (type->as.Meta.soln) {
-                printf(" =");
+                printf(" soln:");
                 printType(typer, type->as.Meta.soln);
             }
             break;
@@ -1286,6 +1337,119 @@ Type* GetUnionType(Typer* typer, InputTypeFieldList const* inputFieldList) {
     unionType->llvmRepr = NULL;
     return unionType;
 }
+Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* arg) {
+    switch (op)
+    {
+        case UOP_GETREF:
+        {
+            return GetPtrType(typer,arg);
+        }
+        case UOP_DEREF:
+        {
+            Type* pointee = CreateMetatype(typer, "deref-pointee");
+            Type* derefedType = GetPtrType(typer,pointee);
+            if (requireSubtype(loc,arg,derefedType)) {
+                return derefedType;
+            } else {
+                return NULL;
+            }
+        }
+        case UOP_PLUS:
+        case UOP_MINUS:
+        {
+            // todo: check if int **or float**
+            if (requireSubtype(loc,GetIntType(typer,INT_128),arg)) {
+                return arg;
+            } else {
+                PostFeedback(FBK_ERROR, NULL, "Unary operator '+' invalid with non-int type.");
+                return NULL;
+            }
+        }
+        case UOP_NOT:
+        {
+            if (requireSubtype(loc,GetIntType(typer,INT_1),arg)) {
+                return arg;
+            } else {
+                PostFeedback(FBK_ERROR, NULL, "Unary operator 'not' invalid with non-boolean type.");
+                return NULL;
+            }
+        }
+        default:
+        {
+            if (DEBUG) {
+                printf("!!- NotImplemented: GetUnaryIntrinsicType for AstUnaryOperator <?>\n");
+            } else {
+                assert(0 && "NotImplemented: GetUnaryIntrinsicType for AstUnaryOperator <?>");
+            }
+            return NULL;
+        }
+    }
+}
+Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* ltArg, Type* rtArg) {
+    switch (op)
+    {
+        case BOP_LTHAN:
+        case BOP_GTHAN:
+        case BOP_LETHAN:
+        case BOP_GETHAN:
+        case BOP_EQUALS:
+        case BOP_NEQUALS:
+        {
+            // expect args to be of the same type:
+            if (requireSubtype(loc,ltArg,rtArg) && requireSubtype(loc,rtArg,ltArg)) {
+                return GetIntType(typer,INT_1);
+            } else {
+                return NULL;
+            }
+        }
+        case BOP_AND:
+        case BOP_XOR:
+        case BOP_OR:
+        {
+            // expect args to both be bool:
+            Type* boolType = GetIntType(typer,INT_1);
+            if (requireSubtype(loc,boolType,ltArg) && requireSubtype(loc,boolType,rtArg)) {
+                return boolType;
+            } else {
+                return NULL;
+            }
+        }
+        case BOP_MUL:
+        case BOP_DIV:
+        case BOP_REM:
+        case BOP_ADD:
+        case BOP_SUB:
+        {
+            // todo: implement arithmetic operations for floats as well as ints
+            // for now, expect args and result to be ints.
+            Type* intType = GetIntType(typer,INT_128);
+            if (requireSubtype(loc,intType,ltArg) && requireSubtype(loc,intType,rtArg)) {
+                return intType;
+            } else {
+                return NULL;
+            }
+        }
+        default:
+        {
+            if (DEBUG) {
+                printf("!!- NotImplemented: GetBinaryIntrinsicType for AstBinaryOperator <?>\n");
+            } else {
+                assert(0 && "NotImplemented: GetBinaryIntrinsicType for AstBinaryOperator <?>");
+            }
+            return NULL;
+        }
+    }
+}
+Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse) {
+    Type* boolType = GetIntType(typer,INT_1);
+    if (requireSubtype(loc,boolType,cond)) {
+        Type* outType = CreateMetatype(typer,"ite-result");
+        if (requireSubtype(loc,ifTrue,outType) && requireSubtype(loc,ifFalse,outType)) {
+            return outType;
+        }
+    }
+    return NULL;
+}
 
 Type* CreateMetatype(Typer* typer, char const* format, ...) {
     Type* metatype = pushTypeBuf(&typer->metatypeBuf);
@@ -1333,6 +1497,7 @@ int GetIntTypeWidthInBits(Type* type) {
     assert(type->kind == T_INT);
     switch (type->as.Int_width)
     {
+        case INT_1: return 1;
         case INT_8: return 8;
         case INT_16: return 16;
         case INT_32: return 32;

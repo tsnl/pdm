@@ -28,8 +28,14 @@ struct Emitter {
     AstNode* astModule;
     LLVMModuleRef llvmModule;
     LLVMBuilderRef llvmBuilder;
+
+    int currentLlvmFunctionStackCount;
+    LLVMValueRef* currentLlvmFunctionStackSB;
 };
 static Emitter newEmitter(Typer* typer, AstNode* astModule, char const* moduleName);
+static void pushLlvmFunctionToEmitterStack(Emitter* emitter, LLVMValueRef pushed);
+static void popLlvmFunctionFromEmitterStack(Emitter* emitter);
+static LLVMValueRef currentLlvmFunction(Emitter* emitter);
 static LLVMTypeRef emitType(Typer* emitter, Type* typerType);
 static LLVMTypeRef helpEmitType(Typer* emitter, Type* typerType);
 static LLVMValueRef emitExpr(Emitter* emitter, AstNode* expr);
@@ -43,7 +49,27 @@ Emitter newEmitter(Typer* typer, AstNode* astModule, char const* moduleName) {
     emitter.astModule = astModule;
     emitter.llvmModule = LLVMModuleCreateWithName(moduleName);
     emitter.llvmBuilder = LLVMCreateBuilder();
+    emitter.currentLlvmFunctionStackCount = 0;
+    emitter.currentLlvmFunctionStackSB = NULL;
     return emitter;
+}
+void pushLlvmFunctionToEmitterStack(Emitter* emitter, LLVMValueRef pushed) {
+    int index = (emitter->currentLlvmFunctionStackCount++);
+    int capacity = sb_count(emitter->currentLlvmFunctionStackSB);
+    if (index >= capacity) {
+        sb_push(emitter->currentLlvmFunctionStackSB,pushed);
+        assert(index < sb_count(emitter->currentLlvmFunctionStackSB) && "SB overflow error.");
+    } else {
+        emitter->currentLlvmFunctionStackSB[index] = pushed;
+    }
+}
+void popLlvmFunctionFromEmitterStack(Emitter* emitter) {
+    if (emitter->currentLlvmFunctionStackCount > 0) {
+        --emitter->currentLlvmFunctionStackCount;
+    }
+}
+LLVMValueRef currentLlvmFunction(Emitter* emitter) {
+    return emitter->currentLlvmFunctionStackSB[emitter->currentLlvmFunctionStackCount-1];
 }
 LLVMTypeRef emitType(Typer* typer, Type* typerType) {
     LLVMTypeRef llvmType;
@@ -70,6 +96,7 @@ LLVMTypeRef helpEmitType(Typer* typer, Type* typerType) {
             IntWidth intWidth = GetIntTypeWidth(concrete);
             switch (intWidth)
             {
+                case INT_1: return LLVMInt1Type();
                 case INT_8: return LLVMInt8Type();
                 case INT_16: return LLVMInt16Type();
                 case INT_32: return LLVMInt32Type();
@@ -320,6 +347,49 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             }
             return NULL;
         }
+        case AST_ITE:
+        {
+            // getting the ITE type:
+            Type* iteType = GetAstNodeType(expr);
+            LLVMTypeRef iteLlvmType = emitType(emitter->typer,iteType);
+            
+            // adding any basic blocks required:
+            LLVMValueRef func = currentLlvmFunction(emitter);
+            LLVMBasicBlockRef entryBlock = LLVMAppendBasicBlock(func, "ite-entry");
+            LLVMBasicBlockRef trueBlock = LLVMAppendBasicBlock(func, "ite-true");
+            LLVMBasicBlockRef falseBlock = LLVMAppendBasicBlock(func, "ite-false");
+            LLVMBasicBlockRef landingBlock = LLVMAppendBasicBlock(func, "ite-landing");
+
+            // computing cond, breaking in 'entry' to other blocks:
+            LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entryBlock);
+            AstNode* cond = GetAstIteCond(expr);
+            LLVMValueRef condLlvm = emitExpr(emitter,cond);
+            LLVMBuildCondBr(emitter->llvmBuilder,condLlvm,trueBlock,falseBlock);
+            
+            // populating 'ite-true':
+            LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entryBlock);
+            AstNode* ifTrue = GetAstIteIfTrue(expr);
+            LLVMValueRef valueIfTrue = NULL;
+            if (ifTrue) {
+                valueIfTrue = emitExpr(emitter,ifTrue);
+            }
+
+            // populating 'ite-false':
+            LLVMPositionBuilderAtEnd(emitter->llvmBuilder,falseBlock);
+            AstNode* ifFalse = GetAstIteIfFalse(expr);
+            LLVMValueRef valueIfFalse = NULL;
+            if (ifFalse) {
+                valueIfFalse = emitExpr(emitter,ifFalse);
+            }
+
+            // tying together these blocks with a 'phi' node and returning:
+            LLVMPositionBuilderAtEnd(emitter->llvmBuilder,landingBlock);
+            LLVMValueRef phi = LLVMBuildPhi(emitter->llvmBuilder, iteLlvmType, "ite-result");
+            LLVMValueRef phi_values[] = {valueIfTrue, valueIfFalse};
+            LLVMBasicBlockRef phi_blocks[] = {entryBlock, falseBlock};
+            LLVMAddIncoming(phi, phi_values, phi_blocks, 2);
+            return phi;
+        }
         default:
         {
             if (DEBUG) {
@@ -371,6 +441,9 @@ int emitLlvmModulePrefix_preVisitor(void* rawEmitter, AstNode* node) {
 
             // adding the defined LLVM function reference:
             LLVMValueRef funcLlvmExpr = LLVMAddFunction(emitter->llvmModule,"__anonymous_function__",funcLlvmType);
+
+            // pushing the LLVM function reference to the emitter stack:
+            pushLlvmFunctionToEmitterStack(emitter,funcLlvmExpr);
             
             // storing formal argument references:
             for (int index = 0; index < patternLength; index++) {
@@ -401,6 +474,23 @@ int emitLlvmModulePrefix_preVisitor(void* rawEmitter, AstNode* node) {
     }
     return 1;
 }
+int emitLlvmModulePrefix_postVisitor(void* rawEmitter, AstNode* node) {
+    Emitter* emitter = rawEmitter;
+    switch (GetAstNodeKind(node)) {
+        case AST_LAMBDA:
+        {
+            // popping the LLVM function reference from the emitter stack:
+            popLlvmFunctionFromEmitterStack(emitter);
+            break;
+        }
+        default:
+        {
+            // do nothing.
+            break;
+        }
+    }
+    return 1;
+}
 int emitLlvmModule_preVisitor(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     AstKind nodeKind = GetAstNodeKind(node);
@@ -424,7 +514,30 @@ int emitLlvmModule_preVisitor(void* rawEmitter, AstNode* node) {
         case AST_PAREN:
         {
             AstNode* expr = node;
-            emitExpr(emitter,expr);
+            LLVMValueRef llvmExpr = emitExpr(emitter,expr);
+
+            if (nodeKind == AST_LAMBDA) {
+                // pushing the LLVM function reference to the emitter stack:
+                pushLlvmFunctionToEmitterStack(emitter,llvmExpr);
+            }
+        }
+        default:
+        {
+            // do nothing.
+            break;
+        }
+    }
+    return 1;
+}
+int emitLlvmModule_postVisitor(void* rawEmitter, AstNode* node) {
+    Emitter* emitter = rawEmitter;
+    AstKind nodeKind = GetAstNodeKind(node);
+    switch (nodeKind) {
+        case AST_LAMBDA:
+        {
+            // popping the LLVM function reference from the emitter stack:
+            popLlvmFunctionFromEmitterStack(emitter);
+            break;
         }
         default:
         {
@@ -444,8 +557,8 @@ int EmitLlvmModule(Typer* typer, AstNode* module) {
 
     // we run 2 emitter passes:
     int result = 1;
-    result = RecursivelyVisitAstNode(&emitter, module, emitLlvmModulePrefix_preVisitor, NULL) && result;
-    result = RecursivelyVisitAstNode(&emitter, module, emitLlvmModule_preVisitor, NULL) && result;
+    result = RecursivelyVisitAstNode(&emitter, module, emitLlvmModulePrefix_preVisitor, emitLlvmModulePrefix_postVisitor) && result;
+    result = RecursivelyVisitAstNode(&emitter, module, emitLlvmModule_preVisitor, emitLlvmModule_postVisitor) && result;
     if (!result) {
         if (DEBUG) {
             printf("!!- Emission visitor failed.\n");
@@ -455,22 +568,23 @@ int EmitLlvmModule(Typer* typer, AstNode* module) {
 
     LLVMVerifierFailureAction failureAction = (DEBUG ? LLVMPrintMessageAction : LLVMReturnStatusAction);
     char* errorMessage = NULL;
-    result = LLVMVerifyModule(emitter.llvmModule,failureAction,&errorMessage) && result;
-    if (!result) {
-        if (DEBUG) {
-            char* text = LLVMPrintModuleToString(emitter.llvmModule);
-            printf("!!- LLVMVerifyModule failed with error message: '%s'\n\n%s", errorMessage,text);
-        }
-        return 0;
+    result = !LLVMVerifyModule(emitter.llvmModule,failureAction,&errorMessage) && result;
+    if (result) {
+        SetAstNodeLlvmRepr(module,emitter.llvmModule);
+
+        // todo: PostFeedback from LLVMVerifyModule
+        LLVMDisposeBuilder(emitter.llvmBuilder);
     }
 
-    SetAstNodeLlvmRepr(module,emitter.llvmModule);
-
-    // todo: PostFeedback from LLVMVerifyModule
-    LLVMDisposeBuilder(emitter.llvmBuilder);
+    if (DEBUG) {
+        char* text = LLVMPrintModuleToString(emitter.llvmModule);
+        printf("!!- LLVMVerifyModule %s with message: '%s'\n\n%s", (result ? "succeeded":"failed"), errorMessage,text);
+        LLVMDisposeMessage(text);
+    }
 
     return result;
 }
+
 
 // debug
 

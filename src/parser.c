@@ -409,6 +409,26 @@ static RawAstNode* tryParsePrimaryExpr(Parser* p) {
 
             return result;
         }
+        case TK_KW_IF:
+        {
+            if (!expect(p, TK_KW_IF, "'if'")) {
+                return NULL;
+            }
+
+            RawAstNode* cond = parseExpr(p);
+            
+            if (!expect(p,TK_KW_THEN,"'then'")) {
+                return NULL;
+            }
+            RawAstNode* ifTrue = parseExpr(p);
+            
+            RawAstNode* ifFalse = NULL;
+            if (match(p,TK_KW_ELSE)) {
+                ifFalse = parseExpr(p);
+            }
+            
+            return CreateAstIte(loc,cond,ifTrue,ifFalse);
+        }
         default: 
         { 
             return NULL; 

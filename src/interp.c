@@ -107,7 +107,7 @@ int InterpTypecheckModules(Interp* interp) {
     return Typecheck(interp->typer);
 }
 int InterpCompile(Interp* interp) {
-    int result = 0;
+    int result = 1;
     int loadedSourceCount = sb_count(interp->loadedSourceSb);
     for (int i = 0; i < loadedSourceCount; i++) {
         LoadedSource loadedSource = interp->loadedSourceSb[i];

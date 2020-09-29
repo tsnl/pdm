@@ -277,6 +277,19 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintText(cp, GetSymbolText(GetAstDotNameRhs(node)));
             break;
         }
+        case AST_ITE:
+        {
+            PrintText(cp, "if ");
+            PrintNode(cp, GetAstIteCond(node));
+            PrintText(cp, " then ");
+            PrintNode(cp, GetAstIteIfTrue(node));
+            AstNode* ifFalse = GetAstIteIfFalse(node);
+            if (ifFalse) {
+                PrintText(cp, " else ");
+                PrintNode(cp, ifFalse);
+            }
+            break;
+        }
         default:
         {
             PrintText(cp, "?");
