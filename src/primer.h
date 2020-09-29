@@ -7,6 +7,20 @@
 typedef struct Primer Primer;
 typedef struct Scope Scope;
 typedef struct Scope Defn;
+typedef struct Frame Frame;
+
+struct Scope {
+    Scope* parent;
+    SymbolID defnID;
+    AstNode* defnAstNode;
+    AstContext context;
+    void* type;
+};
+struct Frame {
+    AstContext context;
+    Scope* begScopeP;
+    Scope* endScopeP;
+};
 
 Primer* CreatePrimer(void* typer);
 int PrimeModule(Primer* primer, AstNode* node);

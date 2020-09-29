@@ -605,6 +605,12 @@ int typer_post(void* rawTyper, AstNode* node) {
             SetAstNodeType(node,ret);
             break;
         }
+        case AST_PAREN:
+        {
+            AstNode* itNode = GetAstParenItem(node);
+            Type* itType = GetAstNodeType(itNode);
+            SetAstNodeType(node,itType);
+        }
         default:
         {
             if (DEBUG) {

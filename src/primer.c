@@ -15,8 +15,6 @@
 // typing/unification after analysis.
 // Crucially, each context contains at most *one* definition.
 
-typedef struct Frame Frame;
-
 struct Primer {
     Scope* root;
 
@@ -26,20 +24,6 @@ struct Primer {
     // new scopes can extend previous ones, and are organized into 'frames' stored in this stack:
     Frame* frameStackSB;
     int frameStackCount;
-};
-
-struct Scope {
-    Scope* parent;
-    SymbolID defnID;
-    AstNode* defnAstNode;
-    AstContext context;
-    void* type;
-};
-
-struct Frame {
-    AstContext context;
-    Scope* begScopeP;
-    Scope* endScopeP;
 };
 
 size_t allocatedPrimersCount = 0;

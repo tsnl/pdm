@@ -3,13 +3,19 @@ PI :: 3.14159;
 PO :: 3;
 PM :: 0x42;
 
-f1 :: [x: u64] {
-    if x == 0 then {
+greaterThan3 :: [c: u64] {
+    if 3 < c then {
         1
     } else {
-        PI
+        0
     }
 };
-f2 :: [y: f64] {
-    y
+main :: [x: u64] {
+    n = 42;
+    # if greaterThan3 n then {
+    if 3 < n then {
+        n
+    } else {
+        0
+    }
 };

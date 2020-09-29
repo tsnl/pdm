@@ -272,13 +272,130 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
         }
         case AST_UNARY:
         {
-            // todo: emitExpr for AST_UNARY
-            return NULL;
+            AstUnaryOperator op = GetAstUnaryOperator(expr);
+            AstNode* arg = GetAstUnaryOperand(expr);
+            LLVMValueRef llvmArg = emitExpr(emitter,arg);
+            switch (op)
+            {
+                case UOP_GETREF:
+                case UOP_DEREF:
+                {
+                    // todo: implement LLVM emitter for getref, deref in helpEmitExpr
+                    if (DEBUG) {
+                        printf("!!- NotImplemented: AST_UNARY for helpEmitExpr.\n");
+                    } else {
+                        assert(0 && "NotImplemented: AST_UNARY for helpEmitExpr");
+                    }
+                    break;
+                }
+                case UOP_MINUS:
+                {
+                    // todo: update UOP_MINUS in helpEmitExpr to support float as well as int
+                    return LLVMBuildNeg(emitter->llvmBuilder,llvmArg,NULL);
+                }
+                case UOP_PLUS:
+                {
+                    // fixme: should this UOP_PLUS emitter be a little more rigorous?
+                    return llvmArg;
+                }
+                case UOP_NOT:
+                {
+                    return LLVMBuildNot(emitter->llvmBuilder,llvmArg,NULL);
+                }
+                default:
+                {
+                    if (DEBUG) {
+                        printf("!!- NotImplemented: AST_UNARY in helpEmitExpr for UOP_?\n");
+                    } else {
+                        assert(0 && "NotImplemented: AST_UNARY in helpEmitExpr for UOP_?");
+                    }
+                    return NULL;
+                }
+            }
         }
         case AST_BINARY:
         {
-            // todo: emitExpr for AST_BINARY
-            return NULL;
+            // todo: binary operators only support integers for now.
+            AstBinaryOperator op = GetAstBinaryOperator(expr);
+            AstNode* ltArg = GetAstBinaryLtOperand(expr);
+            AstNode* rtArg = GetAstBinaryRtOperand(expr);
+            LLVMValueRef llvmLtArg = emitExpr(emitter,ltArg);
+            LLVMValueRef llvmRtArg = emitExpr(emitter,rtArg);
+
+            switch (op)
+            {
+                case BOP_MUL:
+                {
+                    return LLVMBuildMul(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                }
+                case BOP_DIV:
+                {
+                    return LLVMBuildUDiv(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                }
+                case BOP_REM:
+                {
+                    return LLVMBuildURem(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                }
+                case BOP_ADD:
+                {
+                    return LLVMBuildAdd(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                }
+                case BOP_SUB:
+                {
+                    return LLVMBuildSub(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                }
+                case BOP_AND:
+                {
+                    return LLVMBuildAnd(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                }
+                case BOP_XOR:
+                {
+                    return LLVMBuildXor(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                }
+                case BOP_OR:
+                {
+                    return LLVMBuildOr(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                }
+                case BOP_LTHAN:
+                {
+                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntULT,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                }
+                case BOP_GTHAN:
+                {
+                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntUGT,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                }
+                case BOP_LETHAN:
+                {
+                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntULE,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                }
+                case BOP_GETHAN:
+                {
+                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntUGE,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                }
+                case BOP_EQUALS:
+                {
+                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntEQ,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                }
+                case BOP_NEQUALS:
+                {
+                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntNE,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                }
+                default:
+                {
+                    if (DEBUG) {
+                        printf("!!- NotImplemented: AST_BINARY in helpEmitExpr for BOP_?\n");
+                    } else {
+                        assert(0 && "NotImplemented: AST_BINARY in helpEmitExpr for BOP_?");
+                    }
+                    return NULL;
+                }
+            }
         }
         case AST_PAREN:
         {
