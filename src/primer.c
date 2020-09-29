@@ -168,6 +168,7 @@ inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn
 Scope* newRootScope(Typer* typer) {
     Scope* root = NULL;
     
+    root = newScope(root, Symbol("u1"), GetIntType(typer,INT_1), NULL, ASTCTX_TYPING);
     root = newScope(root, Symbol("u8"), GetIntType(typer,INT_8), NULL, ASTCTX_TYPING);
     root = newScope(root, Symbol("u16"), GetIntType(typer,INT_16), NULL, ASTCTX_TYPING);
     root = newScope(root, Symbol("u32"), GetIntType(typer,INT_32), NULL, ASTCTX_TYPING);

@@ -22,6 +22,9 @@
 // See Eli Bendersky's Python implementation of the LLVM Kaleidoscope demo:
 // - https://github.com/eliben/pykaleidoscope/blob/master/chapter3and4.py
 
+// See wickedchicken's GitHub examples:
+// - https://github.com/wickedchicken/llvm-c-example/blob/master/fac.c
+
 typedef struct Emitter Emitter;
 struct Emitter {
     Typer* typer;
@@ -360,6 +363,8 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             LLVMBasicBlockRef falseBlock = LLVMAppendBasicBlock(func, "ite-false");
             LLVMBasicBlockRef landingBlock = LLVMAppendBasicBlock(func, "ite-landing");
 
+            LLVMBuildBr(emitter->llvmBuilder,entryBlock);
+
             // computing cond, breaking in 'entry' to other blocks:
             LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entryBlock);
             AstNode* cond = GetAstIteCond(expr);
@@ -367,12 +372,13 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             LLVMBuildCondBr(emitter->llvmBuilder,condLlvm,trueBlock,falseBlock);
             
             // populating 'ite-true':
-            LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entryBlock);
+            LLVMPositionBuilderAtEnd(emitter->llvmBuilder,trueBlock);
             AstNode* ifTrue = GetAstIteIfTrue(expr);
             LLVMValueRef valueIfTrue = NULL;
             if (ifTrue) {
                 valueIfTrue = emitExpr(emitter,ifTrue);
             }
+            LLVMBuildBr(emitter->llvmBuilder,landingBlock);
 
             // populating 'ite-false':
             LLVMPositionBuilderAtEnd(emitter->llvmBuilder,falseBlock);
@@ -381,12 +387,13 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             if (ifFalse) {
                 valueIfFalse = emitExpr(emitter,ifFalse);
             }
+            LLVMBuildBr(emitter->llvmBuilder,landingBlock);
 
             // tying together these blocks with a 'phi' node and returning:
             LLVMPositionBuilderAtEnd(emitter->llvmBuilder,landingBlock);
             LLVMValueRef phi = LLVMBuildPhi(emitter->llvmBuilder, iteLlvmType, "ite-result");
             LLVMValueRef phi_values[] = {valueIfTrue, valueIfFalse};
-            LLVMBasicBlockRef phi_blocks[] = {entryBlock, falseBlock};
+            LLVMBasicBlockRef phi_blocks[] = {trueBlock, falseBlock};
             LLVMAddIncoming(phi, phi_values, phi_blocks, 2);
             return phi;
         }
@@ -578,7 +585,7 @@ int EmitLlvmModule(Typer* typer, AstNode* module) {
 
     if (DEBUG) {
         char* text = LLVMPrintModuleToString(emitter.llvmModule);
-        printf("!!- LLVMVerifyModule %s with message: '%s'\n\n%s", (result ? "succeeded":"failed"), errorMessage,text);
+        printf("!!- LLVMVerifyModule %s with message:\n%s\nMODULE:\n%s\n", (result ? "succeeded":"failed"), errorMessage,text);
         LLVMDisposeMessage(text);
     }
 
