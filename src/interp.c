@@ -1,5 +1,6 @@
 #include "interp.h"
 
+#include <assert.h>
 #include <stdio.h>
 
 #include "stb/stretchy_buffer.h"
@@ -10,6 +11,7 @@
 #include "primer.h"
 #include "typer.h"
 #include "code-printer.h"
+#include "llvm-emitter.h"
 
 typedef struct LoadedSource LoadedSource;
 
@@ -32,9 +34,9 @@ static int lookupLoadedSource(Interp* interp, Source* source) {
     }
     return -1;
 }
-// static LoadedSource loadedSource(Interp* interp, int index) {
-//     return interp->loadedSourceSb[index];
-// }
+static LoadedSource loadedSource(Interp* interp, int index) {
+    return interp->loadedSourceSb[index];
+}
 
 //
 // Implementation:
@@ -90,6 +92,7 @@ int InterpLoadModuleSource(Interp* interp, Source* scriptSource) {
 
         // All ok! Pushing and returning OK.
         sb_push(interp->loadedSourceSb, loadedSource);
+
         return 1;
     }
 }
@@ -103,13 +106,53 @@ int InterpTypecheckModules(Interp* interp) {
     }
     return Typecheck(interp->typer);
 }
-int InterpExecute(Interp* interp, Source* scriptSource, SymbolID entryPointName) {
+int InterpCompile(Interp* interp) {
+    int result = 0;
+    int loadedSourceCount = sb_count(interp->loadedSourceSb);
+    for (int i = 0; i < loadedSourceCount; i++) {
+        LoadedSource loadedSource = interp->loadedSourceSb[i];
+        result = EmitLlvmModule(interp->typer, loadedSource.moduleAstNode) && result;
+    }
+    return result;
+}
+int InterpExecute(Interp* interp, Source* entryScriptSource, SymbolID entryFieldName) {
+    int index = lookupLoadedSource(interp,entryScriptSource);
+    LoadedSource loaded = loadedSource(interp,index);
+    AstNode* moduleAstNode = loaded.moduleAstNode;
+    AstNode* entryPointField = NULL;
+    int fieldCount = GetAstModuleLength(moduleAstNode);
+    for (int fieldIndex = 0; fieldIndex < fieldCount; fieldIndex++) {
+        AstNode* field = GetAstModuleFieldAt(moduleAstNode,fieldIndex);
+        if (GetAstFieldName(field) == entryFieldName) {
+            entryPointField = field;
+            break;
+        }
+    }
+    if (entryPointField) {
+        // todo: typecheck the entryPointField here.
+        void* llvmValueRef = GetAstNodeLlvmRepr(entryPointField);
+        if (!llvmValueRef) {
+            if (DEBUG) {
+                printf("!!- InterpExecute cannot run a NULL llvm repr (have you run InterpCompile first?)\n");
+            } else {
+                assert(0 && "InterpExecute cannot run a NULL llvm repr (have you run InterpCompile first?)");
+            }
+        }
+        // todo: evaluate this function here.
+    } else {
+        PostFeedback(FBK_ERROR,NULL,"ababa");
+        return 0;
+    }
     // todo: execute code from the interpreter
     // todo: see if 'Compile' was called before 'Execute' to provide JIT functionality unless in debug mode.
     return 0;
 }
-int InterpCompile(Interp* interp, Source* scriptSource, SymbolID optEntryPointName) {
-    // todo: compile code and store output in a pointer.
+int InterpExecuteWithArgList(Interp* interp, Source* entryModule, SymbolID entryFieldName, int argc, char const* argv[]) {
+    if (DEBUG) {
+        printf("!!- NotImplemented: InterpExecuteWithArgList\n");
+    } else {
+        assert(0 && "NotImplemented: InterpExecuteWithArgList");
+    }
     return 0;
 }
 

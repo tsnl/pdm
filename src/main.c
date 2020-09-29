@@ -26,6 +26,11 @@ int main() {
         return 1;
     }
 
+    result = InterpCompile(interp);
+    if (!result) {
+        printf("LLVM emission failed.\n");
+    }
+
     // TODO: execute, emit an executable, or just exit after reporting the program's validity.
     DestroyInterp(interp);
     return 0;

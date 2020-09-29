@@ -12,8 +12,9 @@ void DestroyInterp(Interp* interp);
 
 int InterpLoadModuleSource(Interp* interp, Source* scriptSource);
 int InterpTypecheckModules(Interp* interp);
-int InterpExecute(Interp* interp, Source* scriptSource, SymbolID entryPointName);
-int InterpCompile(Interp* interp, Source* scriptSource, SymbolID optEntryPointName);
+int InterpCompile(Interp* interp);
+int InterpExecute(Interp* interp, Source* entryModule, SymbolID entryFieldName);
+int InterpExecuteWithArgList(Interp* interp, Source* entryModule, SymbolID entryFieldName, int argc, char const* argv[]);
 
 int InterpLoadedScriptCount(Interp* interp);
 Source* GetLoadedModuleSourceAt(Interp* interp, int index);

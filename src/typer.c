@@ -375,8 +375,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             Scope* scope = GetAstIdLookupScope(node);
             AstContext lookupContext = GetAstNodeLookupContext(node);
             Defn* foundDefn = LookupSymbol(scope, name, lookupContext);
-            Type* foundType = GetDefnType(foundDefn);
-            if (!foundType) {
+            if (!foundDefn) {
                 FeedbackNote* note = CreateFeedbackNote("here...", loc, NULL);
                 PostFeedback(
                     FBK_ERROR, note,
@@ -384,6 +383,7 @@ int typer_post(void* rawTyper, AstNode* node) {
                     GetSymbolText(name), (lookupContext == ASTCTX_TYPING ? "typing" : "value")
                 );
             }
+            Type* foundType = GetDefnType(foundDefn);
             SetAstIdDefn(node,foundDefn);
             SetAstNodeType(node,foundType);
             break;
@@ -1147,9 +1147,14 @@ void printType(Typer* typer, Type* type) {
         }
         case T_META:
         {
-            printf("meta %s[%d,%d]", type->as.Meta.name, sb_count(type->as.Meta.supertypesSB), sb_count(type->as.Meta.subtypesSB));
+            int printSupAndSubTypeCount = 0;
+            if (printSupAndSubTypeCount) {
+                printf("meta %s[%d,%d]", type->as.Meta.name, sb_count(type->as.Meta.supertypesSB), sb_count(type->as.Meta.subtypesSB));
+            } else {
+                printf("meta %s", type->as.Meta.name);
+            }
             if (type->as.Meta.soln) {
-                printf(" = ");
+                printf(" =");
                 printType(typer, type->as.Meta.soln);
             }
             break;

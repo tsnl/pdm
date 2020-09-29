@@ -156,12 +156,13 @@ AstContext topFrameContext(Primer* primer) {
     return primer->frameStackSB[primer->frameStackCount-1].context;
 }
 
-inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn, AstContext context) {
+inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defnAstNode, AstContext context) {
     Scope* scope = &allocatedScopes[allocatedScopeCount++];
     scope->parent = parent;
     scope->defnID = defnID;
     scope->type = type;
     scope->context = context;
+    scope->defnAstNode = defnAstNode;
     return scope;
 }
 Scope* newRootScope(Typer* typer) {
