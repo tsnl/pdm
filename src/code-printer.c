@@ -6,6 +6,8 @@
 
 #include "stb/stretchy_buffer.h"
 
+#include "primer.h"
+
 size_t const BUFFER_SIZE = 1024;
 char buffer[BUFFER_SIZE] = {0};
 
@@ -53,7 +55,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             int length = GetAstModuleLength(node);
             PrintFormattedText(cp, "MODULE... (%d)\n", length);
             for (int i = 0; i < length; i++) {
-                PrintNode(cp, GetAstModuleFieldAt(node, i));
+                PrintNode(cp, GetAstModuleStmtAt(node, i));
                 PrintText(cp, ";\n");
             }
             break;
@@ -106,7 +108,27 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintChar(cp, '"');
             break;
         }
-        case AST_FIELD__MODULE_ITEM:
+        case AST_DEF:
+        {
+            int desugared = 1;
+            PrintText(cp, "def ");
+            PrintText(cp, GetSymbolText(GetAstDefStmtLhs(node)));
+
+            if (desugared) {
+                PrintText(cp, " = ");
+                PrintNode(cp, GetAstDefStmtFinalRhs(node));
+            } else {
+                int patternCount = GetAstDefStmtPatternCount(node);
+                for (int index = 0; index < patternCount; index++) {
+                    AstNode* pattern = GetAstDefStmtPatternAt(node,index);
+                    PrintChar(cp,' ');
+                    PrintNode(cp,pattern);
+                }
+                PrintText(cp, " = ");
+                PrintNode(cp,GetAstDefStmtRhs(node));
+            }
+            break;
+        }
         case AST_FIELD__PATTERN_ITEM:
         case AST_FIELD__STRUCT_ITEM:
         case AST_FIELD__TEMPLATE_ITEM:
@@ -115,41 +137,35 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             SymbolID lhs = GetAstFieldName(node);
             if (lhs != SYM_NULL) {
                 PrintText(cp, GetSymbolText(lhs));
-                if (GetAstNodeKind(node) == AST_FIELD__MODULE_ITEM) {
-                    AstNode* pattern = GetAstModuleFieldPattern(node);
-                    if (pattern) {
-                        PrintChar(cp, '[');
-                        int patternCount = GetAstPatternLength(pattern);
-                        for (int patternIndex = 0; patternIndex < patternCount; patternIndex++) {
-                            AstNode* patternFieldAtIndex = GetAstPatternFieldAt(pattern, patternIndex);
-                            SymbolID patternNameAtIndex = GetAstFieldName(patternFieldAtIndex);
-                            PrintText(cp, GetSymbolText(patternNameAtIndex));
-                            if (patternIndex+1 != patternCount) {
-                                PrintChar(cp, ',');
-                            }
-                        }
-                        PrintChar(cp, ']');
-                    }
-                }
-                if (kind == AST_FIELD__MODULE_ITEM) {
-                    PrintText(cp, " :: ");
-                } else {
-                    PrintText(cp, ": ");
-                }
+                PrintText(cp, ": ");
             }
             PrintNode(cp, GetAstFieldRhs(node));
             break;
         }
         case AST_LAMBDA:
         {
+            int captureCount = CountAstLambdaCaptures(node);
+            PrintChar(cp, '{');
+            for (int index = 0; index < captureCount; index++) {
+                Defn* captureDefn = GetAstLambdaCaptureAt(node,index);
+                PrintText(cp,GetSymbolText(captureDefn->defnID));
+                if (index == captureCount-1) {
+                    PrintChar(cp,',');
+                }
+            }
+            PrintChar(cp, '}');
+
             PrintNode(cp, GetAstLambdaPattern(node));
             PrintText(cp, " ");
             PrintNode(cp, GetAstLambdaBody(node));
             break;
         }
-        case AST_PATTERN:
+        case AST_T_PATTERN:
+        case AST_V_PATTERN:
         {
-            PrintText(cp, "[");
+            char ltChar = (kind == AST_T_PATTERN ? '[':'(');
+            char rtChar = (kind == AST_T_PATTERN ? ']':')');
+            PrintChar(cp,ltChar);
             int patternLength = GetAstPatternLength(node);
             for (int index = 0; index < patternLength; index++) {
                 PrintNode(cp, GetAstPatternFieldAt(node, index));
@@ -157,7 +173,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                     PrintText(cp, ", ");
                 }
             }
-            PrintText(cp, "]");
+            PrintChar(cp,rtChar);
             break;
         }
         case AST_PAREN:
@@ -227,7 +243,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintChar(cp, '}');
             break;
         }
-        case AST_STMT_BIND:
+        case AST_LET:
         {
             PrintText(cp, GetSymbolText(GetAstBindStmtLhs(node)));
             PrintText(cp, " = ");

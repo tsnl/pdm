@@ -415,6 +415,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             Type* foundType = GetDefnType(foundDefn);
             SetAstIdDefn(node,foundDefn);
             SetAstNodeType(node,foundType);
+            ReqAstLambdaDefn(GetAstNodeParentFunc(node),foundDefn);
             break;
         }
         case AST_MODULE:
@@ -422,7 +423,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             // TODO: type a module
             break;
         }
-        case AST_STMT_BIND:
+        case AST_LET:
         {
             Type* lhsValueType = GetAstNodeType(node);
             Type* rhsType = GetAstNodeType(GetAstBindStmtRhs(node));
@@ -440,18 +441,27 @@ int typer_post(void* rawTyper, AstNode* node) {
             }
             break;
         }
-
-        case AST_FIELD__MODULE_ITEM:
+        case AST_DEF:
         {
             // module items can be used in value and typing contexts
             // todo: make these types the results of Typefunc instances
             Loc loc = GetAstNodeLoc(node);
-            AstNode* rhs = GetAstFieldRhs(node);
-            
+            Type* symType = GetAstNodeType(node);
+
+            AstNode* rhs = GetAstDefStmtRhs(node);
             Type* rhsType = GetAstNodeType(rhs);
-            Type* itemType = GetAstNodeType(node);
-            if (rhsType && itemType) {
-                requireSubtype(loc, rhsType, itemType);
+
+            Type* defType = rhsType; {
+                int patternCount = GetAstDefStmtPatternCount(node);
+                for (int patternIndex = patternCount-1; patternIndex >= 0; patternIndex--) {
+                    AstNode* pattern = GetAstDefStmtPatternAt(node,patternIndex);
+                    Type* patternType = GetAstNodeType(pattern);
+                    defType = GetFuncType(typer,patternType,defType);
+                }
+            }
+
+            if (defType && symType) {
+                requireSubtype(loc, defType, symType);
             } else {
                 if (DEBUG) {
                     printf("!!- Skipping `define` subtyping\n");
@@ -493,13 +503,15 @@ int typer_post(void* rawTyper, AstNode* node) {
             if (rhs) {
                 tv = GetAstNodeType(rhs);
             } else {
-                char const* nameText = GetSymbolText(GetAstFieldName(node));
+                SymbolID name = GetAstFieldName(node);
+                char const* nameText = GetSymbolText(name);
                 tv = CreateMetatype(typer, "field:%s", nameText);
             }
             SetAstNodeType(node,tv);
             break;
         }
-        case AST_PATTERN:
+        case AST_T_PATTERN:
+        case AST_V_PATTERN:
         {
             int patternCount = GetAstPatternLength(node);
             if (patternCount == 0) {
@@ -1213,6 +1225,8 @@ void printType(Typer* typer, Type* type) {
             if (type->as.Meta.soln) {
                 printf(" soln:");
                 printType(typer, type->as.Meta.soln);
+            } else {
+                printf(" soln:NULL");
             }
             break;
         }

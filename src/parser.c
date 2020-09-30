@@ -53,7 +53,8 @@ BinaryOpPrecedenceNode* binaryOpPrecedenceListHead = &orBinaryOpPrecedenceNode;
 
 // static RawAstNode* parseStmt(Parser* p);
 static RawAstNode* tryParseStmt(Parser* p);
-static RawAstNode* parseBindStmt(Parser* p);
+static RawAstNode* parseLetStmt(Parser* p);
+static RawAstNode* parseDefStmt(Parser* p);
 static RawAstNode* parseCheckStmt(Parser* p);
 
 static RawAstNode* parseExpr(Parser* p);
@@ -132,7 +133,7 @@ inline static void expectError(Parser* p, char const* expectedDesc) {
     FeedbackNote* note = CreateFeedbackNote("here...", info.loc, NULL);
     PostFeedback(FBK_ERROR, note, "Before '%s' expected %s.", errorText, expectedDesc);
 }
-static int expect(Parser* p, TokenKind tokenKind, char const* expectedDesc) {
+int expect(Parser* p, TokenKind tokenKind, char const* expectedDesc) {
     if (match(p, tokenKind)) {
         return 1;
     } else {
@@ -140,7 +141,7 @@ static int expect(Parser* p, TokenKind tokenKind, char const* expectedDesc) {
         return 0;
     }
 }
-// static int expectIf(Parser* p, TokenKindPredicate tokenKindPredicate, char const* expectedDesc) {
+// int expectIf(Parser* p, TokenKindPredicate tokenKindPredicate, char const* expectedDesc) {
 //     if (matchIf(p, tokenKindPredicate)) {
 //         return 1;
 //     } else {
@@ -149,7 +150,7 @@ static int expect(Parser* p, TokenKind tokenKind, char const* expectedDesc) {
 //     }
 // }
 
-// static RawAstNode* parseStmt(Parser* p) {
+// RawAstNode* parseStmt(Parser* p) {
 //     Loc loc = lookaheadLoc(p,0);
 
 //     RawAstNode* stmt = tryParseStmt(p);
@@ -165,38 +166,96 @@ static int expect(Parser* p, TokenKind tokenKind, char const* expectedDesc) {
 //     PostFeedback(FBK_ERROR, &note, "Expected a statement");
 //     return NULL;
 // }
-static RawAstNode* tryParseStmt(Parser* p) {
+RawAstNode* tryParseStmt(Parser* p) {
     if (lookaheadKind(p,0) == TK_KW_CHECK) {
         return parseCheckStmt(p);
     }
-    if (lookaheadKind(p,0) == TK_ID && lookaheadKind(p,1) == TK_BIND) {
-        return parseBindStmt(p);
+    if (lookaheadKind(p,0) == TK_KW_LET) {
+        return parseLetStmt(p);
     }
     return NULL;
 }
-static RawAstNode* parseBindStmt(Parser* p) {
+RawAstNode* parseLetStmt(Parser* p) {
+    Loc loc = lookaheadLoc(p,0);
+    if (!expect(p, TK_KW_LET, "'let'")) {
+        return NULL;
+    }
+    SymbolID lhs = SYM_NULL; {
+        TokenInfo idTokenInfo = lookaheadInfo(p, 0);
+        if (expect(p, TK_ID, "the defined (lhs) identifier")) {
+            lhs = idTokenInfo.as.ID;
+        } else {
+            return NULL;
+        }
+    }
+    AstNode* typespec = NULL; {
+        if (match(p,TK_COLON)) {
+            typespec = tryParsePrimaryExpr(p);
+            if (!typespec) {
+                FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
+                PostFeedback(
+                    FBK_ERROR, note,
+                    "Invalid let-typespec"
+                );
+                return NULL;
+            }
+        }
+    }
+    RawAstNode* rhs = NULL; {
+        if (!expect(p, TK_EQUALS, "the '=' (bind) operator")) {
+            return NULL;
+        }
+        rhs = parseExpr(p);
+        if (!rhs) {
+            return NULL;
+        }
+    }
+    return CreateAstLetStmt(loc,lhs,typespec,rhs);
+}
+RawAstNode* parseDefStmt(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
 
-    TokenInfo idTokenInfo = lookaheadInfo(p, 0);
-    SymbolID lhs = SYM_NULL;
-    RawAstNode* rhs = NULL;
-
-    if (expect(p, TK_ID, "the defined (lhs) identifier")) {
-        lhs = idTokenInfo.as.ID;
-    } else {
-        return NULL;
-    }
-    if (!expect(p, TK_BIND, "the '=' (bind) operator")) {
-        return NULL;
-    }
-    rhs = parseExpr(p);
-    if (!rhs) {
+    if (!expect(p, TK_KW_DEF, "'def'")) {
         return NULL;
     }
 
-    return CreateAstBindStmt(loc, lhs, rhs);
+    SymbolID lhs = SYM_NULL; {
+        TokenInfo idTokenInfo = lookaheadInfo(p,0);
+        if (expect(p, TK_ID, "the defined (lhs) identifier")) {
+            lhs = idTokenInfo.as.ID;
+        } else {
+            return NULL;
+        }
+    }
+
+    AstNode* defStmt = CreateAstDefStmt(loc,lhs);
+
+    while (lookaheadKind(p,0) != TK_EQUALS) {
+        AstNode* pattern = NULL;
+        if (lookaheadKind(p,0) == TK_LPAREN) {
+            pattern = parsePattern(p, TK_LPAREN, TK_RPAREN,1);
+        } else if (lookaheadKind(p,0) == TK_LSQBRK) {
+            pattern = parsePattern(p, TK_LSQBRK, TK_RSQBRK,0);
+        }
+        if (pattern) {
+            PushPatternToAstDefStmt(defStmt,pattern);
+        }
+    }
+    
+    RawAstNode* rhs = NULL; {
+        if (!expect(p, TK_EQUALS, "the '=' (bind) operator")) {
+            return NULL;
+        }
+        rhs = parseExpr(p);
+        if (!rhs) {
+            return NULL;
+        }
+    }
+    SetAstDefStmtBody(defStmt,rhs);
+    FinalizeAstDefStmt(defStmt);
+    return defStmt;
 }
-static RawAstNode* parseCheckStmt(Parser* p) {
+RawAstNode* parseCheckStmt(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
     RawAstNode* checked;
     RawAstNode* message;
@@ -223,7 +282,7 @@ static RawAstNode* parseCheckStmt(Parser* p) {
     return CreateAstCheckStmt(loc, checked, message);
 }
 
-static RawAstNode* parseExpr(Parser* p) {
+RawAstNode* parseExpr(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
 
     RawAstNode* expr = tryParseExpr(p);
@@ -239,10 +298,10 @@ static RawAstNode* parseExpr(Parser* p) {
     PostFeedback(FBK_ERROR, &note, "Expected an expression");
     return NULL;
 }
-static RawAstNode* tryParseExpr(Parser* p) {
+RawAstNode* tryParseExpr(Parser* p) {
     return tryParseCallExpr(p);
 }
-static RawAstNode* tryParsePrimaryExpr(Parser* p) {
+RawAstNode* tryParsePrimaryExpr(Parser* p) {
     Loc loc = lookaheadLoc(p,0); 
 
     switch (lookaheadKind(p,0)) {
@@ -321,9 +380,24 @@ static RawAstNode* tryParsePrimaryExpr(Parser* p) {
 
             return expr;
         }
-        case TK_LSQBRK: 
-        { 
-            RawAstNode* pattern = parsePattern(p, TK_LSQBRK, TK_RSQBRK, 1);
+        case TK_DOLLAR: 
+        {
+            // todo: un-disable lambda statement
+            int disabled = 1;
+            if (disabled) {
+                if (DEBUG) {
+                    printf("!!- NotImplemented: lambda expression (in parser).\n");
+                } else {
+                    assert(0 && "NotImplemented: lambda expression (in parser).");
+                }
+                return NULL;
+            }
+                
+            if (!expect(p,TK_DOLLAR,"'$'")) {
+                return NULL;
+            }
+
+            RawAstNode* pattern = parsePattern(p,TK_LPAREN,TK_RPAREN,1);
             if (!pattern) {
                 return NULL;
             }
@@ -435,7 +509,7 @@ static RawAstNode* tryParsePrimaryExpr(Parser* p) {
         }
     }
 }
-static RawAstNode* tryParsePostfixExpr(Parser* p) {
+RawAstNode* tryParsePostfixExpr(Parser* p) {
     RawAstNode* lhs = tryParsePrimaryExpr(p);
     int stop = 0;
     while (lhs && !stop) {
@@ -443,7 +517,7 @@ static RawAstNode* tryParsePostfixExpr(Parser* p) {
     }
     return lhs;
 }
-static RawAstNode* tryParsePostfixExprSuffix(Parser* p, RawAstNode* lhs, int* stopP) {
+RawAstNode* tryParsePostfixExprSuffix(Parser* p, RawAstNode* lhs, int* stopP) {
     *stopP = 0;
     if (match(p, TK_DOT)) {
         TokenInfo dotSuffix = lookaheadInfo(p,0);
@@ -457,7 +531,7 @@ static RawAstNode* tryParsePostfixExprSuffix(Parser* p, RawAstNode* lhs, int* st
     *stopP = 1;
     return lhs;
 }
-static RawAstNode* tryParseUnaryExpr(Parser* p) {
+RawAstNode* tryParseUnaryExpr(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
     AstUnaryOperator operator;
     if (match(p, TK_NOT)) {
@@ -476,10 +550,10 @@ static RawAstNode* tryParseUnaryExpr(Parser* p) {
     RawAstNode* operand = tryParseUnaryExpr(p);
     return CreateAstUnary(loc, operator, operand);
 }
-static RawAstNode* tryParseBinaryExpr(Parser* p) {
+RawAstNode* tryParseBinaryExpr(Parser* p) {
     return tryParseBinaryExprAtPrecedence(p, binaryOpPrecedenceListHead);
 }
-static RawAstNode* tryParseBinaryExprAtPrecedence(Parser* p, BinaryOpPrecedenceNode* highestPrecedenceNode) {
+RawAstNode* tryParseBinaryExprAtPrecedence(Parser* p, BinaryOpPrecedenceNode* highestPrecedenceNode) {
     RawAstNode* lhs;
     if (highestPrecedenceNode->nextHighest) {
         lhs = tryParseBinaryExprAtPrecedence(p, highestPrecedenceNode->nextHighest);
@@ -494,7 +568,7 @@ static RawAstNode* tryParseBinaryExprAtPrecedence(Parser* p, BinaryOpPrecedenceN
     }
     return lhs;
 }
-static RawAstNode* tryParseCallExpr(Parser* p) {
+RawAstNode* tryParseCallExpr(Parser* p) {
     RawAstNode* lhs = tryParseBinaryExpr(p);
     for (;;) {
         RawAstNode* rhs = tryParseBinaryExpr(p);
@@ -510,7 +584,7 @@ static RawAstNode* tryParseCallExpr(Parser* p) {
     return lhs;
 }
 
-static RawAstNode* parsePattern(Parser* p, TokenKind lpTk, TokenKind rpTk, int hasTail) {
+RawAstNode* parsePattern(Parser* p, TokenKind lpTk, TokenKind rpTk, int hasTail) {
     if (DEBUG) {
         assert(lpTk == TK_LPAREN || lpTk == TK_LSQBRK);
         assert(rpTk == TK_RPAREN || rpTk == TK_RSQBRK);
@@ -523,7 +597,7 @@ static RawAstNode* parsePattern(Parser* p, TokenKind lpTk, TokenKind rpTk, int h
     }
     
     int ok = 1;
-    RawAstNode* pattern = CreateAstPattern(loc);
+    RawAstNode* pattern = CreateAstPattern(loc,lpTk==TK_LSQBRK);
     while (lookaheadKind(p,0) == TK_ID) {
         parsePatternElement(p, pattern, &ok, hasTail);
         if (!ok) {
@@ -542,14 +616,14 @@ static RawAstNode* parsePattern(Parser* p, TokenKind lpTk, TokenKind rpTk, int h
 
     return pattern;
 }
-static void parsePatternElement(Parser* p, RawAstNode* pattern, int* okP, int hasTail) {
+void parsePatternElement(Parser* p, RawAstNode* pattern, int* okP, int hasTail) {
     if (hasTail) {
         parsePatternElementWithTail(p, pattern, okP);
     } else {
         parsePatternElementWithoutTail(p, pattern, okP);
     }
 }
-static void parsePatternElementWithTail(Parser* p, RawAstNode* pattern, int* okP) {
+void parsePatternElementWithTail(Parser* p, RawAstNode* pattern, int* okP) {
     Loc patternLoc = lookaheadLoc(p,0);
     SymbolID bankedSymbols[MAX_IDS_PER_SHARED_FIELD];
     int bankedSymbolsCount = 0;
@@ -584,7 +658,7 @@ static void parsePatternElementWithTail(Parser* p, RawAstNode* pattern, int* okP
         PostFeedback(FBK_ERROR, &noteHere, "Expected a field RHS");
     }
 }
-static void parsePatternElementWithoutTail(Parser* p, RawAstNode* pattern, int* okP) {
+void parsePatternElementWithoutTail(Parser* p, RawAstNode* pattern, int* okP) {
     // just 1 ID
     TokenInfo ti = lookaheadInfo(p,0);
     if (expect(p, TK_ID, "a pattern ID")) {
@@ -613,30 +687,18 @@ RawAstNode* ParseSource(Source* source) {
     RawAstNode* module = CreateAstModule(lookaheadLoc(&p,0), SYM_NULL);    // todo: allow script name in syntax or remove from spec
     while (lookaheadKind(&p,0) != TK_EOS) {
         // todo: add support for import/export/params/etc...
-        TokenInfo tokenInfo = lookaheadInfo(&p,0);
-        if (match(&p, TK_ID)) {
-            SymbolID lhsID = tokenInfo.as.ID;
-
-            RawAstNode* templatePattern = NULL;
-            if (lookaheadKind(&p,0) == TK_LSQBRK) {
-                templatePattern = parsePattern(&p, TK_LSQBRK, TK_RSQBRK, 0);
-                if (!templatePattern) {
-                    // bad pattern
-                    return NULL;
-                }
+        Loc loc = lookaheadLoc(&p,0);
+        if (match(&p,TK_SEMICOLON)) {
+            // no-op
+        } else if (lookaheadKind(&p,0) == TK_KW_DEF) {
+            RawAstNode* def = parseDefStmt(&p);
+            if (!expect(&p,TK_SEMICOLON,"a terminating ';'")) {
+                break;
             }
-
-            if (!expect(&p, TK_DBL_COLON, "a module label '::' suffix")) {
-                return NULL;
-            }
-            
-            RawAstNode* rhs = parseExpr(&p);
-            if (!expect(&p, TK_SEMICOLON, "a terminating semicolon")) {
-                return NULL;
-            }
-
-            PushFieldToAstModule(tokenInfo.loc, module, lhsID, templatePattern, rhs);
+            PushAstDefStmtToAstModule(module,def);
         } else {
+            FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
+            PostFeedback(FBK_ERROR,note,"Invalid module item");
             break;
         }
     }

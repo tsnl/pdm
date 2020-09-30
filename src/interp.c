@@ -122,7 +122,7 @@ int InterpExecute(Interp* interp, Source* entryScriptSource, SymbolID entryField
     AstNode* entryPointField = NULL;
     int fieldCount = GetAstModuleLength(moduleAstNode);
     for (int fieldIndex = 0; fieldIndex < fieldCount; fieldIndex++) {
-        AstNode* field = GetAstModuleFieldAt(moduleAstNode,fieldIndex);
+        AstNode* field = GetAstModuleStmtAt(moduleAstNode,fieldIndex);
         if (GetAstFieldName(field) == entryFieldName) {
             entryPointField = field;
             break;

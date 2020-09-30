@@ -18,8 +18,9 @@ struct Scope {
 };
 struct Frame {
     AstContext context;
-    Scope* begScopeP;
-    Scope* endScopeP;
+    Scope* begScope;
+    Scope* endScope;
+    AstNode* func;
 };
 
 Primer* CreatePrimer(void* typer);

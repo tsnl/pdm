@@ -46,6 +46,11 @@ static LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr);
 static void buildLlvmField(Typer* typer, void* sb, SymbolID name, Type* type);
 static AstNode* getDefnRhsAstNode(Emitter* emitter, AstNode* defnNode);
 
+static int pass1_pre(void* rawEmitter, AstNode* node);
+static int pass1_post(void* rawEmitter, AstNode* node);
+static int pass2_pre(void* rawEmitter, AstNode* node);
+static int pass2_post(void* rawEmitter, AstNode* node);
+
 Emitter newEmitter(Typer* typer, AstNode* astModule, char const* moduleName) {
     Emitter emitter;
     emitter.typer = typer;
@@ -166,14 +171,14 @@ AstNode* getDefnRhsAstNode(Emitter* emitter, AstNode* defnNode) {
     AstKind defnKind = GetAstNodeKind(defnNode);
     switch (defnKind)
     {
-        case AST_STMT_BIND:
+        case AST_LET:
         {
             AstNode* rhs = GetAstBindStmtRhs(defnNode);
             return rhs;
         }
-        case AST_FIELD__MODULE_ITEM:
+        case AST_DEF:
         {
-            AstNode* rhs = GetAstFieldRhs(defnNode);
+            AstNode* rhs = GetAstDefStmtRhs(defnNode);
             return rhs;
         }
         case AST_FIELD__PATTERN_ITEM:
@@ -407,15 +412,26 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             return emitExpr(emitter,exprResult);
         }
         case AST_LAMBDA:
+        {
+            // set by `emitLlvmModulePrefix_preVisitor`
+            // we should not reach this point
+
+            if (DEBUG) {
+                printf("!!- error: should not evaluate node of kind AST_LAMBDA in `tryEmitExpr`\n");
+            } else {
+                assert(0 && "error: should not evaluate node of kind AST_LAMBDA in `tryEmitExpr`");
+            }
+            return NULL;
+        }
         case AST_FIELD__PATTERN_ITEM:
         {
             // set by `emitLlvmModulePrefix_preVisitor`
             // we should not reach this point
 
             if (DEBUG) {
-                printf("!!- error: should not evaluate node of kind <?> in `tryEmitExpr`\n");
+                printf("!!- error: should not evaluate node of kind AST_FIELD__PATTERN_ITEM in `tryEmitExpr`\n");
             } else {
-                assert(0 && "error: should not evaluate node of kind <?> in `tryEmitExpr`");
+                assert(0 && "error: should not evaluate node of kind AST_FIELD__PATTERN_ITEM in `tryEmitExpr`");
             }
             return NULL;
         }
@@ -526,16 +542,16 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
     }
 }
 
-int emitLlvmModulePrefix_preVisitor(void* rawEmitter, AstNode* node) {
+int pass1_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     AstKind nodeKind = GetAstNodeKind(node);
     switch (nodeKind) {
         case AST_LAMBDA:
         {
-            // todo: add captured arguments.
-
             AstNode* pattern = GetAstLambdaPattern(node);
             AstNode* body = GetAstLambdaBody(node);
+            Emitter* emitter = rawEmitter;
+
             int patternLength = GetAstPatternLength(pattern);
 
             Type* funcType = GetAstNodeType(node);
@@ -587,8 +603,9 @@ int emitLlvmModulePrefix_preVisitor(void* rawEmitter, AstNode* node) {
             }
             
             // storing the LLVM function reference on the Lambda:
-            SetAstNodeLlvmRepr(node,funcLlvmExpr);
-
+            if (node) {
+                SetAstNodeLlvmRepr(node,funcLlvmExpr);
+            }
             break;
         }
         default:
@@ -598,12 +615,11 @@ int emitLlvmModulePrefix_preVisitor(void* rawEmitter, AstNode* node) {
     }
     return 1;
 }
-int emitLlvmModulePrefix_postVisitor(void* rawEmitter, AstNode* node) {
+int pass1_post(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     switch (GetAstNodeKind(node)) {
         case AST_LAMBDA:
         {
-            // popping the LLVM function reference from the emitter stack:
             popLlvmFunctionFromEmitterStack(emitter);
             break;
         }
@@ -615,13 +631,13 @@ int emitLlvmModulePrefix_postVisitor(void* rawEmitter, AstNode* node) {
     }
     return 1;
 }
-int emitLlvmModule_preVisitor(void* rawEmitter, AstNode* node) {
+int pass2_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     AstKind nodeKind = GetAstNodeKind(node);
     switch (nodeKind) {
-        case AST_FIELD__MODULE_ITEM:
+        case AST_DEF:
         {
-            AstNode* rhs = GetAstFieldRhs(node);
+            AstNode* rhs = GetAstDefStmtRhs(node);
             SetAstNodeLlvmRepr(node,emitExpr(emitter,rhs));
             break;
         }
@@ -653,7 +669,7 @@ int emitLlvmModule_preVisitor(void* rawEmitter, AstNode* node) {
     }
     return 1;
 }
-int emitLlvmModule_postVisitor(void* rawEmitter, AstNode* node) {
+int pass2_post(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     AstKind nodeKind = GetAstNodeKind(node);
     switch (nodeKind) {
@@ -681,8 +697,8 @@ int EmitLlvmModule(Typer* typer, AstNode* module) {
 
     // we run 2 emitter passes:
     int result = 1;
-    result = RecursivelyVisitAstNode(&emitter, module, emitLlvmModulePrefix_preVisitor, emitLlvmModulePrefix_postVisitor) && result;
-    result = RecursivelyVisitAstNode(&emitter, module, emitLlvmModule_preVisitor, emitLlvmModule_postVisitor) && result;
+    result = RecursivelyVisitAstNode(&emitter, module, pass1_pre, pass1_post) && result;
+    result = RecursivelyVisitAstNode(&emitter, module, pass2_pre, pass2_post) && result;
     if (!result) {
         if (DEBUG) {
             printf("!!- Emission visitor failed.\n");

@@ -24,6 +24,8 @@ static SymbolID kwMatchSymbolID = 0;
 static SymbolID kwWithSymbolID = 0;
 static SymbolID kwReturnSymbolID = 0;
 static SymbolID kwCheckSymbolID = 0;
+static SymbolID kwLetSymbolID = 0;
+static SymbolID kwDefSymbolID = 0;
 
 static TokenKind lexOneToken(Source* source, TokenInfo* infoP);
 static TokenKind lexOneSimpleToken(Source* source, TokenInfo* infoP);
@@ -55,6 +57,8 @@ void InitLexer(void) {
     kwWithSymbolID = strings_intern(symbolsDict, "with");
     kwReturnSymbolID = strings_intern(symbolsDict, "return");
     kwCheckSymbolID = strings_intern(symbolsDict, "check");
+    kwLetSymbolID = strings_intern(symbolsDict, "let");
+    kwDefSymbolID = strings_intern(symbolsDict, "def");
 }
 
 void DeInitLexer(void) {
@@ -258,13 +262,16 @@ TokenKind helpLexOneSimpleToken(Source* source, TokenInfo* optInfoP) {
             }
             break;
         }
-
+        case '$':
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                return TK_DOLLAR;
+            }
+            break;
+        }
         case ':': 
         {
             if (AdvanceSourceReaderHead(source)) {
-                if (ReadSourceReaderHead(source) == ':' && AdvanceSourceReaderHead(source)) {
-                    return TK_DBL_COLON;
-                }
                 return TK_COLON;
             }
             break;
@@ -272,13 +279,11 @@ TokenKind helpLexOneSimpleToken(Source* source, TokenInfo* optInfoP) {
         case '=':
         {
             if (AdvanceSourceReaderHead(source)) {
-                if (ReadSourceReaderHead(source) == '=' && AdvanceSourceReaderHead(source)) {
-                    return TK_EQUALS;
-                }
-                return TK_BIND;
+                return TK_EQUALS;
             }
             break;
         }
+        
         case '!':
         {
             if (AdvanceSourceReaderHead(source)) {
@@ -452,6 +457,8 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
     if (kwID == kwWithSymbolID) { return TK_KW_WITH; }
     if (kwID == kwReturnSymbolID) { return TK_KW_RETURN; }
     if (kwID == kwCheckSymbolID) { return TK_KW_CHECK; }
+    if (kwID == kwDefSymbolID) { return TK_KW_DEF; }
+    if (kwID == kwLetSymbolID) { return TK_KW_LET; }
     if (DEBUG) {
         printf("!!- Keyword not implemented: '%s' (id=%d)\n", strings_lookup_id(symbolsDict, kwID), kwID);
     } else {
@@ -609,11 +616,6 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
             name = ":";
             break;
         }
-        case TK_DBL_COLON:
-        {
-            name = "::";
-            break;
-        }
         case TK_LPAREN:
         {
             name = "(";
@@ -694,14 +696,9 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
             name = "!";
             break;
         }
-        case TK_BIND:
-        {
-            name = "=";
-            break;
-        }
         case TK_EQUALS:
         {
-            name = "==";
+            name = "=";
             break;
         }
         case TK_NEQUALS:
