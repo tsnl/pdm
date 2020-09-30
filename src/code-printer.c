@@ -245,6 +245,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         }
         case AST_LET:
         {
+            PrintText(cp, "let ");
             PrintText(cp, GetSymbolText(GetAstBindStmtLhs(node)));
             PrintText(cp, " = ");
             PrintNode(cp, GetAstBindStmtRhs(node));

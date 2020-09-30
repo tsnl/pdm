@@ -5,33 +5,33 @@
 # Template definitions are only supported for the top-level function definitions that cannot omit type specifiers.
 # Capitalized functions are automatically exported.
 
-simple :: [x:t,y:u] {x + y};
+def simple [t,u] (x:t,y:u) = (x + y);
 
-Pixel[t] :: [r,g,b:t] {
+def Pixel [t] (r,g,b:t) = (
     r: r, 
     g: g, 
     b: b
-};
+);
 
-Pair[t] :: [x,y:t] -> {
+def Pair [t] (x,y:t) = {
     x: x,
     y: y
 };
 
-Image[t] :: [name: string, size: Pair u16, data: Buffer Pixel t] -> {
+def Image [t] (name: string, size: Pair u16, data: Buffer Pixel t) = {
     name: name,
     size: size,
     data: data
 };
 
-addPixel[t] :: [p,q: Pixel t] -> {
+def addPixel [t] (p,q: Pixel t) = {
     Pixel t (
         p.r + q.r,
         p.g + q.g,
         p.b + q.b
     )
 };
-mulPixel[t] :: [p: Pixel t, s: t] -> {
+def mulPixel [t] (p: Pixel t, s: t) = {
     Pixel t (
         s * p.r,
         s * p.g,
@@ -43,15 +43,15 @@ mulPixel[t] :: [p: Pixel t, s: t] -> {
 # In type contexts, functions are interpreted as types.
 # To write a lambda, use the '[pattern] -> body' operator in value contexts.
 # To depict a function signature, use the `pattern` operator in type contexts.
-addImage[t] :: [i,j: Image t] -> {
+def addImage[t] (i,j: Image t) = {
     check(i.size == j.size, "a and b are of different sizes.");
-    name = fmt "({i.name}+{j.name})";
-    size = i.size;
-    data = map(addPixel)(zip i.data j.data);
+    let name = fmt "({i.name}+{j.name})";
+    let size = i.size;
+    let data = map(addPixel)(zip i.data j.data);
     Image t (name,size,data)
 };
-mulImage[t] :: [i: Image t, x: u8] -> {
-    scalePixelByX = [p: Pixel] -> {
+def mulImage[t] (i: Image t, x: u8) = {
+    let scalePixelByX = [p: Pixel] -> {
         mulPixel(p,x)
     };
     Image t {
@@ -61,5 +61,5 @@ mulImage[t] :: [i: Image t, x: u8] -> {
     }
 };
 
-UnitA :: ();
-UnitB :: ();
+def UnitA = ();
+def UnitB = ();

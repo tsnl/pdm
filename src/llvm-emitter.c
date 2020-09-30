@@ -44,7 +44,7 @@ static LLVMTypeRef helpEmitType(Typer* emitter, Type* typerType);
 static LLVMValueRef emitExpr(Emitter* emitter, AstNode* expr);
 static LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr);
 static void buildLlvmField(Typer* typer, void* sb, SymbolID name, Type* type);
-static AstNode* getDefnRhsAstNode(Emitter* emitter, AstNode* defnNode);
+static LLVMValueRef getDefnRhsValue(Emitter* emitter, AstNode* defnNode);
 
 static int pass1_pre(void* rawEmitter, AstNode* node);
 static int pass1_post(void* rawEmitter, AstNode* node);
@@ -127,7 +127,7 @@ LLVMTypeRef helpEmitType(Typer* typer, Type* typerType) {
         case T_FUNC:
         {
             LLVMTypeRef arg = emitType(typer,GetFuncTypeDomain(concrete));
-            LLVMTypeRef ret = emitType(typer,GetFuncTypeDomain(concrete));
+            LLVMTypeRef ret = emitType(typer,GetFuncTypeImage(concrete));
             return LLVMFunctionType(ret, &arg, 1, 0);
         }
         case T_PTR:
@@ -167,24 +167,35 @@ void buildLlvmField(Typer* typer, void* rawSB, SymbolID name, Type* type) {
     LLVMTypeRef fieldTypeRef = emitType(typer,type);
     sb_push((*sb),fieldTypeRef);
 }
-AstNode* getDefnRhsAstNode(Emitter* emitter, AstNode* defnNode) {
+LLVMValueRef getDefnRhsValue(Emitter* emitter, AstNode* defnNode) {
     AstKind defnKind = GetAstNodeKind(defnNode);
     switch (defnKind)
     {
         case AST_LET:
         {
             AstNode* rhs = GetAstBindStmtRhs(defnNode);
-            return rhs;
+            return emitExpr(emitter,rhs);
         }
         case AST_DEF:
         {
             AstNode* rhs = GetAstDefStmtRhs(defnNode);
-            return rhs;
+            return emitExpr(emitter,rhs);
         }
         case AST_FIELD__PATTERN_ITEM:
         {
             // llvm repr (param) stored on the field in lambda definitions
-            return defnNode;
+            AstNode* func = GetAstNodeParentFunc(defnNode);
+            LLVMValueRef funcLlvmExpr = GetAstNodeLlvmRepr(func);
+            if (funcLlvmExpr) {
+                return LLVMGetParam(funcLlvmExpr,GetAstFieldIndex(defnNode));
+            } else {
+                if (DEBUG) {
+                    printf("!!- llvm-emitter: expected non-null funcLlvmExpr.\n");
+                } else {
+                    assert(0 && "llvm-emitter: expected non-null funcLlvmExpr.");
+                }
+                return NULL;
+            }
         }
         default:
         {
@@ -201,13 +212,16 @@ LLVMValueRef emitExpr(Emitter* emitter, AstNode* expr) {
     LLVMValueRef value;
     value = GetAstNodeLlvmRepr(expr);
     if (value) {
+        // LLVMSetValueName(value,"expr");
         return value;
     }
     value = helpEmitExpr(emitter,expr);
     if (value) {
+        // LLVMSetValueName(value,"expr");
         SetAstNodeLlvmRepr(expr,value);
+        return value;
     }
-    return value;
+    return NULL;
 }
 LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
     switch (GetAstNodeKind(expr))
@@ -218,8 +232,7 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
                 Defn* defn = GetAstIdDefn(expr);
                 AstNode* defnNode = GetDefnNode(defn);
                 if (defnNode) {
-                    AstNode* rhsNode = getDefnRhsAstNode(emitter,defnNode);
-                    return emitExpr(emitter,rhsNode);
+                    return getDefnRhsValue(emitter,defnNode);
                 } else {
                     if (DEBUG) {
                         printf("!!- WARNING: defnNode is NULL in `helpEmitExpr`.\n");
@@ -267,6 +280,7 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             AstNode* rhs = GetAstCallRhs(expr);
             LLVMValueRef lhsLlvmValue = emitExpr(emitter,lhs);
             LLVMValueRef rhsLlvmValue = emitExpr(emitter,rhs);
+
             return LLVMBuildCall2(
                 emitter->llvmBuilder,
                 callLlvmType,
@@ -326,70 +340,74 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             AstNode* rtArg = GetAstBinaryRtOperand(expr);
             LLVMValueRef llvmLtArg = emitExpr(emitter,ltArg);
             LLVMValueRef llvmRtArg = emitExpr(emitter,rtArg);
-
+            
             switch (op)
             {
                 case BOP_MUL:
                 {
-                    return LLVMBuildMul(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildMul(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"mul");
                 }
                 case BOP_DIV:
                 {
-                    return LLVMBuildUDiv(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildUDiv(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"div");
                 }
                 case BOP_REM:
                 {
-                    return LLVMBuildURem(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildURem(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"rem");
                 }
                 case BOP_ADD:
                 {
-                    return LLVMBuildAdd(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildAdd(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"sum");
                 }
                 case BOP_SUB:
                 {
-                    return LLVMBuildSub(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildSub(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"sub");
                 }
                 case BOP_AND:
                 {
-                    return LLVMBuildAnd(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildAnd(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"and");
                 }
                 case BOP_XOR:
                 {
-                    return LLVMBuildXor(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildXor(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"xor");
                 }
                 case BOP_OR:
                 {
-                    return LLVMBuildOr(emitter->llvmBuilder,llvmLtArg,llvmRtArg,NULL);
+                    return LLVMBuildOr(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"or");
                 }
                 case BOP_LTHAN:
                 {
-                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntULT,llvmLtArg,llvmRtArg,NULL);
+                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntULT,llvmLtArg,llvmRtArg,"lt");
                     return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
                 }
                 case BOP_GTHAN:
                 {
-                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntUGT,llvmLtArg,llvmRtArg,NULL);
+                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntUGT,llvmLtArg,llvmRtArg,"gt");
                     return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
                 }
                 case BOP_LETHAN:
                 {
-                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntULE,llvmLtArg,llvmRtArg,NULL);
+                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntULE,llvmLtArg,llvmRtArg,"le");
                     return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
                 }
                 case BOP_GETHAN:
                 {
-                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntUGE,llvmLtArg,llvmRtArg,NULL);
+                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntUGE,llvmLtArg,llvmRtArg,"ge");
                     return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
                 }
                 case BOP_EQUALS:
                 {
-                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntEQ,llvmLtArg,llvmRtArg,NULL);
-                    return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                    // LLVMValueRef rawValue = LLVMBuildFCmp(emitter->llvmBuilder,LLVMRealOEQ,llvmLtArg,llvmRtArg,"eq");
+                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntEQ,llvmLtArg,llvmRtArg,"eq");
+                    // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                    return rawValue;
                 }
                 case BOP_NEQUALS:
                 {
-                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntNE,llvmLtArg,llvmRtArg,NULL);
-                    return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                    // LLVMValueRef rawValue = LLVMBuildFCmp(emitter->llvmBuilder,LLVMRealONE,llvmLtArg,llvmRtArg,"eq");
+                    LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntNE,llvmLtArg,llvmRtArg,"neq");
+                    // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                    return rawValue;
                 }
                 default:
                 {
@@ -428,11 +446,6 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             // set by `emitLlvmModulePrefix_preVisitor`
             // we should not reach this point
 
-            if (DEBUG) {
-                printf("!!- error: should not evaluate node of kind AST_FIELD__PATTERN_ITEM in `tryEmitExpr`\n");
-            } else {
-                assert(0 && "error: should not evaluate node of kind AST_FIELD__PATTERN_ITEM in `tryEmitExpr`");
-            }
             return NULL;
         }
         case AST_DOT_NAME:
@@ -548,9 +561,10 @@ int pass1_pre(void* rawEmitter, AstNode* node) {
     switch (nodeKind) {
         case AST_LAMBDA:
         {
+            // todo: add captured arguments
+
             AstNode* pattern = GetAstLambdaPattern(node);
             AstNode* body = GetAstLambdaBody(node);
-            Emitter* emitter = rawEmitter;
 
             int patternLength = GetAstPatternLength(pattern);
 
@@ -581,26 +595,6 @@ int pass1_pre(void* rawEmitter, AstNode* node) {
 
             // adding the defined LLVM function reference:
             LLVMValueRef funcLlvmExpr = LLVMAddFunction(emitter->llvmModule,"__anonymous_function__",funcLlvmType);
-
-            // pushing the LLVM function reference to the emitter stack:
-            pushLlvmFunctionToEmitterStack(emitter,funcLlvmExpr);
-            
-            // storing formal argument references:
-            for (int index = 0; index < patternLength; index++) {
-                AstNode* patternArg = GetAstPatternFieldAt(pattern,index);
-                LLVMValueRef llvmArg = LLVMGetParam(funcLlvmExpr,index);
-                SetAstNodeLlvmRepr(patternArg,llvmArg);
-            }
-
-            // emitting the body or void:
-            LLVMBasicBlockRef entry = LLVMAppendBasicBlock(funcLlvmExpr,"entry");
-            LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entry);
-            if (GetTypeKind(GetAstNodeType(body)) == T_UNIT) {
-                LLVMBuildRet(emitter->llvmBuilder,NULL);
-            } else {
-                LLVMValueRef bodyLlvmExpr = emitExpr(emitter,body);
-                LLVMBuildRet(emitter->llvmBuilder,bodyLlvmExpr);
-            }
             
             // storing the LLVM function reference on the Lambda:
             if (node) {
@@ -618,11 +612,6 @@ int pass1_pre(void* rawEmitter, AstNode* node) {
 int pass1_post(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     switch (GetAstNodeKind(node)) {
-        case AST_LAMBDA:
-        {
-            popLlvmFunctionFromEmitterStack(emitter);
-            break;
-        }
         default:
         {
             // do nothing.
@@ -631,35 +620,40 @@ int pass1_post(void* rawEmitter, AstNode* node) {
     }
     return 1;
 }
+
 int pass2_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     AstKind nodeKind = GetAstNodeKind(node);
     switch (nodeKind) {
-        case AST_DEF:
-        {
-            AstNode* rhs = GetAstDefStmtRhs(node);
-            SetAstNodeLlvmRepr(node,emitExpr(emitter,rhs));
-            break;
-        }
-        case AST_UNIT:
-        case AST_LITERAL_FLOAT:
-        case AST_LITERAL_INT:
-        case AST_LITERAL_STRING:
         case AST_LAMBDA:
-        case AST_STRUCT:
-        case AST_TUPLE:
-        case AST_UNARY:
-        case AST_BINARY:
-        case AST_CALL:
-        case AST_PAREN:
         {
-            AstNode* expr = node;
-            LLVMValueRef llvmExpr = emitExpr(emitter,expr);
+            AstNode* pattern = GetAstLambdaPattern(node);
+            AstNode* body = GetAstLambdaBody(node);
 
-            if (nodeKind == AST_LAMBDA) {
-                // pushing the LLVM function reference to the emitter stack:
-                pushLlvmFunctionToEmitterStack(emitter,llvmExpr);
-            }
+            int patternLength = GetAstPatternLength(pattern);
+
+            // getting the forward-declared function (from pass1)
+            // not defining
+            AstNode* expr = node;
+            LLVMValueRef funcLlvmExpr = GetAstNodeLlvmRepr(expr);
+
+            // pushing the LLVM function reference to the emitter stack:
+            pushLlvmFunctionToEmitterStack(emitter,funcLlvmExpr);
+            
+            // storing formal argument references:
+            // for (int index = 0; index < patternLength; index++) {
+            //     AstNode* patternArg = GetAstPatternFieldAt(pattern,index);
+            //     LLVMValueRef llvmArg = LLVMGetParam(funcLlvmExpr,index);
+            //     SetAstNodeLlvmRepr(patternArg,llvmArg);
+            // }
+
+            // emitting the body in subsequent visits:
+            LLVMBasicBlockRef entry = LLVMAppendBasicBlock(funcLlvmExpr,"entry");
+
+            // LLVMBasicBlockRef entry = LLVMGetLastBasicBlock(funcLlvmExpr);
+            LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entry);
+
+            break;
         }
         default:
         {
@@ -673,10 +667,42 @@ int pass2_post(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     AstKind nodeKind = GetAstNodeKind(node);
     switch (nodeKind) {
+        case AST_DEF:
+        {
+            AstNode* finalRhs = GetAstDefStmtFinalRhs(node);
+            LLVMValueRef value = emitExpr(emitter,finalRhs);
+            SetAstNodeLlvmRepr(node,value);
+            break;
+        }
         case AST_LAMBDA:
         {
+            AstNode* body = GetAstLambdaBody(node);
+            LLVMValueRef bodyLlvmExpr = NULL;
+            if (body) {
+                bodyLlvmExpr = emitExpr(emitter,body);
+            }
+            LLVMBuildRet(emitter->llvmBuilder,bodyLlvmExpr);
+            
             // popping the LLVM function reference from the emitter stack:
             popLlvmFunctionFromEmitterStack(emitter);
+            
+            break;
+        }
+
+        case AST_UNIT:
+        case AST_LITERAL_FLOAT:
+        case AST_LITERAL_INT:
+        case AST_LITERAL_STRING:
+        case AST_STRUCT:
+        case AST_TUPLE:
+        case AST_UNARY:
+        case AST_BINARY:
+        case AST_CALL:
+        case AST_PAREN:
+        {
+            AstNode* expr = node;
+            LLVMValueRef llvmExpr = emitExpr(emitter,expr);
+            SetAstNodeLlvmRepr(node,llvmExpr);
             break;
         }
         default:

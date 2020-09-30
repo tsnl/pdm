@@ -622,6 +622,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* itNode = GetAstParenItem(node);
             Type* itType = GetAstNodeType(itNode);
             SetAstNodeType(node,itType);
+            break;
         }
         default:
         {
@@ -1182,30 +1183,12 @@ void printType(Typer* typer, Type* type) {
         }
         case T_INT:
         {
-            IntWidth width = type->as.Int_width;
-            if (width == INT_8) {
-                printf("int 8");
-            } else if (width == INT_16) {
-                printf("int 16");
-            } else if (width == INT_32) {
-                printf("int 32");
-            } else if (width == INT_64) {
-                printf("int 64");
-            } else {
-                printf("int ?");
-            }
+            printf("int %d", GetIntTypeWidthInBits(type));
             break;
         }
         case T_FLOAT:
         {
-            FloatWidth width = type->as.Float_width;
-            if (width == FLOAT_32) {
-                printf("float 32");
-            } else if (width == FLOAT_64) {
-                printf("float 64");
-            } else {
-                printf("float ?");
-            }
+            printf("float %d", GetFloatTypeWidthInBits(type));
             break;
         }
         case T_PTR:
@@ -1442,7 +1425,7 @@ Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* 
         {
             // todo: implement arithmetic operations for floats as well as ints
             // for now, expect args and result to be ints.
-            Type* intType = GetIntType(typer,INT_128);
+            Type* intType = GetIntType(typer,INT_64);
             if (requireSubtype(loc,intType,ltArg) && requireSubtype(loc,intType,rtArg)) {
                 return intType;
             } else {

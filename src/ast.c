@@ -48,6 +48,7 @@ struct AstID {
 struct AstField {
     SymbolID name;
     AstNode* rhs;
+    int index;
 };
 struct AstDotIndex {
     AstNode* lhs;
@@ -144,6 +145,8 @@ static AstNodeList allocatedLists[MAX_AST_LIST_COUNT];
 static AstNode* newNode(Loc loc, AstKind kind);
 static AstNodeList* newNodeList(void);
 static void pushListElement(AstNodeList* list, AstNode* node);
+static int countList(AstNodeList* list);
+static AstNode* listItemAt(AstNodeList* list, int index);
 
 AstNode* newNode(Loc loc, AstKind kind) {
     AstNode* node = &allocatedNodes[allocatedNodeCount++];
@@ -170,6 +173,27 @@ void pushListElement(AstNodeList* list, AstNode* node) {
     } else {
         size_t index = list->count++;
         list->items[index] = node;
+    }
+}
+int countList(AstNodeList* list) {
+    int countSoFar = list->count;
+    if (list->next) {
+        return countSoFar + countList(list->next);
+    } else {
+        return countSoFar;
+    }
+}
+AstNode* listItemAt(AstNodeList* list, int index) {
+    if (DEBUG) {
+        if (index < 0) {
+            // invalid index
+            return NULL;
+        }
+    }
+    if (index >= MAX_AST_NODES_PER_LIST) {
+        return listItemAt(list->next, index - MAX_AST_NODES_PER_LIST);
+    } else {
+        return list->items[index];
     }
 }
 
@@ -255,18 +279,21 @@ void PushFieldToAstTuple(Loc loc, AstNode* tuple, AstNode* value) {
     AstNode* field = newNode(loc, AST_FIELD__TUPLE_ITEM);
     field->as.Field.name = SYM_NULL;
     field->as.Field.rhs = value;
+    field->as.Field.index = countList(tuple->as.Items);
     pushListElement(tuple->as.Items, field);
 }
 void PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value) {
     AstNode* field = newNode(loc, AST_FIELD__STRUCT_ITEM);
     field->as.Field.name = name;
     field->as.Field.rhs = value;
+    field->as.Field.index = countList(struct_->as.Items);
     pushListElement(struct_->as.Items, field);
 }
 void PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec) {
     AstNode* field = newNode(loc, AST_FIELD__PATTERN_ITEM);
     field->as.Field.name = name;
     field->as.Field.rhs = typespec;
+    field->as.Field.index = countList(pattern->as.Items);
     pushListElement(pattern->as.Items, field);
 }
 void PushPatternToAstDefStmt(AstNode* defStmt, AstNode* pattern) {
@@ -411,36 +438,6 @@ AstNode* CreateAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode*
 }
 
 //
-// Getter helpers:
-//
-
-static int getListLength(AstNodeList* list);
-static AstNode* getListItemAt(AstNodeList* list, int index);
-
-int getListLength(AstNodeList* list) {
-    int countSoFar = list->count;
-    if (list->next) {
-        return countSoFar + getListLength(list->next);
-    } else {
-        return countSoFar;
-    }
-}
-
-AstNode* getListItemAt(AstNodeList* list, int index) {
-    if (DEBUG) {
-        if (index < 0) {
-            // invalid index
-            return NULL;
-        }
-    }
-    if (index >= MAX_AST_NODES_PER_LIST) {
-        return getListItemAt(list->next, index - MAX_AST_NODES_PER_LIST);
-    } else {
-        return list->items[index];
-    }
-}
-
-//
 // Getter implementation:
 //
 
@@ -448,10 +445,10 @@ SymbolID GetAstModuleName(AstNode* module) {
     return module->as.Module.name;
 }
 int GetAstModuleLength(AstNode* module) {
-    return getListLength(module->as.Module.items);
+    return countList(module->as.Module.items);
 }
 AstNode* GetAstModuleStmtAt(AstNode* module, int index) {
-    return getListItemAt(module->as.Module.items, index);
+    return listItemAt(module->as.Module.items, index);
 }
 
 size_t GetAstNodeKey(AstNode* node) {
@@ -490,16 +487,16 @@ AstNode* GetAstParenItem(AstNode* node) {
 }
 
 int GetAstTupleLength(AstNode* node) {
-    return getListLength(node->as.Items);
+    return countList(node->as.Items);
 }
 int GetAstStructLength(AstNode* node) {
-    return getListLength(node->as.Items);
+    return countList(node->as.Items);
 }
 int GetAstPatternLength(AstNode* node) {
-    return getListLength(node->as.Items);
+    return countList(node->as.Items);
 }
 int GetAstChainPrefixLength(AstNode* node) {
-    return getListLength(node->as.Chain.prefix);
+    return countList(node->as.Chain.prefix);
 }
 AstNode* GetAstChainResult(AstNode* node) {
     return node->as.Chain.result;
@@ -509,44 +506,44 @@ AstNode* GetAstTupleItemAt(AstNode* node, int index) {
     if (DEBUG) {
         assert(node->kind == AST_TUPLE);
     }
-    return getListItemAt(node->as.Items, index);
+    return listItemAt(node->as.Items, index);
 }
 AstNode* GetAstStructFieldAt(AstNode* node, int index) {
     if (DEBUG) {
         assert(node->kind == AST_STRUCT);
     }
-    return getListItemAt(node->as.Items, index);
+    return listItemAt(node->as.Items, index);
 }
 AstNode* GetAstPatternFieldAt(AstNode* node, int index) {
     if (DEBUG) {
         assert(node->kind == AST_T_PATTERN || node->kind == AST_V_PATTERN);
     }
-    return getListItemAt(node->as.Items, index);
+    return listItemAt(node->as.Items, index);
 }
 AstNode* GetAstChainPrefixStmtAt(AstNode* node, int index) {
     if (DEBUG) {
         assert(node->kind == AST_CHAIN);
     }
-    return getListItemAt(node->as.Chain.prefix, index);
+    return listItemAt(node->as.Chain.prefix, index);
 }
 
 AstNode* GetAstIteCond(AstNode* ite) {
     if (DEBUG) {
         assert(ite->kind == AST_ITE);
     }
-    return getListItemAt(ite->as.Items, 0);
+    return listItemAt(ite->as.Items, 0);
 }
 AstNode* GetAstIteIfTrue(AstNode* ite) {
     if (DEBUG) {
         assert(ite->kind == AST_ITE);
     }
-    return getListItemAt(ite->as.Items, 1);
+    return listItemAt(ite->as.Items, 1);
 }
 AstNode* GetAstIteIfFalse(AstNode* ite) {
     if (DEBUG) {
         assert(ite->kind == AST_ITE);
     }
-    return getListItemAt(ite->as.Items, 2);
+    return listItemAt(ite->as.Items, 2);
 }
 
 AstNode* GetAstDotIndexLhs(AstNode* dot) {
@@ -649,6 +646,9 @@ AstNode* GetAstFieldRhs(AstNode* field) {
     }
     return field->as.Field.rhs;
 }
+int GetAstFieldIndex(AstNode* field) {
+    return field->as.Field.index;
+}
 
 AstUnaryOperator GetAstUnaryOperator(AstNode* unary) {
     if (DEBUG) {
@@ -686,13 +686,13 @@ SymbolID GetAstDefStmtLhs(AstNode* def) {
     return def->as.Def.lhs;
 }
 int GetAstDefStmtPatternCount(AstNode* def) {
-    return getListLength(def->as.Def.patterns);
+    return countList(def->as.Def.patterns);
 }
 AstNode* GetAstDefStmtFinalizedRhs(AstNode* def) {
     return def->as.Def.finalizedRhs;
 }
 AstNode* GetAstDefStmtPatternAt(AstNode* def, int index) {
-    return getListItemAt(def->as.Def.patterns,index);
+    return listItemAt(def->as.Def.patterns,index);
 }
 AstNode* GetAstDefStmtRhs(AstNode* def) {
     return def->as.Def.rhs;

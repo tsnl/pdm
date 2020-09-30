@@ -156,6 +156,7 @@ AstNode* GetAstCallRhs(AstNode* call);
 SymbolID GetAstFieldName(AstNode* field);
 AstNode* GetAstModuleFieldPattern(AstNode* field);
 AstNode* GetAstFieldRhs(AstNode* field);
+int GetAstFieldIndex(AstNode* field);
 
 AstUnaryOperator GetAstUnaryOperator(AstNode* unary);
 AstNode* GetAstUnaryOperand(AstNode* unary);

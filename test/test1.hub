@@ -1,21 +1,5 @@
-PE :: 1;
-PI :: 3.14159;
-PO :: 3;
-PM :: 0x42;
-
-greaterThan3 :: [c: u64] {
-    if 3 < c then {
-        1
-    } else {
-        0
-    }
-};
-main :: [x: u64] {
-    n = 42;
-    # if greaterThan3 n then {
-    if 3 < n then {
-        n
-    } else {
-        0
-    }
+def fibonacci (n: u64) = {
+    if n = 0 then 1 else
+    if n = 1 then 1 else
+    42
 };

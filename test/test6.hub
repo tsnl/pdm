@@ -1,0 +1,25 @@
+def PE = 1;
+def PI = 3.14159;
+def PO = 3;
+def PM = 0x42;
+
+def greaterThan3 (c: u64) = {
+    if 3 < c then {
+        1
+    } else {
+        0
+    }
+};
+def main (x: u64) = {
+    let n = 42;
+    let scrambler = $(x: u64) {
+        x % n
+    };
+    let w = scrambler(w, 2*w);
+    
+    # todo: ':' binary value operator provides prefix-invocation
+    # let cond = w:greaterThan3;
+    let cond = greaterThan3 w;
+    
+    if cond then w else 0
+};
