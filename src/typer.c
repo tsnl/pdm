@@ -426,7 +426,7 @@ int typer_post(void* rawTyper, AstNode* node) {
         case AST_LET:
         {
             Type* lhsValueType = GetAstNodeType(node);
-            Type* rhsType = GetAstNodeType(GetAstBindStmtRhs(node));
+            Type* rhsType = GetAstNodeType(GetAstLetStmtRhs(node));
             if (lhsValueType && rhsType) {
                 requireSubtype(GetAstNodeLoc(node), rhsType, lhsValueType);
             }

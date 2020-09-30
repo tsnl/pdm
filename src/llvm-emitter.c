@@ -173,12 +173,12 @@ LLVMValueRef getDefnRhsValue(Emitter* emitter, AstNode* defnNode) {
     {
         case AST_LET:
         {
-            AstNode* rhs = GetAstBindStmtRhs(defnNode);
+            AstNode* rhs = GetAstLetStmtRhs(defnNode);
             return emitExpr(emitter,rhs);
         }
         case AST_DEF:
         {
-            AstNode* rhs = GetAstDefStmtRhs(defnNode);
+            AstNode* rhs = GetAstDefStmtFinalRhs(defnNode);
             return emitExpr(emitter,rhs);
         }
         case AST_FIELD__PATTERN_ITEM:
@@ -275,15 +275,21 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             // todo: pass captured arguments here
             // todo: destructure tuple types for function calls
             Type* callType = GetAstNodeType(expr);
-            LLVMTypeRef callLlvmType = emitType(emitter->typer,callType);
+            // LLVMTypeRef callLlvmType = emitType(emitter->typer,callType);
             AstNode* lhs = GetAstCallLhs(expr);
             AstNode* rhs = GetAstCallRhs(expr);
             LLVMValueRef lhsLlvmValue = emitExpr(emitter,lhs);
             LLVMValueRef rhsLlvmValue = emitExpr(emitter,rhs);
 
-            return LLVMBuildCall2(
+            // return LLVMBuildCall2(
+            //     emitter->llvmBuilder,
+            //     callLlvmType,
+            //     lhsLlvmValue,
+            //     &rhsLlvmValue,1,
+            //     "call"
+            // );
+            return LLVMBuildCall(
                 emitter->llvmBuilder,
-                callLlvmType,
                 lhsLlvmValue,
                 &rhsLlvmValue,1,
                 "call"
@@ -593,7 +599,11 @@ int pass1_pre(void* rawEmitter, AstNode* node) {
                 funcLlvmType = NULL;
             }
 
+            //
             // adding the defined LLVM function reference:
+            // pass2 should never call `emitLlvmExpr`, instead using this stored defn. This function can be defined at leisure in pass2.
+            //
+
             LLVMValueRef funcLlvmExpr = LLVMAddFunction(emitter->llvmModule,"__anonymous_function__",funcLlvmType);
             
             // storing the LLVM function reference on the Lambda:

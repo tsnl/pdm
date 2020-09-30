@@ -246,9 +246,9 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         case AST_LET:
         {
             PrintText(cp, "let ");
-            PrintText(cp, GetSymbolText(GetAstBindStmtLhs(node)));
+            PrintText(cp, GetSymbolText(GetAstLetStmtLhs(node)));
             PrintText(cp, " = ");
-            PrintNode(cp, GetAstBindStmtRhs(node));
+            PrintNode(cp, GetAstLetStmtRhs(node));
             break;
         }
         case AST_STMT_CHECK:

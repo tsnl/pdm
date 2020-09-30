@@ -144,8 +144,8 @@ SymbolID GetAstDotNameRhs(AstNode* dot);
 AstNode* GetAstLambdaPattern(AstNode* lambda);
 AstNode* GetAstLambdaBody(AstNode* lambda);
 
-SymbolID GetAstBindStmtLhs(AstNode* bindStmt);
-AstNode* GetAstBindStmtRhs(AstNode* bindStmt);
+SymbolID GetAstLetStmtLhs(AstNode* bindStmt);
+AstNode* GetAstLetStmtRhs(AstNode* bindStmt);
 
 AstNode* GetAstCheckStmtChecked(AstNode* checkStmt);
 AstNode* GetAstCheckStmtMessage(AstNode* checkStmt);

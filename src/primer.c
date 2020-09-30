@@ -242,7 +242,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         }
         case AST_LET:
         {
-            SymbolID defnID = GetAstBindStmtLhs(node);
+            SymbolID defnID = GetAstLetStmtLhs(node);
             void* type = CreateMetatype(primer->typer, "let:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_VALUE);
             SetAstNodeType(node, type);

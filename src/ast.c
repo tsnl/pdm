@@ -585,13 +585,13 @@ AstNode* GetAstLambdaBody(AstNode* node) {
     return node->as.Lambda.body;
 }
 
-SymbolID GetAstBindStmtLhs(AstNode* bindStmt) {
+SymbolID GetAstLetStmtLhs(AstNode* bindStmt) {
     if (DEBUG) {
         assert(bindStmt->kind == AST_LET);
     }
     return bindStmt->as.Let.lhs;
 }
-AstNode* GetAstBindStmtRhs(AstNode* bindStmt) {
+AstNode* GetAstLetStmtRhs(AstNode* bindStmt) {
     if (DEBUG) {
         assert(bindStmt->kind == AST_LET);
     }
@@ -810,7 +810,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         }
         case AST_LET:
         {
-            return RecursivelyVisitAstNode(context, GetAstBindStmtRhs(node), preVisitorCb, postVisitorCb);
+            return RecursivelyVisitAstNode(context, GetAstLetStmtRhs(node), preVisitorCb, postVisitorCb);
         }
         case AST_DEF:
         {
