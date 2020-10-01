@@ -272,7 +272,7 @@ RawAstNode* parseExternStmt(Parser* p) {
 }
 RawAstNode* parseTypedefStmt(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
-    if (!expect(p,TK_KW_TYPEDEF,"'type'")) { return NULL; }
+    if (!expect(p,TK_KW_TYPEDEF,"'typedef'")) { return NULL; }
 
     TokenInfo idTokenInfo = lookaheadInfo(p,0);
     if (!expect(p,TK_ID,"a typedef ID")) { return NULL; }

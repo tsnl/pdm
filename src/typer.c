@@ -365,6 +365,10 @@ AdtTrieNode* getAtnChild(AdtTrieNode* parent, AdtOperator operator, InputTypeFie
 AdtTrieNode* getCommonSuperATN(AdtTrieNode* a, AdtTrieNode* b) {
     if (a == b) {
         return a;
+    } else if (a == NULL) {
+        return NULL;
+    } else if (b == NULL) {
+        return NULL;
     } else {
         return getCommonSuperATN(
             getCommonSuperATN(a->parent, b),
@@ -379,7 +383,8 @@ int isSubATN(AdtTrieNode* sup, AdtTrieNode* sub) {
 int typer_post(void* rawTyper, AstNode* node) {
     Typer* typer = rawTyper;
     Loc nodeLoc = GetAstNodeLoc(node);
-    switch (GetAstNodeKind(node)) {
+    AstKind nodeKind = GetAstNodeKind(node);
+    switch (nodeKind) {
         case AST_UNIT:
         {
             Type* t = GetUnitType(typer);
@@ -499,7 +504,7 @@ int typer_post(void* rawTyper, AstNode* node) {
                     requireSubtype(loc, rhsValueType, fieldType);
                 }
 
-                Type* rhsTypingType = GetAstNodeValueType(rhs);
+                Type* rhsTypingType = GetAstNodeTypingType(rhs);
                 if (rhsTypingType) {
                     requireSubtype(loc, rhsTypingType, fieldType);
                 }
@@ -525,18 +530,33 @@ int typer_post(void* rawTyper, AstNode* node) {
         case AST_V_PATTERN:
         {
             int patternCount = GetAstPatternLength(node);
+            Type* type = NULL;
             if (patternCount == 0) {
-                SetAstNodeValueType(node, GetUnitType(typer));
+                type = GetUnitType(typer);
             } else if (patternCount == 1) {
-                SetAstNodeValueType(
-                    node,
-                    GetAstNodeValueType(GetAstPatternFieldAt(node,0))
-                );
-            } else if (DEBUG) {
-                // todo: create a tuple type here.
-                printf("!!- Typing patterns of length > 1 not implemented.\n");
+                type = GetAstNodeValueType(GetAstPatternFieldAt(node,0));
             } else {
-                assert(0 && "typing patterns of length > 1 not implemented.");
+                InputTypeFieldList* lastInputFieldList = NULL;
+                for (int index = patternCount-1; index >= 0; index--) {
+                    AstNode* field = GetAstPatternFieldAt(node,index);
+                    
+                    InputTypeFieldNode* node = malloc(sizeof(InputTypeFieldNode));
+                    node->name = GetAstFieldName(field);
+                    node->next = lastInputFieldList;
+                    node->type = GetAstNodeTypingType(GetAstFieldRhs(field));
+                    lastInputFieldList = node;
+                }
+                InputTypeFieldList* firstITF = lastInputFieldList;
+                type = GetTupleType(typer,lastInputFieldList);
+
+                // todo: de-allocate ITF list.
+            }
+
+            int typeNotValueContext = (nodeKind == AST_T_PATTERN);
+            if (typeNotValueContext) {
+                SetAstNodeTypingType(node, type);
+            } else {
+                SetAstNodeValueType(node, type);
             }
             break;
         }
@@ -799,7 +819,7 @@ int requireSubtype_intSup(Loc loc, Type* type, Type* reqSubtype) {
         {
             // todo: implement TypeKindToText to make error reporting more descriptive (see here).
             FeedbackNote* note = CreateFeedbackNote("in subtype here...", loc, NULL);
-            PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different kinds: int and <?>.");
+            PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different kinds: int and %s.", TypeKindAsText(reqSubtype->kind));
             result = 0;
             break;
         }
@@ -827,7 +847,7 @@ int requireSubtype_floatSup(Loc loc, Type* type, Type* reqSubtype) {
         {
             // todo: implement TypeKindToText to make error reporting more descriptive (see here).
             FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
-            PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different kinds: float and <?>.");
+            PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different kinds: float and %s.", TypeKindAsText(reqSubtype->kind));
             result = 0;
             break;
         }
@@ -851,7 +871,7 @@ int requireSubtype_ptrSup(Loc loc, Type* type, Type* reqSubtype) {
         {
             // todo: while typechecking float type, get loc (here) to report type errors.
             // todo: implement TypeKindToText to make error reporting more descriptive (see here).
-            PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different kinds: ptr and <?>.");
+            PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different kinds: ptr and %s.", TypeKindAsText(reqSubtype->kind));
             result = 0;
             break;
         }
@@ -885,7 +905,7 @@ int requireSubtype_funcSup(Loc loc, Type* type, Type* reqSubtype) {
         {
             // todo: while typechecking func types, get loc (here) to report type errors.
             // todo: implement TypeKindToText to make error reporting more descriptive (see here).
-            PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different kinds: func and <?>.");
+            PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different kinds: func and %s.", TypeKindAsText(reqSubtype->kind));
             result = 0;
             break;
         }
@@ -918,7 +938,7 @@ int requireSubtype_tupleSup(Loc loc, Type* type, Type* reqSubtype) {
         {
             // todo: implement TypeKindToText to make error reporting more descriptive (see here).
             FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
-            PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different kinds: tuple and <?>.");
+            PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different kinds: tuple and %s.", TypeKindAsText(reqSubtype->kind));
             result = 0;
             break;
         }
@@ -947,6 +967,22 @@ int requireSupertype_metavarSub(Loc loc, Type* sub, Type* sup) {
     return requireSubtype_metavarSup(loc,sup,sub);
 }
 int requireSubtype_metavarSup_half(Loc loc, Type* metatype, Type* subtype) {
+    if (metatype == NULL) {
+        if (DEBUG) {
+            printf("!!- ERROR: requireSubtype_metavarSup_half on null `metatype`\n");
+        } else {
+            assert(0 && "requireSubtype_metavarSup_half on null `metatype`");
+        }
+        return 0;
+    }
+    if (subtype == NULL) {
+        if (DEBUG) {
+            printf("!!- ERROR: requireSubtype_metavarSup_half on null `subtype`\n");
+        } else {
+            assert(0 && "requireSubtype_metavarSup_half on null `subtype`");
+        }
+        return 0;
+    }
     int subtypeCount = sb_count(metatype->as.Meta.subtypesSB);
     for (int index = 0; index < subtypeCount; index++) {
         Type* oldSubtype = metatype->as.Meta.subtypesSB[index].ptr;
@@ -1207,6 +1243,56 @@ void mapCompoundType(Typer* typer, AdtTrieNode* compoundATN, FieldCB cb, void* s
         AdtTrieEdge* edge = &node->parent->edgesSb[node->parentEdgeIndex];
         cb(typer,sb,edge->name,edge->type);
     }
+}
+
+char const* TypeKindAsText(TypeKind typeKind) {
+    switch (typeKind) {
+        case T_ANY: 
+        {
+            return "any";
+        }
+        case T_UNIT: 
+        {
+            return "unit";
+        }
+        case T_INT: 
+        {
+            return "int";
+        }
+        case T_FLOAT: 
+        {
+            return "float";
+        }
+        case T_PTR: 
+        {
+            return "ptr";
+        }
+        case T_FUNC: 
+        {
+            return "func";
+        }
+        case T_TUPLE:  
+        {
+            return "tuple";
+        }
+        case T_UNION: 
+        {
+            return "union";
+        }
+        case T_TYPEFUNC: 
+        {
+            return "typefunc";
+        }
+        case T_MODULE: 
+        {
+            return "module";
+        }
+        default:
+        {
+            return "<error>";
+        }
+    }
+
 }
 
 void printTyper(Typer* typer) {

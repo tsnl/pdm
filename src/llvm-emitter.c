@@ -200,9 +200,9 @@ LLVMValueRef getDefnRhsValue(Emitter* emitter, AstNode* defnNode) {
         default:
         {
             if (DEBUG) {
-                printf("!!- getDefnRhs not implemented for defnNode of kind <?>.");
+                printf("!!- getDefnRhsValue not implemented for defnNode of kind <?>.\n");
             } else {
-                assert(0 && "getDefnRhs not implemented for defnNode of kind <?>.");
+                assert(0 && "getDefnRhsValue not implemented for defnNode of kind <?>.");
             }
             return NULL;
         }
@@ -611,16 +611,26 @@ int forwardDeclarationPass_pre(void* rawEmitter, AstNode* node) {
                 LLVMTypeRef funcDomainLlvmType = emitType(emitter->typer,funcDomainType);
                 funcLlvmType = LLVMFunctionType(funcImageLlvmType,&funcDomainLlvmType,1,0);
             } else {
-                // todo: destructure tuple arguments:
+                // destructuring tuple arguments:
+                Type* type = GetAstNodeTypingType(pattern);
+                LLVMTypeRef* llvmArgTypes = malloc(sizeof(LLVMTypeRef) * patternLength);
+                for (int patternIndex = 0; patternIndex < patternLength; patternIndex++) {
+                    AstNode* field = GetAstPatternFieldAt(pattern, patternIndex);
+                    Type* fieldTypingType = GetAstNodeTypingType(GetAstFieldRhs(field));
+                    LLVMTypeRef llvmType = emitType(emitter->typer,fieldTypingType);
+                    llvmArgTypes[patternIndex] = llvmType;
+                }
+                funcLlvmType = LLVMFunctionType(funcImageLlvmType, llvmArgTypes, patternLength, 0);
+
                 // for (int index = 0; index < patternLength; index++) {
                 //     AstNode* field = GetAstPatternFieldAt(pattern,index);
                 // }
-                if (DEBUG) {
-                    printf("!!- NotImplemented: lambdas with patterns of length > 1\n");
-                } else {
-                    assert(0 && "NotImplemented: lambdas with patterns of length > 1");
-                }
-                funcLlvmType = NULL;
+                // if (DEBUG) {
+                //     printf("!!- NotImplemented: lambdas with patterns of length > 1\n");
+                // } else {
+                //     assert(0 && "NotImplemented: lambdas with patterns of length > 1");
+                // }
+                // funcLlvmType = NULL;
             }
 
             //
@@ -664,7 +674,7 @@ int definitionPass_pre(void* rawEmitter, AstNode* node) {
             AstNode* pattern = GetAstLambdaPattern(node);
             AstNode* body = GetAstLambdaBody(node);
 
-            int patternLength = GetAstPatternLength(pattern);
+            // int patternLength = GetAstPatternLength(pattern);
 
             // getting the forward-declared function (from pass1)
             // not defining

@@ -400,7 +400,7 @@ int PrimeModule(Primer* primer, AstNode* module) {
             SymbolID lhs = GetAstTypedefStmtName(stmt);
             char const* symbolText = GetSymbolText(lhs);
             
-            void* typingContextType = CreateMetatype(primer->typer, "type:%s", symbolText);
+            void* typingContextType = CreateMetatype(primer->typer, "typedef:%s", symbolText);
             // todo: replace this invocation of FuncType with something different, like CastType?
             void* valueContextType = GetFuncType(primer->typer, typingContextType, typingContextType);
             

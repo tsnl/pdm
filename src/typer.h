@@ -135,6 +135,12 @@ void SetTypeLlvmRepr(Type* type, void* repr);
 
 void PrintTyper(Typer* typer);
 
+//
+// Reflection:
+//
+
+char const* TypeKindAsText(TypeKind typeKind);
+
 #endif  // INCLUDED_TYPER_H
 
 // todo: implement T_TEMPLATE

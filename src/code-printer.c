@@ -134,7 +134,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             SymbolID name = GetAstTypedefStmtName(node);
             AstNode* pattern = GetAstTypedefStmtOptPattern(node);
             AstNode* rhs = GetAstTypedefStmtOptRhs(node);
-            PrintText(cp,"type ");
+            PrintText(cp,"typedef ");
             PrintText(cp,GetSymbolText(name));
             if (pattern) {
                 PrintNode(cp,pattern);
@@ -163,10 +163,10 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             SymbolID lhs = GetAstFieldName(node);
             if (lhs != SYM_NULL) {
                 PrintText(cp, GetSymbolText(lhs));
+                PrintText(cp, ": ");
             }
             AstNode* rhs = GetAstFieldRhs(node);
             if (rhs) {
-                PrintText(cp, ": ");
                 PrintNode(cp, rhs);
             }
             break;

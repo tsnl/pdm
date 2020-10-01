@@ -789,12 +789,24 @@ void* GetAstNodeValueType(AstNode* node) {
     return node->valueType;
 }
 void SetAstNodeValueType(AstNode* node, void* type) {
+    if (DEBUG) {
+        if (!type) {
+            printf("!!- SetAstNodeValueType: null arg set\n");
+            return;
+        }
+    }
     node->valueType = type;
 }
 void* GetAstNodeTypingType(AstNode* node) {
     return node->typingType;
 }
 void SetAstNodeTypingType(AstNode* node, void* type) {
+    if (DEBUG) {
+        if (!type) {
+            printf("!!- SetAstNodeValueType: null arg set\n");
+            return;
+        }
+    }
     node->typingType = type;
 }
 

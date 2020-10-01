@@ -62,7 +62,7 @@ void InitLexer(void) {
     kwLetSymbolID = strings_intern(symbolsDict, "let");
     kwDefSymbolID = strings_intern(symbolsDict, "def");
     kwExternSymbolID = strings_intern(symbolsDict, "extern");
-    kwTypedefSymbolID = strings_intern(symbolsDict, "type");
+    kwTypedefSymbolID = strings_intern(symbolsDict, "typedef");
 }
 
 void DeInitLexer(void) {
