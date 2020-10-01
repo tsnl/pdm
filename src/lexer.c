@@ -26,6 +26,8 @@ static SymbolID kwReturnSymbolID = 0;
 static SymbolID kwCheckSymbolID = 0;
 static SymbolID kwLetSymbolID = 0;
 static SymbolID kwDefSymbolID = 0;
+static SymbolID kwExternSymbolID = 0;
+static SymbolID kwTypedefSymbolID = 0;
 
 static TokenKind lexOneToken(Source* source, TokenInfo* infoP);
 static TokenKind lexOneSimpleToken(Source* source, TokenInfo* infoP);
@@ -59,6 +61,8 @@ void InitLexer(void) {
     kwCheckSymbolID = strings_intern(symbolsDict, "check");
     kwLetSymbolID = strings_intern(symbolsDict, "let");
     kwDefSymbolID = strings_intern(symbolsDict, "def");
+    kwExternSymbolID = strings_intern(symbolsDict, "extern");
+    kwTypedefSymbolID = strings_intern(symbolsDict, "typedef");
 }
 
 void DeInitLexer(void) {
@@ -457,8 +461,10 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
     if (kwID == kwWithSymbolID) { return TK_KW_WITH; }
     if (kwID == kwReturnSymbolID) { return TK_KW_RETURN; }
     if (kwID == kwCheckSymbolID) { return TK_KW_CHECK; }
-    if (kwID == kwDefSymbolID) { return TK_KW_DEF; }
     if (kwID == kwLetSymbolID) { return TK_KW_LET; }
+    if (kwID == kwDefSymbolID) { return TK_KW_DEF; }
+    if (kwID == kwExternSymbolID) { return TK_KW_EXTERN; }
+    if (kwID == kwTypedefSymbolID) { return TK_KW_TYPEDEF; }
     if (DEBUG) {
         printf("!!- Keyword not implemented: '%s' (id=%d)\n", strings_lookup_id(symbolsDict, kwID), kwID);
     } else {
@@ -756,6 +762,11 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
             name = "check";
             break;
         }
+        case TK_KW_TYPEDEF:
+        {
+            name = "typedef";
+            break;
+        }
         case TK_DINT_LIT:
         {
             name = "<d-int>";
@@ -812,6 +823,11 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
         case TK_NULL:
         {
             name = "<NULL>";
+            break;
+        }
+        case TK_EOS:
+        {
+            name = "<EOF>";
             break;
         }
         default:

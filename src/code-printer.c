@@ -129,6 +129,17 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             }
             break;
         }
+        case AST_TYPEDEF:
+        {
+            SymbolID name = GetAstTypedefStmtName(node);
+            AstNode* pattern = GetAstTypedefStmtPattern(node);
+            PrintText(cp,"typedef ");
+            PrintText(cp,GetSymbolText(name));
+            if (pattern) {
+                PrintNode(cp,pattern);
+            }
+            break;
+        }
         case AST_FIELD__PATTERN_ITEM:
         case AST_FIELD__STRUCT_ITEM:
         case AST_FIELD__TEMPLATE_ITEM:
@@ -262,8 +273,18 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         case AST_CALL:
         {
             PrintNode(cp, GetAstCallLhs(node));
-            PrintChar(cp, ' ');
+            int isTemplate = IsAstCallTemplate(node);
+            if (isTemplate) {
+                PrintChar(cp,'[');
+            } else {
+                PrintChar(cp,'(');
+            }
             PrintNode(cp, GetAstCallRhs(node));
+            if (isTemplate) {
+                PrintChar(cp,']');
+            } else {
+                PrintChar(cp,')');
+            }
             break;
         }
         case AST_UNARY:

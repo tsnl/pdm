@@ -1,0 +1,47 @@
+# extern printChar: Func () u32;
+
+typedef Vector3[t];
+
+def v3_new [t] (x: t, y: t, z: t) = Vector3[t] {
+    x: x,
+    y: y,
+    z: z
+};
+
+def v3_add [t] (v: Vector3[t], w: Vector3[t]) = Vector3[t] {
+    Vector3[t](v.x+w.x, v.y+w.y, v.z+w.z)
+};
+def v3_sub [t] (v: Vector3[t], w: Vector3[t]) = Vector3[t] {
+    Vector3[t](v.x-w.x, v.y-w.y, v.z-w.z)
+};
+def v3_mul [t] (s: t, v: Vector3[t]) = Vector3[t] {
+    Vector3[t](s * v.x, s * v.y, s * v.z)
+};
+def v3_dot [t] (v: Vector3[t], w: Vector3[t]) = Vector3[t] {
+    v.x*w.x + v.y*w.y + v.z*w.z
+};
+def v3_lenSquared [t] (v: Vector3[t]) = t {
+    v3_dot(v,v)
+};
+def v3_len [t] (v: Vector3[t]) = t {
+    # todo: define 'sqrt'
+    sqrt(v3_lenSquared(v))
+};
+
+def fibonacci (n: u64) = u64 {
+    if n = 0 then 1 else
+    if n = 1 then 1 else
+    fibonacci(n-1) + fibonacci(n-2)
+};
+
+def factorial (n: u64) = u64 {
+    if n = 0 then {
+        1
+    } else {
+        n * factorial(n-1)
+    }
+};
+
+def main () = u32 {
+    factorial 5
+};

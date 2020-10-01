@@ -21,6 +21,7 @@ typedef struct AstDotName  AstDotName;
 typedef struct AstLambda   AstLambda;
 typedef struct AstLet      AstLet;
 typedef struct AstDef      AstDef;
+typedef struct AstTypedef  AstTypedef;
 typedef struct AstCheck    AstCheck;
 typedef struct AstUnary    AstUnary;
 typedef struct AstBinary   AstBinary;
@@ -49,6 +50,7 @@ struct AstField {
     SymbolID name;
     AstNode* rhs;
     int index;
+    AstNode* parent;
 };
 struct AstDotIndex {
     AstNode* lhs;
@@ -75,6 +77,10 @@ struct AstDef {
     AstNode* rhs;
     AstNode* finalizedRhs;
 };
+struct AstTypedef {
+    SymbolID name;
+    AstNode* pattern;
+};
 struct AstCheck {
     AstNode* checked;
     AstNode* message;
@@ -82,6 +88,7 @@ struct AstCheck {
 struct AstCall {
     AstNode* lhs;
     AstNode* rhs;
+    int isTemplateCall;
 };
 struct AstUnary {
     AstUnaryOperator operator;
@@ -117,6 +124,7 @@ union AstInfo {
     AstLambda       Lambda;
     AstLet          Let;
     AstDef          Def;
+    AstTypedef      Typedef;
     AstCheck        Check;
     AstChain        Chain;
     AstNode*        Paren;
@@ -214,7 +222,14 @@ void AttachImportHeaderToAstModule(AstNode* module, AstNode* mapping) {
 void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping) {
     module->as.Module.exportHeader = mapping;
 }
-void PushAstDefStmtToAstModule(AstNode* module, AstNode* def) {
+void PushStmtToAstModule(AstNode* module, AstNode* def) {
+    if (def->kind != AST_DEF && def->kind != AST_TYPEDEF) {
+        if (DEBUG) {
+            printf("!!- Cannot push non-def/typedef to AstModule.\n");
+        } else {
+            assert(0 && "Cannot push non-def/typedef to AstModule");
+        }
+    }
     pushListElement(module->as.Module.items, def);
 }
 
@@ -280,6 +295,7 @@ void PushFieldToAstTuple(Loc loc, AstNode* tuple, AstNode* value) {
     field->as.Field.name = SYM_NULL;
     field->as.Field.rhs = value;
     field->as.Field.index = countList(tuple->as.Items);
+    field->as.Field.parent = tuple;
     pushListElement(tuple->as.Items, field);
 }
 void PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value) {
@@ -287,13 +303,17 @@ void PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* val
     field->as.Field.name = name;
     field->as.Field.rhs = value;
     field->as.Field.index = countList(struct_->as.Items);
+    field->as.Field.parent = struct_;
     pushListElement(struct_->as.Items, field);
 }
 void PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec) {
-    AstNode* field = newNode(loc, AST_FIELD__PATTERN_ITEM);
+    assert(pattern->kind == AST_T_PATTERN || pattern->kind == AST_V_PATTERN);
+    AstKind fieldKind = (pattern->kind == AST_T_PATTERN ? AST_FIELD__TEMPLATE_ITEM : AST_FIELD__PATTERN_ITEM);
+    AstNode* field = newNode(loc, fieldKind);
     field->as.Field.name = name;
     field->as.Field.rhs = typespec;
     field->as.Field.index = countList(pattern->as.Items);
+    field->as.Field.parent = pattern;
     pushListElement(pattern->as.Items, field);
 }
 void PushPatternToAstDefStmt(AstNode* defStmt, AstNode* pattern) {
@@ -409,6 +429,12 @@ AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs) {
     defNode->as.Def.finalizedRhs = NULL;
     return defNode;
 }
+AstNode* CreateAstTypedefStmt(Loc loc, SymbolID name, AstNode* pattern) {
+    AstNode* typedefNode = newNode(loc, AST_TYPEDEF);
+    typedefNode->as.Typedef.name = name;
+    typedefNode->as.Typedef.pattern = pattern;
+    return typedefNode;
+}
 
 AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message) {
     AstNode* checkNode = newNode(loc, AST_STMT_CHECK);
@@ -417,10 +443,11 @@ AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message) {
     return checkNode;
 }
 
-AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs) {
+AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs, int isTemplateCall) {
     AstNode* callNode = newNode(loc, AST_CALL);
     callNode->as.Call.lhs = lhs;
     callNode->as.Call.rhs = rhs;
+    callNode->as.Call.isTemplateCall = isTemplateCall;
     return callNode;
 }
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg) {
@@ -623,6 +650,12 @@ AstNode* GetAstCallRhs(AstNode* call) {
     }
     return call->as.Call.rhs;
 }
+int IsAstCallTemplate(AstNode* call) {
+    if (DEBUG) {
+        assert(call->kind == AST_CALL);
+    }
+    return call->as.Call.isTemplateCall;
+}
 
 SymbolID GetAstFieldName(AstNode* field) {
     if (DEBUG) {
@@ -648,6 +681,9 @@ AstNode* GetAstFieldRhs(AstNode* field) {
 }
 int GetAstFieldIndex(AstNode* field) {
     return field->as.Field.index;
+}
+AstNode* GetAstFieldParent(AstNode* field) {
+    return field->as.Field.parent;
 }
 
 AstUnaryOperator GetAstUnaryOperator(AstNode* unary) {
@@ -702,6 +738,13 @@ int GetAstDefStmtFinalized(AstNode* def) {
 }
 AstNode* GetAstDefStmtFinalRhs(AstNode* def) {
     return def->as.Def.finalizedRhs;
+}
+
+SymbolID GetAstTypedefStmtName(AstNode* td) {
+    return td->as.Typedef.name;
+}
+AstNode* GetAstTypedefStmtPattern(AstNode* td) {
+    return td->as.Typedef.pattern;
 }
 
 //
@@ -815,6 +858,15 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         case AST_DEF:
         {
             return RecursivelyVisitAstNode(context,GetAstDefStmtFinalizedRhs(node),preVisitorCb,postVisitorCb);
+        }
+        case AST_TYPEDEF:
+        {
+            AstNode* pattern = GetAstTypedefStmtPattern(node);
+            if (pattern) {
+                return RecursivelyVisitAstNode(context,pattern,preVisitorCb,postVisitorCb);
+            } else {
+                return 1;
+            }
         }
         case AST_STMT_CHECK:
         {

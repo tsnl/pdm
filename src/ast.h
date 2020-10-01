@@ -26,7 +26,7 @@ enum AstKind {
     AST_LAMBDA,
     AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME,
-    AST_LET, AST_DEF, AST_STMT_CHECK, AST_STMT_RETURN,
+    AST_LET, AST_DEF, AST_TYPEDEF, AST_EXTERN, AST_STMT_CHECK, AST_STMT_RETURN,
     AST_CALL,
     AST_UNARY, AST_BINARY,
     AST_T_PATTERN, AST_V_PATTERN,
@@ -61,7 +61,7 @@ enum AstContext {
 AstNode* CreateAstModule(Loc loc, SymbolID moduleID);
 void AttachImportHeaderToAstModule(AstNode* module, AstNode* mapping);
 void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping);
-void PushAstDefStmtToAstModule(AstNode* module, AstNode* def);
+void PushStmtToAstModule(AstNode* module, AstNode* def);
 
 AstNode* CreateAstId(Loc loc, SymbolID symbolID);
 AstNode* CreateAstIntLiteral(Loc loc, size_t value, int base);
@@ -95,11 +95,12 @@ void* GetAstLambdaCaptureAt(AstNode* lambda, int index);
 AstNode* CreateAstLetStmt(Loc loc, SymbolID lhs, AstNode* optTypespec, AstNode* rhs);
 AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message);
 AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs);
+AstNode* CreateAstTypedefStmt(Loc loc, SymbolID name, AstNode* pattern);
 void PushPatternToAstDefStmt(AstNode* defStmt, AstNode* pattern);
 void SetAstDefStmtBody(AstNode* defStmt, AstNode* body);
 void FinalizeAstDefStmt(AstNode* defStmt);
 
-AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs);
+AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs, int isTemplateCall);
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
 AstNode* CreateAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg);
 
@@ -152,6 +153,7 @@ AstNode* GetAstCheckStmtMessage(AstNode* checkStmt);
 
 AstNode* GetAstCallLhs(AstNode* call);
 AstNode* GetAstCallRhs(AstNode* call);
+int IsAstCallTemplate(AstNode* call);
 
 SymbolID GetAstFieldName(AstNode* field);
 AstNode* GetAstModuleFieldPattern(AstNode* field);
@@ -170,6 +172,9 @@ AstNode* GetAstDefStmtPatternAt(AstNode* def, int index);
 AstNode* GetAstDefStmtRhs(AstNode* def);
 int GetAstDefStmtFinalized(AstNode* def);
 AstNode* GetAstDefStmtFinalRhs(AstNode* def);
+
+SymbolID GetAstTypedefStmtName(AstNode* td);
+AstNode* GetAstTypedefStmtPattern(AstNode* td);
 
 //
 // Symbol and type storage:

@@ -266,8 +266,8 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         case AST_DEF:
         {
             // todo: un-disable multi-pattern def statements
-            int disabled = 1;
-            if (disabled) {
+            int multiPatternDefStatementsDisabled = 1;
+            if (multiPatternDefStatementsDisabled) {
                 int patternCount = GetAstDefStmtPatternCount(node);
                 if (patternCount > 1) {
                     if (DEBUG) {
@@ -280,7 +280,9 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             }
 
             // void* type = GetAstNodeType(node);
-            // todo: (in primer_pre:__MODULE_ITEM) push a type frame if this is a type definition?
+            
+            // todo: check if multiple template arguments were provided. correct if so.
+
             pushFrame(primer, NULL, ASTCTX_VALUE, topFrameFunc(primer));
             break;
         }
@@ -368,13 +370,24 @@ int PrimeModule(Primer* primer, AstNode* module) {
     for (size_t index = 0; index < moduleStmtLength; index++) {
         // todo: HACKY let the symbol define itself as type or value in `PrimeModule`
         AstNode* stmt = GetAstModuleStmtAt(module, index);
-        if (GetAstNodeKind(stmt) == AST_DEF) {
+        AstKind stmtKind = GetAstNodeKind(stmt);
+        if (stmtKind == AST_DEF) {
             SymbolID lhs = GetAstDefStmtLhs(stmt);
             void* type = CreateMetatype(primer->typer, "def:%s", GetSymbolText(lhs));
             pushSymbol(primer, lhs, type, stmt, ASTCTX_VALUE);
             
             // storing the defined metatypes on the statement:
             SetAstNodeType(stmt,type);
+        } else if (stmtKind == AST_TYPEDEF) {
+            SymbolID name = GetAstTypedefStmtName(stmt);
+            // AstNode* pattern = GetAstTypedefStmtPattern(stmt);
+            void* typingType = CreateMetatype(primer->typer, "typedef:%s", GetSymbolText(name));
+            pushSymbol(primer, name, typingType, stmt, ASTCTX_TYPING);
+
+            void* valueType = GetFuncType(primer->typer,typingType,typingType);
+            pushSymbol(primer, name, valueType, stmt, ASTCTX_VALUE);
+
+            SetAstNodeType(stmt,typingType);
         } else {
             if (DEBUG) {
                 printf("!!- PrimeModule: Unsupported statement kind in module\n");

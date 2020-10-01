@@ -1140,10 +1140,12 @@ int checkMetavar(Type* metavar) {
 
 void printTyper(Typer* typer) {
     printf("!!- Typer dump:\n");
+    printTypeLn(typer, &typer->intType[INT_1]);
     printTypeLn(typer, &typer->intType[INT_8]);
     printTypeLn(typer, &typer->intType[INT_16]);
     printTypeLn(typer, &typer->intType[INT_32]);
     printTypeLn(typer, &typer->intType[INT_64]);
+    printTypeLn(typer, &typer->intType[INT_128]);
     printTypeLn(typer, &typer->floatType[FLOAT_32]);
     printTypeLn(typer, &typer->floatType[FLOAT_64]);
 
