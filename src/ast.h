@@ -219,7 +219,8 @@ void* GetAstNodeLlvmRepr(AstNode* node);
 // Reflection:
 //
 
-char const* GetUnaryOperatorText(AstUnaryOperator op);
-char const* GetBinaryOperatorText(AstBinaryOperator op);
+char const* AstKindAsText(AstKind kind);
+char const* AstUnaryOperatorAsText(AstUnaryOperator op);
+char const* AstBinaryOperatorAsText(AstBinaryOperator op);
 
 #endif  // INCLUDED_AST_H

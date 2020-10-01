@@ -694,7 +694,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             if (DEBUG) {
                 // TODO: replace with assertion for production
                 if (DEBUG) {
-                    printf("!!- Not implemented: TypeNode for AST node kind <?>\n");
+                    printf("!!- Not implemented: TypeNode for AST node kind %s\n", AstKindAsText(nodeKind));
                 } else {
                     assert(0 && "Not implemented: TypeNode for AST node kind <?>");
                 }
@@ -776,7 +776,7 @@ int requireSubtype(Loc loc, Type* sup, Type* sub) {
         default:
         {
             if (DEBUG) {
-                printf("!!- Not implemented: requireSubtype for type kind <?>.\n");
+                printf("!!- Not implemented: requireSubtype for type kind %s.\n", TypeKindAsText(sup->kind));
             } else {
                 assert(0 && "Not implemented: requireSubtype for type kind <?>.");
             }
@@ -1133,7 +1133,7 @@ int checkConcreteSubtype(Loc loc, Type* concreteSup, Type* concreteSub) {
         default:
         {
             if (DEBUG) {
-                printf("!!- Not implemented: checkConcreteSubtype for type kind <?>.\n");
+                printf("!!- Not implemented: checkConcreteSubtype for shared type kind %s.\n", TypeKindAsText(commonTypeKind));
             } else {
                 assert(0 && "Not implemented: checkConcreteSubtype for type kind <?>.\n");
             }
@@ -1539,7 +1539,7 @@ Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* ar
         default:
         {
             if (DEBUG) {
-                printf("!!- NotImplemented: GetUnaryIntrinsicType for AstUnaryOperator <?>\n");
+                printf("!!- NotImplemented: GetUnaryIntrinsicType for AstUnaryOperator %s\n", AstUnaryOperatorAsText(op));
             } else {
                 assert(0 && "NotImplemented: GetUnaryIntrinsicType for AstUnaryOperator <?>");
             }
@@ -1594,7 +1594,7 @@ Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* 
         default:
         {
             if (DEBUG) {
-                printf("!!- NotImplemented: GetBinaryIntrinsicType for AstBinaryOperator <?>\n");
+                printf("!!- NotImplemented: GetBinaryIntrinsicType for AstBinaryOperator '%s'\n", AstBinaryOperatorAsText(op));
             } else {
                 assert(0 && "NotImplemented: GetBinaryIntrinsicType for AstBinaryOperator <?>");
             }

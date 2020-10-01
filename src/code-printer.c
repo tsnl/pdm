@@ -307,7 +307,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         }
         case AST_UNARY:
         {
-            PrintText(cp, GetUnaryOperatorText(GetAstUnaryOperator(node)));
+            PrintText(cp, AstUnaryOperatorAsText(GetAstUnaryOperator(node)));
             PrintChar(cp, ' ');
             PrintNode(cp, GetAstUnaryOperand(node));
             break;
@@ -315,7 +315,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         case AST_BINARY:
         {
             PrintNode(cp, GetAstBinaryLtOperand(node));
-            PrintText(cp, GetBinaryOperatorText(GetAstBinaryOperator(node)));
+            PrintText(cp, AstBinaryOperatorAsText(GetAstBinaryOperator(node)));
             PrintNode(cp, GetAstBinaryRtOperand(node));
             break;
         }

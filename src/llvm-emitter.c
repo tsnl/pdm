@@ -93,7 +93,8 @@ LLVMTypeRef emitType(Typer* typer, Type* typerType) {
 }
 LLVMTypeRef helpEmitType(Typer* typer, Type* typerType) {
     Type* concrete = GetConcreteType(typerType);
-    switch (GetTypeKind(concrete))
+    TypeKind concreteTypeKind = GetTypeKind(concrete);
+    switch (concreteTypeKind)
     {
         case T_UNIT:
         {
@@ -153,7 +154,7 @@ LLVMTypeRef helpEmitType(Typer* typer, Type* typerType) {
         default:
         {
             if (DEBUG) {
-                printf("!!- Not implemented: `emitType` for <?>.\n");
+                printf("!!- Not implemented: `emitType` for %s.\n", TypeKindAsText(concreteTypeKind));
             } else {
                 assert(0 && "Not implemented: `emitType` for <?>");
             }
@@ -200,7 +201,7 @@ LLVMValueRef getDefnRhsValue(Emitter* emitter, AstNode* defnNode) {
         default:
         {
             if (DEBUG) {
-                printf("!!- getDefnRhsValue not implemented for defnNode of kind <?>.\n");
+                printf("!!- getDefnRhsValue not implemented for defnNode of kind %s.\n", AstKindAsText(defnKind));
             } else {
                 assert(0 && "getDefnRhsValue not implemented for defnNode of kind <?>.");
             }

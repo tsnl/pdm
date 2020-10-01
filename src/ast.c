@@ -863,7 +863,8 @@ void SetAstIdDefn(AstNode* node, void* defn) {
 //
 
 inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb) {
-    switch (GetAstNodeKind(node)) {
+    AstKind nodeKind = GetAstNodeKind(node);
+    switch (nodeKind) {
         case AST_UNIT:
         case AST_LITERAL_INT:
         case AST_LITERAL_FLOAT:
@@ -1054,7 +1055,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         default:
         {
             if (DEBUG) {
-                printf("!!- Unsupported AST node in 'visit' of type <?>.\n");
+                printf("!!- Unsupported AST node in 'visit' of type %s.\n", AstKindAsText(nodeKind));
             } else {
                 assert(0 && "Unsupported AST node in 'visit'");
             }
@@ -1122,10 +1123,44 @@ char const binaryOperatorTextArray[__BOP_COUNT][3] = {
 // Reflection:
 //
 
-char const* GetUnaryOperatorText(AstUnaryOperator op) {
+char const* AstKindAsText(AstKind kind) {
+    switch (kind) {
+        case AST_MODULE: return "AST_MODULE";
+        case AST_ID: return "AST_ID";
+        case AST_LITERAL_INT: return "AST_LITERAL_INT"; 
+        case AST_LITERAL_FLOAT: return "AST_LITERAL_FLOAT"; 
+        case AST_LITERAL_STRING: return "AST_LITERAL_STRING"; 
+        case AST_UNIT: return "AST_UNIT"; 
+        case AST_PAREN: return "AST_PAREN"; 
+        case AST_TUPLE: return "AST_TUPLE"; 
+        case AST_STRUCT: return "AST_STRUCT"; 
+        case AST_CHAIN: return "AST_CHAIN";
+        case AST_LAMBDA: return "AST_LAMBDA";
+        case AST_ITE: return "AST_ITE";
+        case AST_DOT_INDEX: return "AST_DOT_INDEX"; 
+        case AST_DOT_NAME: return "AST_DOT_NAME";
+        case AST_LET: return "AST_LET"; 
+        case AST_DEF: return "AST_DEF"; 
+        case AST_TYPEDEF: return "AST_TYPEDEF"; 
+        case AST_EXTERN: return "AST_EXTERN"; 
+        case AST_STMT_CHECK: return "AST_STMT_CHECK"; 
+        case AST_STMT_RETURN: return "AST_STMT_RETURN";
+        case AST_CALL: return "AST_CALL";
+        case AST_UNARY: return "AST_UNARY"; 
+        case AST_BINARY: return "AST_BINARY";
+        case AST_T_PATTERN: return "AST_T_PATTERN"; 
+        case AST_V_PATTERN: return "AST_V_PATTERN";
+        case AST_FIELD__TEMPLATE_ITEM: return "AST_FIELD__TEMPLATE_ITEM";
+        case AST_FIELD__TUPLE_ITEM: return "AST_FIELD__TUPLE_ITEM";
+        case AST_FIELD__STRUCT_ITEM: return "AST_FIELD__STRUCT_ITEM";
+        case AST_FIELD__PATTERN_ITEM: return "AST_FIELD__PATTERN_ITEM";
+        default: return "AST_?";
+    }
+}
+
+char const* AstUnaryOperatorAsText(AstUnaryOperator op) {
     return unaryOperatorTextArray[op];
 };
-
-char const* GetBinaryOperatorText(AstBinaryOperator op) {
+char const* AstBinaryOperatorAsText(AstBinaryOperator op) {
     return binaryOperatorTextArray[op];
 }
