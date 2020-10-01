@@ -573,6 +573,13 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
 
             return phi;
         }
+        case AST_CAST:
+        {
+            AstNode* rhs = GetAstCastRhs(expr);
+            LLVMValueRef value = emitExpr(emitter,rhs);
+            SetAstNodeLlvmRepr(rhs,value);
+            return value;
+        }
         default:
         {
             if (DEBUG) {

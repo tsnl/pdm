@@ -172,6 +172,8 @@ static Type* getSupermostConcreteSubtype(Loc loc, Type* type);
 static int checkSubtype(Loc loc, Type* sup, Type* sub);
 static int checkMetavar(Type* metavar);
 
+static void mapCompoundType(Typer* typer, AdtTrieNode* compound, FieldCB cb, void* sb);
+
 static void printTyper(Typer* typer);
 static void printType(Typer* typer, Type* type);
 static void printTypeLn(Typer* typer, Type* type);
@@ -611,8 +613,8 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* rhs = GetAstCallRhs(node);
             Type* ret = CreateMetatype(typer, "in-ret");
             
-            Type* calledFuncType = GetFuncType(typer, GetAstNodeType(rhs),ret);
-            requireSubtype(loc, GetAstNodeType(lhs), calledFuncType);
+            Type* actualFuncType = GetFuncType(typer, GetAstNodeType(rhs), ret);
+            requireSubtype(loc, GetAstNodeType(lhs), actualFuncType);
             
             SetAstNodeType(node,ret);
             break;
@@ -622,6 +624,36 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* itNode = GetAstParenItem(node);
             Type* itType = GetAstNodeType(itNode);
             SetAstNodeType(node,itType);
+            break;
+        }
+        case AST_CAST:
+        {
+            AstNode* typespec = GetAstCastTypespec(node);
+            AstNode* rhs = GetAstCastRhs(node);
+            Loc loc = GetAstNodeLoc(typespec);
+            Type* toType = GetAstNodeType(typespec);
+            Type* rhsType = GetAstNodeType(rhs);
+            if (toType && rhsType) {
+                // requireSubtype(loc,toType,rhsType);
+                requireSubtype(loc,rhsType,toType);
+            } else {
+                if (DEBUG) {
+                    printf("!!- Unknown type in 'cast' expression.\n");
+                } else {
+                    assert(0 && "Unknown type in 'cast' expression.");
+                }
+            }
+            SetAstNodeType(node,toType);
+            break;
+        }
+        case AST_CAST__TYPESPEC:
+        {
+            // skipped by calling GetAstCastTypespec
+            break;
+        }
+        case AST_TYPEDEF:
+        {
+            // todo
             break;
         }
         default:
@@ -641,6 +673,23 @@ int typer_post(void* rawTyper, AstNode* node) {
 }
 
 int requireSubtype(Loc loc, Type* sup, Type* sub) {
+    if (sup == NULL) {
+        if (DEBUG) {
+            printf("!!- ERROR: requireSubtype on null `sup`\n");
+        } else {
+            assert(0 && "requireSubtype on null `sup`");
+        }
+        return 0;
+    }
+    if (sub == NULL) {
+        if (DEBUG) {
+            printf("!!- ERROR: requireSubtype on null `sub`\n");
+        } else {
+            assert(0 && "requireSubtype on null `sub`");
+        }
+        return 0;
+    }
+    
     // selecting the right subtyping callback based on the type node's kind.
     // - for concrete types, we check and post feedback immediately.
     // - for metavars, we add subtypes and suptypes to lists and check them in `checkSubtype`
@@ -1138,6 +1187,15 @@ int checkMetavar(Type* metavar) {
     return soln != NULL;
 }
 
+void mapCompoundType(Typer* typer, AdtTrieNode* compoundATN, FieldCB cb, void* sb) {
+    if (compoundATN != NULL && compoundATN != &typer->anyATN) {
+        mapCompoundType(typer, compoundATN->parent, cb, sb);
+        AdtTrieNode* node = compoundATN;
+        AdtTrieEdge* edge = &node->parent->edgesSb[node->parentEdgeIndex];
+        cb(typer,sb,edge->name,edge->type);
+    }
+}
+
 void printTyper(Typer* typer) {
     printf("!!- Typer dump:\n");
     printTypeLn(typer, &typer->intType[INT_1]);
@@ -1507,6 +1565,7 @@ int GetIntTypeWidthInBits(Type* type) {
         case INT_16: return 16;
         case INT_32: return 32;
         case INT_64: return 64;
+        case INT_128: return 128;
         default: return 0;
     }
 }
@@ -1537,14 +1596,9 @@ int GetTupleTypeLength(Type* type) {
 int GetUnionTypeLength(Type* type) {
     return type->as.Compound_atn->depth;
 }
-void MapCompoundType(Typer* typer, Type* compound, FieldCB cb, void* sb) {
-    if (compound != NULL && compound->as.Compound_atn != &typer->anyATN) {
-        MapCompoundType(typer, compound, cb, sb);
-        AdtTrieNode* node = compound->as.Compound_atn;
-        AdtTrieEdge* edge = &node->parent->edgesSb[node->parentEdgeIndex];
-        cb(typer,sb,edge->name,edge->type);
-    }
 
+void MapCompoundType(Typer* typer, Type* compound, FieldCB cb, void* sb) {
+    mapCompoundType(typer,compound->as.Compound_atn,cb,sb);
 }
 
 char const* GetMetatypeName(Type* type) {

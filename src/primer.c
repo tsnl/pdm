@@ -327,6 +327,16 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             pushFrame(primer,NULL,ASTCTX_VALUE,node);
             break;
         }
+        case AST_CAST__TYPESPEC:
+        {
+            pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
+            break;
+        }
+        case AST_CAST:
+        {
+            pushFrame(primer,NULL,ASTCTX_VALUE,topFrameFunc(primer));
+            break;
+        }
         default:
         {
             break;
@@ -342,6 +352,8 @@ int primer_post(void* rawPrimer, AstNode* node) {
         case AST_PAREN:
         case AST_LAMBDA:
         case AST_FIELD__PATTERN_ITEM:
+        case AST_CAST__TYPESPEC:
+        case AST_CAST:
         case AST_DEF:
         {
             popFrame(primer);
@@ -370,6 +382,7 @@ int PrimeModule(Primer* primer, AstNode* module) {
     for (size_t index = 0; index < moduleStmtLength; index++) {
         // todo: HACKY let the symbol define itself as type or value in `PrimeModule`
         AstNode* stmt = GetAstModuleStmtAt(module, index);
+        Loc loc = GetAstNodeLoc(stmt);
         AstKind stmtKind = GetAstNodeKind(stmt);
         if (stmtKind == AST_DEF) {
             SymbolID lhs = GetAstDefStmtLhs(stmt);
@@ -384,10 +397,12 @@ int PrimeModule(Primer* primer, AstNode* module) {
             void* typingType = CreateMetatype(primer->typer, "typedef:%s", GetSymbolText(name));
             pushSymbol(primer, name, typingType, stmt, ASTCTX_TYPING);
 
-            void* valueType = GetFuncType(primer->typer,typingType,typingType);
-            pushSymbol(primer, name, valueType, stmt, ASTCTX_VALUE);
+            // void* valueType = GetFuncType(primer->typer,typingType,typingType);
+            // void* valueType = GetCastType(primer->typer,loc,typingType);
+            // pushSymbol(primer, name, valueType, stmt, ASTCTX_VALUE);
 
             SetAstNodeType(stmt,typingType);
+            // SetAstTypedefStmtValueDefnType(stmt,valueType);
         } else {
             if (DEBUG) {
                 printf("!!- PrimeModule: Unsupported statement kind in module\n");

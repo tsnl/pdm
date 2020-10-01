@@ -518,6 +518,24 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
             
             return CreateAstIte(loc,cond,ifTrue,ifFalse);
         }
+        case TK_LTHAN:
+        {
+            // cast expression
+            expect(p,TK_LTHAN,"'<'");
+            RawAstNode* typespec = tryParsePostfixExpr(p);
+            if (!typespec) {
+                // todo: post feedback here.
+                return NULL;
+            }
+            expect(p, TK_GTHAN,"'>'");
+            RawAstNode* rhs = tryParsePrimaryExpr(p);
+            if (rhs) {
+                return CreateAstCast(loc,typespec,rhs);
+            } else {
+                // todo: post feedback here.
+                return NULL;
+            }
+        }
         default: 
         { 
             return NULL; 
@@ -548,7 +566,7 @@ RawAstNode* tryParsePostfixExprSuffix(Parser* p, RawAstNode* lhs, int* stopP) {
     if (lpKind == TK_LPAREN || lpKind == TK_LCYBRK) {
         RawAstNode* rhs = tryParsePrimaryExpr(p);
         return CreateAstCall(loc,lhs,rhs,0);
-    } else if (lpKind == TK_LSQBRK) {
+    } else if (match(p,TK_LSQBRK)) {
         RawAstNode* rhs = tryParsePrimaryExpr(p);
         if (match(p,TK_COMMA)) {
             // compound

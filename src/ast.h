@@ -27,7 +27,7 @@ enum AstKind {
     AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME,
     AST_LET, AST_DEF, AST_TYPEDEF, AST_EXTERN, AST_STMT_CHECK, AST_STMT_RETURN,
-    AST_CALL,
+    AST_CALL, AST_CAST, AST_CAST__TYPESPEC,
     AST_UNARY, AST_BINARY,
     AST_T_PATTERN, AST_V_PATTERN,
     AST_FIELD__TEMPLATE_ITEM,AST_FIELD__TUPLE_ITEM,AST_FIELD__STRUCT_ITEM,AST_FIELD__PATTERN_ITEM
@@ -101,6 +101,7 @@ void SetAstDefStmtBody(AstNode* defStmt, AstNode* body);
 void FinalizeAstDefStmt(AstNode* defStmt);
 
 AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs, int isTemplateCall);
+AstNode* CreateAstCast(Loc loc, AstNode* typespec, AstNode* rhs);
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
 AstNode* CreateAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg);
 
@@ -175,6 +176,10 @@ AstNode* GetAstDefStmtFinalRhs(AstNode* def);
 
 SymbolID GetAstTypedefStmtName(AstNode* td);
 AstNode* GetAstTypedefStmtPattern(AstNode* td);
+void* GetAstTypedefStmtValueDefnType(AstNode* td);
+
+AstNode* GetAstCastTypespec(AstNode* cast);
+AstNode* GetAstCastRhs(AstNode* cast);
 
 //
 // Symbol and type storage:
@@ -182,6 +187,9 @@ AstNode* GetAstTypedefStmtPattern(AstNode* td);
 
 void* GetAstNodeType(AstNode* node);
 void SetAstNodeType(AstNode* node, void* type);
+
+// void SetAstTypedefStmtValueDefnType(AstNode* node, void* valueDefn);
+// void* GetAstTypedefStmtValueDefnType(AstNode* node);
 
 AstNode* GetAstNodeParentFunc(AstNode* node);
 void SetAstNodeParentFunc(AstNode* node, AstNode* parentFunc);

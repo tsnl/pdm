@@ -148,9 +148,12 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             SymbolID lhs = GetAstFieldName(node);
             if (lhs != SYM_NULL) {
                 PrintText(cp, GetSymbolText(lhs));
-                PrintText(cp, ": ");
             }
-            PrintNode(cp, GetAstFieldRhs(node));
+            AstNode* rhs = GetAstFieldRhs(node);
+            if (rhs) {
+                PrintText(cp, ": ");
+                PrintNode(cp, rhs);
+            }
             break;
         }
         case AST_LAMBDA:
@@ -326,6 +329,15 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                 PrintText(cp, " else ");
                 PrintNode(cp, ifFalse);
             }
+            break;
+        }
+        case AST_CAST:
+        {
+            PrintChar(cp, '<');
+            PrintNode(cp, GetAstCastTypespec(node));
+            PrintChar(cp, '>');
+            PrintChar(cp, ' ');
+            PrintNode(cp, GetAstCastRhs(node));
             break;
         }
         default:

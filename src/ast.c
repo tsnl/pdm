@@ -14,6 +14,7 @@ typedef struct AstID       AstID;
 typedef union  AstInfo     AstInfo;
 typedef struct AstNodeList AstNodeList;
 typedef struct AstCall     AstCall;
+typedef struct AstCast     AstCast;
 typedef struct AstField    AstField;
 typedef enum   AstBinaryOperator AstBinaryOperator;
 typedef struct AstDotIndex AstDotIndex;
@@ -80,6 +81,7 @@ struct AstDef {
 struct AstTypedef {
     SymbolID name;
     AstNode* pattern;
+    // void* valueDefnType;
 };
 struct AstCheck {
     AstNode* checked;
@@ -89,6 +91,10 @@ struct AstCall {
     AstNode* lhs;
     AstNode* rhs;
     int isTemplateCall;
+};
+struct AstCast {
+    AstNode* castTypespec;
+    AstNode* rhs;
 };
 struct AstUnary {
     AstUnaryOperator operator;
@@ -118,6 +124,8 @@ union AstInfo {
     int*            UnicodeStringSb;
     AstNodeList*    Items;
     AstCall         Call;
+    AstCast         Cast;
+    AstNode*        CastTypespec;
     AstField        Field;
     AstDotIndex     DotIx;
     AstDotName      DotNm;
@@ -433,6 +441,7 @@ AstNode* CreateAstTypedefStmt(Loc loc, SymbolID name, AstNode* pattern) {
     AstNode* typedefNode = newNode(loc, AST_TYPEDEF);
     typedefNode->as.Typedef.name = name;
     typedefNode->as.Typedef.pattern = pattern;
+    // typedefNode->as.Typedef.valueDefnType = NULL;
     return typedefNode;
 }
 
@@ -449,6 +458,15 @@ AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs, int isTemplateCall) 
     callNode->as.Call.rhs = rhs;
     callNode->as.Call.isTemplateCall = isTemplateCall;
     return callNode;
+}
+AstNode* CreateAstCast(Loc loc, AstNode* typespec, AstNode* rhs) {
+    AstNode* castNode = newNode(loc, AST_CAST);
+    castNode->as.Cast.castTypespec = NULL; {
+        castNode->as.Cast.castTypespec = newNode(loc, AST_CAST__TYPESPEC);
+        castNode->as.Cast.castTypespec->as.CastTypespec = typespec;
+    }
+    castNode->as.Cast.rhs = rhs;
+    return castNode;
 }
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg) {
     AstNode* unaryNode = newNode(loc, AST_UNARY);
@@ -758,6 +776,20 @@ void SetAstNodeType(AstNode* node, void* type) {
     node->type = type;
 }
 
+// void SetAstTypedefStmtValueDefnType(AstNode* node, void* valueDefn) {
+//     node->as.Typedef.valueDefnType = valueDefn;
+// }
+// void* GetAstTypedefStmtValueDefnType(AstNode* node) {
+//     return node->as.Typedef.valueDefnType;
+// }
+
+AstNode* GetAstCastTypespec(AstNode* cast) {
+    return cast->as.Cast.castTypespec->as.CastTypespec;
+}
+AstNode* GetAstCastRhs(AstNode* cast) {
+    return cast->as.Cast.rhs;
+}
+
 AstNode* GetAstNodeParentFunc(AstNode* node) {
     return node->parentFunc;
 }
@@ -825,6 +857,17 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
                 RecursivelyVisitAstNode(context, GetAstLambdaPattern(node), preVisitorCb, postVisitorCb) &&
                 RecursivelyVisitAstNode(context, GetAstLambdaBody(node), preVisitorCb, postVisitorCb)
             );
+        }
+        case AST_CAST:
+        {
+            return (
+                RecursivelyVisitAstNode(context, node->as.Cast.castTypespec, preVisitorCb, postVisitorCb) &&
+                RecursivelyVisitAstNode(context, node->as.Cast.rhs, preVisitorCb, postVisitorCb)
+            );
+        }
+        case AST_CAST__TYPESPEC:
+        {
+            return RecursivelyVisitAstNode(context, node->as.CastTypespec, preVisitorCb, postVisitorCb);
         }
         case AST_DOT_INDEX:
         {
