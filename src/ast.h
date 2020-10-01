@@ -95,6 +95,7 @@ void* GetAstLambdaCaptureAt(AstNode* lambda, int index);
 AstNode* CreateAstLetStmt(Loc loc, SymbolID lhs, AstNode* optTypespec, AstNode* rhs);
 AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message);
 AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs);
+AstNode* CreateAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec);
 void PushPatternToAstDefStmt(AstNode* defStmt, AstNode* pattern);
 void SetAstDefStmtBody(AstNode* defStmt, AstNode* body);
 void FinalizeAstDefStmt(AstNode* defStmt);
@@ -172,6 +173,8 @@ AstNode* GetAstDefStmtPatternAt(AstNode* def, int index);
 AstNode* GetAstDefStmtRhs(AstNode* def);
 int GetAstDefStmtFinalized(AstNode* def);
 AstNode* GetAstDefStmtFinalRhs(AstNode* def);
+
+SymbolID GetAstExternStmtName(AstNode* externDef);
 
 SymbolID GetAstTypedefStmtName(AstNode* td);
 AstNode* GetAstTypedefStmtPattern(AstNode* td);

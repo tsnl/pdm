@@ -22,6 +22,7 @@ typedef struct AstDotName  AstDotName;
 typedef struct AstLambda   AstLambda;
 typedef struct AstLet      AstLet;
 typedef struct AstDef      AstDef;
+typedef struct AstExtern   AstExtern;
 typedef struct AstTypedef  AstTypedef;
 typedef struct AstCheck    AstCheck;
 typedef struct AstUnary    AstUnary;
@@ -78,6 +79,10 @@ struct AstDef {
     AstNode* rhs;
     AstNode* finalizedRhs;
 };
+struct AstExtern {
+    SymbolID name;
+    AstNode* typespec;
+};
 struct AstTypedef {
     SymbolID name;
     AstNode* pattern;
@@ -132,6 +137,7 @@ union AstInfo {
     AstLambda       Lambda;
     AstLet          Let;
     AstDef          Def;
+    AstExtern       Extern;
     AstTypedef      Typedef;
     AstCheck        Check;
     AstChain        Chain;
@@ -233,11 +239,11 @@ void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping) {
     module->as.Module.exportHeader = mapping;
 }
 void PushStmtToAstModule(AstNode* module, AstNode* def) {
-    if (def->kind != AST_DEF) {
+    if (def->kind != AST_DEF && def->kind != AST_EXTERN) {
         if (DEBUG) {
-            printf("!!- Cannot push non-def to AstModule.\n");
+            printf("!!- Cannot push non-def/extern to AstModule.\n");
         } else {
-            assert(0 && "Cannot push non-def to AstModule");
+            assert(0 && "Cannot push non-def/extern to AstModule");
         }
     }
     pushListElement(module->as.Module.items, def);
@@ -437,6 +443,12 @@ AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs) {
     defNode->as.Def.patterns = newNodeList();
     defNode->as.Def.rhs = NULL;
     defNode->as.Def.finalizedRhs = NULL;
+    return defNode;
+}
+AstNode* CreateAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec) {
+    AstNode* defNode = newNode(loc, AST_EXTERN);
+    defNode->as.Extern.name = lhs;
+    defNode->as.Extern.typespec = typespec;
     return defNode;
 }
 
@@ -751,6 +763,13 @@ int GetAstDefStmtFinalized(AstNode* def) {
 }
 AstNode* GetAstDefStmtFinalRhs(AstNode* def) {
     return def->as.Def.finalizedRhs;
+}
+
+SymbolID GetAstExternStmtName(AstNode* externDef) {
+    return externDef->as.Extern.name;
+}
+AstNode* GetAstExternTypespecName(AstNode* externDef) {
+    return externDef->as.Extern.typespec;
 }
 
 SymbolID GetAstTypedefStmtName(AstNode* td) {

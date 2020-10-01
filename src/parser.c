@@ -55,6 +55,7 @@ BinaryOpPrecedenceNode* binaryOpPrecedenceListHead = &orBinaryOpPrecedenceNode;
 static RawAstNode* tryParseStmt(Parser* p);
 static RawAstNode* parseLetStmt(Parser* p);
 static RawAstNode* parseDefStmt(Parser* p);
+static RawAstNode* parseExternStmt(Parser* p);
 // static RawAstNode* parseTypedefStmt(Parser* p);
 static RawAstNode* parseCheckStmt(Parser* p);
 
@@ -254,6 +255,20 @@ RawAstNode* parseDefStmt(Parser* p) {
     SetAstDefStmtBody(defStmt,rhs);
     FinalizeAstDefStmt(defStmt);
     return defStmt;
+}
+RawAstNode* parseExternStmt(Parser* p) {
+    Loc loc = lookaheadLoc(p,0);
+    if (!expect(p,TK_KW_EXTERN,"'extern'")) { return NULL; }
+    
+    TokenInfo idTokenInfo = lookaheadInfo(p,0);
+    if (!expect(p,TK_ID,"an extern ID")) { return NULL; }
+    SymbolID name = idTokenInfo.as.ID;
+
+    if (!expect(p,TK_COLON,"':' followed by a type specifier")) { return NULL; }
+    RawAstNode* typespec = parseExpr(p);
+    
+    RawAstNode* externNode = CreateAstExternStmt(loc,name,typespec);
+    return externNode;
 }
 RawAstNode* parseCheckStmt(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
@@ -728,17 +743,14 @@ RawAstNode* ParseSource(Source* source) {
             RawAstNode* def = parseDefStmt(&p);
             PushStmtToAstModule(module,def);
         } else if (lookaheadKind(&p,0) == TK_KW_EXTERN) {
-            if (DEBUG) {
-                printf("!!- NotImplemented: 'extern' statements.\n");
-            } else {
-                assert(0 && "NotImplemented: 'extern' statements.");
-            }
-            return NULL;
+            RawAstNode* def = parseExternStmt(&p);
+            PushStmtToAstModule(module,def);
         } else {
             FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
             PostFeedback(FBK_ERROR,note,"Invalid module item");
             break;
         }
+
         if (!expect(&p,TK_SEMICOLON,"a terminating ';'")) {
             break;
         }

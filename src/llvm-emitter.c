@@ -46,10 +46,10 @@ static LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr);
 static void buildLlvmField(Typer* typer, void* sb, SymbolID name, Type* type);
 static LLVMValueRef getDefnRhsValue(Emitter* emitter, AstNode* defnNode);
 
-static int pass1_pre(void* rawEmitter, AstNode* node);
-static int pass1_post(void* rawEmitter, AstNode* node);
-static int pass2_pre(void* rawEmitter, AstNode* node);
-static int pass2_post(void* rawEmitter, AstNode* node);
+static int forwardDeclarationPass_pre(void* rawEmitter, AstNode* node);
+static int forwardDeclarationPass_post(void* rawEmitter, AstNode* node);
+static int definitionPass_pre(void* rawEmitter, AstNode* node);
+static int definitionPass_post(void* rawEmitter, AstNode* node);
 
 Emitter newEmitter(Typer* typer, AstNode* astModule, char const* moduleName) {
     Emitter emitter;
@@ -592,13 +592,13 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
     }
 }
 
-int pass1_pre(void* rawEmitter, AstNode* node) {
+int forwardDeclarationPass_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     AstKind nodeKind = GetAstNodeKind(node);
     switch (nodeKind) {
         case AST_LAMBDA:
         {
-            // todo: add captured arguments
+            // todo: add captured arguments while emitting AST lambda
 
             AstNode* pattern = GetAstLambdaPattern(node);
             AstNode* body = GetAstLambdaBody(node);
@@ -650,7 +650,7 @@ int pass1_pre(void* rawEmitter, AstNode* node) {
     }
     return 1;
 }
-int pass1_post(void* rawEmitter, AstNode* node) {
+int forwardDeclarationPass_post(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     switch (GetAstNodeKind(node)) {
         default:
@@ -662,7 +662,7 @@ int pass1_post(void* rawEmitter, AstNode* node) {
     return 1;
 }
 
-int pass2_pre(void* rawEmitter, AstNode* node) {
+int definitionPass_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     AstKind nodeKind = GetAstNodeKind(node);
     switch (nodeKind) {
@@ -703,7 +703,7 @@ int pass2_pre(void* rawEmitter, AstNode* node) {
     }
     return 1;
 }
-int pass2_post(void* rawEmitter, AstNode* node) {
+int definitionPass_post(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     AstKind nodeKind = GetAstNodeKind(node);
     switch (nodeKind) {
@@ -769,8 +769,8 @@ int EmitLlvmModule(Typer* typer, AstNode* module) {
 
     // we run 2 emitter passes:
     int result = 1;
-    result = RecursivelyVisitAstNode(&emitter, module, pass1_pre, pass1_post) && result;
-    result = RecursivelyVisitAstNode(&emitter, module, pass2_pre, pass2_post) && result;
+    result = RecursivelyVisitAstNode(&emitter, module, forwardDeclarationPass_pre, forwardDeclarationPass_post) && result;
+    result = RecursivelyVisitAstNode(&emitter, module, definitionPass_pre, definitionPass_post) && result;
     if (!result) {
         if (DEBUG) {
             printf("!!- Emission visitor failed.\n");
@@ -853,12 +853,4 @@ int EmitLlvmModule(Typer* typer, AstNode* module) {
 
 //     LLVMDisposeBuilder(builder);
 //     LLVMDisposeExecutionEngine(engine);
-
-
 // }
-
-// todo: implement a lambda-only visitor to define lambdas and map them to calls
-// todo: implement constructors for ad-hoc struct and union literals?
-// todo: implement a final emitter that...
-//  - uses previously emitted definitions
-//  - writes definitions in a 1:1 form from our source code.

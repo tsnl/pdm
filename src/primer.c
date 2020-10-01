@@ -91,7 +91,7 @@ Scope* pushFrame(Primer* primer, Scope* optNewScope, AstContext ctx, AstNode* fu
     Scope* topScope = topFrameScope(primer);
     if (optNewScope == NULL) {
         optNewScope = topScope;
-    } else if (topScope) {
+    } else if (topScope != primer->root) {
         int ok = (optNewScope->parent == topScope);
         if (!ok) {
             if (DEBUG) {
@@ -337,6 +337,11 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             pushFrame(primer,NULL,ASTCTX_VALUE,topFrameFunc(primer));
             break;
         }
+        case AST_EXTERN:
+        {
+            pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
+            break;
+        }
         default:
         {
             break;
@@ -394,6 +399,13 @@ int PrimeModule(Primer* primer, AstNode* module) {
             // storing the defined metatypes on the statement:
             SetAstNodeValueType(stmt,valType);
             SetAstNodeTypingType(stmt,typingType);
+        } else if (stmtKind == AST_EXTERN) {
+            // todo: implement this next, implement typer, implement emitter.
+            if (DEBUG) {
+                printf("!!- PrimeModule: WIP statement kind 'AST_EXTERN' in module\n");
+            } else {
+                assert(0 && "PrimeModule: WIP statement kind 'AST_EXTERN' in module");
+            }
         } else {
             if (DEBUG) {
                 printf("!!- PrimeModule: Unsupported statement kind in module\n");
