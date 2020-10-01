@@ -270,6 +270,26 @@ RawAstNode* parseExternStmt(Parser* p) {
     RawAstNode* externNode = CreateAstExternStmt(loc,name,typespec);
     return externNode;
 }
+RawAstNode* parseTypedefStmt(Parser* p) {
+    Loc loc = lookaheadLoc(p,0);
+    if (!expect(p,TK_KW_TYPEDEF,"'type'")) { return NULL; }
+
+    TokenInfo idTokenInfo = lookaheadInfo(p,0);
+    if (!expect(p,TK_ID,"a typedef ID")) { return NULL; }
+    SymbolID name = idTokenInfo.as.ID;
+
+    AstNode* optPattern = NULL;
+    if (lookaheadKind(p,0) == TK_LSQBRK) {
+        optPattern = parsePattern(p,TK_LSQBRK,TK_RSQBRK,0);
+    }
+
+    AstNode* optRhs = NULL;
+    if (match(p,TK_EQUALS)) {
+        optRhs = parseExpr(p);
+    }
+
+    return CreateAstTypedefStmt(loc,name,optPattern,optRhs);
+}
 RawAstNode* parseCheckStmt(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
     RawAstNode* checked;
@@ -518,24 +538,24 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
             
             return CreateAstIte(loc,cond,ifTrue,ifFalse);
         }
-        case TK_LTHAN:
-        {
-            // cast expression
-            expect(p,TK_LTHAN,"'<'");
-            RawAstNode* typespec = tryParsePostfixExpr(p);
-            if (!typespec) {
-                // todo: post feedback here.
-                return NULL;
-            }
-            expect(p, TK_GTHAN,"'>'");
-            RawAstNode* rhs = tryParsePrimaryExpr(p);
-            if (rhs) {
-                return CreateAstCast(loc,typespec,rhs);
-            } else {
-                // todo: post feedback here.
-                return NULL;
-            }
-        }
+        // case TK_LTHAN:
+        // {
+        //     // cast expression
+        //     expect(p,TK_LTHAN,"'<'");
+        //     RawAstNode* typespec = tryParsePostfixExpr(p);
+        //     if (!typespec) {
+        //         // todo: post feedback here.
+        //         return NULL;
+        //     }
+        //     expect(p, TK_GTHAN,"'>'");
+        //     RawAstNode* rhs = tryParsePrimaryExpr(p);
+        //     if (rhs) {
+        //         return CreateAstCast(loc,typespec,rhs);
+        //     } else {
+        //         // todo: post feedback here.
+        //         return NULL;
+        //     }
+        // }
         default: 
         { 
             return NULL; 
@@ -745,6 +765,9 @@ RawAstNode* ParseSource(Source* source) {
         } else if (lookaheadKind(&p,0) == TK_KW_EXTERN) {
             RawAstNode* def = parseExternStmt(&p);
             PushStmtToAstModule(module,def);
+        } else if (lookaheadKind(&p,0) == TK_KW_TYPEDEF) {
+            RawAstNode* td = parseTypedefStmt(&p);
+            PushStmtToAstModule(module,td);
         } else {
             FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
             PostFeedback(FBK_ERROR,note,"Invalid module item");

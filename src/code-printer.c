@@ -129,17 +129,32 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             }
             break;
         }
-        // case AST_TYPEDEF:
-        // {
-        //     SymbolID name = GetAstTypedefStmtName(node);
-        //     AstNode* pattern = GetAstTypedefStmtPattern(node);
-        //     PrintText(cp,"typedef ");
-        //     PrintText(cp,GetSymbolText(name));
-        //     if (pattern) {
-        //         PrintNode(cp,pattern);
-        //     }
-        //     break;
-        // }
+        case AST_TYPEDEF:
+        {
+            SymbolID name = GetAstTypedefStmtName(node);
+            AstNode* pattern = GetAstTypedefStmtOptPattern(node);
+            AstNode* rhs = GetAstTypedefStmtOptRhs(node);
+            PrintText(cp,"type ");
+            PrintText(cp,GetSymbolText(name));
+            if (pattern) {
+                PrintNode(cp,pattern);
+            }
+            if (rhs) {
+                PrintText(cp," = ");
+                PrintNode(cp,rhs);
+            }
+            break;
+        }
+        case AST_EXTERN:
+        {
+            SymbolID name = GetAstExternStmtName(node);
+            AstNode* typespec = GetAstExternTypespec(node);
+            PrintText(cp, "extern ");
+            PrintText(cp, GetSymbolText(name));
+            PrintText(cp, ": ");
+            PrintNode(cp, typespec);
+            break;
+        }
         case AST_FIELD__PATTERN_ITEM:
         case AST_FIELD__STRUCT_ITEM:
         case AST_FIELD__TEMPLATE_ITEM:
@@ -329,15 +344,6 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                 PrintText(cp, " else ");
                 PrintNode(cp, ifFalse);
             }
-            break;
-        }
-        case AST_CAST:
-        {
-            PrintChar(cp, '<');
-            PrintNode(cp, GetAstCastTypespec(node));
-            PrintChar(cp, '>');
-            PrintChar(cp, ' ');
-            PrintNode(cp, GetAstCastRhs(node));
             break;
         }
         default:

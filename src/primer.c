@@ -327,17 +327,8 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             pushFrame(primer,NULL,ASTCTX_VALUE,node);
             break;
         }
-        case AST_CAST__TYPESPEC:
-        {
-            pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
-            break;
-        }
-        case AST_CAST:
-        {
-            pushFrame(primer,NULL,ASTCTX_VALUE,topFrameFunc(primer));
-            break;
-        }
         case AST_EXTERN:
+        case AST_TYPEDEF:
         {
             pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
             break;
@@ -357,8 +348,8 @@ int primer_post(void* rawPrimer, AstNode* node) {
         case AST_PAREN:
         case AST_LAMBDA:
         case AST_FIELD__PATTERN_ITEM:
-        case AST_CAST__TYPESPEC:
-        case AST_CAST:
+        case AST_TYPEDEF:
+        case AST_EXTERN:
         case AST_DEF:
         {
             popFrame(primer);
@@ -400,12 +391,24 @@ int PrimeModule(Primer* primer, AstNode* module) {
             SetAstNodeValueType(stmt,valType);
             SetAstNodeTypingType(stmt,typingType);
         } else if (stmtKind == AST_EXTERN) {
-            // todo: implement this next, implement typer, implement emitter.
-            if (DEBUG) {
-                printf("!!- PrimeModule: WIP statement kind 'AST_EXTERN' in module\n");
-            } else {
-                assert(0 && "PrimeModule: WIP statement kind 'AST_EXTERN' in module");
-            }
+            SymbolID lhs = GetAstExternStmtName(stmt);
+            char const* symbolText = GetSymbolText(lhs);
+            void* valType = CreateMetatype(primer->typer, "extern:%s", symbolText);
+            pushSymbol(primer, lhs, valType, stmt, ASTCTX_VALUE);
+            SetAstNodeValueType(stmt,valType);
+        } else if (stmtKind == AST_TYPEDEF) {
+            SymbolID lhs = GetAstTypedefStmtName(stmt);
+            char const* symbolText = GetSymbolText(lhs);
+            
+            void* typingContextType = CreateMetatype(primer->typer, "type:%s", symbolText);
+            // todo: replace this invocation of FuncType with something different, like CastType?
+            void* valueContextType = GetFuncType(primer->typer, typingContextType, typingContextType);
+            
+            pushSymbol(primer, lhs, typingContextType, stmt, ASTCTX_TYPING);
+            pushSymbol(primer, lhs, valueContextType, stmt, ASTCTX_VALUE);
+            
+            SetAstNodeTypingType(stmt, typingContextType);
+            SetAstNodeValueType(stmt, valueContextType);
         } else {
             if (DEBUG) {
                 printf("!!- PrimeModule: Unsupported statement kind in module\n");

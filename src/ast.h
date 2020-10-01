@@ -26,8 +26,8 @@ enum AstKind {
     AST_LAMBDA,
     AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME,
-    AST_LET, AST_DEF, AST_EXTERN, AST_STMT_CHECK, AST_STMT_RETURN,
-    AST_CALL, AST_CAST, AST_CAST__TYPESPEC,
+    AST_LET, AST_DEF, AST_TYPEDEF, AST_EXTERN, AST_STMT_CHECK, AST_STMT_RETURN,
+    AST_CALL,
     AST_UNARY, AST_BINARY,
     AST_T_PATTERN, AST_V_PATTERN,
     AST_FIELD__TEMPLATE_ITEM,AST_FIELD__TUPLE_ITEM,AST_FIELD__STRUCT_ITEM,AST_FIELD__PATTERN_ITEM
@@ -96,12 +96,12 @@ AstNode* CreateAstLetStmt(Loc loc, SymbolID lhs, AstNode* optTypespec, AstNode* 
 AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message);
 AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs);
 AstNode* CreateAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec);
+AstNode* CreateAstTypedefStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* optRhs);
 void PushPatternToAstDefStmt(AstNode* defStmt, AstNode* pattern);
 void SetAstDefStmtBody(AstNode* defStmt, AstNode* body);
 void FinalizeAstDefStmt(AstNode* defStmt);
 
 AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs, int isTemplateCall);
-AstNode* CreateAstCast(Loc loc, AstNode* typespec, AstNode* rhs);
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
 AstNode* CreateAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg);
 
@@ -175,13 +175,11 @@ int GetAstDefStmtFinalized(AstNode* def);
 AstNode* GetAstDefStmtFinalRhs(AstNode* def);
 
 SymbolID GetAstExternStmtName(AstNode* externDef);
+AstNode* GetAstExternTypespec(AstNode* externDef);
 
 SymbolID GetAstTypedefStmtName(AstNode* td);
-AstNode* GetAstTypedefStmtPattern(AstNode* td);
-void* GetAstTypedefStmtValueDefnType(AstNode* td);
-
-AstNode* GetAstCastTypespec(AstNode* cast);
-AstNode* GetAstCastRhs(AstNode* cast);
+AstNode* GetAstTypedefStmtOptPattern(AstNode* td);
+AstNode* GetAstTypedefStmtOptRhs(AstNode* td);
 
 //
 // Symbol and type storage:
@@ -192,9 +190,6 @@ void SetAstNodeValueType(AstNode* node, void* type);
 
 void* GetAstNodeTypingType(AstNode* node);
 void SetAstNodeTypingType(AstNode* node, void* type);
-
-// void SetAstTypedefStmtValueDefnType(AstNode* node, void* valueDefn);
-// void* GetAstTypedefStmtValueDefnType(AstNode* node);
 
 AstNode* GetAstNodeParentFunc(AstNode* node);
 void SetAstNodeParentFunc(AstNode* node, AstNode* parentFunc);

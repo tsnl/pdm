@@ -85,7 +85,8 @@ struct AstExtern {
 };
 struct AstTypedef {
     SymbolID name;
-    AstNode* pattern;
+    AstNode* optPattern;
+    AstNode* optRhs;
     // void* valueDefnType;
 };
 struct AstCheck {
@@ -239,7 +240,7 @@ void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping) {
     module->as.Module.exportHeader = mapping;
 }
 void PushStmtToAstModule(AstNode* module, AstNode* def) {
-    if (def->kind != AST_DEF && def->kind != AST_EXTERN) {
+    if (def->kind != AST_DEF && def->kind != AST_EXTERN && def->kind != AST_TYPEDEF) {
         if (DEBUG) {
             printf("!!- Cannot push non-def/extern to AstModule.\n");
         } else {
@@ -451,6 +452,13 @@ AstNode* CreateAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec) {
     defNode->as.Extern.typespec = typespec;
     return defNode;
 }
+AstNode* CreateAstTypedefStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* optRhs) {
+    AstNode* td = newNode(loc, AST_TYPEDEF);
+    td->as.Typedef.name = lhs;
+    td->as.Typedef.optPattern = optPattern;
+    td->as.Typedef.optRhs = optRhs;
+    return td;
+}
 
 AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message) {
     AstNode* checkNode = newNode(loc, AST_STMT_CHECK);
@@ -465,15 +473,6 @@ AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs, int isTemplateCall) 
     callNode->as.Call.rhs = rhs;
     callNode->as.Call.isTemplateCall = isTemplateCall;
     return callNode;
-}
-AstNode* CreateAstCast(Loc loc, AstNode* typespec, AstNode* rhs) {
-    AstNode* castNode = newNode(loc, AST_CAST);
-    castNode->as.Cast.castTypespec = NULL; {
-        castNode->as.Cast.castTypespec = newNode(loc, AST_CAST__TYPESPEC);
-        castNode->as.Cast.castTypespec->as.CastTypespec = typespec;
-    }
-    castNode->as.Cast.rhs = rhs;
-    return castNode;
 }
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg) {
     AstNode* unaryNode = newNode(loc, AST_UNARY);
@@ -768,15 +767,18 @@ AstNode* GetAstDefStmtFinalRhs(AstNode* def) {
 SymbolID GetAstExternStmtName(AstNode* externDef) {
     return externDef->as.Extern.name;
 }
-AstNode* GetAstExternTypespecName(AstNode* externDef) {
+AstNode* GetAstExternTypespec(AstNode* externDef) {
     return externDef->as.Extern.typespec;
 }
 
 SymbolID GetAstTypedefStmtName(AstNode* td) {
     return td->as.Typedef.name;
 }
-AstNode* GetAstTypedefStmtPattern(AstNode* td) {
-    return td->as.Typedef.pattern;
+AstNode* GetAstTypedefStmtOptPattern(AstNode* td) {
+    return td->as.Typedef.optPattern;
+}
+AstNode* GetAstTypedefStmtOptRhs(AstNode* td) {
+    return td->as.Typedef.optRhs;
 }
 
 //
@@ -877,17 +879,6 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
                 RecursivelyVisitAstNode(context, GetAstLambdaPattern(node), preVisitorCb, postVisitorCb) &&
                 RecursivelyVisitAstNode(context, GetAstLambdaBody(node), preVisitorCb, postVisitorCb)
             );
-        }
-        case AST_CAST:
-        {
-            return (
-                RecursivelyVisitAstNode(context, node->as.Cast.castTypespec, preVisitorCb, postVisitorCb) &&
-                RecursivelyVisitAstNode(context, node->as.Cast.rhs, preVisitorCb, postVisitorCb)
-            );
-        }
-        case AST_CAST__TYPESPEC:
-        {
-            return RecursivelyVisitAstNode(context, node->as.CastTypespec, preVisitorCb, postVisitorCb);
         }
         case AST_DOT_INDEX:
         {
@@ -1002,6 +993,29 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             for (int i = 0; i < moduleLength; i++) {
                 AstNode* moduleField = GetAstModuleStmtAt(node, i);
                 if (!RecursivelyVisitAstNode(context, moduleField, preVisitorCb, postVisitorCb)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case AST_EXTERN:
+        {
+            AstNode* typespec = GetAstExternTypespec(node);
+            return RecursivelyVisitAstNode(context, typespec, preVisitorCb, postVisitorCb);
+        }
+        case AST_TYPEDEF:
+        {
+            AstNode* optPattern = GetAstTypedefStmtOptPattern(node);
+            if (optPattern) {
+                AstNode* pattern = optPattern;
+                if (!RecursivelyVisitAstNode(context, pattern, preVisitorCb, postVisitorCb)) {
+                    return 0;
+                }
+            }
+            AstNode* optRhs = GetAstTypedefStmtOptRhs(node);
+            if (optRhs) {
+                AstNode* rhs = optRhs;
+                if (!RecursivelyVisitAstNode(context, rhs, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }

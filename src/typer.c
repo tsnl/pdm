@@ -416,8 +416,21 @@ int typer_post(void* rawTyper, AstNode* node) {
             }
             Type* foundType = GetDefnType(foundDefn);
             SetAstIdDefn(node,foundDefn);
-            SetAstNodeValueType(node,foundType);
-            ReqAstLambdaDefn(GetAstNodeParentFunc(node),foundDefn);
+            if (lookupContext == ASTCTX_TYPING) {
+                SetAstNodeTypingType(node,foundType);
+            } else if (lookupContext == ASTCTX_VALUE) {
+                SetAstNodeValueType(node,foundType);
+            } else {
+                if (DEBUG) {
+                    printf("!!- Invalid lookup context while typing AST_ID.\n");
+                } else {
+                    assert(0 && "Invalid lookup context while typing in AST_ID.\n");
+                }
+                break;
+            }
+
+            // tracking closures
+            // ReqAstLambdaDefn(GetAstNodeParentFunc(node),foundDefn);
             break;
         }
         case AST_MODULE:
@@ -622,36 +635,40 @@ int typer_post(void* rawTyper, AstNode* node) {
             SetAstNodeValueType(node,itType);
             break;
         }
-        case AST_CAST:
+        case AST_TYPEDEF:
         {
-            AstNode* typespec = GetAstCastTypespec(node);
-            AstNode* rhs = GetAstCastRhs(node);
-            Loc loc = GetAstNodeLoc(typespec);
-            Type* toType = GetAstNodeValueType(typespec);
-            Type* rhsType = GetAstNodeValueType(rhs);
-            if (toType && rhsType) {
-                // requireSubtype(loc,toType,rhsType);
-                requireSubtype(loc,rhsType,toType);
-            } else {
-                if (DEBUG) {
-                    printf("!!- Unknown type in 'cast' expression.\n");
+            Loc loc = GetAstNodeLoc(node);
+            AstNode* optRhs = GetAstTypedefStmtOptRhs(node);
+            if (optRhs) {
+                AstNode* rhs = optRhs;
+                Type* rhsType = GetAstNodeTypingType(rhs);
+                Type* metavarType = GetAstNodeTypingType(node);
+
+                // filling rhsType as a solution for the typing metavar:
+                if (rhsType && metavarType) {
+                    requireSubtype(loc,rhsType,metavarType);
                 } else {
-                    assert(0 && "Unknown type in 'cast' expression.");
+                    printf("!!- Skipping `typedef` subtyping.\n");
                 }
             }
-            SetAstNodeValueType(node,toType);
             break;
         }
-        case AST_CAST__TYPESPEC:
+        case AST_EXTERN:
         {
-            // skipped by calling GetAstCastTypespec
+            Loc loc = GetAstNodeLoc(node);
+
+            AstNode* typespec = GetAstExternTypespec(node);
+            Type* typespecType = GetAstNodeTypingType(typespec);
+            
+            Type* defType = GetAstNodeValueType(node);
+
+            if (defType && typespecType) {
+                // filling typespecType as a solution (supertype) for defType
+                requireSubtype(loc,typespecType,defType);
+            }
+
             break;
         }
-        // case AST_TYPEDEF:
-        // {
-        //     // todo
-        //     break;
-        // }
         default:
         {
             if (DEBUG) {
