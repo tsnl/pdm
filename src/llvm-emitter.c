@@ -210,15 +210,19 @@ LLVMValueRef getDefnRhsValue(Emitter* emitter, AstNode* defnNode) {
 }
 LLVMValueRef emitExpr(Emitter* emitter, AstNode* expr) {
     LLVMValueRef value;
-    value = GetAstNodeLlvmRepr(expr);
-    if (value) {
-        // LLVMSetValueName(value,"expr");
-        return value;
+    AstKind exprKind = GetAstNodeKind(expr);
+    if (exprKind == AST_LAMBDA || exprKind == AST_FIELD__PATTERN_ITEM) {
+        value = GetAstNodeLlvmRepr(expr);
+        if (value) {
+            // LLVMSetValueName(value,"expr");
+            return value;
+        }
     }
     value = helpEmitExpr(emitter,expr);
     if (value) {
-        // LLVMSetValueName(value,"expr");
-        SetAstNodeLlvmRepr(expr,value);
+        if (exprKind == AST_LAMBDA || exprKind == AST_FIELD__PATTERN_ITEM) {
+            SetAstNodeLlvmRepr(expr,value);
+        }
         return value;
     }
     return NULL;
@@ -506,6 +510,16 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
         }
         case AST_ITE:
         {
+            // getting the basic block we start in, to return to after computing the result:
+            LLVMBasicBlockRef predecessorBlock = NULL;
+            LLVMValueRef currentFunction = currentLlvmFunction(emitter);
+            if (currentFunction) {
+                LLVMBasicBlockRef optPredecessor = LLVMGetLastBasicBlock(currentFunction);
+                if (optPredecessor) {
+                    predecessorBlock = optPredecessor;
+                }
+            }
+
             // getting the ITE type:
             Type* iteType = GetAstNodeType(expr);
             LLVMTypeRef iteLlvmType = emitType(emitter->typer,iteType);
@@ -516,13 +530,15 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             LLVMBasicBlockRef trueBlock = LLVMAppendBasicBlock(func, "ite-true");
             LLVMBasicBlockRef falseBlock = LLVMAppendBasicBlock(func, "ite-false");
             LLVMBasicBlockRef landingBlock = LLVMAppendBasicBlock(func, "ite-landing");
-
+            
+            // breaking to the entry block:
             LLVMBuildBr(emitter->llvmBuilder,entryBlock);
-
-            // computing cond, breaking in 'entry' to other blocks:
+            
+            // computing cond, breaking to other blocks:
             LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entryBlock);
             AstNode* cond = GetAstIteCond(expr);
             LLVMValueRef condLlvm = emitExpr(emitter,cond);
+            // LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entryBlock);
             LLVMBuildCondBr(emitter->llvmBuilder,condLlvm,trueBlock,falseBlock);
             
             // populating 'ite-true':
@@ -532,6 +548,7 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             if (ifTrue) {
                 valueIfTrue = emitExpr(emitter,ifTrue);
             }
+            LLVMBasicBlockRef predTrueBlock = LLVMGetInsertBlock(emitter->llvmBuilder);
             LLVMBuildBr(emitter->llvmBuilder,landingBlock);
 
             // populating 'ite-false':
@@ -541,14 +558,19 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             if (ifFalse) {
                 valueIfFalse = emitExpr(emitter,ifFalse);
             }
+            LLVMBasicBlockRef predFalseBlock = LLVMGetInsertBlock(emitter->llvmBuilder);
             LLVMBuildBr(emitter->llvmBuilder,landingBlock);
 
             // tying together these blocks with a 'phi' node and returning:
             LLVMPositionBuilderAtEnd(emitter->llvmBuilder,landingBlock);
             LLVMValueRef phi = LLVMBuildPhi(emitter->llvmBuilder, iteLlvmType, "ite-result");
             LLVMValueRef phi_values[] = {valueIfTrue, valueIfFalse};
-            LLVMBasicBlockRef phi_blocks[] = {trueBlock, falseBlock};
+            LLVMBasicBlockRef phi_blocks[] = {predTrueBlock, predFalseBlock};
             LLVMAddIncoming(phi, phi_values, phi_blocks, 2);
+            // if (predecessorBlock) {
+            //     LLVMBuildBr(emitter->llvmBuilder,predecessorBlock);
+            // }
+
             return phi;
         }
         default:
@@ -659,10 +681,9 @@ int pass2_pre(void* rawEmitter, AstNode* node) {
             //     SetAstNodeLlvmRepr(patternArg,llvmArg);
             // }
 
-            // emitting the body in subsequent visits:
+            // emitting the body in subsequent visits
+            // pushing the entry-point block to the block-stack:
             LLVMBasicBlockRef entry = LLVMAppendBasicBlock(funcLlvmExpr,"entry");
-
-            // LLVMBasicBlockRef entry = LLVMGetLastBasicBlock(funcLlvmExpr);
             LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entry);
 
             break;
@@ -696,7 +717,7 @@ int pass2_post(void* rawEmitter, AstNode* node) {
                 bodyLlvmExpr = emitExpr(emitter,body);
             }
             LLVMBuildRet(emitter->llvmBuilder,bodyLlvmExpr);
-            
+
             // popping the LLVM function reference from the emitter stack:
             popLlvmFunctionFromEmitterStack(emitter);
             
@@ -717,9 +738,10 @@ int pass2_post(void* rawEmitter, AstNode* node) {
         case AST_CALL:
         case AST_PAREN:
         {
-            AstNode* expr = node;
-            LLVMValueRef llvmExpr = emitExpr(emitter,expr);
-            SetAstNodeLlvmRepr(node,llvmExpr);
+            // do nothing
+            // AstNode* expr = node;
+            // LLVMValueRef llvmExpr = emitExpr(emitter,expr);
+            // SetAstNodeLlvmRepr(node,llvmExpr);
             break;
         }
         default:
