@@ -1,11 +1,17 @@
 def fibonacci (n: u64) = {
-    if n <= 1 then {
+    if n = 0 then 1 else
+    if n = 1 then 1 else
+    (fibonacci n-1) + (fibonacci n-2)
+};
+
+def factorial (n: u64) = {
+    if n = 0 then {
         1
     } else {
-        (fibonacci n-1) + (fibonacci n-2)
+        n * (factorial n-1)
     }
 };
 
 def main () = {
-    fibonacci 10
+    factorial 5
 };
