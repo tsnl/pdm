@@ -389,12 +389,14 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
                 case BOP_GTHAN:
                 {
                     LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntUGT,llvmLtArg,llvmRtArg,"gt");
-                    return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                    // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                    return rawValue;
                 }
                 case BOP_LETHAN:
                 {
                     LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntULE,llvmLtArg,llvmRtArg,"le");
-                    return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                    // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                    return rawValue;
                 }
                 case BOP_GETHAN:
                 {
@@ -679,8 +681,10 @@ int pass2_post(void* rawEmitter, AstNode* node) {
     switch (nodeKind) {
         case AST_DEF:
         {
+            char const* name = GetSymbolText(GetAstDefStmtLhs(node));
             AstNode* finalRhs = GetAstDefStmtFinalRhs(node);
             LLVMValueRef value = emitExpr(emitter,finalRhs);
+            LLVMSetValueName(value,name);
             SetAstNodeLlvmRepr(node,value);
             break;
         }
@@ -698,7 +702,10 @@ int pass2_post(void* rawEmitter, AstNode* node) {
             
             break;
         }
-
+        case AST_ITE:
+        {
+            break;
+        }
         case AST_UNIT:
         case AST_LITERAL_FLOAT:
         case AST_LITERAL_INT:
