@@ -383,20 +383,20 @@ int typer_post(void* rawTyper, AstNode* node) {
         case AST_UNIT:
         {
             Type* t = GetUnitType(typer);
-            SetAstNodeType(node,t);
+            SetAstNodeValueType(node,t);
             break;
         }
         case AST_LITERAL_INT:
         {
             // TODO: automatically select width based on int value
             Type* t = GetIntType(typer, INT_64);
-            SetAstNodeType(node,t);
+            SetAstNodeValueType(node,t);
             break;
         }
         case AST_LITERAL_FLOAT:
         {
             Type* t = GetFloatType(typer, FLOAT_64);
-            SetAstNodeType(node,t);
+            SetAstNodeValueType(node,t);
             break;
         }
         case AST_ID:
@@ -416,7 +416,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             }
             Type* foundType = GetDefnType(foundDefn);
             SetAstIdDefn(node,foundDefn);
-            SetAstNodeType(node,foundType);
+            SetAstNodeValueType(node,foundType);
             ReqAstLambdaDefn(GetAstNodeParentFunc(node),foundDefn);
             break;
         }
@@ -427,8 +427,8 @@ int typer_post(void* rawTyper, AstNode* node) {
         }
         case AST_LET:
         {
-            Type* lhsValueType = GetAstNodeType(node);
-            Type* rhsType = GetAstNodeType(GetAstLetStmtRhs(node));
+            Type* lhsValueType = GetAstNodeValueType(node);
+            Type* rhsType = GetAstNodeValueType(GetAstLetStmtRhs(node));
             if (lhsValueType && rhsType) {
                 requireSubtype(GetAstNodeLoc(node), rhsType, lhsValueType);
             }
@@ -436,10 +436,10 @@ int typer_post(void* rawTyper, AstNode* node) {
         }
         case AST_LAMBDA:
         {
-            Type* lhsType = GetAstNodeType(GetAstLambdaPattern(node));
-            Type* rhsType = GetAstNodeType(GetAstLambdaBody(node));
+            Type* lhsType = GetAstNodeValueType(GetAstLambdaPattern(node));
+            Type* rhsType = GetAstNodeValueType(GetAstLambdaBody(node));
             if (lhsType && rhsType) {
-                SetAstNodeType(node, GetFuncType(typer, lhsType, rhsType));
+                SetAstNodeValueType(node, GetFuncType(typer, lhsType, rhsType));
             }
             break;
         }
@@ -448,22 +448,18 @@ int typer_post(void* rawTyper, AstNode* node) {
             // module items can be used in value and typing contexts
             // todo: make these types the results of Typefunc instances
             Loc loc = GetAstNodeLoc(node);
-            Type* symType = GetAstNodeType(node);
+            Type* definedValueType = GetAstNodeValueType(node);
+            Type* definedTypingType = GetAstNodeTypingType(node);
+            
+            AstNode* desugaredRhs = GetAstDefStmtFinalRhs(node);
+            Type* desugaredRhsType = GetAstNodeValueType(desugaredRhs);
 
             AstNode* rhs = GetAstDefStmtRhs(node);
-            Type* rhsType = GetAstNodeType(rhs);
+            Type* rhsType = GetAstNodeValueType(rhs);
 
-            Type* defType = rhsType; {
-                int patternCount = GetAstDefStmtPatternCount(node);
-                for (int patternIndex = patternCount-1; patternIndex >= 0; patternIndex--) {
-                    AstNode* pattern = GetAstDefStmtPatternAt(node,patternIndex);
-                    Type* patternType = GetAstNodeType(pattern);
-                    defType = GetFuncType(typer,patternType,defType);
-                }
-            }
-
-            if (defType && symType) {
-                requireSubtype(loc, defType, symType);
+            if (desugaredRhsType && rhsType && definedValueType) {
+                requireSubtype(loc, desugaredRhsType, definedValueType);
+                requireSubtype(loc, rhsType, definedTypingType);
             } else {
                 if (DEBUG) {
                     printf("!!- Skipping `define` subtyping\n");
@@ -481,16 +477,16 @@ int typer_post(void* rawTyper, AstNode* node) {
             
             // subtyping from RHS if present
             AstNode* rhs = GetAstFieldRhs(node);
-            Type* fieldType = GetAstNodeType(node);
+            Type* fieldType = GetAstNodeValueType(node);
             if (rhs && fieldType) {
                 Loc loc = GetAstNodeLoc(node);
 
-                Type* rhsValueType = GetAstNodeType(rhs);
+                Type* rhsValueType = GetAstNodeValueType(rhs);
                 if (rhsValueType) {
                     requireSubtype(loc, rhsValueType, fieldType);
                 }
 
-                Type* rhsTypingType = GetAstNodeType(rhs);
+                Type* rhsTypingType = GetAstNodeValueType(rhs);
                 if (rhsTypingType) {
                     requireSubtype(loc, rhsTypingType, fieldType);
                 }
@@ -503,13 +499,13 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* rhs = GetAstFieldRhs(node);
             Type* tv;
             if (rhs) {
-                tv = GetAstNodeType(rhs);
+                tv = GetAstNodeValueType(rhs);
             } else {
                 SymbolID name = GetAstFieldName(node);
                 char const* nameText = GetSymbolText(name);
                 tv = CreateMetatype(typer, "field:%s", nameText);
             }
-            SetAstNodeType(node,tv);
+            SetAstNodeValueType(node,tv);
             break;
         }
         case AST_T_PATTERN:
@@ -517,11 +513,11 @@ int typer_post(void* rawTyper, AstNode* node) {
         {
             int patternCount = GetAstPatternLength(node);
             if (patternCount == 0) {
-                SetAstNodeType(node, GetUnitType(typer));
+                SetAstNodeValueType(node, GetUnitType(typer));
             } else if (patternCount == 1) {
-                SetAstNodeType(
+                SetAstNodeValueType(
                     node,
-                    GetAstNodeType(GetAstPatternFieldAt(node,0))
+                    GetAstNodeValueType(GetAstPatternFieldAt(node,0))
                 );
             } else if (DEBUG) {
                 // todo: create a tuple type here.
@@ -540,12 +536,12 @@ int typer_post(void* rawTyper, AstNode* node) {
                 
                 InputTypeFieldNode* typingITF = malloc(sizeof(InputTypeFieldNode));
                 typingITF->name = fieldName;
-                typingITF->type = GetAstNodeType(field);
+                typingITF->type = GetAstNodeValueType(field);
                 typingITF->next = inputTypeFieldHead;
                 inputTypeFieldHead = typingITF;
             }
             Type* tuple = GetTupleType(typer, inputTypeFieldHead);
-            SetAstNodeType(node,tuple);
+            SetAstNodeValueType(node,tuple);
             break;
         }
         case AST_TUPLE:
@@ -557,20 +553,20 @@ int typer_post(void* rawTyper, AstNode* node) {
                 SymbolID fieldName = GetAstFieldName(field);
                 InputTypeFieldNode* typingITF = malloc(sizeof(InputTypeFieldNode));
                 typingITF->name = fieldName;
-                typingITF->type = GetAstNodeType(field);
+                typingITF->type = GetAstNodeValueType(field);
                 typingITF->next = inputTypeFieldHead;
                 inputTypeFieldHead = typingITF;
             }
-            SetAstNodeType(node, GetTupleType(typer, inputTypeFieldHead));
+            SetAstNodeValueType(node, GetTupleType(typer, inputTypeFieldHead));
             break;
         }
         case AST_CHAIN:
         {
             AstNode* result = GetAstChainResult(node);
             if (result) {
-                SetAstNodeType(node, GetAstNodeType(result));
+                SetAstNodeValueType(node, GetAstNodeValueType(result));
             } else {
-                SetAstNodeType(node, GetUnitType(typer));
+                SetAstNodeValueType(node, GetUnitType(typer));
             }
             break;
         }
@@ -578,9 +574,9 @@ int typer_post(void* rawTyper, AstNode* node) {
         {
             AstUnaryOperator operator = GetAstUnaryOperator(node);
             AstNode* arg = GetAstUnaryOperand(node);
-            Type* argType = GetAstNodeType(arg);
+            Type* argType = GetAstNodeValueType(arg);
             Type* type = GetUnaryIntrinsicType(typer,nodeLoc,operator,argType);
-            SetAstNodeType(node,type);
+            SetAstNodeValueType(node,type);
             break;
         }
         case AST_BINARY:
@@ -588,10 +584,10 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstBinaryOperator binop = GetAstBinaryOperator(node);
             AstNode* ltArg = GetAstBinaryLtOperand(node);
             AstNode* rtArg = GetAstBinaryRtOperand(node);
-            Type* ltArgType = GetAstNodeType(ltArg);
-            Type* rtArgType = GetAstNodeType(rtArg);
+            Type* ltArgType = GetAstNodeValueType(ltArg);
+            Type* rtArgType = GetAstNodeValueType(rtArg);
             Type* type = GetBinaryIntrinsicType(typer,nodeLoc,binop,ltArgType,rtArgType);
-            SetAstNodeType(node,type);
+            SetAstNodeValueType(node,type);
             break;
         }
         case AST_ITE:
@@ -599,11 +595,11 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* cond = GetAstIteCond(node);
             AstNode* ifTrue = GetAstIteIfTrue(node);
             AstNode* ifFalse = GetAstIteIfFalse(node);
-            Type* condType = GetAstNodeType(cond);
-            Type* ifTrueType = GetAstNodeType(ifTrue);
-            Type* ifFalseType = ifFalse ? GetAstNodeType(ifFalse) : GetUnitType(typer);
+            Type* condType = GetAstNodeValueType(cond);
+            Type* ifTrueType = GetAstNodeValueType(ifTrue);
+            Type* ifFalseType = ifFalse ? GetAstNodeValueType(ifFalse) : GetUnitType(typer);
             Type* type = GetPhiType(typer,nodeLoc,condType,ifTrueType,ifFalseType);
-            SetAstNodeType(node,type);
+            SetAstNodeValueType(node,type);
             break;
         }
         case AST_CALL:
@@ -613,17 +609,17 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* rhs = GetAstCallRhs(node);
             Type* ret = CreateMetatype(typer, "in-ret");
             
-            Type* actualFuncType = GetFuncType(typer, GetAstNodeType(rhs), ret);
-            requireSubtype(loc, GetAstNodeType(lhs), actualFuncType);
+            Type* actualFuncType = GetFuncType(typer, GetAstNodeValueType(rhs), ret);
+            requireSubtype(loc, GetAstNodeValueType(lhs), actualFuncType);
             
-            SetAstNodeType(node,ret);
+            SetAstNodeValueType(node,ret);
             break;
         }
         case AST_PAREN:
         {
             AstNode* itNode = GetAstParenItem(node);
-            Type* itType = GetAstNodeType(itNode);
-            SetAstNodeType(node,itType);
+            Type* itType = GetAstNodeValueType(itNode);
+            SetAstNodeValueType(node,itType);
             break;
         }
         case AST_CAST:
@@ -631,8 +627,8 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* typespec = GetAstCastTypespec(node);
             AstNode* rhs = GetAstCastRhs(node);
             Loc loc = GetAstNodeLoc(typespec);
-            Type* toType = GetAstNodeType(typespec);
-            Type* rhsType = GetAstNodeType(rhs);
+            Type* toType = GetAstNodeValueType(typespec);
+            Type* rhsType = GetAstNodeValueType(rhs);
             if (toType && rhsType) {
                 // requireSubtype(loc,toType,rhsType);
                 requireSubtype(loc,rhsType,toType);
@@ -643,7 +639,7 @@ int typer_post(void* rawTyper, AstNode* node) {
                     assert(0 && "Unknown type in 'cast' expression.");
                 }
             }
-            SetAstNodeType(node,toType);
+            SetAstNodeValueType(node,toType);
             break;
         }
         case AST_CAST__TYPESPEC:
@@ -651,11 +647,11 @@ int typer_post(void* rawTyper, AstNode* node) {
             // skipped by calling GetAstCastTypespec
             break;
         }
-        case AST_TYPEDEF:
-        {
-            // todo
-            break;
-        }
+        // case AST_TYPEDEF:
+        // {
+        //     // todo
+        //     break;
+        // }
         default:
         {
             if (DEBUG) {

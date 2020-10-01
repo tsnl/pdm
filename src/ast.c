@@ -142,7 +142,8 @@ struct AstNode {
     Loc loc;
     AstKind kind;
     AstInfo as;
-    void* type;
+    void* valueType;
+    void* typingType;
     AstContext lookupContext;
     void* llvmRepr;
     AstNode* parentFunc;
@@ -168,7 +169,8 @@ AstNode* newNode(Loc loc, AstKind kind) {
     AstNode* node = &allocatedNodes[allocatedNodeCount++];
     node->loc = loc;
     node->kind = kind;
-    node->type = NULL;
+    node->valueType = NULL;
+    node->typingType = NULL;
     node->lookupContext = __ASTCTX_NONE;
     node->llvmRepr = NULL;
     node->parentFunc = NULL;
@@ -231,11 +233,11 @@ void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping) {
     module->as.Module.exportHeader = mapping;
 }
 void PushStmtToAstModule(AstNode* module, AstNode* def) {
-    if (def->kind != AST_DEF && def->kind != AST_TYPEDEF) {
+    if (def->kind != AST_DEF) {
         if (DEBUG) {
-            printf("!!- Cannot push non-def/typedef to AstModule.\n");
+            printf("!!- Cannot push non-def to AstModule.\n");
         } else {
-            assert(0 && "Cannot push non-def/typedef to AstModule");
+            assert(0 && "Cannot push non-def to AstModule");
         }
     }
     pushListElement(module->as.Module.items, def);
@@ -436,13 +438,6 @@ AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs) {
     defNode->as.Def.rhs = NULL;
     defNode->as.Def.finalizedRhs = NULL;
     return defNode;
-}
-AstNode* CreateAstTypedefStmt(Loc loc, SymbolID name, AstNode* pattern) {
-    AstNode* typedefNode = newNode(loc, AST_TYPEDEF);
-    typedefNode->as.Typedef.name = name;
-    typedefNode->as.Typedef.pattern = pattern;
-    // typedefNode->as.Typedef.valueDefnType = NULL;
-    return typedefNode;
 }
 
 AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message) {
@@ -769,11 +764,17 @@ AstNode* GetAstTypedefStmtPattern(AstNode* td) {
 // Scoper and typer storage:
 //
 
-void* GetAstNodeType(AstNode* node) {
-    return node->type;
+void* GetAstNodeValueType(AstNode* node) {
+    return node->valueType;
 }
-void SetAstNodeType(AstNode* node, void* type) {
-    node->type = type;
+void SetAstNodeValueType(AstNode* node, void* type) {
+    node->valueType = type;
+}
+void* GetAstNodeTypingType(AstNode* node) {
+    return node->typingType;
+}
+void SetAstNodeTypingType(AstNode* node, void* type) {
+    node->typingType = type;
 }
 
 // void SetAstTypedefStmtValueDefnType(AstNode* node, void* valueDefn) {
@@ -901,15 +902,6 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         case AST_DEF:
         {
             return RecursivelyVisitAstNode(context,GetAstDefStmtFinalizedRhs(node),preVisitorCb,postVisitorCb);
-        }
-        case AST_TYPEDEF:
-        {
-            AstNode* pattern = GetAstTypedefStmtPattern(node);
-            if (pattern) {
-                return RecursivelyVisitAstNode(context,pattern,preVisitorCb,postVisitorCb);
-            } else {
-                return 1;
-            }
         }
         case AST_STMT_CHECK:
         {

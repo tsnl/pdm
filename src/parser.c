@@ -55,7 +55,7 @@ BinaryOpPrecedenceNode* binaryOpPrecedenceListHead = &orBinaryOpPrecedenceNode;
 static RawAstNode* tryParseStmt(Parser* p);
 static RawAstNode* parseLetStmt(Parser* p);
 static RawAstNode* parseDefStmt(Parser* p);
-static RawAstNode* parseTypedefStmt(Parser* p);
+// static RawAstNode* parseTypedefStmt(Parser* p);
 static RawAstNode* parseCheckStmt(Parser* p);
 
 static RawAstNode* parseExpr(Parser* p);
@@ -254,21 +254,6 @@ RawAstNode* parseDefStmt(Parser* p) {
     SetAstDefStmtBody(defStmt,rhs);
     FinalizeAstDefStmt(defStmt);
     return defStmt;
-}
-RawAstNode* parseTypedefStmt(Parser* p) {
-    Loc loc = lookaheadLoc(p,0);
-    expect(p,TK_KW_TYPEDEF,"'type'");
-    TokenInfo idInfo = lookaheadInfo(p,0);
-    SymbolID name = idInfo.as.ID;
-    if (!expect(p,TK_ID,"a defined type ID")) {
-        return NULL;
-    }
-    RawAstNode* pattern = NULL;
-    if (lookaheadKind(p,0) == TK_LSQBRK) {
-        pattern = parsePattern(p,TK_LSQBRK,TK_RSQBRK,0);
-    }
-    RawAstNode* def = CreateAstTypedefStmt(loc,name,pattern);
-    return def;
 }
 RawAstNode* parseCheckStmt(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
@@ -749,10 +734,6 @@ RawAstNode* ParseSource(Source* source) {
                 assert(0 && "NotImplemented: 'extern' statements.");
             }
             return NULL;
-        } else if (lookaheadKind(&p,0) == TK_KW_TYPEDEF) {
-            // typedef statements
-            RawAstNode* def = parseTypedefStmt(&p);
-            PushStmtToAstModule(module,def);
         } else {
             FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
             PostFeedback(FBK_ERROR,note,"Invalid module item");

@@ -245,7 +245,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             SymbolID defnID = GetAstLetStmtLhs(node);
             void* type = CreateMetatype(primer->typer, "let:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_VALUE);
-            SetAstNodeType(node, type);
+            SetAstNodeValueType(node, type);
             break;
         }
         case AST_STRUCT:
@@ -300,7 +300,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             // todo: valueTypeP encodes a first-order type
             void* type = CreateMetatype(primer->typer, "template:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_TYPING);
-            SetAstNodeType(node, type);
+            SetAstNodeValueType(node, type);
             break;
         }
         case AST_FIELD__PATTERN_ITEM:
@@ -309,7 +309,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             SymbolID defnID = GetAstFieldName(node);
             void* type = CreateMetatype(primer->typer, "pattern:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_VALUE);
-            SetAstNodeType(node, type);
+            SetAstNodeValueType(node, type);
 
             // pushing a typing frame for RHS
             pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
@@ -318,7 +318,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         case AST_FIELD__STRUCT_ITEM:
         {
             // SymbolID defnID = GetAstFieldName(node);
-            SetAstNodeType(node, GetAstNodeType(GetAstFieldRhs(node)));
+            SetAstNodeValueType(node, GetAstNodeValueType(GetAstFieldRhs(node)));
             break;
         }
         case AST_LAMBDA:
@@ -386,23 +386,14 @@ int PrimeModule(Primer* primer, AstNode* module) {
         AstKind stmtKind = GetAstNodeKind(stmt);
         if (stmtKind == AST_DEF) {
             SymbolID lhs = GetAstDefStmtLhs(stmt);
-            void* type = CreateMetatype(primer->typer, "def:%s", GetSymbolText(lhs));
-            pushSymbol(primer, lhs, type, stmt, ASTCTX_VALUE);
-            
+            char const* symbolText = GetSymbolText(lhs);
+            void* valType = CreateMetatype(primer->typer, "def-func:%s", symbolText);
+            void* typingType = CreateMetatype(primer->typer, "def-type:%s", symbolText);
+            pushSymbol(primer, lhs, valType, stmt, ASTCTX_VALUE);
+            pushSymbol(primer, lhs, typingType, stmt, ASTCTX_TYPING);
             // storing the defined metatypes on the statement:
-            SetAstNodeType(stmt,type);
-        } else if (stmtKind == AST_TYPEDEF) {
-            SymbolID name = GetAstTypedefStmtName(stmt);
-            // AstNode* pattern = GetAstTypedefStmtPattern(stmt);
-            void* typingType = CreateMetatype(primer->typer, "typedef:%s", GetSymbolText(name));
-            pushSymbol(primer, name, typingType, stmt, ASTCTX_TYPING);
-
-            // void* valueType = GetFuncType(primer->typer,typingType,typingType);
-            // void* valueType = GetCastType(primer->typer,loc,typingType);
-            // pushSymbol(primer, name, valueType, stmt, ASTCTX_VALUE);
-
-            SetAstNodeType(stmt,typingType);
-            // SetAstTypedefStmtValueDefnType(stmt,valueType);
+            SetAstNodeValueType(stmt,valType);
+            SetAstNodeTypingType(stmt,typingType);
         } else {
             if (DEBUG) {
                 printf("!!- PrimeModule: Unsupported statement kind in module\n");

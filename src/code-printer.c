@@ -129,17 +129,17 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             }
             break;
         }
-        case AST_TYPEDEF:
-        {
-            SymbolID name = GetAstTypedefStmtName(node);
-            AstNode* pattern = GetAstTypedefStmtPattern(node);
-            PrintText(cp,"typedef ");
-            PrintText(cp,GetSymbolText(name));
-            if (pattern) {
-                PrintNode(cp,pattern);
-            }
-            break;
-        }
+        // case AST_TYPEDEF:
+        // {
+        //     SymbolID name = GetAstTypedefStmtName(node);
+        //     AstNode* pattern = GetAstTypedefStmtPattern(node);
+        //     PrintText(cp,"typedef ");
+        //     PrintText(cp,GetSymbolText(name));
+        //     if (pattern) {
+        //         PrintNode(cp,pattern);
+        //     }
+        //     break;
+        // }
         case AST_FIELD__PATTERN_ITEM:
         case AST_FIELD__STRUCT_ITEM:
         case AST_FIELD__TEMPLATE_ITEM:

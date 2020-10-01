@@ -247,14 +247,14 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
         }
         case AST_LITERAL_INT:
         {
-            Type* type = GetAstNodeType(expr);
+            Type* type = GetAstNodeValueType(expr);
             size_t value = GetAstIntLiteralValue(expr);
             LLVMTypeRef llvmType = emitType(emitter->typer,type);
             return LLVMConstInt(llvmType,value,0);
         }
         case AST_LITERAL_FLOAT:
         {
-            Type* type = GetAstNodeType(expr);
+            Type* type = GetAstNodeValueType(expr);
             LLVMTypeRef llvmType = emitType(emitter->typer,type);
             long double value = GetAstFloatLiteralValue(expr);
             return LLVMConstReal(llvmType,value);
@@ -278,7 +278,7 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
         {
             // todo: pass captured arguments here
             // todo: destructure tuple types for function calls
-            Type* callType = GetAstNodeType(expr);
+            Type* callType = GetAstNodeValueType(expr);
             // LLVMTypeRef callLlvmType = emitType(emitter->typer,callType);
             AstNode* lhs = GetAstCallLhs(expr);
             AstNode* rhs = GetAstCallRhs(expr);
@@ -521,7 +521,7 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             }
 
             // getting the ITE type:
-            Type* iteType = GetAstNodeType(expr);
+            Type* iteType = GetAstNodeValueType(expr);
             LLVMTypeRef iteLlvmType = emitType(emitter->typer,iteType);
             
             // adding any basic blocks required:
@@ -605,7 +605,7 @@ int pass1_pre(void* rawEmitter, AstNode* node) {
 
             int patternLength = GetAstPatternLength(pattern);
 
-            Type* funcType = GetAstNodeType(node);
+            Type* funcType = GetAstNodeValueType(node);
             Type* funcDomainType = GetFuncTypeDomain(funcType);
             Type* funcImageType = GetFuncTypeImage(funcType);
 

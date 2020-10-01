@@ -1,9 +1,5 @@
-typedef Vector3;
-
-def v3_new (x: f32) = {
-    <Vector3> {
-        x: x, 
-        y: 0, 
-        z: 0
-    }
+def Vector3 (x: f32) = {    
+    x: x, 
+    y: 0, 
+    z: 0
 };
