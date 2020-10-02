@@ -45,6 +45,7 @@ static LLVMValueRef emitExpr(Emitter* emitter, AstNode* expr);
 static LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr);
 static void buildLlvmField(Typer* typer, void* sb, SymbolID name, Type* type);
 static LLVMValueRef getDefnRhsValue(Emitter* emitter, AstNode* defnNode);
+static void helpDestructureTupleField(Typer* typer, void* llvmValuesSb, SymbolID name, Type* type);
 
 static int forwardDeclarationPass_pre(void* rawEmitter, AstNode* node);
 static int forwardDeclarationPass_post(void* rawEmitter, AstNode* node);
@@ -198,6 +199,14 @@ LLVMValueRef getDefnRhsValue(Emitter* emitter, AstNode* defnNode) {
                 return NULL;
             }
         }
+        case AST_TYPEDEF:
+        {
+            return NULL;
+        }
+        case AST_EXTERN:
+        {
+            return emitExpr(emitter, defnNode);
+        }
         default:
         {
             if (DEBUG) {
@@ -229,7 +238,8 @@ LLVMValueRef emitExpr(Emitter* emitter, AstNode* expr) {
     return NULL;
 }
 LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
-    switch (GetAstNodeKind(expr))
+    AstKind nodeKind = GetAstNodeKind(expr);
+    switch (nodeKind)
     {
         case AST_ID:
         {
@@ -243,7 +253,9 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
                         printf("!!- WARNING: defnNode is NULL in `helpEmitExpr`.\n");
                     }
                 }
-            } 
+            } else {
+
+            }
             return NULL;
         }
         case AST_LITERAL_INT:
@@ -278,27 +290,48 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
         case AST_CALL:
         {
             // todo: pass captured arguments here
-            // todo: destructure tuple types for function calls
             Type* callType = GetAstNodeValueType(expr);
             // LLVMTypeRef callLlvmType = emitType(emitter->typer,callType);
             AstNode* lhs = GetAstCallLhs(expr);
             AstNode* rhs = GetAstCallRhs(expr);
+            
+            Type* formalFuncType = GetAstNodeValueType(lhs);
+            Type* formalArgType = GetFuncTypeDomain(formalFuncType);
+            TypeKind formalArgTypeKind = GetTypeKind(formalArgType);
+
             LLVMValueRef lhsLlvmValue = emitExpr(emitter,lhs);
             LLVMValueRef rhsLlvmValue = emitExpr(emitter,rhs);
 
-            // return LLVMBuildCall2(
-            //     emitter->llvmBuilder,
-            //     callLlvmType,
-            //     lhsLlvmValue,
-            //     &rhsLlvmValue,1,
-            //     "call"
-            // );
-            return LLVMBuildCall(
-                emitter->llvmBuilder,
-                lhsLlvmValue,
-                &rhsLlvmValue,1,
-                "call"
-            );
+            if (formalArgTypeKind == T_TUPLE) {
+                // destructuring tuple types for function calls
+                // todo: gep from the tuple ptr
+                // todo: store ptr refs for compound, ptr data types.
+                int tupleLength = GetTupleTypeLength(formalArgType);
+                LLVMValueRef* sb = NULL;
+                // MapCompoundType(emitter->typer,formalArgType,helpDestructureTupleField,&sb);
+
+                if (DEBUG) {
+                    printf("NotImplemented: destructuring tuple actual arguments.\n");
+                } else {
+                    assert(0 && "NotImplemented: destructuring tuple actual arguments.");
+                }
+
+                return NULL;
+            } else {
+                // return LLVMBuildCall2(
+                //     emitter->llvmBuilder,
+                //     callLlvmType,
+                //     lhsLlvmValue,
+                //     &rhsLlvmValue,1,
+                //     "call"
+                // );
+                return LLVMBuildCall(
+                    emitter->llvmBuilder,
+                    lhsLlvmValue,
+                    &rhsLlvmValue,1,
+                    "call"
+                );
+            }
         }
         case AST_UNARY:
         {
@@ -461,54 +494,6 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
 
             return NULL;
         }
-        case AST_DOT_NAME:
-        {
-            if (DEBUG) {
-                printf("!!- NotImplemented: AST_DOT_NAME in `emitExpr`\n");
-            } else {
-                assert(0 && "NotImplemented: AST_DOT_NAME in `emitExpr`");
-            }
-            return NULL;
-        }
-        case AST_DOT_INDEX:
-        {
-            if (DEBUG) {
-                printf("!!- NotImplemented: AST_DOT_INDEX in `emitExpr`\n");
-            } else {
-                assert(0 && "NotImplemented: AST_DOT_INDEX in `emitExpr`");
-            }
-            return NULL;
-        }
-        case AST_MODULE:
-        {
-            // todo: store an integer ID mapping modules
-            if (DEBUG) {
-                printf("!!- NotImplemented: AST_MODULE in `emitExpr`\n");
-            } else {
-                assert(0 && "NotImplemented: AST_MODULE in `emitExpr`");
-            }
-            return NULL;
-        }
-        case AST_TUPLE:
-        {
-            // todo: store an integer ID mapping modules
-            if (DEBUG) {
-                printf("!!- NotImplemented: handler for AST_TUPLE in `emitExpr`\n");
-            } else {
-                assert(0 && "NotImplemented: handler for AST_TUPLE in `emitExpr`");
-            }
-            return NULL;
-        }
-        case AST_STRUCT:
-        {
-            // todo: store an integer ID mapping modules
-            if (DEBUG) {
-                printf("!!- NotImplemented: handler for AST_STRUCT in `emitExpr`\n");
-            } else {
-                assert(0 && "NotImplemented: handler for AST_STRUCT in `emitExpr`");
-            }
-            return NULL;
-        }
         case AST_ITE:
         {
             // getting the basic block we start in, to return to after computing the result:
@@ -574,12 +559,35 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
 
             return phi;
         }
+        // todo: implement tuple emission after implementing pointers.
+        // case AST_TUPLE:
+        // {
+        //     int tupleCount = GetAstTupleLength(expr);
+        //     LLVMValueRef* llvmFields = malloc(tupleCount * sizeof(LLVMValueRef));
+        //     for (int fieldIndex = 0; fieldIndex < tupleCount; fieldIndex++) {
+        //         AstNode* field = GetAstTupleItemAt(expr,fieldIndex);
+        //         AstNode* fieldRhs = GetAstFieldRhs(field);
+        //         llvmFields[fieldIndex] = emitExpr(emitter,fieldRhs);
+        //     }
+            
+        //     void* type = GetAstNodeValueType(expr);
+        //     LLVMTypeRef llvmType = emitType(emitter->typer,type);
+            
+        //     // allocating stack space for this struct:
+        //     LLVMBuildAlloca(emitter->llvmBuilder,llvmType,"tuple");
+
+        //     // todo: initializing each field using 'gep':
+
+        //     // todo: return a pointer to the struct:
+
+        //     free(llvmFields);
+        // }
         default:
         {
             if (DEBUG) {
-                printf("!!- Invalid kind in `emitExpr`.\n");
+                printf("!!- Invalid kind in `helpEmitExpr`: %s\n", AstKindAsText(nodeKind));
             } else {
-                assert(0 && "Invalid kind in `emitExpr`");
+                assert(0 && "Invalid kind in `helpEmitExpr`");
             }
             return NULL;
         }
@@ -622,6 +630,7 @@ int forwardDeclarationPass_pre(void* rawEmitter, AstNode* node) {
                     llvmArgTypes[patternIndex] = llvmType;
                 }
                 funcLlvmType = LLVMFunctionType(funcImageLlvmType, llvmArgTypes, patternLength, 0);
+                free(llvmArgTypes);
 
                 // for (int index = 0; index < patternLength; index++) {
                 //     AstNode* field = GetAstPatternFieldAt(pattern,index);
@@ -642,9 +651,19 @@ int forwardDeclarationPass_pre(void* rawEmitter, AstNode* node) {
             LLVMValueRef funcLlvmExpr = LLVMAddFunction(emitter->llvmModule,"__anonymous_function__",funcLlvmType);
             
             // storing the LLVM function reference on the Lambda:
-            if (node) {
-                SetAstNodeLlvmRepr(node,funcLlvmExpr);
-            }
+            SetAstNodeLlvmRepr(node,funcLlvmExpr);
+            
+            break;
+        }
+        case AST_EXTERN:
+        {
+            // todo: define a symbol with extern linkage.
+            char const* llvmName = GetSymbolText(GetAstExternStmtName(node));
+            LLVMTypeRef llvmType = emitType(emitter->typer,GetAstNodeValueType(node));
+            LLVMValueRef funcLlvmExpr = LLVMAddFunction(emitter->llvmModule,llvmName,llvmType);
+
+            // storing the LLVM function reference:
+            SetAstNodeLlvmRepr(node,funcLlvmExpr);
             break;
         }
         default:
@@ -734,25 +753,9 @@ int definitionPass_post(void* rawEmitter, AstNode* node) {
             
             break;
         }
-        case AST_ITE:
+        case AST_EXTERN:
         {
-            break;
-        }
-        case AST_UNIT:
-        case AST_LITERAL_FLOAT:
-        case AST_LITERAL_INT:
-        case AST_LITERAL_STRING:
-        case AST_STRUCT:
-        case AST_TUPLE:
-        case AST_UNARY:
-        case AST_BINARY:
-        case AST_CALL:
-        case AST_PAREN:
-        {
-            // do nothing
-            // AstNode* expr = node;
-            // LLVMValueRef llvmExpr = emitExpr(emitter,expr);
-            // SetAstNodeLlvmRepr(node,llvmExpr);
+            // set additional linkage parameters here.
             break;
         }
         default:

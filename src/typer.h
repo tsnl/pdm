@@ -121,6 +121,7 @@ char const* GetMetatypeName(Type* typeP);
 
 void TypeNode(Typer* typer, AstNode* node);
 int Typecheck(Typer* typer);
+size_t GetTypeSizeInBytes(Typer* typer, Type* type);
 
 //
 // Emitter output:

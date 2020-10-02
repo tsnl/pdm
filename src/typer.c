@@ -1738,6 +1738,47 @@ int Typecheck(Typer* typer) {
     return res;
 }
 
+size_t GetTypeSizeInBytes(Typer* typer, Type* type) {
+    TypeKind typeKind = type->kind;
+    switch (typeKind)
+    {
+        case T_UNIT: 
+        {
+            return 0;
+        }
+        case T_INT:
+        {
+            switch (type->as.Int_width)
+            {
+                case INT_1: return 1;
+                case INT_8: return 1;
+                case INT_16: return 2;
+                case INT_32: return 4;
+                case INT_64: return 8;
+                case INT_128: return 16;
+                default:
+                {
+                    if (DEBUG) {
+                        printf("!!- Unknown int width in GetTypeSizeInBytes.\n");
+                    } else {
+                        assert(0 && "Unknown int width in GetTypeSizeInBytes.");
+                    }
+                    break;
+                }
+            }
+        }
+        default:
+        {
+            if (DEBUG) {
+                printf("!!- Unknown type kind in GetTypeSizeInBytes: %s", TypeKindAsText(typeKind));
+            } else {
+                assert(0 && "Unknown type kind in GetTypeSizeInBytes.");
+            }
+            return -1;
+        }
+    }
+}
+
 //
 // LLVM representation:
 //
