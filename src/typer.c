@@ -45,6 +45,7 @@ struct AdtTrieNode {
     Type* owner;
     int parentEdgeIndex;
     int depth;
+    int size;
 };
 struct AdtTrieEdge {
     AdtOperator operator;
@@ -66,6 +67,7 @@ struct TypeBuf {
 };
 
 struct MetaInfo {
+    Loc loc;
     char* name;
     SubOrSupTypeRec* subtypesSB;
     SubOrSupTypeRec* supertypesSB;
@@ -144,7 +146,7 @@ static Type* pushTypeBuf(TypeBuf* buf);
 
 // static Type* substitution(Typer* typer, Type* arg, TypeSub* firstTypeSubP);
 
-static AdtTrieNode* createATN(AdtTrieNode* parent, Type* owner);
+static AdtTrieNode* newATN(AdtTrieNode* parent, Type* owner);
 static AdtTrieNode* getAtnChild(AdtTrieNode* root, AdtOperator operator, InputTypeFieldNode const* inputFieldList, int noNewEdges);
 static AdtTrieNode* getCommonSuperATN(AdtTrieNode* a, AdtTrieNode* b);
 static int isSubATN(AdtTrieNode* sup, AdtTrieNode* sub);
@@ -173,6 +175,9 @@ static int checkSubtype(Loc loc, Type* sup, Type* sub);
 static int checkMetavar(Type* metavar);
 
 static void mapCompoundType(Typer* typer, AdtTrieNode* compound, FieldCB cb, void* sb);
+
+static void accumulateCompoundFieldSizeSum(Typer* typer, void* sumP, SymbolID name, Type* type);
+static void accumulateCompoundFieldSizeMax(Typer* typer, void* maxP, SymbolID name, Type* type);
 
 static void printTyper(Typer* typer);
 static void printType(Typer* typer, Type* type);
@@ -292,7 +297,7 @@ Type* pushTypeBuf(TypeBuf* buf) {
 //     }
 // }
 
-AdtTrieNode* createATN(AdtTrieNode* parent, Type* owner) {
+AdtTrieNode* newATN(AdtTrieNode* parent, Type* owner) {
     AdtTrieNode* trieNode = malloc(sizeof(AdtTrieNode));
     trieNode->edgesSb = NULL;
     trieNode->parent = parent;
@@ -350,7 +355,7 @@ AdtTrieNode* getAtnChild(AdtTrieNode* parent, AdtOperator operator, InputTypeFie
         if (noNewEdges) {
             return NULL;
         } else {
-            AdtTrieNode* infant = createATN(parent, NULL);
+            AdtTrieNode* infant = newATN(parent, NULL);
             AdtTrieEdge edge = {operator, inputField->name, inputField->type, infant};
             sb_push(parent->edgesSb, edge);
             return getAtnChild(
@@ -514,6 +519,7 @@ int typer_post(void* rawTyper, AstNode* node) {
         case AST_FIELD__STRUCT_ITEM:
         case AST_FIELD__TUPLE_ITEM:
         {
+            Loc loc = GetAstNodeLoc(node);
             AstNode* rhs = GetAstFieldRhs(node);
             Type* tv;
             if (rhs) {
@@ -521,7 +527,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             } else {
                 SymbolID name = GetAstFieldName(node);
                 char const* nameText = GetSymbolText(name);
-                tv = CreateMetatype(typer, "field:%s", nameText);
+                tv = CreateMetatype(loc, typer, "field:%s", nameText);
             }
             SetAstNodeValueType(node,tv);
             break;
@@ -640,7 +646,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             Loc loc = GetAstNodeLoc(node);
             AstNode* lhs = GetAstCallLhs(node);
             AstNode* rhs = GetAstCallRhs(node);
-            Type* ret = CreateMetatype(typer, "in-ret");
+            Type* ret = CreateMetatype(loc, typer, "in-ret");
             
             Type* actualFuncType = GetFuncType(typer, GetAstNodeValueType(rhs), ret);
             requireSubtype(loc, GetAstNodeValueType(lhs), actualFuncType);
@@ -1083,7 +1089,7 @@ int checkConcreteSubtype(Loc loc, Type* concreteSup, Type* concreteSub) {
     // checking for mismatched kinds:
     if (concreteSup->kind != concreteSub->kind) {
         FeedbackNote* note = CreateFeedbackNote("while adding this relation...", loc, NULL);
-        PostFeedback(FBK_ERROR, note, "Kind-incompatible supertype and subtype.");
+        PostFeedback(FBK_ERROR, note, "Kind-incompatible supertype and subtype: sup:%s and sub:%s", TypeKindAsText(concreteSup->kind), TypeKindAsText(concreteSub->kind));
         return 0;
     }
 
@@ -1219,7 +1225,7 @@ int checkMetavar(Type* metavar) {
     if (useCachedSoln && metavar->as.Meta.soln) {
         return 1;
     }
-    Type* soln = metavar->as.Meta.soln = getSubmostConcreteSupertype(NullLoc(), metavar, NULL);
+    Type* soln = metavar->as.Meta.soln = getSubmostConcreteSupertype(metavar->as.Meta.loc, metavar, NULL);
     if (soln) {
         // as soon as we've solved a metavar, we want to propagate information about it to other metavars:
         int subtypeCount = sb_count(metavar->as.Meta.subtypesSB);
@@ -1236,12 +1242,12 @@ int checkMetavar(Type* metavar) {
     return soln != NULL;
 }
 
-void mapCompoundType(Typer* typer, AdtTrieNode* compoundATN, FieldCB cb, void* sb) {
+void mapCompoundType(Typer* typer, AdtTrieNode* compoundATN, FieldCB cb, void* context) {
     if (compoundATN != NULL && compoundATN != &typer->anyATN) {
-        mapCompoundType(typer, compoundATN->parent, cb, sb);
+        mapCompoundType(typer, compoundATN->parent, cb, context);
         AdtTrieNode* node = compoundATN;
         AdtTrieEdge* edge = &node->parent->edgesSb[node->parentEdgeIndex];
-        cb(typer,sb,edge->name,edge->type);
+        cb(typer,context,edge->name,edge->type);
     }
 }
 
@@ -1508,7 +1514,7 @@ Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* ar
         }
         case UOP_DEREF:
         {
-            Type* pointee = CreateMetatype(typer, "deref-pointee");
+            Type* pointee = CreateMetatype(loc,typer, "deref-pointee");
             Type* derefedType = GetPtrType(typer,pointee);
             if (requireSubtype(loc,arg,derefedType)) {
                 return derefedType;
@@ -1605,7 +1611,7 @@ Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* 
 Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse) {
     Type* boolType = GetIntType(typer,INT_1);
     if (requireSubtype(loc,boolType,cond)) {
-        Type* outType = CreateMetatype(typer,"ite-result");
+        Type* outType = CreateMetatype(loc,typer,"ite-result");
         if (requireSubtype(loc,ifTrue,outType) && requireSubtype(loc,ifFalse,outType)) {
             return outType;
         }
@@ -1613,9 +1619,10 @@ Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse)
     return NULL;
 }
 
-Type* CreateMetatype(Typer* typer, char const* format, ...) {
+Type* CreateMetatype(Loc loc, Typer* typer, char const* format, ...) {
     Type* metatype = pushTypeBuf(&typer->metatypeBuf);
     metatype->kind = T_META;
+    metatype->as.Meta.loc = loc;
     metatype->as.Meta.subtypesSB = NULL;
     metatype->as.Meta.supertypesSB = NULL;
     metatype->as.Meta.soln = NULL;
@@ -1669,7 +1676,19 @@ int GetIntTypeWidthInBits(Type* type) {
     }
 }
 FloatWidth GetFloatTypeWidth(Type* type) {
-    return type->as.Float_width;
+    if (type != NULL) {
+        if (type->kind == T_FLOAT) {
+            return type->as.Float_width;
+        } else if (type->kind == T_META) {
+            return GetFloatTypeWidth(type->as.Meta.soln);
+        }
+    }
+    if (DEBUG) {
+        printf("!!- GetFloatTypeWidth called on an invalid type.\n");
+    } else {
+        assert(0 && "GetFloatTypeWidth called on an invalid type.");
+    }
+    return NULL;
 }
 int GetFloatTypeWidthInBits(Type* type) {
     assert(type->kind == T_FLOAT);
@@ -1684,20 +1703,59 @@ Type* GetPtrTypePointee(Type* type) {
     return type->as.Ptr_pointee;
 }
 Type* GetFuncTypeDomain(Type* func) {
-    return func->as.Func.domain;
+    if (func != NULL) {
+        if (func->kind == T_FUNC) {
+            return func->as.Func.domain;
+        } else if (func->kind == T_META) {
+            return GetFuncTypeDomain(func->as.Meta.soln);
+        }
+    }
+    if (DEBUG) {
+        printf("!!- GetFuncTypeDomain called on an invalid type.\n");
+    } else {
+        assert(0 && "GetFuncTypeDomain called on an invalid type.");
+    }
+    return NULL;
 }
 Type* GetFuncTypeImage(Type* func) {
-    return func->as.Func.image;
+    if (func != NULL) {
+        if (func->kind == T_FUNC) {
+            return func->as.Func.image;
+        } else if (func->kind == T_META) {
+            return GetFuncTypeImage(func->as.Meta.soln);
+        }
+    }
+    if (DEBUG) {
+        printf("!!- GetFuncTypeDomain called on an invalid type.\n");
+    } else {
+        assert(0 && "GetFuncTypeDomain called on an invalid type.");
+    }
+    return NULL;
 }
 int GetTupleTypeLength(Type* type) {
-    return type->as.Compound_atn->depth;
+    if (type != NULL) {
+        if (type->kind == T_TUPLE) {
+            return type->as.Compound_atn->depth;
+        } else if (type->kind == T_META) {
+            return GetTupleTypeLength(type->as.Meta.soln);
+        }
+    }
+    if (DEBUG) {
+        printf("!!- GetTupleTypeLength called on an invalid type.\n");
+    } else {
+        assert(0 && "GetFuncTypeDomain called on an invalid type.");
+    }
+    return NULL;
+    if (type->kind == T_TUPLE) {
+        
+    }
 }
 int GetUnionTypeLength(Type* type) {
     return type->as.Compound_atn->depth;
 }
 
-void MapCompoundType(Typer* typer, Type* compound, FieldCB cb, void* sb) {
-    mapCompoundType(typer,compound->as.Compound_atn,cb,sb);
+void MapCompoundType(Typer* typer, Type* compound, FieldCB cb, void* context) {
+    mapCompoundType(typer,compound->as.Compound_atn,cb,context);
 }
 
 char const* GetMetatypeName(Type* type) {
@@ -1767,6 +1825,19 @@ size_t GetTypeSizeInBytes(Typer* typer, Type* type) {
                 }
             }
         }
+        case T_TUPLE:
+        {
+            int size = 0;
+            MapCompoundType(typer,type,accumulateCompoundFieldSizeSum,&size);
+            return size;
+        }
+        case T_UNION:
+        {
+            int size = 0;
+            MapCompoundType(typer,type,accumulateCompoundFieldSizeMax,&size);
+            // fixme: size computation for unions uses a hard-coded, fixed 8-byte tag.
+            return 8+size;  // tag+data 
+        }
         default:
         {
             if (DEBUG) {
@@ -1775,6 +1846,22 @@ size_t GetTypeSizeInBytes(Typer* typer, Type* type) {
                 assert(0 && "Unknown type kind in GetTypeSizeInBytes.");
             }
             return -1;
+        }
+    }
+}
+void accumulateCompoundFieldSizeSum(Typer* typer, void* rawSumP, SymbolID name, Type* fieldType) {
+    int* sumP = rawSumP;
+    int fieldTypeSize = GetTypeSizeInBytes(typer,fieldType);
+    if (sumP) {
+        *sumP += fieldTypeSize;
+    }
+}
+void accumulateCompoundFieldSizeMax(Typer* typer, void* rawMaxP, SymbolID name, Type* fieldType) {
+    int* maxP = rawMaxP;
+    int fieldTypeSize = GetTypeSizeInBytes(typer,fieldType);
+    if (maxP) {
+        if (fieldTypeSize > *maxP) {
+            *maxP = fieldTypeSize;
         }
     }
 }

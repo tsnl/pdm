@@ -47,7 +47,7 @@ enum FloatWidth {
 };
 
 typedef struct Type Type;
-typedef void(*FieldCB)(Typer* typer, void* sb, SymbolID name, Type* type);
+typedef void(*FieldCB)(Typer* typer, void* context, SymbolID name, Type* type);
 typedef struct InputTypeFieldNode InputTypeFieldNode;
 typedef struct InputTypeFieldNode InputTypeFieldList;
 
@@ -94,7 +94,7 @@ Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* ar
 Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* ltArg, Type* rtArg);
 Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse);
 
-Type* CreateMetatype(Typer* typer, char const* format, ...);
+Type* CreateMetatype(Loc loc, Typer* typer, char const* format, ...);
 
 //
 // Getter methods for type info:

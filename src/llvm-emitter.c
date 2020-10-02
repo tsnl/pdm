@@ -45,7 +45,8 @@ static LLVMValueRef emitExpr(Emitter* emitter, AstNode* expr);
 static LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr);
 static void buildLlvmField(Typer* typer, void* sb, SymbolID name, Type* type);
 static LLVMValueRef getDefnRhsValue(Emitter* emitter, AstNode* defnNode);
-static void helpDestructureTupleField(Typer* typer, void* llvmValuesSb, SymbolID name, Type* type);
+// static void helpDestructureTupleField(Typer* typer, void* llvmValuesSb, SymbolID name, Type* type);
+static LLVMValueRef copyToPtr(Emitter* emitter, LLVMValueRef dstPtr, LLVMValueRef src, LLVMValueRef size);
 
 static int forwardDeclarationPass_pre(void* rawEmitter, AstNode* node);
 static int forwardDeclarationPass_post(void* rawEmitter, AstNode* node);
@@ -218,6 +219,15 @@ LLVMValueRef getDefnRhsValue(Emitter* emitter, AstNode* defnNode) {
         }
     }
 }
+LLVMValueRef copyToPtr(Emitter* emitter, LLVMValueRef dstPtr, LLVMValueRef src, LLVMValueRef size) {
+    // src is...
+    // - "the value" if int,float,ptr
+    // - a ptr to "the value" if tuple
+    // dstPtr is...
+    // - a ptr to "the value" if int,float,ptr
+    // - a ptr to "the value" if tuple
+    return LLVMBuildMemCpy(emitter,dstPtr,0,src,0,size);
+}
 LLVMValueRef emitExpr(Emitter* emitter, AstNode* expr) {
     LLVMValueRef value;
     AstKind exprKind = GetAstNodeKind(expr);
@@ -309,6 +319,12 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
                 int tupleLength = GetTupleTypeLength(formalArgType);
                 LLVMValueRef* sb = NULL;
                 // MapCompoundType(emitter->typer,formalArgType,helpDestructureTupleField,&sb);
+
+                // for each field in fields,
+                //   arg = gep field
+                //   if field is primitive type,
+                //     arg = dereference arg
+                //   push arg
 
                 if (DEBUG) {
                     printf("NotImplemented: destructuring tuple actual arguments.\n");
@@ -559,29 +575,29 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
 
             return phi;
         }
-        // todo: implement tuple emission after implementing pointers.
-        // case AST_TUPLE:
-        // {
-        //     int tupleCount = GetAstTupleLength(expr);
-        //     LLVMValueRef* llvmFields = malloc(tupleCount * sizeof(LLVMValueRef));
-        //     for (int fieldIndex = 0; fieldIndex < tupleCount; fieldIndex++) {
-        //         AstNode* field = GetAstTupleItemAt(expr,fieldIndex);
-        //         AstNode* fieldRhs = GetAstFieldRhs(field);
-        //         llvmFields[fieldIndex] = emitExpr(emitter,fieldRhs);
-        //     }
-            
-        //     void* type = GetAstNodeValueType(expr);
-        //     LLVMTypeRef llvmType = emitType(emitter->typer,type);
-            
-        //     // allocating stack space for this struct:
-        //     LLVMBuildAlloca(emitter->llvmBuilder,llvmType,"tuple");
+        case AST_TUPLE:
+        {
+            // allocating stack space for this struct:
+            void* tupleType = GetAstNodeValueType(expr);
+            LLVMTypeRef llvmTupleType = emitType(emitter->typer,tupleType);
+            LLVMValueRef ptr = LLVMBuildAlloca(emitter->llvmBuilder,llvmTupleType,"tuple");
 
-        //     // todo: initializing each field using 'gep':
+            // initializing each field member:
+            int tupleCount = GetAstTupleLength(expr);
+            for (int fieldIndex = 0; fieldIndex < tupleCount; fieldIndex++) {
+                AstNode* field = GetAstTupleItemAt(expr,fieldIndex);
+                AstNode* fieldRhs = GetAstFieldRhs(field);
+                Type* fieldType = GetAstNodeValueType(fieldRhs);
+                LLVMTypeRef llvmFieldType = emitType(emitter->typer,fieldType);
 
-        //     // todo: return a pointer to the struct:
-
-        //     free(llvmFields);
-        // }
+                SymbolID fieldName = GetAstFieldName(field);
+                LLVMValueRef llvmFieldRhs = emitExpr(emitter,fieldRhs);
+                LLVMValueRef llvmFieldEp = LLVMBuildStructGEP2(emitter->llvmBuilder,llvmTupleType,ptr,fieldIndex,GetSymbolText(fieldName));
+                LLVMValueRef fieldSize = LLVMSizeOf(llvmFieldType);
+                copyToPtr(emitter,llvmFieldEp,llvmFieldRhs,fieldSize);
+            }
+            return ptr;
+        }
         default:
         {
             if (DEBUG) {
@@ -631,7 +647,6 @@ int forwardDeclarationPass_pre(void* rawEmitter, AstNode* node) {
                 }
                 funcLlvmType = LLVMFunctionType(funcImageLlvmType, llvmArgTypes, patternLength, 0);
                 free(llvmArgTypes);
-
                 // for (int index = 0; index < patternLength; index++) {
                 //     AstNode* field = GetAstPatternFieldAt(pattern,index);
                 // }
