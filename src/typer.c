@@ -1,6 +1,7 @@
 #include "typer.h"
 
 #include <stddef.h>
+#include <stdlib.h>
 #include <stdarg.h>
 #include <assert.h>
 #include <string.h>
@@ -183,6 +184,8 @@ static void printTyper(Typer* typer);
 static void printType(Typer* typer, Type* type);
 static void printTypeLn(Typer* typer, Type* type);
 
+static Type* getConcreteType(Typer* typer, Type* visited, Type*** visitedSBP);
+
 TyperCfg createDefaultTyperCfg(void) {
     int const chunkSize = MAX_AST_NODE_COUNT / 8;
     return (TyperCfg) {
@@ -205,6 +208,7 @@ Typer* createTyper(TyperCfg config) {
     
     typer->anyType = (Type) {T_ANY, {}, NULL};
     typer->unitType = (Type) {T_UNIT, {}, NULL};
+    typer->floatType[FLOAT_16] = (Type) {T_FLOAT, {.Float_width = FLOAT_16}, NULL};
     typer->floatType[FLOAT_32] = (Type) {T_FLOAT, {.Float_width = FLOAT_32}, NULL};
     typer->floatType[FLOAT_64] = (Type) {T_FLOAT, {.Float_width = FLOAT_64}, NULL};
     typer->intType[INT_1] = (Type) {T_INT, {.Int_width = INT_1}, NULL};
@@ -474,7 +478,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             Type* definedValueType = GetAstNodeValueType(node);
             Type* definedTypingType = GetAstNodeTypingType(node);
             
-            AstNode* desugaredRhs = GetAstDefStmtFinalRhs(node);
+            AstNode* desugaredRhs = GetAstDefStmtDesugaredRhs(node);
             Type* desugaredRhsType = GetAstNodeValueType(desugaredRhs);
 
             AstNode* rhs = GetAstDefStmtRhs(node);
@@ -1253,52 +1257,19 @@ void mapCompoundType(Typer* typer, AdtTrieNode* compoundATN, FieldCB cb, void* c
 
 char const* TypeKindAsText(TypeKind typeKind) {
     switch (typeKind) {
-        case T_ANY: 
-        {
-            return "any";
-        }
-        case T_UNIT: 
-        {
-            return "unit";
-        }
-        case T_INT: 
-        {
-            return "int";
-        }
-        case T_FLOAT: 
-        {
-            return "float";
-        }
-        case T_PTR: 
-        {
-            return "ptr";
-        }
-        case T_FUNC: 
-        {
-            return "func";
-        }
-        case T_TUPLE:  
-        {
-            return "tuple";
-        }
-        case T_UNION: 
-        {
-            return "union";
-        }
-        case T_TYPEFUNC: 
-        {
-            return "typefunc";
-        }
-        case T_MODULE: 
-        {
-            return "module";
-        }
-        default:
-        {
-            return "<error>";
-        }
+        case T_ANY: return "T_ANY";
+        case T_UNIT: return "T_UNIT";
+        case T_INT: return "T_INT";
+        case T_FLOAT: return "T_FLOAT";
+        case T_PTR: return "T_PTR";
+        case T_FUNC: return "T_FUNC";
+        case T_TUPLE: return "T_TUPLE";
+        case T_UNION: return "T_UNION";
+        case T_TYPEFUNC: return "T_TYPEFUNC";
+        case T_MODULE: return "T_MODULE";
+        case T_META: return "T_META";
+        default: return "<?>";
     }
-
 }
 
 void printTyper(Typer* typer) {
@@ -1426,6 +1397,83 @@ void printType(Typer* typer, Type* type) {
 void printTypeLn(Typer* typer, Type* type) {
     printType(typer, type);
     printf("\n");
+}
+
+Type* getConcreteType(Typer* typer, Type* visitedType, Type*** visitedSBP) {
+    if (visitedType == NULL) {
+        return NULL;
+    }
+
+    int visitedCount = sb_count((*visitedSBP));
+    for (int index = 0; index < visitedCount; index++) {
+        Type* oldVisited = (*visitedSBP)[index];
+        if (visitedType == oldVisited) {
+            // todo: cycle encountered, return the metavar itself/do something
+            if (DEBUG) {
+                printf("!!- Cycle encountered in `getConcreteType`, returning NULL.\n");
+            }
+            return NULL;
+        }
+    }
+    sb_push((*visitedSBP), visitedType);
+
+    Type* type = visitedType;
+    switch (type->kind) {
+        case T_META:
+        {
+            return type->as.Meta.soln;
+        }
+        case T_PTR:
+        {
+            return GetPtrType(typer,getConcreteType(typer,GetPtrTypePointee(type),visitedSBP));
+        }
+        case T_TUPLE:
+        case T_UNION:
+        {
+            InputTypeFieldList* itfListHead = NULL;
+            for (AdtTrieNode* atn = type->as.Compound_atn; atn->parent; atn = atn->parent) {
+                AdtTrieEdge edge = atn->parent->edgesSb[atn->parentEdgeIndex];
+ 
+                // creating a replacement head:
+                InputTypeFieldNode* newHead = malloc(sizeof(InputTypeFieldNode));
+                newHead->name = edge.name;
+                newHead->type = getConcreteType(typer,edge.type,visitedSBP);
+                newHead->next = itfListHead;
+
+                // updating head:
+                itfListHead = newHead;
+            }
+            if (type->kind == T_TUPLE) {
+                return GetTupleType(typer,itfListHead);
+            } else {
+                assert(type->kind == T_UNION);
+                return GetUnionType(typer,itfListHead);
+            }
+        }
+        case T_UNIT:
+        case T_INT:
+        case T_FLOAT:
+        {
+            return type;
+        }
+        case T_FUNC:
+        {
+            return GetFuncType(
+                typer,
+                getConcreteType(typer,GetFuncTypeDomain(type),visitedSBP),
+                getConcreteType(typer,GetFuncTypeImage(type),visitedSBP)
+            );
+        }
+        default:
+        {
+            if (DEBUG) {
+                printf("!!- NotImplemented: GetConcreteType for type kind %s\n", TypeKindAsText(type->kind));
+            } else {
+                assert(0 && "NotImplemented: GetConcreteType for unknown type kind.");
+            }
+            return NULL;
+        }
+    }
 }
 
 //
@@ -1649,18 +1697,24 @@ Type* CreateMetatype(Loc loc, Typer* typer, char const* format, ...) {
 // Getters:
 //
 
-Type* GetConcreteType(Type* type) {
-    if (type->kind == T_META) {
-        return type->as.Meta.soln;
-    } else {
-        return type;
-    }
+Type* GetConcreteType(Typer* typer, Type* type) {
+    Type** visitedSB = NULL;
+    Type* concreteType = getConcreteType(typer,type,&visitedSB);
+    sb_free(visitedSB);
+    return concreteType;
 }
 TypeKind GetTypeKind(Type* type) {
     return type->kind;
 }
 IntWidth GetIntTypeWidth(Type* type) {
-    return type->as.Int_width;
+    if (type) {
+        if (type->kind == T_INT) {
+            return type->as.Int_width;
+        } else if (type->kind == T_META) {
+            return GetIntTypeWidth(type);
+        }
+    }
+    return __INT_NONE;
 }
 int GetIntTypeWidthInBits(Type* type) {
     assert(type->kind == T_INT);
@@ -1688,12 +1742,13 @@ FloatWidth GetFloatTypeWidth(Type* type) {
     } else {
         assert(0 && "GetFloatTypeWidth called on an invalid type.");
     }
-    return NULL;
+    return __FLOAT_NONE;
 }
 int GetFloatTypeWidthInBits(Type* type) {
     assert(type->kind == T_FLOAT);
     switch (type->as.Float_width)
     {
+        case FLOAT_16: return 16;
         case FLOAT_32: return 32;
         case FLOAT_64: return 64;
         default: return 0;
@@ -1745,10 +1800,7 @@ int GetTupleTypeLength(Type* type) {
     } else {
         assert(0 && "GetFuncTypeDomain called on an invalid type.");
     }
-    return NULL;
-    if (type->kind == T_TUPLE) {
-        
-    }
+    return -1;
 }
 int GetUnionTypeLength(Type* type) {
     return type->as.Compound_atn->depth;
@@ -1885,6 +1937,3 @@ void SetTypeLlvmRepr(Type* type, void* repr) {
 void PrintTyper(Typer* typer) {
     printTyper(typer);
 }
-
-
-// FIXME: this premise is flipped; we must request supertypes and provide subtype solutions.

@@ -116,7 +116,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
 
             if (desugared) {
                 PrintText(cp, " = ");
-                PrintNode(cp, GetAstDefStmtFinalRhs(node));
+                PrintNode(cp, GetAstDefStmtDesugaredRhs(node));
             } else {
                 int patternCount = GetAstDefStmtPatternCount(node);
                 for (int index = 0; index < patternCount; index++) {

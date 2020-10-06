@@ -77,7 +77,7 @@ struct AstDef {
     SymbolID lhs;
     AstNodeList* patterns;
     AstNode* rhs;
-    AstNode* finalizedRhs;
+    AstNode* desugaredRhs;
 };
 struct AstExtern {
     SymbolID name;
@@ -340,15 +340,15 @@ void SetAstDefStmtBody(AstNode* defStmt, AstNode* body) {
     defStmt->as.Def.rhs = body;
 }
 void FinalizeAstDefStmt(AstNode* defStmt) {
-    if (!GetAstDefStmtFinalized(defStmt)) {
-        defStmt->as.Def.finalizedRhs = defStmt->as.Def.rhs;
+    if (!GetAstDefStmtDesugared(defStmt)) {
+        defStmt->as.Def.desugaredRhs = defStmt->as.Def.rhs;
         int patternCount = GetAstDefStmtPatternCount(defStmt);
         for (int patternIndex = patternCount-1; patternIndex >= 0; patternIndex--) {
             AstNode* pattern = GetAstDefStmtPatternAt(defStmt,patternIndex);
-            defStmt->as.Def.finalizedRhs = CreateAstLambda(
+            defStmt->as.Def.desugaredRhs = CreateAstLambda(
                 GetAstNodeLoc(defStmt),
                 pattern,
-                defStmt->as.Def.finalizedRhs
+                defStmt->as.Def.desugaredRhs
             );
         }
     }
@@ -443,7 +443,7 @@ AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs) {
     defNode->as.Def.lhs = lhs;
     defNode->as.Def.patterns = newNodeList();
     defNode->as.Def.rhs = NULL;
-    defNode->as.Def.finalizedRhs = NULL;
+    defNode->as.Def.desugaredRhs = NULL;
     return defNode;
 }
 AstNode* CreateAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec) {
@@ -749,7 +749,7 @@ int GetAstDefStmtPatternCount(AstNode* def) {
     return countList(def->as.Def.patterns);
 }
 AstNode* GetAstDefStmtFinalizedRhs(AstNode* def) {
-    return def->as.Def.finalizedRhs;
+    return def->as.Def.desugaredRhs;
 }
 AstNode* GetAstDefStmtPatternAt(AstNode* def, int index) {
     return listItemAt(def->as.Def.patterns,index);
@@ -757,11 +757,11 @@ AstNode* GetAstDefStmtPatternAt(AstNode* def, int index) {
 AstNode* GetAstDefStmtRhs(AstNode* def) {
     return def->as.Def.rhs;
 }
-int GetAstDefStmtFinalized(AstNode* def) {
-    return def->as.Def.finalizedRhs != NULL;
+int GetAstDefStmtDesugared(AstNode* def) {
+    return def->as.Def.desugaredRhs != NULL;
 }
-AstNode* GetAstDefStmtFinalRhs(AstNode* def) {
-    return def->as.Def.finalizedRhs;
+AstNode* GetAstDefStmtDesugaredRhs(AstNode* def) {
+    return def->as.Def.desugaredRhs;
 }
 
 SymbolID GetAstExternStmtName(AstNode* externDef) {

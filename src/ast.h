@@ -171,8 +171,8 @@ SymbolID GetAstDefStmtLhs(AstNode* def);
 int GetAstDefStmtPatternCount(AstNode* def);
 AstNode* GetAstDefStmtPatternAt(AstNode* def, int index);
 AstNode* GetAstDefStmtRhs(AstNode* def);
-int GetAstDefStmtFinalized(AstNode* def);
-AstNode* GetAstDefStmtFinalRhs(AstNode* def);
+int GetAstDefStmtDesugared(AstNode* def);
+AstNode* GetAstDefStmtDesugaredRhs(AstNode* def);
 
 SymbolID GetAstExternStmtName(AstNode* externDef);
 AstNode* GetAstExternTypespec(AstNode* externDef);

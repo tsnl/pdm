@@ -4,6 +4,6 @@ def Fibonacci (x: u64, y: u64) = {
 	} else if x = 1 then {
 		1 
 	} else {
-		Fibonacci(x-1) + Fibonacci(x-2)
+		Fibonacci(x-1,0) + Fibonacci(x-2,0)
 	}
 };

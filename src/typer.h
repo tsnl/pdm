@@ -38,12 +38,15 @@ enum IntWidth {
     INT_32,
     INT_64,
     INT_128,
-    __INT_COUNT
+    __INT_COUNT,
+    __INT_NONE
 };
 enum FloatWidth {
+    FLOAT_16,
     FLOAT_32,
     FLOAT_64,
-    __FLOAT_COUNT
+    __FLOAT_COUNT,
+    __FLOAT_NONE
 };
 
 typedef struct Type Type;
@@ -100,7 +103,7 @@ Type* CreateMetatype(Loc loc, Typer* typer, char const* format, ...);
 // Getter methods for type info:
 //
 
-Type* GetConcreteType(Type* type);
+Type* GetConcreteType(Typer* typer, Type* type);
 TypeKind GetTypeKind(Type* typeP);
 IntWidth GetIntTypeWidth(Type* typeP);
 int GetIntTypeWidthInBits(Type* type);
@@ -111,7 +114,7 @@ Type* GetFuncTypeDomain(Type* func);
 Type* GetFuncTypeImage(Type* func);
 int GetTupleTypeLength(Type* type);
 int GetUnionTypeLength(Type* type);
-void MapCompoundType(Typer* typer, Type* compound, FieldCB cb, void* sb);
+void MapCompoundType(Typer* typer, Type* compound, FieldCB cb, void* context);
 
 char const* GetMetatypeName(Type* typeP);
 
