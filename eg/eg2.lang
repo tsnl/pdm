@@ -1,0 +1,5 @@
+val Vec2f (x:f32, y:f32)
+
+val PositiveVec2f (vec2f: Vec2f) :- 
+    x > 0 and
+    y > 0
