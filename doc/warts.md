@@ -23,10 +23,6 @@
       - (note that tails cannot be omitted in function calls, so this would produce an error)
     - e.g. in value namedtuple patterns, `a,b: c` => `?: a, b: c`   
       - (stays the same)
-  - allow patterns to use '{...}' braces (for 'val' and 'enum')
-
-  - add mandatory chain terminators: return, yield
-  - remove '{'/'}' around chains
 
   - replace '&', '|', and '^' with keywords 'and', 'or', and 'xor' resp.
 
