@@ -26,7 +26,7 @@ enum AstKind {
     AST_LAMBDA,
     AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME,
-    AST_LET, AST_DEF, AST_TYPEDEF, AST_EXTERN, AST_STMT_CHECK, AST_STMT_RETURN,
+    AST_LET, AST_VAL, AST_DEF, AST_TYPEDEF, AST_EXTERN, AST_STMT_CHECK, AST_STMT_RETURN,
     AST_CALL,
     AST_UNARY, AST_BINARY,
     AST_T_PATTERN, AST_V_PATTERN,
@@ -93,13 +93,11 @@ int CountAstLambdaCaptures(AstNode* lambda);
 void* GetAstLambdaCaptureAt(AstNode* lambda, int index);
 
 AstNode* CreateAstLetStmt(Loc loc, SymbolID lhs, AstNode* optTypespec, AstNode* rhs);
-AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message);
-AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs);
+AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* patterns[], int patternsCount, AstNode* rhs);
+AstNode* CreateAstValStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* bodyPattern);
 AstNode* CreateAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec);
 AstNode* CreateAstTypedefStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* optRhs);
-void PushPatternToAstDefStmt(AstNode* defStmt, AstNode* pattern);
-void SetAstDefStmtBody(AstNode* defStmt, AstNode* body);
-void FinalizeAstDefStmt(AstNode* defStmt);
+AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message);
 
 AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs, int isTemplateCall);
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
@@ -146,9 +144,6 @@ SymbolID GetAstDotNameRhs(AstNode* dot);
 AstNode* GetAstLambdaPattern(AstNode* lambda);
 AstNode* GetAstLambdaBody(AstNode* lambda);
 
-SymbolID GetAstLetStmtLhs(AstNode* bindStmt);
-AstNode* GetAstLetStmtRhs(AstNode* bindStmt);
-
 AstNode* GetAstCheckStmtChecked(AstNode* checkStmt);
 AstNode* GetAstCheckStmtMessage(AstNode* checkStmt);
 
@@ -167,12 +162,16 @@ AstBinaryOperator GetAstBinaryOperator(AstNode* binary);
 AstNode* GetAstBinaryLtOperand(AstNode* binary);
 AstNode* GetAstBinaryRtOperand(AstNode* binary);
 
-SymbolID GetAstDefStmtLhs(AstNode* def);
-int GetAstDefStmtPatternCount(AstNode* def);
-AstNode* GetAstDefStmtPatternAt(AstNode* def, int index);
-AstNode* GetAstDefStmtRhs(AstNode* def);
-int GetAstDefStmtDesugared(AstNode* def);
-AstNode* GetAstDefStmtDesugaredRhs(AstNode* def);
+SymbolID GetAstLetStmtLhs(AstNode* bindStmt);
+AstNode* GetAstLetStmtRhs(AstNode* bindStmt);
+
+AstNode* GetAstDefStmtOptTemplatePattern(AstNode* defStmt);
+SymbolID GetAstDefStmtLhs(AstNode* defStmt);
+AstNode* GetAstDefStmtRhs(AstNode* defStmt);
+
+AstNode* GetAstValStmtOptTemplatePattern(AstNode* valStmt);
+SymbolID GetAstValStmtLhs(AstNode* valStmt);
+AstNode* GetAstValStmtPattern(AstNode* valStmt);
 
 SymbolID GetAstExternStmtName(AstNode* externDef);
 AstNode* GetAstExternTypespec(AstNode* externDef);

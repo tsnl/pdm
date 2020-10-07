@@ -266,20 +266,6 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         }
         case AST_DEF:
         {
-            // todo: un-disable multi-pattern def statements
-            int multiPatternDefStatementsDisabled = 1;
-            if (multiPatternDefStatementsDisabled) {
-                int patternCount = GetAstDefStmtPatternCount(node);
-                if (patternCount > 1) {
-                    if (DEBUG) {
-                        printf("!!- NotImplemented: curried multi-pattern 'def' statement.\n");
-                    } else {
-                        assert(0 && "NotImplemented: curried multi-pattern 'def' statement");
-                    }
-                    return 0;
-                }
-            }
-
             // void* type = GetAstNodeType(node);
             
             // todo: check if multiple template arguments were provided. correct if so.

@@ -22,7 +22,7 @@ enum TokenKind {
     TK_ID,
     TK_KW_IMPORT, TK_KW_EXPORT, TK_KW_DO, TK_KW_IF, TK_KW_THEN, TK_KW_ELSE, TK_KW_OPERATOR, 
     TK_KW_MATCH, TK_KW_WITH, TK_KW_RETURN, TK_KW_CHECK,
-    TK_KW_LET, TK_KW_DEF, TK_KW_EXTERN, TK_KW_TYPEDEF,
+    TK_KW_LET, TK_KW_DEF, TK_KW_VAL, TK_KW_EXTERN, TK_KW_TYPEDEF,
     TK_DINT_LIT, TK_XINT_LIT, TK_FLOAT_LIT, TK_DQSTRING_LIT, TK_SQSTRING_LIT,
     TK_DOT, TK_COLON, TK_COMMA, TK_SEMICOLON,
     TK_NOT, TK_CARET,
@@ -41,7 +41,7 @@ struct TokenInfo {
     union {
         long double Float;
         size_t Int;
-        SymbolID ID;
+        SymbolID ID_symbolID;
         int* UnicodeStringSb;
     } as;
 };

@@ -478,7 +478,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             Type* definedValueType = GetAstNodeValueType(node);
             Type* definedTypingType = GetAstNodeTypingType(node);
             
-            AstNode* desugaredRhs = GetAstDefStmtDesugaredRhs(node);
+            AstNode* desugaredRhs = GetAstDefStmtRhs(node);
             Type* desugaredRhsType = GetAstNodeValueType(desugaredRhs);
 
             AstNode* rhs = GetAstDefStmtRhs(node);
@@ -827,7 +827,6 @@ int requireSubtype_intSup(Loc loc, Type* type, Type* reqSubtype) {
         }
         default:
         {
-            // todo: implement TypeKindToText to make error reporting more descriptive (see here).
             FeedbackNote* note = CreateFeedbackNote("in subtype here...", loc, NULL);
             PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different kinds: int and %s.", TypeKindAsText(reqSubtype->kind));
             result = 0;
@@ -855,7 +854,6 @@ int requireSubtype_floatSup(Loc loc, Type* type, Type* reqSubtype) {
         }
         default:
         {
-            // todo: implement TypeKindToText to make error reporting more descriptive (see here).
             FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
             PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different kinds: float and %s.", TypeKindAsText(reqSubtype->kind));
             result = 0;
@@ -880,7 +878,6 @@ int requireSubtype_ptrSup(Loc loc, Type* type, Type* reqSubtype) {
         default:
         {
             // todo: while typechecking float type, get loc (here) to report type errors.
-            // todo: implement TypeKindToText to make error reporting more descriptive (see here).
             PostFeedback(FBK_ERROR, NULL, "Incompatible subtypes of different kinds: ptr and %s.", TypeKindAsText(reqSubtype->kind));
             result = 0;
             break;
@@ -946,7 +943,6 @@ int requireSubtype_tupleSup(Loc loc, Type* type, Type* reqSubtype) {
         }
         default:
         {
-            // todo: implement TypeKindToText to make error reporting more descriptive (see here).
             FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
             PostFeedback(FBK_ERROR, note, "Incompatible subtypes of different kinds: tuple and %s.", TypeKindAsText(reqSubtype->kind));
             result = 0;
@@ -1031,8 +1027,10 @@ Type** getConcreteTypesSB(Type* type, ConcreteFrom concreteFrom) {
 }
 void getConcreteTypesSB_impl(Type* type, ConcreteFrom concreteFrom, Type*** visitedSB, Type*** outSB) {
     // todo: replace SBs in `getConcreteTypesSB` with pre-allocated LL nodes.
-    
+    // todo: collapse this with GetConcreteType's implementation
+
     // if 'type' is not a metavar, then it's a concrete type.
+    // fixme: not true! what if a func or tuple containing metavars?
     if (type->kind != T_META) {
         sb_push((*outSB), type);
         return;

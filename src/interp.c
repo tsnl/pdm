@@ -138,7 +138,7 @@ int InterpExecute(Interp* interp, Source* entryScriptSource, SymbolID entryField
                 assert(0 && "InterpExecute cannot run a NULL llvm repr (have you run InterpCompile first?)");
             }
         }
-        // todo: evaluate this function here.
+        // todo: evaluate this function in InterpExecute
     } else {
         PostFeedback(FBK_ERROR,NULL,"ababa");
         return 0;

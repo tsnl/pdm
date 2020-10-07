@@ -181,7 +181,7 @@ LLVMValueRef getDefnRhsValue(Emitter* emitter, AstNode* defnNode) {
         }
         case AST_DEF:
         {
-            AstNode* rhs = GetAstDefStmtDesugaredRhs(defnNode);
+            AstNode* rhs = GetAstDefStmtRhs(defnNode);
             return emitExpr(emitter,rhs);
         }
         case AST_FIELD__PATTERN_ITEM:
@@ -751,7 +751,7 @@ int definitionPass_post(void* rawEmitter, AstNode* node) {
         case AST_DEF:
         {
             char const* name = GetSymbolText(GetAstDefStmtLhs(node));
-            AstNode* finalRhs = GetAstDefStmtDesugaredRhs(node);
+            AstNode* finalRhs = GetAstDefStmtRhs(node);
             LLVMValueRef value = emitExpr(emitter,finalRhs);
             LLVMSetValueName(value,name);
             SetAstNodeLlvmRepr(node,value);

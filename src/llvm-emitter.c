@@ -68,12 +68,12 @@ int exportModuleVisitor_pre(void* rawEmitter, AstNode* node) {
     switch (GetAstNodeKind(node)) {
         case AST_DEF:
         {
-            AstNode* desugaredRhsNode = GetAstDefStmtDesugaredRhs(node);
-            ExportedType exportedType = exportType(emitter->typer,GetAstNodeValueType(desugaredRhsNode));
+            AstNode* rhsNode = GetAstDefStmtRhs(node);
+            ExportedType exportedType = exportType(emitter->typer,GetAstNodeValueType(rhsNode));
             
             // todo: append a basic block here.
 
-            ExportedValue exportedDesugaredRhsValue = exportValue(emitter,desugaredRhsNode);
+            ExportedValue exportedDesugaredRhsValue = exportValue(emitter,rhsNode);
             
             break;
         }
@@ -257,6 +257,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
 
             case AST_TUPLE:
             {
+                // LLVMConstStruct();
                 exportedValue.llvmValueRef = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"tuple");
                 break;
             }

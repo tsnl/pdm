@@ -1,0 +1,78 @@
+#
+# Use the 'val' statement to construct and denote datatypes.
+# - Note that names cannot be omitted in function patterns.
+# - The arguments to this 'val' function are converted into a named tuple and returned.
+# - Template args allowed.
+#
+
+val Pixel[t] (
+    r,g,b: u8
+);
+val Image[t] (
+    name: string,
+    size: (u16,u16),
+    data: Buffer[Pixel[t]]
+);
+
+#
+# Use the 'def' statement to define a function.
+# The return type is always automatically inferred, but argument types must be provided.
+#
+
+def addPixel [t] (p,q: Pixel[t]) = {
+    Pixel[t] (
+        p.r + q.r,
+        p.g + q.g,
+        p.b + q.b
+    );
+};
+def mulPixel [t] (p: Pixel[t], s: t) = {
+    Pixel[t] (
+        s * p.r,
+        s * p.g,
+        s * p.b
+    );
+};
+
+# Functions in value contexts are first-class.
+# - lambda ::= '$' <pattern> <body>
+# - currying can be implemented by chaining lambda bodies.
+def addImage [t] (i,j: Image[t]) = {
+    check(i.size == j.size, "a and b are of different sizes.");
+    let name = f"({i.name}+{j.name})";
+    let size = i.size;
+    let zipped = zip(i.data,j.data);
+    let data = map(addPixel,zipped);
+    Image[t](name,size,data);
+};
+def mulImage [t] (i: Image[t], x: u8) = {
+    let scalePixelByX = $(p: Pixel) {
+        mulPixel(p,x)
+    };
+    Image[t] (
+        name: f"({x}*{i.name})", 
+        size: i.size,
+        data: map(scalePixelByX,i.data)
+    );
+};
+
+val Circle (radius: f32);
+
+def circumference (circle: Circle) = {
+    let tau = {
+        let pi = 3.14159;
+        continue 2*pi
+    };
+    tau * circle.radius
+};
+
+#
+# Use the 'enum' statement to define a variant.
+# Like 'val' statements, 'enum' statements accept patterns.
+#
+
+enum Color (
+    rgba: (u8,u8,u8,u8),
+    hsva: (u8,u8,u8,u8),
+    name: String
+);

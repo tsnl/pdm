@@ -22,6 +22,7 @@ typedef struct AstDotName  AstDotName;
 typedef struct AstLambda   AstLambda;
 typedef struct AstLet      AstLet;
 typedef struct AstDef      AstDef;
+typedef struct AstVal      AstVal;
 typedef struct AstExtern   AstExtern;
 typedef struct AstTypedef  AstTypedef;
 typedef struct AstCheck    AstCheck;
@@ -75,9 +76,13 @@ struct AstLet {
 };
 struct AstDef {
     SymbolID lhs;
-    AstNodeList* patterns;
+    AstNode* optTemplatePattern;
     AstNode* rhs;
-    AstNode* desugaredRhs;
+};
+struct AstVal {
+    SymbolID lhs;
+    AstNode* optTemplatePattern;
+    AstNode* bodyPattern;
 };
 struct AstExtern {
     SymbolID name;
@@ -138,6 +143,7 @@ union AstInfo {
     AstLambda       Lambda;
     AstLet          Let;
     AstDef          Def;
+    AstVal          Val;
     AstExtern       Extern;
     AstTypedef      Typedef;
     AstCheck        Check;
@@ -226,6 +232,18 @@ AstNode* listItemAt(AstNodeList* list, int index) {
 // Constructor implementations:
 //
 
+static int stmtIsModuleLevel(AstKind kind);
+
+int stmtIsModuleLevel(AstKind kind) {
+    return (
+        kind == AST_VAL ||
+        kind == AST_DEF ||
+        kind == AST_EXTERN ||
+        kind == AST_TYPEDEF ||
+        0
+    );
+}
+
 AstNode* CreateAstModule(Loc loc, SymbolID moduleID) {
     AstNode* node = newNode(loc, AST_MODULE);
     node->as.Module.name = moduleID;
@@ -240,7 +258,8 @@ void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping) {
     module->as.Module.exportHeader = mapping;
 }
 void PushStmtToAstModule(AstNode* module, AstNode* def) {
-    if (def->kind != AST_DEF && def->kind != AST_EXTERN && def->kind != AST_TYPEDEF) {
+    AstKind nodeKind = GetAstNodeKind(def);
+    if (!stmtIsModuleLevel(nodeKind)) {
         if (DEBUG) {
             printf("!!- Cannot push non-def/extern to AstModule.\n");
         } else {
@@ -333,26 +352,6 @@ void PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* ty
     field->as.Field.parent = pattern;
     pushListElement(pattern->as.Items, field);
 }
-void PushPatternToAstDefStmt(AstNode* defStmt, AstNode* pattern) {
-    pushListElement(defStmt->as.Def.patterns,pattern);
-}
-void SetAstDefStmtBody(AstNode* defStmt, AstNode* body) {
-    defStmt->as.Def.rhs = body;
-}
-void FinalizeAstDefStmt(AstNode* defStmt) {
-    if (!GetAstDefStmtDesugared(defStmt)) {
-        defStmt->as.Def.desugaredRhs = defStmt->as.Def.rhs;
-        int patternCount = GetAstDefStmtPatternCount(defStmt);
-        for (int patternIndex = patternCount-1; patternIndex >= 0; patternIndex--) {
-            AstNode* pattern = GetAstDefStmtPatternAt(defStmt,patternIndex);
-            defStmt->as.Def.desugaredRhs = CreateAstLambda(
-                GetAstNodeLoc(defStmt),
-                pattern,
-                defStmt->as.Def.desugaredRhs
-            );
-        }
-    }
-}
 void PushStmtToAstChain(AstNode* chain, AstNode* statement) {
     pushListElement(chain->as.Chain.prefix, statement);
 }
@@ -438,13 +437,38 @@ AstNode* CreateAstLetStmt(Loc loc, SymbolID lhs, AstNode* optTypespec, AstNode* 
     letNode->as.Let.rhs = rhs;
     return letNode;
 }
-AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs) {
+AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* patterns[], int patternsCount, AstNode* rhs) {
     AstNode* defNode = newNode(loc, AST_DEF);
     defNode->as.Def.lhs = lhs;
-    defNode->as.Def.patterns = newNodeList();
-    defNode->as.Def.rhs = NULL;
-    defNode->as.Def.desugaredRhs = NULL;
+    defNode->as.Def.optTemplatePattern = optTemplatePattern;
+    
+    // de-sugaring patterns to iteratively update rhs:
+    defNode->as.Def.rhs = rhs;
+    for (int index = 0; index < patternsCount; index++) {
+        AstNode* pattern = patterns[index];
+        Loc patternLoc = GetAstNodeLoc(pattern);
+        defNode->as.Def.rhs = CreateAstLambda(patternLoc, pattern, defNode->as.Def.rhs);
+    }
+
+    // todo: un-disable multi-pattern def statements
+    int multiPatternDefStatementsDisabled = 1;
+    if (multiPatternDefStatementsDisabled && patternsCount > 1) {
+        if (DEBUG) {
+            printf("!!- NotImplemented: curried multi-pattern 'def' statement.\n");
+        } else {
+            assert(0 && "NotImplemented: curried multi-pattern 'def' statement");
+        }
+        return NULL;
+    }
+
     return defNode;
+}
+AstNode* CreateAstValStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* bodyPattern) {
+    AstNode* valNode = newNode(loc, AST_VAL);
+    valNode->as.Val.lhs = lhs;
+    valNode->as.Val.optTemplatePattern = optTemplatePattern;
+    valNode->as.Val.bodyPattern = bodyPattern;
+    return valNode;
 }
 AstNode* CreateAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec) {
     AstNode* defNode = newNode(loc, AST_EXTERN);
@@ -742,26 +766,24 @@ AstNode* GetAstBinaryRtOperand(AstNode* binary) {
     return binary->as.Binary.rtOperand;
 }
 
+AstNode* GetAstDefStmtOptTemplatePattern(AstNode* def) {
+    return def->as.Def.optTemplatePattern;
+}
 SymbolID GetAstDefStmtLhs(AstNode* def) {
     return def->as.Def.lhs;
-}
-int GetAstDefStmtPatternCount(AstNode* def) {
-    return countList(def->as.Def.patterns);
-}
-AstNode* GetAstDefStmtFinalizedRhs(AstNode* def) {
-    return def->as.Def.desugaredRhs;
-}
-AstNode* GetAstDefStmtPatternAt(AstNode* def, int index) {
-    return listItemAt(def->as.Def.patterns,index);
 }
 AstNode* GetAstDefStmtRhs(AstNode* def) {
     return def->as.Def.rhs;
 }
-int GetAstDefStmtDesugared(AstNode* def) {
-    return def->as.Def.desugaredRhs != NULL;
+
+SymbolID GetAstValStmtLhs(AstNode* valStmt) {
+    return valStmt->as.Val.lhs;
 }
-AstNode* GetAstDefStmtDesugaredRhs(AstNode* def) {
-    return def->as.Def.desugaredRhs;
+AstNode* GetAstValStmtOptTemplatePattern(AstNode* valStmt) {
+    return valStmt->as.Val.optTemplatePattern;
+}
+AstNode* GetAstValStmtPattern(AstNode* valStmt) {
+    return valStmt->as.Val.bodyPattern;
 }
 
 SymbolID GetAstExternStmtName(AstNode* externDef) {
@@ -924,7 +946,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         }
         case AST_DEF:
         {
-            return RecursivelyVisitAstNode(context,GetAstDefStmtFinalizedRhs(node),preVisitorCb,postVisitorCb);
+            return RecursivelyVisitAstNode(context,GetAstDefStmtRhs(node),preVisitorCb,postVisitorCb);
         }
         case AST_STMT_CHECK:
         {
@@ -1112,7 +1134,7 @@ char const binaryOperatorTextArray[__BOP_COUNT][3] = {
     [BOP_LETHAN] = "<=", 
     [BOP_GTHAN] = ">", 
     [BOP_GETHAN] = ">=",
-    [BOP_EQUALS] = "==", 
+    [BOP_EQUALS] = "=", 
     [BOP_NEQUALS] = "!=",
     [BOP_AND] = "&", 
     [BOP_OR] = "|",
@@ -1140,6 +1162,7 @@ char const* AstKindAsText(AstKind kind) {
         case AST_DOT_INDEX: return "AST_DOT_INDEX"; 
         case AST_DOT_NAME: return "AST_DOT_NAME";
         case AST_LET: return "AST_LET"; 
+        case AST_VAL: return "AST_VAL";
         case AST_DEF: return "AST_DEF"; 
         case AST_TYPEDEF: return "AST_TYPEDEF"; 
         case AST_EXTERN: return "AST_EXTERN"; 

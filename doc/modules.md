@@ -35,4 +35,4 @@ The compiler reads code using the **source**, **lexer**, and **parser** modules.
 5. **Scoper** performs lexical analysis on an AST.
 6. **Typer** performs typechecking analysis on an AST.
 7. **Checker** performs SMT-based analysis on an AST.
-8. **Emitter** converts an AST with the required shared variables populated 
+8. **Emitter** converts an AST with the required shared variables populated into LLVM IR.

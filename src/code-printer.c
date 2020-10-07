@@ -110,23 +110,21 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         }
         case AST_DEF:
         {
-            int desugared = 1;
             PrintText(cp, "def ");
             PrintText(cp, GetSymbolText(GetAstDefStmtLhs(node)));
+            PrintText(cp, " = ");
+            PrintNode(cp, GetAstDefStmtRhs(node));
+            break;
+        }
+        case AST_VAL:
+        {
+            SymbolID lhsSymbolID = GetAstValStmtLhs(node);
+            AstNode* optTemplatePattern = GetAstValStmtOptTemplatePattern(node);
+            AstNode* rhsPattern = GetAstValStmtPattern(node);
 
-            if (desugared) {
-                PrintText(cp, " = ");
-                PrintNode(cp, GetAstDefStmtDesugaredRhs(node));
-            } else {
-                int patternCount = GetAstDefStmtPatternCount(node);
-                for (int index = 0; index < patternCount; index++) {
-                    AstNode* pattern = GetAstDefStmtPatternAt(node,index);
-                    PrintChar(cp,' ');
-                    PrintNode(cp,pattern);
-                }
-                PrintText(cp, " = ");
-                PrintNode(cp,GetAstDefStmtRhs(node));
-            }
+            PrintText(cp, "val ");
+            PrintText(cp, GetSymbolText(lhsSymbolID));
+            PrintNode(cp, rhsPattern);
             break;
         }
         case AST_TYPEDEF:
@@ -173,17 +171,20 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         }
         case AST_LAMBDA:
         {
-            int captureCount = CountAstLambdaCaptures(node);
-            PrintChar(cp, '{');
-            for (int index = 0; index < captureCount; index++) {
-                Defn* captureDefn = GetAstLambdaCaptureAt(node,index);
-                PrintText(cp,GetSymbolText(captureDefn->defnID));
-                if (index == captureCount-1) {
-                    PrintChar(cp,',');
+            PrintChar(cp,'$');
+            int printCaptures = 0;
+            if (printCaptures) {
+                int captureCount = CountAstLambdaCaptures(node);
+                PrintChar(cp, '{');
+                for (int index = 0; index < captureCount; index++) {
+                    Defn* captureDefn = GetAstLambdaCaptureAt(node,index);
+                    PrintText(cp,GetSymbolText(captureDefn->defnID));
+                    if (index == captureCount-1) {
+                        PrintChar(cp,',');
+                    }
                 }
+                PrintChar(cp, '}');
             }
-            PrintChar(cp, '}');
-
             PrintNode(cp, GetAstLambdaPattern(node));
             PrintText(cp, " ");
             PrintNode(cp, GetAstLambdaBody(node));

@@ -26,6 +26,7 @@ static SymbolID kwReturnSymbolID = 0;
 static SymbolID kwCheckSymbolID = 0;
 static SymbolID kwLetSymbolID = 0;
 static SymbolID kwDefSymbolID = 0;
+static SymbolID kwValSymbolID = 0;
 static SymbolID kwExternSymbolID = 0;
 static SymbolID kwTypedefSymbolID = 0;
 
@@ -61,6 +62,7 @@ void InitLexer(void) {
     kwCheckSymbolID = strings_intern(symbolsDict, "check");
     kwLetSymbolID = strings_intern(symbolsDict, "let");
     kwDefSymbolID = strings_intern(symbolsDict, "def");
+    kwValSymbolID = strings_intern(symbolsDict, "val");
     kwExternSymbolID = strings_intern(symbolsDict, "extern");
     kwTypedefSymbolID = strings_intern(symbolsDict, "typedef");
 }
@@ -446,7 +448,7 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
         SymbolID symbolID = Symbol(charBuf);
         assert(kwID == 0 && "`strings_lookup` produced an ID but no match.");
         if (optInfoP) {
-            optInfoP->as.ID = symbolID;
+            optInfoP->as.ID_symbolID = symbolID;
         }
         return TK_ID;
     }
@@ -463,6 +465,7 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
     if (kwID == kwCheckSymbolID) { return TK_KW_CHECK; }
     if (kwID == kwLetSymbolID) { return TK_KW_LET; }
     if (kwID == kwDefSymbolID) { return TK_KW_DEF; }
+    if (kwID == kwValSymbolID) { return TK_KW_VAL; }
     if (kwID == kwExternSymbolID) { return TK_KW_EXTERN; }
     if (kwID == kwTypedefSymbolID) { return TK_KW_TYPEDEF; }
     if (DEBUG) {
@@ -807,7 +810,7 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
         case TK_ID:
         {
             name = "<id>";
-            snprintf(info, maxInfoLen, "%s", GetSymbolText(ti->as.ID));
+            snprintf(info, maxInfoLen, "%s", GetSymbolText(ti->as.ID_symbolID));
             break;
         }
         case TK_ARROW:
