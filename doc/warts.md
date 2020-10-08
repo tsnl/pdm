@@ -1,6 +1,9 @@
 # TODO now
 - PARSER/AST
-  - convert AST_STRUCT -> AST_TUPLE, constructed using '(...)' namedtuples with optional fields (so still LL(2))
+  - implement typespecs
+  - when typespecs are used in value contexts, they must 
+
+  - implement long tuples
 
   - keep postfix call syntax for templates, keep sequential unary style for values.
     - postfix square bracket call => template instantiation (typefunc call)
@@ -12,7 +15,7 @@
   - implement 'enum' and tagged unions.
   - implement 'match' statements
 
-  - rename 'CHECK' to 'test <cond> else <error-message>'
+  - change 'CHECK' to 'assert <cond>'
 
   - make type and value patterns separate but uniform
     - inconsistency is confusing

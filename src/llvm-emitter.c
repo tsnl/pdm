@@ -252,10 +252,11 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
             }
 
             //
-            // TUPLE,UNION,ARRAY: llvmValueRef is a pointer to the value.
+            // STRUCT,TUPLE,UNION,ARRAY: llvmValueRef is a pointer to the value.
             //
 
             case AST_TUPLE:
+            case AST_STRUCT:
             {
                 // LLVMConstStruct();
                 exportedValue.llvmValueRef = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"tuple");

@@ -277,7 +277,7 @@ RawAstNode* parseDefStmt(Parser* p) {
             return NULL;
         }
     }
-    RawAstNode* patterns = patternsSB;
+    RawAstNode** patterns = patternsSB;
     int patternsCount = sb_count(patterns);
     RawAstNode* defStmt = CreateAstDefStmt(loc,lhs,optTemplatePattern,patterns,patternsCount,rhs);
     sb_free(patternsSB);
@@ -474,43 +474,67 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
                 return NULL;
             }
 
-            // chain
-            RawAstNode* chainNode = CreateAstChain(loc);
-            RawAstNode* elementNode;
-
-            for (;;) {
-                // if <statement> ';', continue
-                elementNode = tryParseStmt(p);
-                if (elementNode) {
-                    PushStmtToAstChain(chainNode, elementNode);
-                    if (!expect(p, TK_SEMICOLON, "a ';' separator")) {
-                        goto fatal_error;
+            RawAstNode* result;
+            if (lookaheadKind(p,0) == TK_ID && lookaheadKind(p,1) == TK_COLON) {
+                // struct/namedtuple
+                RawAstNode* structNode = CreateAstStruct(loc);
+                for (;;) {
+                    TokenInfo labelInfo = lookaheadInfo(p,0);
+                    if (expect(p, TK_ID, "a label")) {
+                        if (expect(p, TK_COLON, "a label's colon")) {
+                            RawAstNode* rhs = parseExpr(p);
+                            if (!rhs) {
+                                return NULL;
+                            }
+                            PushFieldToAstStruct(loc, structNode, labelInfo.as.ID_symbolID, rhs);
+                        }
+                    } else {
+                        return NULL;
                     }
-                    continue;
+                    if (!match(p, TK_COMMA)) {
+                        break;
+                    }
                 }
+                result = structNode;
+            } else {
+                // chain
+                RawAstNode* chainNode = CreateAstChain(loc);
+                RawAstNode* elementNode;
 
-                // else optional <expr>, break
-                elementNode = tryParseExpr(p);
-                if (elementNode) {
-                    SetAstChainResult(chainNode, elementNode);
-                } else {
-                    SetAstChainResult(chainNode, NULL);
-                }
-                break;
+                for (;;) {
+                    // if <statement> ';', continue
+                    elementNode = tryParseStmt(p);
+                    if (elementNode) {
+                        PushStmtToAstChain(chainNode, elementNode);
+                        if (!expect(p, TK_SEMICOLON, "a ';' separator")) {
+                            goto fatal_error;
+                        }
+                        continue;
+                    }
 
-                // error
-                fatal_error: {
-                    FeedbackNote note = {
-                        .message = "chain here...",
-                        .loc = loc,
-                        .nextP = NULL
-                    };
-                    PostFeedback(FBK_ERROR, &note, "invalid chain");
+                    // else optional <expr>, break
+                    elementNode = tryParseExpr(p);
+                    if (elementNode) {
+                        SetAstChainResult(chainNode, elementNode);
+                    } else {
+                        SetAstChainResult(chainNode, NULL);
+                    }
                     break;
+
+                    // error
+                    fatal_error: {
+                        FeedbackNote note = {
+                            .message = "chain here...",
+                            .loc = loc,
+                            .nextP = NULL
+                        };
+                        PostFeedback(FBK_ERROR, &note, "invalid chain");
+                        break;
+                    }
                 }
+                result = chainNode;
             }
-            RawAstNode* result = chainNode;
-        
+
             if (!expect(p, TK_RCYBRK, "a closing '}'")) {
                 return NULL;
             }

@@ -1,83 +1,92 @@
-#
-# Use the 'val' statement to construct and denote datatypes.
-# - Note that names cannot be omitted in function patterns.
-# - The arguments to this 'val' function are converted into a named tuple and returned.
-# - Template args allowed.
-#
+# Each source file is composed of
+# 1. (1) 'namespace' statement
+# 2. (0 or more) 'typedef' or 'def' statements
+#    - typedefs must begin with uppercase letters.
+#    - all other IDs are assumed to be 'def' statements.
 
-val Pixel[t] (
-    r: t,
-    g: t,
-    b: t
-);
-
-val Image[t] (
-    name: string,
-    size: (u16,u16),
-    data: Buffer[Pixel[t]]
-);
+namespace eg1;
 
 #
-# Use the 'def' statement to define a function.
-# The return type is always automatically inferred, but argument types must be provided.
+# Circles:
 #
 
-def addPixel[t] (p: Pixel[t], q: Pixel[t]) = {
-    Pixel[t] (
-        p.r + q.r,
-        p.g + q.g,
-        p.b + q.b
-    )
-};
-def mulPixel[t] (p: Pixel[t], s: t) = {
-    Pixel[t] (
-        s * p.r, 
-        s * p.g, 
-        s * p.b
-    )
+Circle := {
+    center: f32,f32; 
+    radius: f32
 };
 
-# Functions in value contexts are first-class.
-# - lambda ::= '$' <pattern> <body>
-# - currying can be implemented by chaining lambda bodies.
-def addImage[t] (lt: Image[t], rt: Image[t]) = {
-    test lt.size = rt.size else {
-        "lt and rt are of different sizes."
-    };
-
-    Image[t] (
-        name: fmt "({lt.name}+{rt.name})",
-        size: lt.size,
-        data: map(addPixel,zip(lt.data,rt.data))
-    )
-};
-
-def mulImage[t] (i: Image[t], x: u8) = {
-    let scalePixelByX = [p: Pixel] {mulPixel(p,x)};
-    Image[t] (
-        name: fmt "({x}*{i.name})", 
-        size: i.size,
-        data: map i.data scalePixelByX
-    )
-};
-
-val Circle (radius: f32);
-
-def circumference (circle: Circle) = {
-    let tau = {
-        let pi = 3.14159
+circumference circle:Circle := {
+    tau = {
+        pi = 3.14159;
         2*pi
     };
     tau * circle.radius
 };
 
 #
-# Use the 'enum' statement to define a variant.
-# Like 'val' statements, 'enum' statements accept patterns.
+# Pixels (generics):
 #
 
-enum Color (
-    rgba: (u8,u8,u8,u8),
-    hsva: (u8,u8,u8,u8),
-    name: String
+Pixel[t] := {
+    r: t,
+    g: t,
+    b: t
 );
+Image[t] := {
+    name: string;
+    size: u16,u16;
+    data: Buffer[Pixel[t]]
+};
+
+addPixel[t] 
+    p:Pixel[t]      # the left operand to add
+    q:Pixel[t]      # the right operand to add
+:= {
+    Pixel[t] (p.r+q.r, p.g+q.g, p.b+q.b)
+};
+
+mulPixel[t] p:Pixel[t] s:t := {
+    Pixel[t] (s*p.r, s*p.g, s*p.b)
+};
+
+addImage[t] lt:Image[t] rt:Image[t] := {
+    assert lt.size = rt.size;
+    Image[t] {
+        name: fmt "({lt.name}+{rt.name})";
+        size: lt.size;
+        data: map addPixel (zip lt.data rt.data)
+    }
+};
+
+mulImage[t] i:Image[t] x:u8 := {
+    scalePixelByX = fn p -> {mulPixel p,x};
+    Image[t] {
+        name: fmt "({x}*{i.name})";
+        size: i.size;
+        data: map i.data scalePixelByX
+    }
+};
+
+#
+# Dicts (generics):
+#
+
+Dict[k,v] := {
+    # ...
+};
+
+newDict[k,v] () := {
+    Dict[k,v] { 
+        # ...
+    }
+}
+
+#
+# Enums:
+#
+
+Color := enum {
+    rgba: u8,u8,u8,u8;
+    hsva: u8,u8,u8,u8;
+    name: String
+};
