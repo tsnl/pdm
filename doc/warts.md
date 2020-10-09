@@ -3,8 +3,6 @@
   - implement typespecs
   - when typespecs are used in value contexts, they must 
 
-  - implement long tuples
-
   - keep postfix call syntax for templates, keep sequential unary style for values.
     - postfix square bracket call => template instantiation (typefunc call)
     - sequential call => value call

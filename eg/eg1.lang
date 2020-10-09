@@ -11,7 +11,7 @@ namespace eg1;
 #
 
 Circle := {
-    center: f32,f32; 
+    center: [f32,f32],
     radius: f32
 };
 
@@ -33,8 +33,8 @@ Pixel[t] := {
     b: t
 );
 Image[t] := {
-    name: string;
-    size: u16,u16;
+    name: string,
+    size: [u16,u16],
     data: Buffer[Pixel[t]]
 };
 
@@ -52,17 +52,17 @@ mulPixel[t] p:Pixel[t] s:t := {
 addImage[t] lt:Image[t] rt:Image[t] := {
     assert lt.size = rt.size;
     Image[t] {
-        name: fmt "({lt.name}+{rt.name})";
-        size: lt.size;
+        name: fmt "({lt.name}+{rt.name})",
+        size: lt.size,
         data: map addPixel (zip lt.data rt.data)
     }
 };
 
 mulImage[t] i:Image[t] x:u8 := {
-    scalePixelByX = fn p -> {mulPixel p,x};
+    scalePixelByX = func p -> {mulPixel p x};
     Image[t] {
-        name: fmt "({x}*{i.name})";
-        size: i.size;
+        name: fmt "({x}*{i.name})",
+        size: i.size,
         data: map i.data scalePixelByX
     }
 };
@@ -79,14 +79,14 @@ newDict[k,v] () := {
     Dict[k,v] { 
         # ...
     }
-}
+};
 
 #
 # Enums:
 #
 
-Color := enum {
-    rgba: u8,u8,u8,u8;
-    hsva: u8,u8,u8,u8;
+Color = enum {
+    rgba: [u8,u8,u8,u8],
+    hsva: [u8,u8,u8,u8],
     name: String
 };
