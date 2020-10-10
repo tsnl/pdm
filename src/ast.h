@@ -19,14 +19,14 @@ enum AstKind {
     AST_ERROR = -1,
     AST_NULL = 0,
     AST_MODULE,
-    AST_ID,
+    AST_TID, AST_VID,
     AST_LITERAL_INT, AST_LITERAL_FLOAT, AST_LITERAL_STRING, 
     AST_UNIT, AST_PAREN, AST_TUPLE, 
     AST_STRUCT, AST_CHAIN,
     AST_LAMBDA,
     AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME,
-    AST_LET, AST_VAL, AST_DEF, AST_TYPEDEF, AST_EXTERN, AST_STMT_CHECK, AST_STMT_RETURN,
+    AST_LET, AST_DEF_VALUE, AST_DEF_TYPE, AST_EXTERN, AST_STMT_WITH, AST_STMT_RETURN,
     AST_CALL,
     AST_UNARY, AST_BINARY,
     AST_T_PATTERN, AST_V_PATTERN,
@@ -63,7 +63,8 @@ void AttachImportHeaderToAstModule(AstNode* module, AstNode* mapping);
 void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping);
 void PushStmtToAstModule(AstNode* module, AstNode* def);
 
-AstNode* CreateAstId(Loc loc, SymbolID symbolID);
+AstNode* CreateAstValueID(Loc loc, SymbolID symbolID);
+AstNode* CreateAstTypeID(Loc loc, SymbolID symbolID);
 AstNode* CreateAstIntLiteral(Loc loc, size_t value, int base);
 AstNode* CreateAstFloatLiteral(Loc loc, long double value);
 AstNode* CreateAstStringLiteral(Loc loc, int* valueSb);
@@ -93,11 +94,10 @@ int CountAstLambdaCaptures(AstNode* lambda);
 void* GetAstLambdaCaptureAt(AstNode* lambda, int index);
 
 AstNode* CreateAstLetStmt(Loc loc, SymbolID lhs, AstNode* optTypespec, AstNode* rhs);
-AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* patterns[], int patternsCount, AstNode* rhs);
-AstNode* CreateAstValStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* bodyPattern);
+AstNode* CreateAstDefValueStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* patterns[], int patternsCount, AstNode* rhs);
+AstNode* CreateAstDefTypeStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* optRhs);
 AstNode* CreateAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec);
-AstNode* CreateAstTypedefStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* optRhs);
-AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message);
+AstNode* CreateAstWithStmt(Loc loc, AstNode* checked);
 
 AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs, int isTemplateCall);
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
@@ -144,8 +144,7 @@ SymbolID GetAstDotNameRhs(AstNode* dot);
 AstNode* GetAstLambdaPattern(AstNode* lambda);
 AstNode* GetAstLambdaBody(AstNode* lambda);
 
-AstNode* GetAstCheckStmtChecked(AstNode* checkStmt);
-AstNode* GetAstCheckStmtMessage(AstNode* checkStmt);
+AstNode* GetAstWithStmtChecked(AstNode* checkStmt);
 
 AstNode* GetAstCallLhs(AstNode* call);
 AstNode* GetAstCallRhs(AstNode* call);

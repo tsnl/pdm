@@ -413,7 +413,8 @@ int typer_post(void* rawTyper, AstNode* node) {
             SetAstNodeValueType(node,t);
             break;
         }
-        case AST_ID:
+        case AST_VID:
+        case AST_TID:
         {
             Loc loc = GetAstNodeLoc(node);
             SymbolID name = GetAstIdName(node);
@@ -436,9 +437,9 @@ int typer_post(void* rawTyper, AstNode* node) {
                 SetAstNodeValueType(node,foundType);
             } else {
                 if (DEBUG) {
-                    printf("!!- Invalid lookup context while typing AST_ID.\n");
+                    printf("!!- Invalid lookup context while typing AST_?ID.\n");
                 } else {
-                    assert(0 && "Invalid lookup context while typing in AST_ID.\n");
+                    assert(0 && "Invalid lookup context while typing in AST_?ID.\n");
                 }
                 break;
             }
@@ -470,7 +471,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             }
             break;
         }
-        case AST_DEF:
+        case AST_DEF_VALUE:
         {
             // module items can be used in value and typing contexts
             // todo: make these types the results of Typefunc instances
@@ -665,7 +666,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             SetAstNodeValueType(node,itType);
             break;
         }
-        case AST_TYPEDEF:
+        case AST_DEF_TYPE:
         {
             Loc loc = GetAstNodeLoc(node);
             AstNode* optRhs = GetAstTypedefStmtOptRhs(node);

@@ -66,7 +66,7 @@ int exportModule(Emitter* emitter, AstNode* moduleNode) {
 int exportModuleVisitor_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     switch (GetAstNodeKind(node)) {
-        case AST_DEF:
+        case AST_DEF_VALUE:
         {
             AstNode* rhsNode = GetAstDefStmtRhs(node);
             ExportedType exportedType = exportType(emitter->typer,GetAstNodeValueType(rhsNode));

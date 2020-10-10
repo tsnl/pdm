@@ -96,7 +96,6 @@ struct AstTypedef {
 };
 struct AstCheck {
     AstNode* checked;
-    AstNode* message;
 };
 struct AstCall {
     AstNode* lhs;
@@ -236,10 +235,9 @@ static int stmtIsModuleLevel(AstKind kind);
 
 int stmtIsModuleLevel(AstKind kind) {
     return (
-        kind == AST_VAL ||
-        kind == AST_DEF ||
+        kind == AST_DEF_VALUE ||
         kind == AST_EXTERN ||
-        kind == AST_TYPEDEF ||
+        kind == AST_DEF_TYPE ||
         0
     );
 }
@@ -269,8 +267,15 @@ void PushStmtToAstModule(AstNode* module, AstNode* def) {
     pushListElement(module->as.Module.items, def);
 }
 
-AstNode* CreateAstId(Loc loc, SymbolID symbolID) {
-    AstNode* idNode = newNode(loc, AST_ID);
+AstNode* CreateAstValueID(Loc loc, SymbolID symbolID) {
+    AstNode* idNode = newNode(loc, AST_VID);
+    idNode->as.ID.name = symbolID;
+    idNode->as.ID.lookupScope = NULL;
+    idNode->as.ID.defn = NULL;
+    return idNode;
+}
+AstNode* CreateAstTypeId(Loc loc, SymbolID symbolID) {
+    AstNode* idNode = newNode(loc, AST_TID);
     idNode->as.ID.name = symbolID;
     idNode->as.ID.lookupScope = NULL;
     idNode->as.ID.defn = NULL;
@@ -437,8 +442,8 @@ AstNode* CreateAstLetStmt(Loc loc, SymbolID lhs, AstNode* optTypespec, AstNode* 
     letNode->as.Let.rhs = rhs;
     return letNode;
 }
-AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* patterns[], int patternsCount, AstNode* rhs) {
-    AstNode* defNode = newNode(loc, AST_DEF);
+AstNode* CreateAstDefValueStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* patterns[], int patternsCount, AstNode* rhs) {
+    AstNode* defNode = newNode(loc, AST_DEF_VALUE);
     defNode->as.Def.lhs = lhs;
     defNode->as.Def.optTemplatePattern = optTemplatePattern;
     
@@ -463,12 +468,12 @@ AstNode* CreateAstDefStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, As
 
     return defNode;
 }
-AstNode* CreateAstValStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* bodyPattern) {
-    AstNode* valNode = newNode(loc, AST_VAL);
-    valNode->as.Val.lhs = lhs;
-    valNode->as.Val.optTemplatePattern = optTemplatePattern;
-    valNode->as.Val.bodyPattern = bodyPattern;
-    return valNode;
+AstNode* CreateAstDefTypeStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* optRhs) {
+    AstNode* td = newNode(loc, AST_DEF_TYPE);
+    td->as.Typedef.name = lhs;
+    td->as.Typedef.optPattern = optPattern;
+    td->as.Typedef.optRhs = optRhs;
+    return td;
 }
 AstNode* CreateAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec) {
     AstNode* defNode = newNode(loc, AST_EXTERN);
@@ -476,18 +481,10 @@ AstNode* CreateAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec) {
     defNode->as.Extern.typespec = typespec;
     return defNode;
 }
-AstNode* CreateAstTypedefStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* optRhs) {
-    AstNode* td = newNode(loc, AST_TYPEDEF);
-    td->as.Typedef.name = lhs;
-    td->as.Typedef.optPattern = optPattern;
-    td->as.Typedef.optRhs = optRhs;
-    return td;
-}
 
-AstNode* CreateAstCheckStmt(Loc loc, AstNode* checked, AstNode* message) {
-    AstNode* checkNode = newNode(loc, AST_STMT_CHECK);
+AstNode* CreateAstWithStmt(Loc loc, AstNode* checked) {
+    AstNode* checkNode = newNode(loc, AST_STMT_WITH);
     checkNode->as.Check.checked = checked;
-    checkNode->as.Check.message = message;
     return checkNode;
 }
 
@@ -673,17 +670,11 @@ AstNode* GetAstLetStmtRhs(AstNode* bindStmt) {
     return bindStmt->as.Let.rhs;
 }
 
-AstNode* GetAstCheckStmtChecked(AstNode* checkStmt) {
+AstNode* GetAstWithStmtChecked(AstNode* checkStmt) {
     if (DEBUG) {
-        assert(checkStmt->kind == AST_STMT_CHECK);
+        assert(checkStmt->kind == AST_STMT_WITH);
     }
     return checkStmt->as.Check.checked;
-}
-AstNode* GetAstCheckStmtMessage(AstNode* checkStmt) {
-    if (DEBUG) {
-        assert(checkStmt->kind == AST_STMT_CHECK);
-    }
-    return checkStmt->as.Check.message;
 }
 
 AstNode* GetAstCallLhs(AstNode* call) {
@@ -891,7 +882,8 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         case AST_LITERAL_INT:
         case AST_LITERAL_FLOAT:
         case AST_LITERAL_STRING:
-        case AST_ID:
+        case AST_VID:
+        case AST_TID:
         {
             return 1;
         }
@@ -944,13 +936,13 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         {
             return RecursivelyVisitAstNode(context, GetAstLetStmtRhs(node), preVisitorCb, postVisitorCb);
         }
-        case AST_DEF:
+        case AST_DEF_VALUE:
         {
             return RecursivelyVisitAstNode(context,GetAstDefStmtRhs(node),preVisitorCb,postVisitorCb);
         }
-        case AST_STMT_CHECK:
+        case AST_STMT_WITH:
         {
-            return RecursivelyVisitAstNode(context, GetAstCheckStmtChecked(node), preVisitorCb, postVisitorCb);
+            return RecursivelyVisitAstNode(context, GetAstWithStmtChecked(node), preVisitorCb, postVisitorCb);
         }
         case AST_CALL:
         {
@@ -1038,7 +1030,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             AstNode* typespec = GetAstExternTypespec(node);
             return RecursivelyVisitAstNode(context, typespec, preVisitorCb, postVisitorCb);
         }
-        case AST_TYPEDEF:
+        case AST_DEF_TYPE:
         {
             AstNode* optPattern = GetAstTypedefStmtOptPattern(node);
             if (optPattern) {
@@ -1124,7 +1116,7 @@ char const unaryOperatorTextArray[__UOP_COUNT][2] = {
     [UOP_GETREF] = "^",
     [UOP_DEREF] = "*"
 };
-char const binaryOperatorTextArray[__BOP_COUNT][3] = {
+char const binaryOperatorTextArray[__BOP_COUNT][4] = {
     [BOP_MUL] = "*",
     [BOP_DIV] = "/",
     [BOP_REM] = "%",
@@ -1136,9 +1128,9 @@ char const binaryOperatorTextArray[__BOP_COUNT][3] = {
     [BOP_GETHAN] = ">=",
     [BOP_EQUALS] = "=", 
     [BOP_NEQUALS] = "!=",
-    [BOP_AND] = "&", 
-    [BOP_OR] = "|",
-    [BOP_XOR] = "^"
+    [BOP_AND] = "and",
+    [BOP_OR] = "or",
+    [BOP_XOR] = "xor"
 };
 
 //
@@ -1148,7 +1140,8 @@ char const binaryOperatorTextArray[__BOP_COUNT][3] = {
 char const* AstKindAsText(AstKind kind) {
     switch (kind) {
         case AST_MODULE: return "AST_MODULE";
-        case AST_ID: return "AST_ID";
+        case AST_TID: return "AST_TID";
+        case AST_VID: return "AST_VID";
         case AST_LITERAL_INT: return "AST_LITERAL_INT"; 
         case AST_LITERAL_FLOAT: return "AST_LITERAL_FLOAT"; 
         case AST_LITERAL_STRING: return "AST_LITERAL_STRING"; 
@@ -1162,11 +1155,10 @@ char const* AstKindAsText(AstKind kind) {
         case AST_DOT_INDEX: return "AST_DOT_INDEX"; 
         case AST_DOT_NAME: return "AST_DOT_NAME";
         case AST_LET: return "AST_LET"; 
-        case AST_VAL: return "AST_VAL";
-        case AST_DEF: return "AST_DEF"; 
-        case AST_TYPEDEF: return "AST_TYPEDEF"; 
+        case AST_DEF_VALUE: return "AST_DEF"; 
+        case AST_DEF_TYPE: return "AST_TYPEDEF"; 
         case AST_EXTERN: return "AST_EXTERN"; 
-        case AST_STMT_CHECK: return "AST_STMT_CHECK"; 
+        case AST_STMT_WITH: return "AST_STMT_WITH"; 
         case AST_STMT_RETURN: return "AST_STMT_RETURN";
         case AST_CALL: return "AST_CALL";
         case AST_UNARY: return "AST_UNARY"; 

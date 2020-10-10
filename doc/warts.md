@@ -1,29 +1,36 @@
 # TODO now
 - PARSER/AST
-  - implement typespecs
-  - when typespecs are used in value contexts, they must 
+  
+  - keyword-less 'def' (if args provided), 'let' (if no args provided), or 'typedef' (if type ID)
 
-  - keep postfix call syntax for templates, keep sequential unary style for values.
+  - patterns
+    - add support for single ID patterns
+    - undo multi-LHS to one RHS in patterns, even in typespecs
+
+  - typespecs
+    - implement typespecs as separate from expressions
+      - implement `x[a]` postfix template calls.
+    - allow typespecs as expressions. can easily be determined by FIRST typeID.
+    - works very well with postfix syntax for templates (see below)
+
+  - calls
+    - keep postfix call syntax for templates, keep sequential unary style for values.
     - postfix square bracket call => template instantiation (typefunc call)
     - sequential call => value call
     - best of both worlds compromise
+    - great shape to annotated patterns, even with extensive nesting, without external parens
 
-  - change lambda syntax back to [...] {...} (curly braces mandatory!)
+  - chains
+    - add explicit return/yield statement terminators.
+    - exploit this to identify IDs as patterns in assignment off the bat.
+
+  - change lambda sigil from unary '%' to keyword 'fun'
+    - each 'fun' only accepts one argument, and this can be reused in 'match' statements without recurrent 'fun' sigils
 
   - implement 'enum' and tagged unions.
   - implement 'match' statements
 
-  - change 'CHECK' to 'assert <cond>'
-
-  - make type and value patterns separate but uniform
-    - inconsistency is confusing
-    - e.g. in type func patterns, `a,b: c` => `a: c, b: c`          
-      - (the problem)
-    - e.g. in type enum patterns, `a,b: c` => `a: ?, b: c`          
-      - (use this instead)
-      - (note that tails cannot be omitted in function calls, so this would produce an error)
-    - e.g. in value namedtuple patterns, `a,b: c` => `?: a, b: c`   
-      - (stays the same)
+  - change 'CHECK' to ':: <cond>'
 
   - replace '&', '|', and '^' with keywords 'and', 'or', and 'xor' resp.
 

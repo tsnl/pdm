@@ -23,12 +23,13 @@ static SymbolID kwOperatorSymbolID = 0;
 static SymbolID kwMatchSymbolID = 0;
 static SymbolID kwWithSymbolID = 0;
 static SymbolID kwReturnSymbolID = 0;
-static SymbolID kwCheckSymbolID = 0;
-static SymbolID kwLetSymbolID = 0;
-static SymbolID kwDefSymbolID = 0;
-static SymbolID kwValSymbolID = 0;
+static SymbolID kwYieldSymbolID = 0;
 static SymbolID kwExternSymbolID = 0;
 static SymbolID kwTypedefSymbolID = 0;
+static SymbolID kwFunSymbolID = 0;
+static SymbolID kwAndSymbolID = 0;
+static SymbolID kwXOrSymbolID = 0;
+static SymbolID kwOrSymbolID = 0;
 
 static TokenKind lexOneToken(Source* source, TokenInfo* infoP);
 static TokenKind lexOneSimpleToken(Source* source, TokenInfo* infoP);
@@ -41,6 +42,8 @@ inline static void skipWhitespace(Source* source);
 
 inline static bool isFirstIdChar(char ch);
 inline static bool isIdChar(char ch);
+
+static int getIdTextKind(char const* idText);
 
 // In general, we assume the source head is over the first character of the token to read.
 // - This 'hovering reader' approach => LL(1) lexer.
@@ -59,12 +62,13 @@ void InitLexer(void) {
     kwMatchSymbolID = strings_intern(symbolsDict, "match");
     kwWithSymbolID = strings_intern(symbolsDict, "with");
     kwReturnSymbolID = strings_intern(symbolsDict, "return");
-    kwCheckSymbolID = strings_intern(symbolsDict, "check");
-    kwLetSymbolID = strings_intern(symbolsDict, "let");
-    kwDefSymbolID = strings_intern(symbolsDict, "def");
-    kwValSymbolID = strings_intern(symbolsDict, "val");
+    kwYieldSymbolID = strings_intern(symbolsDict, "yield");
     kwExternSymbolID = strings_intern(symbolsDict, "extern");
     kwTypedefSymbolID = strings_intern(symbolsDict, "typedef");
+    kwFunSymbolID = strings_intern(symbolsDict, "fun");
+    kwAndSymbolID = strings_intern(symbolsDict, "and");
+    kwXOrSymbolID = strings_intern(symbolsDict, "xor");
+    kwOrSymbolID = strings_intern(symbolsDict, "or");
 }
 
 void DeInitLexer(void) {
@@ -257,14 +261,14 @@ TokenKind helpLexOneSimpleToken(Source* source, TokenInfo* optInfoP) {
         case '&':
         {
             if (AdvanceSourceReaderHead(source)) {
-                return TK_AND;
+                return TK_KW_AND;
             }
             break;
         }
         case '|':
         {
             if (AdvanceSourceReaderHead(source)) {
-                return TK_OR;
+                return TK_KW_OR;
             }
             break;
         }
@@ -272,13 +276,6 @@ TokenKind helpLexOneSimpleToken(Source* source, TokenInfo* optInfoP) {
         {
             if (AdvanceSourceReaderHead(source)) {
                 return TK_DOLLAR;
-            }
-            break;
-        }
-        case ':': 
-        {
-            if (AdvanceSourceReaderHead(source)) {
-                return TK_COLON;
             }
             break;
         }
@@ -290,6 +287,18 @@ TokenKind helpLexOneSimpleToken(Source* source, TokenInfo* optInfoP) {
             break;
         }
         
+        case ':': 
+        {
+            if (AdvanceSourceReaderHead(source)) {
+                if (ReadSourceReaderHead(source) == ':' && AdvanceSourceReaderHead(source)) {
+                    if (ReadSourceReaderHead(source) == ':' && AdvanceSourceReaderHead(source)) {
+                        return TK_TPL_COLON;
+                    }
+                }
+                return TK_COLON;
+            }
+            break;
+        }
         case '!':
         {
             if (AdvanceSourceReaderHead(source)) {
@@ -420,7 +429,7 @@ TokenKind lexOneIntChunk(Source* source, TokenInfo* optInfoP, int noPrefix) {
     // Returning results:
     return tokenKind;
 }
-TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
+TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* infoP) {
     // The longest supported ID is (MAX_ID_LEN) characters long.
     size_t index;
     char charBuf[MAX_ID_LEN+1];
@@ -446,11 +455,11 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
     SymbolID kwID = strings_lookup(symbolsDict, charBuf);
     if (kwID == 0) {
         SymbolID symbolID = Symbol(charBuf);
-        assert(kwID == 0 && "`strings_lookup` produced an ID but no match.");
-        if (optInfoP) {
-            optInfoP->as.ID_symbolID = symbolID;
+        assert(symbolID != 0 && "`strings_lookup` produced an ID but no match.");
+        if (infoP) {
+            infoP->as.ID_symbolID = symbolID;
         }
-        return TK_ID;
+        return getIdTextKind(charBuf);
     }
     if (kwID == kwImportSymbolID) { return TK_KW_IMPORT; }
     if (kwID == kwExportSymbolID) { return TK_KW_EXPORT; }
@@ -462,12 +471,12 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* optInfoP) {
     if (kwID == kwMatchSymbolID) { return TK_KW_MATCH; }
     if (kwID == kwWithSymbolID) { return TK_KW_WITH; }
     if (kwID == kwReturnSymbolID) { return TK_KW_RETURN; }
-    if (kwID == kwCheckSymbolID) { return TK_KW_CHECK; }
-    if (kwID == kwLetSymbolID) { return TK_KW_LET; }
-    if (kwID == kwDefSymbolID) { return TK_KW_DEF; }
-    if (kwID == kwValSymbolID) { return TK_KW_VAL; }
+    if (kwID == kwYieldSymbolID) { return TK_KW_YIELD; }
     if (kwID == kwExternSymbolID) { return TK_KW_EXTERN; }
-    if (kwID == kwTypedefSymbolID) { return TK_KW_TYPEDEF; }
+    if (kwID == kwFunSymbolID) { return TK_KW_FUN; }
+    if (kwID == kwAndSymbolID) { return TK_KW_AND; }
+    if (kwID == kwXOrSymbolID) { return TK_KW_XOR; }
+    if (kwID == kwOrSymbolID) { return TK_KW_OR; }
     if (DEBUG) {
         printf("!!- Keyword not implemented: '%s' (id=%d)\n", strings_lookup_id(symbolsDict, kwID), kwID);
     } else {
@@ -573,6 +582,18 @@ inline bool isFirstIdChar(char ch) {
 }
 inline bool isIdChar(char ch) {
     return isalnum(ch) || ch == '_';
+}
+
+int getIdTextKind(char const* idText) {
+    if (*idText == '\0') {
+        return TK_HOLE;
+    } else if (isupper(*idText)) {
+        return TK_VID;
+    } else if (islower(*idText)) {
+        return TK_TID;
+    } else {
+        return getIdTextKind(idText+1);
+    }
 }
 
 TokenKind LexOneToken(Source* source, TokenInfo* infoP) {
@@ -685,16 +706,6 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
             name = "-";
             break;
         }
-        case TK_AND:
-        {
-            name = "&";
-            break;
-        }
-        case TK_OR:
-        {
-            name = "|";
-            break;
-        }
         case TK_CARET:
         {
             name = "^";
@@ -760,9 +771,19 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
             name = "return";
             break;
         }
-        case TK_KW_CHECK:
+        case TK_KW_AND:
         {
-            name = "check";
+            name = "and";
+            break;
+        }
+        case TK_KW_XOR:
+        {
+            name = "xor";
+            break;
+        }
+        case TK_KW_OR:
+        {
+            name = "or";
             break;
         }
         case TK_DINT_LIT:
@@ -807,9 +828,15 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
             info[index+1] = '\'';
             break;
         }
-        case TK_ID:
+        case TK_VID:
         {
-            name = "<id>";
+            name = "<vid>";
+            snprintf(info, maxInfoLen, "%s", GetSymbolText(ti->as.ID_symbolID));
+            break;
+        }
+        case TK_TID:
+        {
+            name = "<tid>";
             snprintf(info, maxInfoLen, "%s", GetSymbolText(ti->as.ID_symbolID));
             break;
         }

@@ -60,7 +60,8 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             }
             break;
         }
-        case AST_ID:
+        case AST_VID:
+        case AST_TID:
         {
             PrintText(cp, GetSymbolText(GetAstIdName(node)));
             break;
@@ -108,7 +109,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintChar(cp, '"');
             break;
         }
-        case AST_DEF:
+        case AST_DEF_VALUE:
         {
             PrintText(cp, "def ");
             PrintText(cp, GetSymbolText(GetAstDefStmtLhs(node)));
@@ -116,18 +117,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintNode(cp, GetAstDefStmtRhs(node));
             break;
         }
-        case AST_VAL:
-        {
-            SymbolID lhsSymbolID = GetAstValStmtLhs(node);
-            AstNode* optTemplatePattern = GetAstValStmtOptTemplatePattern(node);
-            AstNode* rhsPattern = GetAstValStmtPattern(node);
-
-            PrintText(cp, "val ");
-            PrintText(cp, GetSymbolText(lhsSymbolID));
-            PrintNode(cp, rhsPattern);
-            break;
-        }
-        case AST_TYPEDEF:
+        case AST_DEF_TYPE:
         {
             SymbolID name = GetAstTypedefStmtName(node);
             AstNode* pattern = GetAstTypedefStmtOptPattern(node);
@@ -281,10 +271,10 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintNode(cp, GetAstLetStmtRhs(node));
             break;
         }
-        case AST_STMT_CHECK:
+        case AST_STMT_WITH:
         {
             PrintText(cp, "check(");
-            PrintNode(cp, GetAstCheckStmtChecked(node));
+            PrintNode(cp, GetAstWithStmtChecked(node));
             // todo: print the check message here.
             PrintText(cp, ", ...)");
             break;

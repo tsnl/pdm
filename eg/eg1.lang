@@ -10,57 +10,53 @@ namespace eg1;
 # Circles:
 #
 
-Circle := {
-    center: [f32,f32],
-    radius: f32
+Circle = struct {
+    center: (F32,F32),
+    radius: (F32)
+} with {
+    center.x > 0,
+    center.y > 0
 };
 
-circumference circle:Circle := {
+circumference circle:Circle = {
     tau = {
         pi = 3.14159;
         2*pi
     };
-    tau * circle.radius
+    return tau * circle.radius
 };
 
 #
 # Pixels (generics):
 #
 
-Pixel[t] := {
-    r: t,
-    g: t,
-    b: t
-);
-Image[t] := {
-    name: string,
-    size: [u16,u16],
-    data: Buffer[Pixel[t]]
+Pixel[T] = {r:T,g:T,b:T} :: subtypes[T,Scalar];
+Image[T] = {name:String, size:(U32,U32), data:Buffer[Pixel[T]]};
+
+addPixel[T] p:Pixel[T] q:Pixel[T] = {
+    Pixel[T] (p.r+q.r, p.g+q.g, p.b+q.b)
 };
 
-addPixel[t] 
-    p:Pixel[t]      # the left operand to add
-    q:Pixel[t]      # the right operand to add
-:= {
-    Pixel[t] (p.r+q.r, p.g+q.g, p.b+q.b)
+mulPixel[T] p:Pixel[T] s:T = {
+    Pixel[T] (s*p.r, s*p.g, s*p.b)
 };
 
-mulPixel[t] p:Pixel[t] s:t := {
-    Pixel[t] (s*p.r, s*p.g, s*p.b)
-};
-
-addImage[t] lt:Image[t] rt:Image[t] := {
-    assert lt.size = rt.size;
-    Image[t] {
+addImage[T] lt:Image[T] rt:Image[T] = {
+    with lt.size == rt.size;
+    return Image[T] {
         name: fmt "({lt.name}+{rt.name})",
         size: lt.size,
         data: map addPixel (zip lt.data rt.data)
     }
 };
 
-mulImage[t] i:Image[t] x:u8 := {
-    scalePixelByX = func p -> {mulPixel p x};
-    Image[t] {
+mulImage[T] i:Image[T] x:U8 = {
+    scalePixelByX = (
+        fun p {
+            mulPixel p x
+        }
+    );
+    return Image[T] {
         name: fmt "({x}*{i.name})",
         size: i.size,
         data: map i.data scalePixelByX
@@ -71,12 +67,12 @@ mulImage[t] i:Image[t] x:u8 := {
 # Dicts (generics):
 #
 
-Dict[k,v] := {
+Dict[K,V] = {
     # ...
 };
 
-newDict[k,v] () := {
-    Dict[k,v] { 
+newDict[K,V] () = {
+    Dict[K,V] { 
         # ...
     }
 };
@@ -86,7 +82,8 @@ newDict[k,v] () := {
 #
 
 Color = enum {
-    rgba: [u8,u8,u8,u8],
-    hsva: [u8,u8,u8,u8],
-    name: String
+    rgba: (U8,U8,U8,U8),
+    hsva: (U8,U8,U8,U8),
+    name: String,
+    none
 };

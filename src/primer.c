@@ -235,9 +235,16 @@ int primer_pre(void* rawPrimer, AstNode* node) {
     
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
-        case AST_ID:
+        case AST_TID:
         {
             SetAstIdLookupScope(node, topFrameScope(primer));
+            SetAstNodeLookupContext(node, ASTCTX_TYPING);
+            break;
+        }
+        case AST_VID:
+        {
+            SetAstIdLookupScope(node, topFrameScope(primer));
+            SetAstNodeLookupContext(node, ASTCTX_VALUE);
             break;
         }
         case AST_LET:
@@ -264,7 +271,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             pushFrame(primer, NULL, ASTCTX_VALUE, topFrameFunc(primer));
             break;
         }
-        case AST_DEF:
+        case AST_DEF_VALUE:
         {
             // void* type = GetAstNodeType(node);
             
@@ -317,7 +324,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             break;
         }
         case AST_EXTERN:
-        case AST_TYPEDEF:
+        case AST_DEF_TYPE:
         {
             pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
             break;
@@ -337,9 +344,9 @@ int primer_post(void* rawPrimer, AstNode* node) {
         case AST_PAREN:
         case AST_LAMBDA:
         case AST_FIELD__PATTERN_ITEM:
-        case AST_TYPEDEF:
+        case AST_DEF_TYPE:
         case AST_EXTERN:
-        case AST_DEF:
+        case AST_DEF_VALUE:
         {
             popFrame(primer);
             break;
@@ -369,7 +376,7 @@ int PrimeModule(Primer* primer, AstNode* module) {
         AstNode* stmt = GetAstModuleStmtAt(module, index);
         Loc loc = GetAstNodeLoc(stmt);
         AstKind stmtKind = GetAstNodeKind(stmt);
-        if (stmtKind == AST_DEF) {
+        if (stmtKind == AST_DEF_VALUE) {
             SymbolID lhs = GetAstDefStmtLhs(stmt);
             char const* symbolText = GetSymbolText(lhs);
             void* valType = CreateMetatype(loc, primer->typer, "def-func:%s", symbolText);
@@ -385,7 +392,7 @@ int PrimeModule(Primer* primer, AstNode* module) {
             void* valType = CreateMetatype(loc, primer->typer, "extern:%s", symbolText);
             pushSymbol(primer, lhs, valType, stmt, ASTCTX_VALUE);
             SetAstNodeValueType(stmt,valType);
-        } else if (stmtKind == AST_TYPEDEF) {
+        } else if (stmtKind == AST_DEF_TYPE) {
             SymbolID lhs = GetAstTypedefStmtName(stmt);
             char const* symbolText = GetSymbolText(lhs);
             

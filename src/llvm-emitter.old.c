@@ -252,20 +252,16 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
     AstKind nodeKind = GetAstNodeKind(expr);
     switch (nodeKind)
     {
-        case AST_ID:
+        case AST_VID:
         {
-            if (GetAstNodeLookupContext(expr) == ASTCTX_VALUE) {
-                Defn* defn = GetAstIdDefn(expr);
-                AstNode* defnNode = GetDefnNode(defn);
-                if (defnNode) {
-                    return getDefnRhsValue(emitter,defnNode);
-                } else {
-                    if (DEBUG) {
-                        printf("!!- WARNING: defnNode is NULL in `helpEmitExpr`.\n");
-                    }
-                }
+            Defn* defn = GetAstIdDefn(expr);
+            AstNode* defnNode = GetDefnNode(defn);
+            if (defnNode) {
+                return getDefnRhsValue(emitter,defnNode);
             } else {
-
+                if (DEBUG) {
+                    printf("!!- WARNING: defnNode is NULL in `helpEmitExpr`.\n");
+                }
             }
             return NULL;
         }

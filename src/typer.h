@@ -146,5 +146,3 @@ void PrintTyper(Typer* typer);
 char const* TypeKindAsText(TypeKind typeKind);
 
 #endif  // INCLUDED_TYPER_H
-
-// todo: implement T_TEMPLATE
