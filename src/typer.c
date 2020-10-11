@@ -72,11 +72,11 @@ struct MetaInfo {
     char* name;
     SubOrSupTypeRec* subtypesSB;
     SubOrSupTypeRec* supertypesSB;
-    Type* soln;
 };
 struct FuncInfo {
-    Type** domain;
+    Type** domainArray;
     Type* image;
+    int domainCount;
 };
 struct TypefuncInfo {
     Type* arg;
@@ -109,6 +109,7 @@ struct Type {
         PhiInfo Phi;
         AdtTrieNode* Compound_atn;
     } as;
+    void* concrete;
     void* llvmRepr;
 };
 
@@ -397,20 +398,20 @@ int typer_post(void* rawTyper, AstNode* node) {
         case AST_UNIT:
         {
             Type* t = GetUnitType(typer);
-            SetAstNodeValueType(node,t);
+            SetSingleAstNodeTypingExtV(node,t);
             break;
         }
         case AST_LITERAL_INT:
         {
             // TODO: automatically select width based on int value
             Type* t = GetIntType(typer, INT_64);
-            SetAstNodeValueType(node,t);
+            SetSingleAstNodeTypingExtV(node,t);
             break;
         }
         case AST_LITERAL_FLOAT:
         {
             Type* t = GetFloatType(typer, FLOAT_64);
-            SetAstNodeValueType(node,t);
+            SetSingleAstNodeTypingExtV(node,t);
             break;
         }
         case AST_VID:
@@ -432,9 +433,9 @@ int typer_post(void* rawTyper, AstNode* node) {
             Type* foundType = GetDefnType(foundDefn);
             SetAstIdDefn(node,foundDefn);
             if (lookupContext == ASTCTX_TYPING) {
-                SetAstNodeTypingType(node,foundType);
+                SetSingleAstNodeTypingExtT(node,foundType);
             } else if (lookupContext == ASTCTX_VALUE) {
-                SetAstNodeValueType(node,foundType);
+                SetSingleAstNodeTypingExtV(node,foundType);
             } else {
                 if (DEBUG) {
                     printf("!!- Invalid lookup context while typing AST_?ID.\n");
@@ -455,8 +456,8 @@ int typer_post(void* rawTyper, AstNode* node) {
         }
         case AST_LET:
         {
-            Type* lhsValueType = GetAstNodeValueType(node);
-            Type* rhsType = GetAstNodeValueType(GetAstLetStmtRhs(node));
+            Type* lhsValueType = GetSingleAstNodeTypingExtV(node);
+            Type* rhsType = GetSingleAstNodeTypingExtV(GetAstLetStmtRhs(node));
             if (lhsValueType && rhsType) {
                 requireSubtype(GetAstNodeLoc(node), rhsType, lhsValueType);
             }
@@ -464,10 +465,11 @@ int typer_post(void* rawTyper, AstNode* node) {
         }
         case AST_LAMBDA:
         {
-            Type* lhsType = GetAstNodeValueType(GetAstLambdaPattern(node));
-            Type* rhsType = GetAstNodeValueType(GetAstLambdaBody(node));
-            if (lhsType && rhsType) {
-                SetAstNodeValueType(node, GetFuncType(typer, lhsType, rhsType));
+            int argsCount;
+            Type** argsTypes = GetArrayAstNodeTypingExtV(GetAstLambdaPattern(node),&argsCount);
+            Type* rhsType = GetSingleAstNodeTypingExtV(GetAstLambdaBody(node));
+            if (rhsType) {
+                SetSingleAstNodeTypingExtV(node, GetFuncType(typer, argsCount, argsTypes, rhsType));
             }
             break;
         }
@@ -476,14 +478,14 @@ int typer_post(void* rawTyper, AstNode* node) {
             // module items can be used in value and typing contexts
             // todo: make these types the results of Typefunc instances
             Loc loc = GetAstNodeLoc(node);
-            Type* definedValueType = GetAstNodeValueType(node);
-            Type* definedTypingType = GetAstNodeTypingType(node);
+            Type* definedValueType = GetSingleAstNodeTypingExtV(node);
+            Type* definedTypingType = GetSingleAstNodeTypingExtT(node);
             
             AstNode* desugaredRhs = GetAstDefStmtRhs(node);
-            Type* desugaredRhsType = GetAstNodeValueType(desugaredRhs);
+            Type* desugaredRhsType = GetSingleAstNodeTypingExtV(desugaredRhs);
 
             AstNode* rhs = GetAstDefStmtRhs(node);
-            Type* rhsType = GetAstNodeValueType(rhs);
+            Type* rhsType = GetSingleAstNodeTypingExtV(rhs);
 
             if (desugaredRhsType && rhsType && definedValueType) {
                 requireSubtype(loc, desugaredRhsType, definedValueType);
@@ -505,16 +507,16 @@ int typer_post(void* rawTyper, AstNode* node) {
             
             // subtyping from RHS if present
             AstNode* rhs = GetAstFieldRhs(node);
-            Type* fieldType = GetAstNodeValueType(node);
+            Type* fieldType = GetSingleAstNodeTypingExtV(node);
             if (rhs && fieldType) {
                 Loc loc = GetAstNodeLoc(node);
 
-                Type* rhsValueType = GetAstNodeValueType(rhs);
+                Type* rhsValueType = GetSingleAstNodeTypingExtV(rhs);
                 if (rhsValueType) {
                     requireSubtype(loc, rhsValueType, fieldType);
                 }
 
-                Type* rhsTypingType = GetAstNodeTypingType(rhs);
+                Type* rhsTypingType = GetSingleAstNodeTypingExtT(rhs);
                 if (rhsTypingType) {
                     requireSubtype(loc, rhsTypingType, fieldType);
                 }
@@ -528,24 +530,25 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* rhs = GetAstFieldRhs(node);
             Type* tv;
             if (rhs) {
-                tv = GetAstNodeValueType(rhs);
+                tv = GetSingleAstNodeTypingExtV(rhs);
             } else {
                 SymbolID name = GetAstFieldName(node);
                 char const* nameText = GetSymbolText(name);
-                tv = CreateMetatype(loc, typer, "field:%s", nameText);
+                tv = CreateMetavarType(loc, typer, "field:%s", nameText);
             }
-            SetAstNodeValueType(node,tv);
+            SetSingleAstNodeTypingExtV(node,tv);
             break;
         }
         case AST_T_PATTERN:
         case AST_V_PATTERN:
         {
+            // todo: update with an array for multiple items
             int patternCount = GetAstPatternLength(node);
             Type* type = NULL;
             if (patternCount == 0) {
                 type = GetUnitType(typer);
             } else if (patternCount == 1) {
-                type = GetAstNodeValueType(GetAstPatternFieldAt(node,0));
+                type = GetSingleAstNodeTypingExtV(GetAstPatternFieldAt(node,0));
             } else {
                 InputTypeFieldList* lastInputFieldList = NULL;
                 for (int index = patternCount-1; index >= 0; index--) {
@@ -554,7 +557,7 @@ int typer_post(void* rawTyper, AstNode* node) {
                     InputTypeFieldNode* node = malloc(sizeof(InputTypeFieldNode));
                     node->name = GetAstFieldName(field);
                     node->next = lastInputFieldList;
-                    node->type = GetAstNodeTypingType(GetAstFieldRhs(field));
+                    node->type = GetSingleAstNodeTypingExtT(GetAstFieldRhs(field));
                     lastInputFieldList = node;
                 }
                 InputTypeFieldList* firstITF = lastInputFieldList;
@@ -565,9 +568,9 @@ int typer_post(void* rawTyper, AstNode* node) {
 
             int typeNotValueContext = (nodeKind == AST_T_PATTERN);
             if (typeNotValueContext) {
-                SetAstNodeTypingType(node, type);
+                SetSingleAstNodeTypingExtT(node, type);
             } else {
-                SetAstNodeValueType(node, type);
+                SetSingleAstNodeTypingExtV(node, type);
             }
             break;
         }
@@ -580,12 +583,12 @@ int typer_post(void* rawTyper, AstNode* node) {
                 
                 InputTypeFieldNode* typingITF = malloc(sizeof(InputTypeFieldNode));
                 typingITF->name = fieldName;
-                typingITF->type = GetAstNodeValueType(field);
+                typingITF->type = GetSingleAstNodeTypingExtV(field);
                 typingITF->next = inputTypeFieldHead;
                 inputTypeFieldHead = typingITF;
             }
             Type* tuple = GetTupleType(typer, inputTypeFieldHead);
-            SetAstNodeValueType(node,tuple);
+            SetSingleAstNodeTypingExtV(node,tuple);
             break;
         }
         case AST_TUPLE:
@@ -597,20 +600,20 @@ int typer_post(void* rawTyper, AstNode* node) {
                 SymbolID fieldName = GetAstFieldName(field);
                 InputTypeFieldNode* typingITF = malloc(sizeof(InputTypeFieldNode));
                 typingITF->name = fieldName;
-                typingITF->type = GetAstNodeValueType(field);
+                typingITF->type = GetSingleAstNodeTypingExtV(field);
                 typingITF->next = inputTypeFieldHead;
                 inputTypeFieldHead = typingITF;
             }
-            SetAstNodeValueType(node, GetTupleType(typer, inputTypeFieldHead));
+            SetSingleAstNodeTypingExtV(node, GetTupleType(typer, inputTypeFieldHead));
             break;
         }
         case AST_CHAIN:
         {
             AstNode* result = GetAstChainResult(node);
             if (result) {
-                SetAstNodeValueType(node, GetAstNodeValueType(result));
+                SetSingleAstNodeTypingExtV(node, GetSingleAstNodeTypingExtV(result));
             } else {
-                SetAstNodeValueType(node, GetUnitType(typer));
+                SetSingleAstNodeTypingExtV(node, GetUnitType(typer));
             }
             break;
         }
@@ -618,9 +621,9 @@ int typer_post(void* rawTyper, AstNode* node) {
         {
             AstUnaryOperator operator = GetAstUnaryOperator(node);
             AstNode* arg = GetAstUnaryOperand(node);
-            Type* argType = GetAstNodeValueType(arg);
+            Type* argType = GetSingleAstNodeTypingExtV(arg);
             Type* type = GetUnaryIntrinsicType(typer,nodeLoc,operator,argType);
-            SetAstNodeValueType(node,type);
+            SetSingleAstNodeTypingExtV(node,type);
             break;
         }
         case AST_BINARY:
@@ -628,10 +631,10 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstBinaryOperator binop = GetAstBinaryOperator(node);
             AstNode* ltArg = GetAstBinaryLtOperand(node);
             AstNode* rtArg = GetAstBinaryRtOperand(node);
-            Type* ltArgType = GetAstNodeValueType(ltArg);
-            Type* rtArgType = GetAstNodeValueType(rtArg);
+            Type* ltArgType = GetSingleAstNodeTypingExtV(ltArg);
+            Type* rtArgType = GetSingleAstNodeTypingExtV(rtArg);
             Type* type = GetBinaryIntrinsicType(typer,nodeLoc,binop,ltArgType,rtArgType);
-            SetAstNodeValueType(node,type);
+            SetSingleAstNodeTypingExtV(node,type);
             break;
         }
         case AST_ITE:
@@ -639,33 +642,32 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* cond = GetAstIteCond(node);
             AstNode* ifTrue = GetAstIteIfTrue(node);
             AstNode* ifFalse = GetAstIteIfFalse(node);
-            Type* condType = GetAstNodeValueType(cond);
-            Type* ifTrueType = GetAstNodeValueType(ifTrue);
-            Type* ifFalseType = ifFalse ? GetAstNodeValueType(ifFalse) : GetUnitType(typer);
+            Type* condType = GetSingleAstNodeTypingExtV(cond);
+            Type* ifTrueType = GetSingleAstNodeTypingExtV(ifTrue);
+            Type* ifFalseType = ifFalse ? GetSingleAstNodeTypingExtV(ifFalse) : GetUnitType(typer);
             Type* type = GetPhiType(typer,nodeLoc,condType,ifTrueType,ifFalseType);
-            SetAstNodeValueType(node,type);
+            SetSingleAstNodeTypingExtV(node,type);
             break;
         }
         case AST_V_CALL:
         {
             Loc loc = GetAstNodeLoc(node);
+
             AstNode* lhs = GetAstCallLhs(node);
-
-            //
-            //
-            // 
-            // TODO: create func types
-            //
-            //
-            //
-
+            int argsCount = GetAstCallArgCount(node);
+            Type** argsTypes = malloc(argsCount*sizeof(Type*)); {
+                for (int argIndex = 0; argIndex < argsCount; argIndex++) {
+                    AstNode* argNode = GetAstCallArgAt(node,argIndex);
+                    argsTypes[argIndex] = GetSingleAstNodeTypingExtV(argNode);
+                }
+            }
             AstNode* rhs = GetAstCallRhs(node);
-            Type* ret = CreateMetatype(loc, typer, "in-ret");
+            Type* retType = CreateMetavarType(loc, typer, "in-ret");
             
-            Type* actualFuncType = GetFuncType(typer, GetAstNodeValueType(rhs), ret);
-            requireSubtype(loc, GetAstNodeValueType(lhs), actualFuncType);
+            Type* actualFuncType = GetFuncType(typer, argsCount, argsTypes, retType);
+            requireSubtype(loc, GetSingleAstNodeTypingExtV(lhs), actualFuncType);
             
-            SetAstNodeValueType(node,ret);
+            SetSingleAstNodeTypingExtV(node,retType);
             break;
         }
         case AST_T_CALL:
@@ -680,8 +682,8 @@ int typer_post(void* rawTyper, AstNode* node) {
         case AST_PAREN:
         {
             AstNode* itNode = GetAstParenItem(node);
-            Type* itType = GetAstNodeValueType(itNode);
-            SetAstNodeValueType(node,itType);
+            Type* itType = GetSingleAstNodeTypingExtV(itNode);
+            SetSingleAstNodeTypingExtV(node,itType);
             break;
         }
         case AST_DEF_TYPE:
@@ -690,8 +692,8 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* optRhs = GetAstTypedefStmtOptRhs(node);
             if (optRhs) {
                 AstNode* rhs = optRhs;
-                Type* rhsType = GetAstNodeTypingType(rhs);
-                Type* metavarType = GetAstNodeTypingType(node);
+                Type* rhsType = GetSingleAstNodeTypingExtT(rhs);
+                Type* metavarType = GetSingleAstNodeTypingExtT(node);
 
                 // filling rhsType as a solution for the typing metavar:
                 if (rhsType && metavarType) {
@@ -707,9 +709,9 @@ int typer_post(void* rawTyper, AstNode* node) {
             Loc loc = GetAstNodeLoc(node);
 
             AstNode* typespec = GetAstExternTypespec(node);
-            Type* typespecType = GetAstNodeTypingType(typespec);
+            Type* typespecType = GetSingleAstNodeTypingExtT(typespec);
             
-            Type* defType = GetAstNodeValueType(node);
+            Type* defType = GetSingleAstNodeTypingExtV(node);
 
             if (defType && typespecType) {
                 // filling typespecType as a solution (supertype) for defType
@@ -918,8 +920,24 @@ int requireSubtype_funcSup(Loc loc, Type* type, Type* reqSubtype) {
     {
         case T_FUNC:
         {
-            result = requireSubtype(loc,type->as.Func.domain[index],reqSubtype->as.Func.domain[index]) && result;
-            result = requireSubtype(loc,type->as.Func.image,reqSubtype->as.Func.image) && result;
+            int supArgCount = type->as.Func.domainCount;
+            int subArgCount = reqSubtype->as.Func.domainCount;
+            if (supArgCount == subArgCount) {
+                // subtyping return types:
+                result = requireSubtype(loc,type->as.Func.image,reqSubtype->as.Func.image) && result;
+
+                // subtyping args:
+                int argCount = supArgCount;
+                Type** supArgTypes = type->as.Func.domainArray;
+                Type** subArgTypes = reqSubtype->as.Func.domainArray;
+                for (int index = 0; index < argCount; index++) {
+                    result = requireSubtype(loc,type->as.Func.domainArray[index],reqSubtype->as.Func.domainArray[index]) && result;
+                }
+            } else {
+                FeedbackNote* note = CreateFeedbackNote("invocation here...",loc,NULL);
+                PostFeedback(FBK_ERROR,note,"Mismatched argument count: expected %d, got %d.",supArgCount,subArgCount);
+                result = 0;
+            }
             break;
         }
         case T_META:
@@ -1153,7 +1171,7 @@ int checkConcreteSubtype(Loc loc, Type* concreteSup, Type* concreteSub) {
         case T_FUNC:
         {
             return (
-                checkSubtype(loc, concreteSup->as.Func.domain, concreteSub->as.Func.domain) &&
+                checkSubtype(loc, concreteSup->as.Func.domainArray, concreteSub->as.Func.domainArray) &&
                 checkSubtype(loc, concreteSup->as.Func.image, concreteSub->as.Func.image)
             );
         }
@@ -1237,7 +1255,7 @@ int checkSubtype(Loc loc, Type* sup, Type* sub) {
     }
 }
 int checkMetavar(Type* metavar) {
-    int useCachedSoln = 0;
+    int useCachedSoln = 1;
 
     if (metavar->kind != T_META) {
         // not a metavar
@@ -1368,9 +1386,13 @@ void printType(Typer* typer, Type* type) {
         }
         case T_FUNC:
         {
-            printf("func ");
-            printType(typer, type->as.Func.domain);
-            printf(" ");
+            printf("func");
+            int domainSize = type->as.Func.domainCount;
+            for (int index = 0; index < domainSize; index++) {
+                printf(" ");
+                printType(typer, type->as.Func.domainArray[index]);
+            }
+            printf(" -> ");
             printType(typer, type->as.Func.image);
             break;
         }
@@ -1429,6 +1451,7 @@ Type* getConcreteType(Typer* typer, Type* visitedType, Type*** visitedSBP) {
             if (DEBUG) {
                 printf("!!- Cycle encountered in `getConcreteType`, returning NULL.\n");
             }
+            // todo: return soln here.
             return NULL;
         }
     }
@@ -1475,11 +1498,15 @@ Type* getConcreteType(Typer* typer, Type* visitedType, Type*** visitedSBP) {
         }
         case T_FUNC:
         {
-            return GetFuncType(
-                typer,
-                getConcreteType(typer,GetFuncTypeDomain(type),visitedSBP),
-                getConcreteType(typer,GetFuncTypeImage(type),visitedSBP)
-            );
+            int argCount = type->as.Func.domainCount;
+            Type** concreteArgTypes = malloc(sizeof(AstNode*)*argCount);
+            for (int argIndex = 0; argIndex < argCount; argIndex++) {
+                concreteArgTypes[argIndex] = getConcreteType(typer,type->as.Func.domainArray[argIndex],visitedSBP);
+            }
+            Type* imageType = getConcreteType(typer,GetFuncTypeImage(type),visitedSBP);
+            Type* funcType = GetFuncType(typer,argCount,concreteArgTypes,imageType);
+            free(concreteArgTypes); concreteArgTypes = NULL;
+            return funcType;
         }
         default:
         {
@@ -1533,13 +1560,13 @@ Type* GetFuncType(Typer* typer, int argsCount, Type* args[], Type* image) {
     // searching for an existing, structurally equivalent type:
     for (size_t index = 0; index < typer->funcTypeBuf.count; index++) {
         FuncInfo existingFuncInfo = typer->funcTypeBuf.ptr[index].as.Func;
-        int existingCount = sb_count(existingFuncInfo.domain);
+        int existingCount = existingFuncInfo.domainCount;
         int argCountMatch = (existingCount == argsCount);
         int imageMatch = (existingFuncInfo.image == image);
         if (argCountMatch && imageMatch) {
             int allArgsMatch = 1;
             for (int argIndex = 0; argIndex < argsCount; argIndex++) {
-                if (existingFuncInfo.domain[argIndex] != args[argIndex]) {
+                if (existingFuncInfo.domainArray[argIndex] != args[argIndex]) {
                     allArgsMatch = 0;
                     break;
                 }
@@ -1553,8 +1580,9 @@ Type* GetFuncType(Typer* typer, int argsCount, Type* args[], Type* image) {
     // match not found, so allocating a new type:
     Type* funcType = pushTypeBuf(&typer->ptrTypeBuf);
     funcType->kind = T_FUNC;
-    funcType->as.Func.domain = malloc(argsCount*sizeof(Type*));
-    memcpy(funcType->as.Func.domain,args,argsCount*sizeof(Type*));
+    funcType->as.Func.domainCount = argsCount;
+    funcType->as.Func.domainArray = malloc(argsCount*sizeof(Type*));
+    memcpy(funcType->as.Func.domainArray,args,argsCount*sizeof(Type*));
     funcType->as.Func.image = image;
     funcType->llvmRepr = NULL;
     return funcType;
@@ -1593,7 +1621,7 @@ Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* ar
         }
         case UOP_DEREF:
         {
-            Type* pointee = CreateMetatype(loc,typer, "deref-pointee");
+            Type* pointee = CreateMetavarType(loc,typer, "deref-pointee");
             Type* derefedType = GetPtrType(typer,pointee);
             if (requireSubtype(loc,arg,derefedType)) {
                 return derefedType;
@@ -1690,7 +1718,7 @@ Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* 
 Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse) {
     Type* boolType = GetIntType(typer,INT_1);
     if (requireSubtype(loc,boolType,cond)) {
-        Type* outType = CreateMetatype(loc,typer,"ite-result");
+        Type* outType = CreateMetavarType(loc,typer,"ite-result");
         if (requireSubtype(loc,ifTrue,outType) && requireSubtype(loc,ifFalse,outType)) {
             return outType;
         }
@@ -1698,7 +1726,7 @@ Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse)
     return NULL;
 }
 
-Type* CreateMetatype(Loc loc, Typer* typer, char const* format, ...) {
+Type* CreateMetavarType(Loc loc, Typer* typer, char const* format, ...) {
     Type* metatype = pushTypeBuf(&typer->metatypeBuf);
     metatype->kind = T_META;
     metatype->as.Meta.loc = loc;
@@ -1789,13 +1817,13 @@ Type* GetPtrTypePointee(Type* type) {
     return type->as.Ptr_pointee;
 }
 int GetFuncTypeArgCount(Type* func) {
-    return sb_count(func->as.Func.domain);
+    return func->as.Func.domainCount;
 }
 Type* GetFuncTypeArgArray(Type* func) {
-    return func->as.Func.domain;
+    return func->as.Func.domainArray;
 }
 Type* GetFuncTypeArgAt(Type* func, int index) {
-    return func->as.Func.domain[index];
+    return func->as.Func.domainArray[index];
 }
 Type* GetFuncTypeImage(Type* func) {
     if (func != NULL) {

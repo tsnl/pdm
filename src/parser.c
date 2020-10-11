@@ -799,39 +799,17 @@ void parsePatternElement(Parser* p, RawAstNode* pattern, int* okP, int hasTail, 
     }
 }
 void parsePatternElementWithTail(Parser* p, RawAstNode* pattern, int* okP, TokenKind idTokenKind) {
+    *okP = 1;
     Loc patternLoc = lookaheadLoc(p,0);
-    SymbolID bankedSymbols[MAX_IDS_PER_SHARED_FIELD];
-    int bankedSymbolsCount = 0;
-
-    do {
-        // label
-        TokenInfo tokenInfo = lookaheadInfo(p,0);
-        if (expect(p, idTokenKind, "a pattern label")) {
-            // bank this label
-            bankedSymbols[bankedSymbolsCount++] = tokenInfo.as.ID_symbolID;
-            if (DEBUG) {
-                assert(bankedSymbolsCount < MAX_IDS_PER_SHARED_FIELD);
-            }
-        }
-        // colon?
-        if (match(p, TK_COLON)) {
-            break;
-        }
-    } while (match(p, TK_COMMA));
-
-    // push all banked fields, read tail
-    Loc rhsLoc = lookaheadLoc(p,0);
-    RawAstNode* rhs = parseExpr(p);
-    if (rhs) {
-        for (int i = 0; i < bankedSymbolsCount; i++) {
-            PushFieldToAstPattern(patternLoc, pattern, bankedSymbols[i], rhs);
-        }
-    } else {
-        *okP = 0;
-        FeedbackNote noteParent = {"in pattern...", patternLoc, NULL};
-        FeedbackNote noteHere = {"here...", rhsLoc, &noteParent};
-        PostFeedback(FBK_ERROR, &noteHere, "Expected a field RHS");
+    
+    SymbolID symbolID = lookaheadInfo(p,0).as.ID_symbolID;
+    if (expect(p,idTokenKind,"a pattern label")) {
+        if (expect(p,TK_COLON,"':'")) {
+            RawAstNode* typespec = parseTypespec(p);
+            PushFieldToAstPattern(patternLoc, pattern, symbolID, typespec);
+        }    
     }
+    *okP = 0;
 }
 void parsePatternElementWithoutTail(Parser* p, RawAstNode* pattern, int* okP, TokenKind idTokenKind) {
     // just 1 ID
@@ -870,16 +848,16 @@ RawAstNode* parseTypespec(Parser* p) {
     }
 }
 RawAstNode* tryParseTypespec(Parser* p) {
-    
+    return NULL;
 }
 RawAstNode* tryParsePrimaryTypespec(Parser* p) {
-
+    return NULL;
 }
 RawAstNode* tryParsePostfixTypespec(Parser* p) {
-
+    return NULL;
 }
 RawAstNode** helpParseCsTypespecList(Parser* p) {
-    
+    return NULL;
 }
 
 //

@@ -97,7 +97,7 @@ Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* ar
 Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* ltArg, Type* rtArg);
 Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse);
 
-Type* CreateMetatype(Loc loc, Typer* typer, char const* format, ...);
+Type* CreateMetavarType(Loc loc, Typer* typer, char const* format, ...);
 
 //
 // Getter methods for type info:

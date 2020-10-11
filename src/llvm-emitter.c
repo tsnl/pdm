@@ -51,7 +51,7 @@ int exportModuleHeaders(Emitter* emitter, AstNode* moduleNode) {
 int exportModuleHeaderVisitor_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     if (GetAstNodeKind(node) == AST_LAMBDA) {
-        ExportedType exportedFuncType = exportType(emitter->typer,GetAstNodeValueType(node));
+        ExportedType exportedFuncType = exportType(emitter->typer,GetSingleAstNodeTypingExtV(node));
         ExportedValue* funcValue = malloc(sizeof(ExportedValue));
         funcValue->exprNode = node;
         funcValue->type = exportedFuncType;
@@ -68,12 +68,14 @@ int exportModuleVisitor_pre(void* rawEmitter, AstNode* node) {
     switch (GetAstNodeKind(node)) {
         case AST_DEF_VALUE:
         {
-            AstNode* rhsNode = GetAstDefStmtRhs(node);
-            ExportedType exportedType = exportType(emitter->typer,GetAstNodeValueType(rhsNode));
+            // todo: emit 'def-val' statements
+
+            // AstNode* rhsNode = GetAstDefStmtRhs(node);
+            // ExportedType exportedType = exportType(emitter->typer,GetSingleAstNodeTypingExtV(rhsNode));
             
             // todo: append a basic block here.
 
-            ExportedValue exportedDesugaredRhsValue = exportValue(emitter,rhsNode);
+            // ExportedValue exportedDesugaredRhsValue = exportValue(emitter,rhsNode);
             
             break;
         }

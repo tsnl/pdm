@@ -154,8 +154,10 @@ struct AstNode {
     Loc loc;
     AstKind kind;
     AstInfo as;
-    void* valueType;
-    void* typingType;
+    int typingExtCount_v;
+    int typingExtCount_t;
+    void* typingExt_v;
+    void* typingExt_t;
     AstContext lookupContext;
     void* llvmRepr;
     AstNode* parentFunc;
@@ -181,8 +183,8 @@ AstNode* newNode(Loc loc, AstKind kind) {
     AstNode* node = &allocatedNodes[allocatedNodeCount++];
     node->loc = loc;
     node->kind = kind;
-    node->valueType = NULL;
-    node->typingType = NULL;
+    node->typingExt_v = NULL;
+    node->typingExt_t = NULL;
     node->lookupContext = __ASTCTX_NONE;
     node->llvmRepr = NULL;
     node->parentFunc = NULL;
@@ -824,29 +826,53 @@ AstNode* GetAstTypedefStmtOptRhs(AstNode* td) {
 // Scoper and typer storage:
 //
 
-void* GetAstNodeValueType(AstNode* node) {
-    return node->valueType;
+int GetAstNodeTypingExtVCount(AstNode* node) {
+    return node->typingExtCount_v;
 }
-void SetAstNodeValueType(AstNode* node, void* type) {
+int GetAstNodeTypingExtTCount(AstNode* node) {
+    return node->typingExtCount_t;
+}
+void* GetSingleAstNodeTypingExtV(AstNode* node) {
+    return node->typingExt_v;
+}
+void* GetSingleAstNodeTypingExtT(AstNode* node) {
+    return node->typingExt_t;
+}
+void* GetArrayAstNodeTypingExtV(AstNode* node, int* lenP) {
+    *lenP = node->typingExtCount_v;
+    return node->typingExt_v;
+}
+void* GetArrayAstNodeTypingExtT(AstNode* node, int* lenP) {
+    *lenP = node->typingExtCount_t;
+    return node->typingExt_t;
+}
+void SetSingleAstNodeTypingExtV(AstNode* node, void* type) {
     if (DEBUG) {
         if (!type) {
             printf("!!- SetAstNodeValueType: null arg set\n");
             return;
         }
     }
-    node->valueType = type;
+    node->typingExt_v = type;
+    node->typingExtCount_v = -1;
 }
-void* GetAstNodeTypingType(AstNode* node) {
-    return node->typingType;
-}
-void SetAstNodeTypingType(AstNode* node, void* type) {
+void SetSingleAstNodeTypingExtT(AstNode* node, void* type) {
     if (DEBUG) {
         if (!type) {
             printf("!!- SetAstNodeValueType: null arg set\n");
             return;
         }
     }
-    node->typingType = type;
+    node->typingExt_t = type;
+    node->typingExtCount_t = -1;
+}
+void SetArrayAstNodeTypingExtV(AstNode* node, int count, void* typeArray) {
+    node->typingExtCount_v = count;
+    node->typingExt_v = typeArray;
+}
+void SetArrayAstNodeTypingExtT(AstNode* node, int count, void* typeArray) {
+    node->typingExtCount_t = count;
+    node->typingExt_t = typeArray;
 }
 
 // void SetAstTypedefStmtValueDefnType(AstNode* node, void* valueDefn) {

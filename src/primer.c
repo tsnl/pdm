@@ -398,7 +398,8 @@ int PrimeModule(Primer* primer, AstNode* module) {
             
             void* typingContextType = CreateMetatype(loc, primer->typer, "typedef:%s", symbolText);
             // todo: replace this invocation of FuncType with something different, like CastType?
-            void* valueContextType = GetFuncType(primer->typer, typingContextType, typingContextType);
+            // void* valueContextType = GetFuncType(primer->typer, typingContextType, typingContextType);
+            void* valueContextType = NULL;
             
             pushSymbol(primer, lhs, typingContextType, stmt, ASTCTX_TYPING);
             pushSymbol(primer, lhs, valueContextType, stmt, ASTCTX_VALUE);
