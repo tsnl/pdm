@@ -279,14 +279,17 @@ TokenKind helpLexOneSimpleToken(Source* source, TokenInfo* optInfoP) {
             }
             break;
         }
+
         case '=':
         {
             if (AdvanceSourceReaderHead(source)) {
-                return TK_EQUALS;
+                if (ReadSourceReaderHead(source) == '=' && AdvanceSourceReaderHead(source)) {
+                    return TK_EQUALS;
+                }
+                return TK_BIND;
             }
             break;
         }
-        
         case ':': 
         {
             if (AdvanceSourceReaderHead(source)) {
@@ -588,9 +591,9 @@ int getIdTextKind(char const* idText) {
     if (*idText == '\0') {
         return TK_HOLE;
     } else if (isupper(*idText)) {
-        return TK_VID;
-    } else if (islower(*idText)) {
         return TK_TID;
+    } else if (islower(*idText)) {
+        return TK_VID;
     } else {
         return getIdTextKind(idText+1);
     }
@@ -625,10 +628,11 @@ void DebugLexer(Source* source) {
     // printf("%s\n", buffer);
 }
 
+#define MAX_INFO_LEN (MAX_ID_LEN+1)
+
 int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
-    int const maxInfoLen = MAX_ID_LEN;
     char const* name;
-    char info[maxInfoLen+1] = {'\0'};
+    char info[MAX_INFO_LEN] = {'\0'};
     switch (tk)
     {
         case TK_DOT:
@@ -716,9 +720,14 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
             name = "!";
             break;
         }
-        case TK_EQUALS:
+        case TK_BIND:
         {
             name = "=";
+            break;
+        }
+        case TK_EQUALS:
+        {
+            name = "==";
             break;
         }
         case TK_NEQUALS:
@@ -789,19 +798,19 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
         case TK_DINT_LIT:
         {
             name = "<d-int>";
-            snprintf(info, maxInfoLen, "%zd", ti->as.Int);
+            snprintf(info, MAX_INFO_LEN, "%zd", ti->as.Int);
             break;
         }
         case TK_XINT_LIT:
         {
             name = "<x-int>";
-            snprintf(info, maxInfoLen, "%zd", ti->as.Int);
+            snprintf(info, MAX_INFO_LEN, "%zd", ti->as.Int);
             break;
         }
         case TK_FLOAT_LIT:
         {
             name = "<float>";
-            snprintf(info, maxInfoLen, "%Lf", ti->as.Float);
+            snprintf(info, MAX_INFO_LEN, "%Lf", ti->as.Float);
             break;
         }
         case TK_DQSTRING_LIT:
@@ -831,13 +840,13 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
         case TK_VID:
         {
             name = "<vid>";
-            snprintf(info, maxInfoLen, "%s", GetSymbolText(ti->as.ID_symbolID));
+            snprintf(info, MAX_INFO_LEN, "%s", GetSymbolText(ti->as.ID_symbolID));
             break;
         }
         case TK_TID:
         {
             name = "<tid>";
-            snprintf(info, maxInfoLen, "%s", GetSymbolText(ti->as.ID_symbolID));
+            snprintf(info, MAX_INFO_LEN, "%s", GetSymbolText(ti->as.ID_symbolID));
             break;
         }
         case TK_ARROW:

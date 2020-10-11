@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define FEEDBACK_BUF_SIZE (1024)
+
 int errorPosted = 0;
 Source* sourcesHead = NULL;
 Source* sourcesTail = NULL;
@@ -31,11 +33,10 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
         errorPosted = 1;
     }
     
-    const int feedbackBufSize = 1024;
-    char feedbackBuf[feedbackBufSize] = {0};
+    char feedbackBuf[FEEDBACK_BUF_SIZE] = {0};
     va_list args;
     va_start(args, fmt);
-    vsnprintf(feedbackBuf, feedbackBufSize-1, fmt, args);
+    vsnprintf(feedbackBuf, FEEDBACK_BUF_SIZE-1, fmt, args);
     va_end(args);
 
     // Printing a message to stderr:

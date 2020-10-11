@@ -1,6 +1,5 @@
 # TODO now
 - PARSER/AST
-  
   - keyword-less 'def' (if args provided), 'let' (if no args provided), or 'typedef' (if type ID)
 
   - patterns
@@ -35,24 +34,25 @@
   - replace '&', '|', and '^' with keywords 'and', 'or', and 'xor' resp.
 
 - TYPER
-  - rename META -> HOLE
-  - implement a better HOLE solver by...
+  - rename META -> TYPEVAR
+  - implement a better TYPEVAR solver by...
     - adding a 'soln' to each type instance (concrete iff soln = self)
     - selecting a SOLN...
-      - if a HOLE has any concrete required supertypes,
+      - if a TV has any concrete required supertypes,
         - select the submost concrete required supertype as SOLN
         - require SOLN as a supertype of each required HOLE subtype
-      - else if a HOLE has any concrete required subtypes,
+      - else if a TV has any concrete required subtypes,
         - select the supermost concrete required subtype as SOLN
       - else totally indeterminate, raise an error or ignore
 
 - EMITTER
-  - implement lambda emission
+  - implement lambda emission (later!)
   - implement captures (fix)
   - implement tuples
-    - call LLVMConstStruct in AST_TUPLE
+    - call LLVMConstStruct for AST_TUPLE or AST_STRUCT
   - implement calls
-    - no destructuring required
+    - destructuring may be required
+    - work with unary arguments for now, can be optimized as required later.
     - pass closures
   
 # Warts

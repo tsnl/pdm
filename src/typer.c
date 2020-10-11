@@ -75,7 +75,7 @@ struct MetaInfo {
     Type* soln;
 };
 struct FuncInfo {
-    Type* domain;
+    Type** domain;
     Type* image;
 };
 struct TypefuncInfo {
@@ -646,10 +646,19 @@ int typer_post(void* rawTyper, AstNode* node) {
             SetAstNodeValueType(node,type);
             break;
         }
-        case AST_CALL:
+        case AST_V_CALL:
         {
             Loc loc = GetAstNodeLoc(node);
             AstNode* lhs = GetAstCallLhs(node);
+
+            //
+            //
+            // 
+            // TODO: create func types
+            //
+            //
+            //
+
             AstNode* rhs = GetAstCallRhs(node);
             Type* ret = CreateMetatype(loc, typer, "in-ret");
             
@@ -657,6 +666,15 @@ int typer_post(void* rawTyper, AstNode* node) {
             requireSubtype(loc, GetAstNodeValueType(lhs), actualFuncType);
             
             SetAstNodeValueType(node,ret);
+            break;
+        }
+        case AST_T_CALL:
+        {
+            if (DEBUG) {
+                printf("!!- NotImplemented: typing AST_T_CALL\n");
+            } else {
+                assert(0 && "NotImplemented: typing AST_T_CALL");
+            }
             break;
         }
         case AST_PAREN:
@@ -900,7 +918,7 @@ int requireSubtype_funcSup(Loc loc, Type* type, Type* reqSubtype) {
     {
         case T_FUNC:
         {
-            result = requireSubtype(loc,type->as.Func.domain,reqSubtype->as.Func.domain) && result;
+            result = requireSubtype(loc,type->as.Func.domain[index],reqSubtype->as.Func.domain[index]) && result;
             result = requireSubtype(loc,type->as.Func.image,reqSubtype->as.Func.image) && result;
             break;
         }
@@ -1511,24 +1529,38 @@ Type* GetPtrType(Typer* typer, Type* pointee) {
     ptrType->llvmRepr = NULL;
     return ptrType;
 }
-Type* GetFuncType(Typer* typer, Type* domain, Type* image) {
+Type* GetFuncType(Typer* typer, int argsCount, Type* args[], Type* image) {
     // searching for an existing, structurally equivalent type:
-    TypeBuf funcTypeBuf = typer->funcTypeBuf;
-    for (size_t index = 0; index < funcTypeBuf.count; index++) {
-        FuncInfo itemInfo = funcTypeBuf.ptr[index].as.Func;
-        if (itemInfo.domain == domain && itemInfo.image == image) {
-            return &funcTypeBuf.ptr[index];
+    for (size_t index = 0; index < typer->funcTypeBuf.count; index++) {
+        FuncInfo existingFuncInfo = typer->funcTypeBuf.ptr[index].as.Func;
+        int existingCount = sb_count(existingFuncInfo.domain);
+        int argCountMatch = (existingCount == argsCount);
+        int imageMatch = (existingFuncInfo.image == image);
+        if (argCountMatch && imageMatch) {
+            int allArgsMatch = 1;
+            for (int argIndex = 0; argIndex < argsCount; argIndex++) {
+                if (existingFuncInfo.domain[argIndex] != args[argIndex]) {
+                    allArgsMatch = 0;
+                    break;
+                }
+            }
+            if (allArgsMatch) {
+                // match found.
+                return &typer->funcTypeBuf.ptr[index];
+            }
         }
     }
-    // allocating and a new type:
+    // match not found, so allocating a new type:
     Type* funcType = pushTypeBuf(&typer->ptrTypeBuf);
     funcType->kind = T_FUNC;
-    funcType->as.Func.domain = domain;
+    funcType->as.Func.domain = malloc(argsCount*sizeof(Type*));
+    memcpy(funcType->as.Func.domain,args,argsCount*sizeof(Type*));
     funcType->as.Func.image = image;
     funcType->llvmRepr = NULL;
     return funcType;
 }
 Type* GetTypefuncType(Typer* typer, Type* arg, Type* body) {
+    // todo: consider de-duplicating typefuncs?
     Type* typefuncType = pushTypeBuf(&typer->typefuncTypeBuf);
     typefuncType->kind = T_TYPEFUNC;
     typefuncType->as.Typefunc.arg = arg;
@@ -1756,20 +1788,14 @@ int GetFloatTypeWidthInBits(Type* type) {
 Type* GetPtrTypePointee(Type* type) {
     return type->as.Ptr_pointee;
 }
-Type* GetFuncTypeDomain(Type* func) {
-    if (func != NULL) {
-        if (func->kind == T_FUNC) {
-            return func->as.Func.domain;
-        } else if (func->kind == T_META) {
-            return GetFuncTypeDomain(func->as.Meta.soln);
-        }
-    }
-    if (DEBUG) {
-        printf("!!- GetFuncTypeDomain called on an invalid type.\n");
-    } else {
-        assert(0 && "GetFuncTypeDomain called on an invalid type.");
-    }
-    return NULL;
+int GetFuncTypeArgCount(Type* func) {
+    return sb_count(func->as.Func.domain);
+}
+Type* GetFuncTypeArgArray(Type* func) {
+    return func->as.Func.domain;
+}
+Type* GetFuncTypeArgAt(Type* func, int index) {
+    return func->as.Func.domain[index];
 }
 Type* GetFuncTypeImage(Type* func) {
     if (func != NULL) {

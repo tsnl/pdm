@@ -8,7 +8,8 @@
 
 #include "primer.h"
 
-size_t const BUFFER_SIZE = 1024;
+#define BUFFER_SIZE (1024)
+
 char buffer[BUFFER_SIZE] = {0};
 
 CodePrinter CreateCodePrinter(FILE* file, int flags) {
@@ -279,20 +280,29 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintText(cp, ", ...)");
             break;
         }
-        case AST_CALL:
+        case AST_T_CALL:
+        case AST_V_CALL:
         {
             PrintNode(cp, GetAstCallLhs(node));
             int isTemplate = IsAstCallTemplate(node);
             if (isTemplate) {
                 PrintChar(cp,'[');
-            } else {
-                PrintChar(cp,'(');
-            }
-            PrintNode(cp, GetAstCallRhs(node));
-            if (isTemplate) {
+                int argCount = GetAstCallArgCount(node);
+                for (int argIndex = 0; argIndex < argCount; argIndex++) {
+                    AstNode* arg = GetAstCallArgAt(node,argIndex);
+                    PrintNode(cp,arg);
+                    if (argIndex+1 != argCount) {
+                        PrintChar(cp,',');
+                    }
+                }
                 PrintChar(cp,']');
             } else {
-                PrintChar(cp,')');
+                int argCount = GetAstCallArgCount(node);
+                for (int argIndex = 0; argIndex < argCount; argIndex++) {
+                    AstNode* arg = GetAstCallArgAt(node,argIndex);
+                    PrintChar(cp,' ');
+                    PrintNode(cp,arg);
+                }
             }
             break;
         }

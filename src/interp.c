@@ -65,7 +65,7 @@ int InterpLoadModuleSource(Interp* interp, Source* scriptSource) {
     } else {
         // DEBUG: lex and exit
         // DebugLexer(scriptSource);
-        // return 1;
+        // return 0;
 
         LoadedSource loadedSource;
         

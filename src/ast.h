@@ -27,7 +27,7 @@ enum AstKind {
     AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME,
     AST_LET, AST_DEF_VALUE, AST_DEF_TYPE, AST_EXTERN, AST_STMT_WITH, AST_STMT_RETURN,
-    AST_CALL,
+    AST_T_CALL, AST_V_CALL,
     AST_UNARY, AST_BINARY,
     AST_T_PATTERN, AST_V_PATTERN,
     AST_FIELD__TEMPLATE_ITEM,AST_FIELD__TUPLE_ITEM,AST_FIELD__STRUCT_ITEM,AST_FIELD__PATTERN_ITEM
@@ -99,7 +99,8 @@ AstNode* CreateAstDefTypeStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNod
 AstNode* CreateAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec);
 AstNode* CreateAstWithStmt(Loc loc, AstNode* checked);
 
-AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs, int isTemplateCall);
+AstNode* CreateAstValueCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
+AstNode* CreateAstTemplateCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
 AstNode* CreateAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg);
 
@@ -146,9 +147,10 @@ AstNode* GetAstLambdaBody(AstNode* lambda);
 
 AstNode* GetAstWithStmtChecked(AstNode* checkStmt);
 
-AstNode* GetAstCallLhs(AstNode* call);
-AstNode* GetAstCallRhs(AstNode* call);
 int IsAstCallTemplate(AstNode* call);
+AstNode* GetAstCallLhs(AstNode* call);
+int GetAstCallArgCount(AstNode* call);
+AstNode* GetAstCallArgAt(AstNode* call, int index);
 
 SymbolID GetAstFieldName(AstNode* field);
 AstNode* GetAstModuleFieldPattern(AstNode* field);

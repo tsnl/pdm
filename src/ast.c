@@ -99,7 +99,7 @@ struct AstCheck {
 };
 struct AstCall {
     AstNode* lhs;
-    AstNode* rhs;
+    AstNodeList* args;
     int isTemplateCall;
 };
 struct AstCast {
@@ -231,15 +231,42 @@ AstNode* listItemAt(AstNodeList* list, int index) {
 // Constructor implementations:
 //
 
-static int stmtIsModuleLevel(AstKind kind);
+static int isStmtKindModuleLevel(AstKind kind);
+static int isIdKind(AstKind kind);
+static int isCallKind(AstKind kind);
+static AstNode* helpCreateAstCall(Loc loc, AstKind kind, AstNode* lhs, AstNode* args[], int argsCount);
 
-int stmtIsModuleLevel(AstKind kind) {
+int isStmtKindModuleLevel(AstKind kind) {
     return (
         kind == AST_DEF_VALUE ||
-        kind == AST_EXTERN ||
         kind == AST_DEF_TYPE ||
+        kind == AST_EXTERN ||
         0
     );
+}
+int isIdKind(AstKind kind) {
+    return (
+        kind == AST_TID ||
+        kind == AST_VID ||
+        0
+    );
+}
+int isCallKind(AstKind kind) {
+    return (
+        kind == AST_T_CALL ||
+        kind == AST_V_CALL ||
+        0
+    );
+}
+AstNode* helpCreateAstCall(Loc loc, AstKind kind, AstNode* lhs, AstNode* args[], int argsCount) {
+    AstNode* callNode = newNode(loc,kind);
+    callNode->as.Call.lhs = lhs;
+    callNode->as.Call.args = newNodeList();
+    for (int index = 0; index < argsCount; index++) {
+        AstNode* arg = args[index];
+        pushListElement(callNode->as.Call.args,arg);
+    }
+    return callNode;
 }
 
 AstNode* CreateAstModule(Loc loc, SymbolID moduleID) {
@@ -257,7 +284,7 @@ void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping) {
 }
 void PushStmtToAstModule(AstNode* module, AstNode* def) {
     AstKind nodeKind = GetAstNodeKind(def);
-    if (!stmtIsModuleLevel(nodeKind)) {
+    if (!isStmtKindModuleLevel(nodeKind)) {
         if (DEBUG) {
             printf("!!- Cannot push non-def/extern to AstModule.\n");
         } else {
@@ -274,7 +301,7 @@ AstNode* CreateAstValueID(Loc loc, SymbolID symbolID) {
     idNode->as.ID.defn = NULL;
     return idNode;
 }
-AstNode* CreateAstTypeId(Loc loc, SymbolID symbolID) {
+AstNode* CreateAstTypeID(Loc loc, SymbolID symbolID) {
     AstNode* idNode = newNode(loc, AST_TID);
     idNode->as.ID.name = symbolID;
     idNode->as.ID.lookupScope = NULL;
@@ -488,12 +515,11 @@ AstNode* CreateAstWithStmt(Loc loc, AstNode* checked) {
     return checkNode;
 }
 
-AstNode* CreateAstCall(Loc loc, AstNode* lhs, AstNode* rhs, int isTemplateCall) {
-    AstNode* callNode = newNode(loc, AST_CALL);
-    callNode->as.Call.lhs = lhs;
-    callNode->as.Call.rhs = rhs;
-    callNode->as.Call.isTemplateCall = isTemplateCall;
-    return callNode;
+AstNode* CreateAstValueCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount) {
+    return helpCreateAstCall(loc,AST_V_CALL,lhs,args,argsCount);
+}
+AstNode* CreateAstTemplateCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount) {
+    return helpCreateAstCall(loc,AST_T_CALL,lhs,args,argsCount);
 }
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg) {
     AstNode* unaryNode = newNode(loc, AST_UNARY);
@@ -679,21 +705,21 @@ AstNode* GetAstWithStmtChecked(AstNode* checkStmt) {
 
 AstNode* GetAstCallLhs(AstNode* call) {
     if (DEBUG) {
-        assert(call->kind == AST_CALL);
+        assert(isCallKind(call->kind) && "GetAstCallLhs on non-call!");
     }
     return call->as.Call.lhs;
 }
-AstNode* GetAstCallRhs(AstNode* call) {
-    if (DEBUG) {
-        assert(call->kind == AST_CALL);
-    }
-    return call->as.Call.rhs;
+int GetAstCallArgCount(AstNode* call) {
+    return countList(call->as.Call.args);
+}
+AstNode* GetAstCallArgAt(AstNode* call, int index) {
+    return listItemAt(call->as.Call.args,index);
 }
 int IsAstCallTemplate(AstNode* call) {
     if (DEBUG) {
-        assert(call->kind == AST_CALL);
+        assert(isCallKind(call->kind));
     }
-    return call->as.Call.isTemplateCall;
+    return call->kind == AST_T_CALL;
 }
 
 SymbolID GetAstFieldName(AstNode* field) {
@@ -944,13 +970,18 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         {
             return RecursivelyVisitAstNode(context, GetAstWithStmtChecked(node), preVisitorCb, postVisitorCb);
         }
-        case AST_CALL:
+        case AST_V_CALL:
+        case AST_T_CALL:
         {
             if (!RecursivelyVisitAstNode(context, GetAstCallLhs(node), preVisitorCb, postVisitorCb)) {
                 return 0;
             }
-            if (!RecursivelyVisitAstNode(context, GetAstCallRhs(node), preVisitorCb, postVisitorCb)) {
-                return 0;
+            int argCount = GetAstCallArgCount(node);
+            for (int argIndex = 0; argIndex < argCount; argIndex++) {
+                AstNode* arg = GetAstCallArgAt(node,argIndex);
+                if (!RecursivelyVisitAstNode(context, arg, preVisitorCb, postVisitorCb)) {
+                    return 0;
+                }
             }
             return 1;
         }
@@ -1160,7 +1191,8 @@ char const* AstKindAsText(AstKind kind) {
         case AST_EXTERN: return "AST_EXTERN"; 
         case AST_STMT_WITH: return "AST_STMT_WITH"; 
         case AST_STMT_RETURN: return "AST_STMT_RETURN";
-        case AST_CALL: return "AST_CALL";
+        case AST_V_CALL: return "AST_V_CALL";
+        case AST_T_CALL: return "AST_T_CALL";
         case AST_UNARY: return "AST_UNARY"; 
         case AST_BINARY: return "AST_BINARY";
         case AST_T_PATTERN: return "AST_T_PATTERN"; 

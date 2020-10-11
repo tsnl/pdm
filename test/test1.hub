@@ -1,11 +1,9 @@
-def Fibonacci (x: u64, y: u64) = {
-	if x = 0 then {
+fibonacci (x:u64,y:u64) = {
+	if x == 0 then {
 		0
-	} else if x = 1 then {
+	} else if x == 1 then {
 		1 
 	} else {
-		Fibonacci(x-1,0) + Fibonacci(x-2,0)
+		fibonacci(x-1,0) + fibonacci(x-2,0)
 	}
 };
-
-val Vec2[t] (x,y: t);
