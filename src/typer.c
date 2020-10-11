@@ -539,39 +539,44 @@ int typer_post(void* rawTyper, AstNode* node) {
             SetSingleAstNodeTypingExtV(node,tv);
             break;
         }
-        case AST_T_PATTERN:
         case AST_V_PATTERN:
         {
             // todo: update with an array for multiple items
-            int patternCount = GetAstPatternLength(node);
-            Type* type = NULL;
-            if (patternCount == 0) {
-                type = GetUnitType(typer);
-            } else if (patternCount == 1) {
-                type = GetSingleAstNodeTypingExtV(GetAstPatternFieldAt(node,0));
+            if (DEBUG) {
+                printf("!!- NotImplemented: typing AST_V_PATTERN\n");
             } else {
-                InputTypeFieldList* lastInputFieldList = NULL;
-                for (int index = patternCount-1; index >= 0; index--) {
-                    AstNode* field = GetAstPatternFieldAt(node,index);
+                assert(0 && "NotImplemented: typing AST_V_PATTERN.")
+            }
+
+            // int patternCount = GetAstPatternLength(node);
+            // Type* type = NULL;
+            // if (patternCount == 0) {
+            //     type = GetUnitType(typer);
+            // } else if (patternCount == 1) {
+            //     type = GetSingleAstNodeTypingExtV(GetAstPatternFieldAt(node,0));
+            // } else {
+            //     InputTypeFieldList* lastInputFieldList = NULL;
+            //     for (int index = patternCount-1; index >= 0; index--) {
+            //         AstNode* field = GetAstPatternFieldAt(node,index);
                     
-                    InputTypeFieldNode* node = malloc(sizeof(InputTypeFieldNode));
-                    node->name = GetAstFieldName(field);
-                    node->next = lastInputFieldList;
-                    node->type = GetSingleAstNodeTypingExtT(GetAstFieldRhs(field));
-                    lastInputFieldList = node;
-                }
-                InputTypeFieldList* firstITF = lastInputFieldList;
-                type = GetTupleType(typer,lastInputFieldList);
+            //         InputTypeFieldNode* node = malloc(sizeof(InputTypeFieldNode));
+            //         node->name = GetAstFieldName(field);
+            //         node->next = lastInputFieldList;
+            //         node->type = GetSingleAstNodeTypingExtT(GetAstFieldRhs(field));
+            //         lastInputFieldList = node;
+            //     }
+            //     InputTypeFieldList* firstITF = lastInputFieldList;
+            //     type = GetTupleType(typer,lastInputFieldList);
 
-                // todo: de-allocate ITF list.
-            }
+            //     // todo: de-allocate ITF list.
+            // }
 
-            int typeNotValueContext = (nodeKind == AST_T_PATTERN);
-            if (typeNotValueContext) {
-                SetSingleAstNodeTypingExtT(node, type);
-            } else {
-                SetSingleAstNodeTypingExtV(node, type);
-            }
+            // int typeNotValueContext = (nodeKind == AST_T_PATTERN);
+            // if (typeNotValueContext) {
+            //     SetSingleAstNodeTypingExtT(node, type);
+            // } else {
+            //     SetSingleAstNodeTypingExtV(node, type);
+            // }
             break;
         }
         case AST_STRUCT:
@@ -661,7 +666,6 @@ int typer_post(void* rawTyper, AstNode* node) {
                     argsTypes[argIndex] = GetSingleAstNodeTypingExtV(argNode);
                 }
             }
-            AstNode* rhs = GetAstCallRhs(node);
             Type* retType = CreateMetavarType(loc, typer, "in-ret");
             
             Type* actualFuncType = GetFuncType(typer, argsCount, argsTypes, retType);
@@ -1170,10 +1174,19 @@ int checkConcreteSubtype(Loc loc, Type* concreteSup, Type* concreteSub) {
         }
         case T_FUNC:
         {
-            return (
-                checkSubtype(loc, concreteSup->as.Func.domainArray, concreteSub->as.Func.domainArray) &&
-                checkSubtype(loc, concreteSup->as.Func.image, concreteSub->as.Func.image)
-            );
+            int supArgCount = GetFuncTypeArgCount(concreteSup);
+            int subArgCount = GetFuncTypeArgCount(concreteSub);
+            if (supArgCount == subArgCount) {
+                int argCount = subArgCount;
+                int result = checkSubtype(loc, concreteSup->as.Func.image, concreteSub->as.Func.image);
+                for (int index = 0; index < argCount; index++) {
+                    Type* supArgType = GetFuncTypeArgAt(concreteSup,index);
+                    Type* subArgType = GetFuncTypeArgAt(concreteSub,index);
+                    result = checkSubtype(loc,supArgType,subArgType) && result;
+                }
+                return result;
+            }
+            return 0;
         }
         default:
         {

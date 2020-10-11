@@ -251,9 +251,9 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         {
             Loc loc = GetAstNodeLoc(node);
             SymbolID defnID = GetAstLetStmtLhs(node);
-            void* type = CreateMetatype(loc, primer->typer, "let:%s", GetSymbolText(defnID));
+            void* type = CreateMetavarType(loc, primer->typer, "let:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_VALUE);
-            SetAstNodeValueType(node, type);
+            SetSingleAstNodeTypingExtV(node, type);
             break;
         }
         case AST_STRUCT:
@@ -293,9 +293,9 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             Loc loc = GetAstNodeLoc(node);
             SymbolID defnID = GetAstFieldName(node);
             // todo: valueTypeP encodes a first-order type
-            void* type = CreateMetatype(loc, primer->typer, "template:%s", GetSymbolText(defnID));
+            void* type = CreateMetavarType(loc, primer->typer, "template:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_TYPING);
-            SetAstNodeValueType(node, type);
+            SetSingleAstNodeTypingExtV(node, type);
             break;
         }
         case AST_FIELD__PATTERN_ITEM:
@@ -303,9 +303,9 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             Loc loc = GetAstNodeLoc(node);
             // defining the formal arg symbol in the lambda scope:
             SymbolID defnID = GetAstFieldName(node);
-            void* type = CreateMetatype(loc, primer->typer, "pattern:%s", GetSymbolText(defnID));
+            void* type = CreateMetavarType(loc, primer->typer, "pattern:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_VALUE);
-            SetAstNodeValueType(node, type);
+            SetSingleAstNodeTypingExtV(node, type);
 
             // pushing a typing frame for RHS
             pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
@@ -314,7 +314,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         case AST_FIELD__STRUCT_ITEM:
         {
             // SymbolID defnID = GetAstFieldName(node);
-            SetAstNodeValueType(node, GetAstNodeValueType(GetAstFieldRhs(node)));
+            SetSingleAstNodeTypingExtV(node, GetSingleAstNodeTypingExtV(GetAstFieldRhs(node)));
             break;
         }
         case AST_LAMBDA:
@@ -379,24 +379,24 @@ int PrimeModule(Primer* primer, AstNode* module) {
         if (stmtKind == AST_DEF_VALUE) {
             SymbolID lhs = GetAstDefStmtLhs(stmt);
             char const* symbolText = GetSymbolText(lhs);
-            void* valType = CreateMetatype(loc, primer->typer, "def-func:%s", symbolText);
-            void* typingType = CreateMetatype(loc, primer->typer, "def-type:%s", symbolText);
+            void* valType = CreateMetavarType(loc, primer->typer, "def-func:%s", symbolText);
+            void* typingType = CreateMetavarType(loc, primer->typer, "def-type:%s", symbolText);
             pushSymbol(primer, lhs, valType, stmt, ASTCTX_VALUE);
             pushSymbol(primer, lhs, typingType, stmt, ASTCTX_TYPING);
             // storing the defined metatypes on the statement:
-            SetAstNodeValueType(stmt,valType);
-            SetAstNodeTypingType(stmt,typingType);
+            SetSingleAstNodeTypingExtV(stmt,valType);
+            SetSingleAstNodeTypingExtT(stmt,typingType);
         } else if (stmtKind == AST_EXTERN) {
             SymbolID lhs = GetAstExternStmtName(stmt);
             char const* symbolText = GetSymbolText(lhs);
-            void* valType = CreateMetatype(loc, primer->typer, "extern:%s", symbolText);
+            void* valType = CreateMetavarType(loc, primer->typer, "extern:%s", symbolText);
             pushSymbol(primer, lhs, valType, stmt, ASTCTX_VALUE);
-            SetAstNodeValueType(stmt,valType);
+            SetSingleAstNodeTypingExtV(stmt,valType);
         } else if (stmtKind == AST_DEF_TYPE) {
             SymbolID lhs = GetAstTypedefStmtName(stmt);
             char const* symbolText = GetSymbolText(lhs);
             
-            void* typingContextType = CreateMetatype(loc, primer->typer, "typedef:%s", symbolText);
+            void* typingContextType = CreateMetavarType(loc, primer->typer, "typedef:%s", symbolText);
             // todo: replace this invocation of FuncType with something different, like CastType?
             // void* valueContextType = GetFuncType(primer->typer, typingContextType, typingContextType);
             void* valueContextType = NULL;
@@ -404,8 +404,8 @@ int PrimeModule(Primer* primer, AstNode* module) {
             pushSymbol(primer, lhs, typingContextType, stmt, ASTCTX_TYPING);
             pushSymbol(primer, lhs, valueContextType, stmt, ASTCTX_VALUE);
             
-            SetAstNodeTypingType(stmt, typingContextType);
-            SetAstNodeValueType(stmt, valueContextType);
+            SetSingleAstNodeTypingExtT(stmt, typingContextType);
+            SetSingleAstNodeTypingExtV(stmt, valueContextType);
         } else {
             if (DEBUG) {
                 printf("!!- PrimeModule: Unsupported statement kind in module\n");

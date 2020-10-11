@@ -161,14 +161,21 @@ ExportedType exportType(Typer* typer, Type* type) {
             }
             case T_FUNC:
             {
-                // todo: implement tuple destructuring for improved call performance.
                 // for now, all functions and calls are unary
-                ExportedType exportArgType = exportType(typer,GetFuncTypeDomain(exportedType.native));
+                int argCount = GetFuncTypeArgCount(exportedType.native);
+                LLVMTypeRef* llvmArgTypeArray = NULL;
+                if (argCount) {
+                    llvmArgTypeArray = malloc(argCount*sizeof(LLVMTypeRef));
+                    for (int index = 0; index < argCount; index++) {
+                        llvmArgTypeArray[index] = exportType(typer,GetFuncTypeArgAt(exportedType.native,index)).llvm;
+                    }
+                }
+
                 ExportedType exportRetType = exportType(typer,GetFuncTypeImage(exportedType.native));
-                if (exportArgType.llvm && exportRetType.llvm) {
+                if (exportRetType.llvm) {
                     exportedType.llvm = LLVMFunctionType(
                         exportRetType.llvm,
-                        &exportRetType.llvm,1,
+                        llvmArgTypeArray,argCount,
                         0
                     );
                 } else {
@@ -204,8 +211,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
     Typer* typer = emitter->typer;
 
     ExportedValue exportedValue;
-    
-    Type* valueType = GetAstNodeValueType(exprNode);
+    Type* valueType = GetSingleAstNodeTypingExtV(exprNode);
     Type* concreteType = GetConcreteType(typer,valueType);
 
     exportedValue.exprNode = exprNode;

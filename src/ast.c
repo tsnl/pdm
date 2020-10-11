@@ -833,9 +833,15 @@ int GetAstNodeTypingExtTCount(AstNode* node) {
     return node->typingExtCount_t;
 }
 void* GetSingleAstNodeTypingExtV(AstNode* node) {
+    if (DEBUG) {
+        assert(node->typingExtCount_v == -1);
+    }
     return node->typingExt_v;
 }
 void* GetSingleAstNodeTypingExtT(AstNode* node) {
+    if (DEBUG) {
+        assert(node->typingExtCount_t == -1);
+    }
     return node->typingExt_t;
 }
 void* GetArrayAstNodeTypingExtV(AstNode* node, int* lenP) {
