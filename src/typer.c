@@ -159,10 +159,16 @@ static AdtTrieNode* getCommonAncestorATN(AdtTrieNode* a, AdtTrieNode* b);
 static int isAncestorATN(AdtTrieNode* parent, AdtTrieNode* child);
 
 // typing constraints:
+// 1. we attempt to eagerly check typing constraints (CONFIRM/FAILURE), but
+// 2. if the result depends on a metavar, we return FAILURE unless matches hypothesis so far, then DEFERRED
+// 3. after typing (no more solution possible), call 'checkDeferredMetavarSubtypings' 
+// usage:
 // - call 'readSubtyping' to check if A sup B without modifying the system.
 // - call 'writeSubtyping' to assert that A sup B, thereby modifying the system.
+// - call 'checkDeferredMetavarSubtypings' to check metavar subtypings against final solutions.
 static SubtypingResult readSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub);
 static SubtypingResult writeSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub);
+static SubtypingResult checkDeferredMetavarSubtypings(Typer* typer);   // all metavar subtypes
 // helpers (1)...
 static SubtypingResult readOrWriteSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub, int readOnly);
 static SubtypingResult helpReadOrWriteSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub, int readOnly);
@@ -396,6 +402,30 @@ SubtypingResult readSubtyping(Typer* typer, char const* why, Loc locWhere, Type*
 SubtypingResult writeSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub) {
     return helpReadOrWriteSubtyping(typer,why,locWhere,super,sub,0);
 }
+SubtypingResult checkDeferredMetavarSubtypings(Typer* typer) {
+    // todo: implement checkDeferredMetavarSubtypings
+
+    // for each metavar,
+    //   hypothesis = *select* submost supertype (including super metas)
+    //   test = *select* supermost subtype (including sub metas)
+    //
+    //   if hypothesis and test are empty,
+    //      error out, not enough info. :/
+    //      make an exception for templates?
+    //   elif hypothesis is empty,
+    //      soln <- test
+    //   elif test is empty,
+    //      soln <- hypothesis
+    //   else
+    //     if hypothesis \super-or-equal test,
+    //        soln <- hypothesis
+
+    // NOTE:
+    // when selecting supertypes/subtypes from a meta,
+    // - if meta is solved, just return the solution
+    // - else forward super/sub types
+    // - beware of forwarding cycles! if cycle detected, terminate without adding unsolved-meta super/sub, since already added.
+}
 
 //
 // typing constraint helpers (1)
@@ -621,14 +651,12 @@ SubtypingResult helpReadOrWriteSubtyping_unionSuper(Typer* typer, char const* wh
 
 }
 SubtypingResult helpReadOrWriteSubtyping_metaSuper(Typer* typer, char const* why, Loc loc, Type* meta, Type* sub, int readOnly) {
-    
+    // store subtypes, but do not check yet! wait for 'super' to finalize.
+    // checks performed later, in 'checkDeferredMetavarSubtypings'
 }
 SubtypingResult helpReadOrWriteSubtyping_metaSub(Typer* typer, char const* why, Loc loc, Type* meta, Type* super, int readOnly) {
-    if (meta->as.Meta.soln == NULL) {
-        meta->as.Meta.soln = super;
-    } else {
-        // todo: resolve conflict
-    }
+    // store suptypes, but do not solve yet! metavar supertypes may offer better solutions, but should not pre-emptively compare.
+    // suptype collection performed later, in 'checkDeferredMetavarSubtypings'
 }
 
 //
