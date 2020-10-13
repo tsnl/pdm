@@ -93,7 +93,7 @@ ExportedType exportType(Typer* typer, Type* type) {
     // 1:1 conversion wherever possible, no magic.
 
     ExportedType exportedType;
-    exportedType.native = GetConcreteType(typer,type);
+    exportedType.native = GetTypeSoln(typer,type);
     exportedType.llvm = NULL;
 
     if (exportedType.native) {
@@ -212,7 +212,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
 
     ExportedValue exportedValue;
     Type* valueType = GetSingleAstNodeTypingExtV(exprNode);
-    Type* concreteType = GetConcreteType(typer,valueType);
+    Type* concreteType = GetTypeSoln(typer,valueType);
 
     exportedValue.exprNode = exprNode;
     exportedValue.llvmValueRef = NULL;
@@ -263,7 +263,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
             // STRUCT,TUPLE,UNION,ARRAY: llvmValueRef is a pointer to the value.
             //
 
-            case AST_TUPLE:
+            case AST_VTUPLE:
             case AST_STRUCT:
             {
                 // LLVMConstStruct();

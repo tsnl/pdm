@@ -184,15 +184,15 @@ inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn
 Scope* newRootScope(Typer* typer) {
     Scope* root = NULL;
     
-    root = newScope(root, Symbol("u1"), GetIntType(typer,INT_1), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("u8"), GetIntType(typer,INT_8), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("u16"), GetIntType(typer,INT_16), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("u32"), GetIntType(typer,INT_32), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("u64"), GetIntType(typer,INT_64), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("u128"), GetIntType(typer,INT_128), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("u1"), NewOrGetIntType(typer,INT_1), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("u8"), NewOrGetIntType(typer,INT_8), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("u16"), NewOrGetIntType(typer,INT_16), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("u32"), NewOrGetIntType(typer,INT_32), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("u64"), NewOrGetIntType(typer,INT_64), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("u128"), NewOrGetIntType(typer,INT_128), NULL, ASTCTX_TYPING);
 
-    root = newScope(root, Symbol("f32"), GetFloatType(typer,FLOAT_32), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("f64"), GetFloatType(typer,FLOAT_64), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("f32"), NewOrGetFloatType(typer,FLOAT_32), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("f64"), NewOrGetFloatType(typer,FLOAT_64), NULL, ASTCTX_TYPING);
     
     return root;
 }
@@ -251,7 +251,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         {
             Loc loc = GetAstNodeLoc(node);
             SymbolID defnID = GetAstLetStmtLhs(node);
-            void* type = CreateMetavarType(loc, primer->typer, "let:%s", GetSymbolText(defnID));
+            void* type = NewMetavarType(loc, primer->typer, "let:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_VALUE);
             SetSingleAstNodeTypingExtV(node, type);
             break;
@@ -265,7 +265,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         {
             break;
         }
-        case AST_PAREN:
+        case AST_VPAREN:
         case AST_CHAIN:
         {
             pushFrame(primer, NULL, ASTCTX_VALUE, topFrameFunc(primer));
@@ -293,7 +293,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             Loc loc = GetAstNodeLoc(node);
             SymbolID defnID = GetAstFieldName(node);
             // todo: valueTypeP encodes a first-order type
-            void* type = CreateMetavarType(loc, primer->typer, "template:%s", GetSymbolText(defnID));
+            void* type = NewMetavarType(loc, primer->typer, "template:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_TYPING);
             SetSingleAstNodeTypingExtV(node, type);
             break;
@@ -303,7 +303,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             Loc loc = GetAstNodeLoc(node);
             // defining the formal arg symbol in the lambda scope:
             SymbolID defnID = GetAstFieldName(node);
-            void* type = CreateMetavarType(loc, primer->typer, "pattern:%s", GetSymbolText(defnID));
+            void* type = NewMetavarType(loc, primer->typer, "pattern:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_VALUE);
             SetSingleAstNodeTypingExtV(node, type);
 
@@ -341,7 +341,7 @@ int primer_post(void* rawPrimer, AstNode* node) {
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_CHAIN:
-        case AST_PAREN:
+        case AST_VPAREN:
         case AST_LAMBDA:
         case AST_FIELD__PATTERN_ITEM:
         case AST_DEF_TYPE:
@@ -359,16 +359,21 @@ int primer_post(void* rawPrimer, AstNode* node) {
     return 1;
 }
 
+//
+//
+// API:
+//
+//
+
 Primer* CreatePrimer(void* typer) {
     return createPrimer(typer);
 }
-
 int PrimeModule(Primer* primer, AstNode* module) {
     if (DEBUG) {
         assert(GetAstNodeKind(module) == AST_MODULE);
     }
 
-    // defining all module-symbols in one binding group
+    // defining all module-symbols in one go, storing as typing extensions:
     pushFrame(primer,NULL,ASTCTX_VALUE,topFrameFunc(primer));
     size_t moduleStmtLength = GetAstModuleLength(module);
     for (size_t index = 0; index < moduleStmtLength; index++) {
@@ -378,34 +383,20 @@ int PrimeModule(Primer* primer, AstNode* module) {
         AstKind stmtKind = GetAstNodeKind(stmt);
         if (stmtKind == AST_DEF_VALUE) {
             SymbolID lhs = GetAstDefStmtLhs(stmt);
-            char const* symbolText = GetSymbolText(lhs);
-            void* valType = CreateMetavarType(loc, primer->typer, "def-func:%s", symbolText);
-            void* typingType = CreateMetavarType(loc, primer->typer, "def-type:%s", symbolText);
-            pushSymbol(primer, lhs, valType, stmt, ASTCTX_VALUE);
-            pushSymbol(primer, lhs, typingType, stmt, ASTCTX_TYPING);
-            // storing the defined metatypes on the statement:
-            SetSingleAstNodeTypingExtV(stmt,valType);
-            SetSingleAstNodeTypingExtT(stmt,typingType);
+            void* valueType = NewMetavarType(loc,primer->typer,"def-func:%s",GetSymbolText(lhs));
+            pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE);
+            SetSingleAstNodeTypingExtV(stmt,valueType);
         } else if (stmtKind == AST_EXTERN) {
             SymbolID lhs = GetAstExternStmtName(stmt);
-            char const* symbolText = GetSymbolText(lhs);
-            void* valType = CreateMetavarType(loc, primer->typer, "extern:%s", symbolText);
-            pushSymbol(primer, lhs, valType, stmt, ASTCTX_VALUE);
-            SetSingleAstNodeTypingExtV(stmt,valType);
+            void* valueType = NewMetavarType(loc,primer->typer,"extern:%s",GetSymbolText(lhs));
+            pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE);
+            SetSingleAstNodeTypingExtV(stmt,valueType);
         } else if (stmtKind == AST_DEF_TYPE) {
             SymbolID lhs = GetAstTypedefStmtName(stmt);
             char const* symbolText = GetSymbolText(lhs);
-            
-            void* typingContextType = CreateMetavarType(loc, primer->typer, "typedef:%s", symbolText);
-            // todo: replace this invocation of FuncType with something different, like CastType?
-            // void* valueContextType = GetFuncType(primer->typer, typingContextType, typingContextType);
-            void* valueContextType = NULL;
-            
-            pushSymbol(primer, lhs, typingContextType, stmt, ASTCTX_TYPING);
-            pushSymbol(primer, lhs, valueContextType, stmt, ASTCTX_VALUE);
-            
-            SetSingleAstNodeTypingExtT(stmt, typingContextType);
-            SetSingleAstNodeTypingExtV(stmt, valueContextType);
+            void* typingType = NewMetavarType(loc,primer->typer,"typedef:%s",symbolText);
+            pushSymbol(primer,lhs,typingType,stmt,ASTCTX_TYPING);
+            SetSingleAstNodeTypingExtT(stmt, typingType);
         } else {
             if (DEBUG) {
                 printf("!!- PrimeModule: Unsupported statement kind in module\n");
@@ -414,7 +405,6 @@ int PrimeModule(Primer* primer, AstNode* module) {
             }
         }
     }
-    
     // visiting the AST:
     if (!RecursivelyVisitAstNode(primer, module, primer_pre, primer_post)) {
         return 0;
@@ -422,11 +412,9 @@ int PrimeModule(Primer* primer, AstNode* module) {
     popFrame(primer);
     return 1;
 }
-
 Defn* LookupSymbol(Scope* scope, SymbolID lookupID, AstContext context) {
     return lookupSymbolUntil(scope, lookupID, NULL, context);
 }
-
 Defn* LookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context) {
     return lookupSymbolUntil(scope, lookupID, endScopeP, context);
 }

@@ -21,13 +21,13 @@ enum AstKind {
     AST_MODULE,
     AST_TID, AST_VID,
     AST_LITERAL_INT, AST_LITERAL_FLOAT, AST_LITERAL_STRING, 
-    AST_UNIT, AST_PAREN, AST_TUPLE, 
+    AST_UNIT, AST_VPAREN, AST_VTUPLE, AST_TPAREN, AST_TTUPLE,
     AST_STRUCT, AST_CHAIN,
     AST_LAMBDA,
     AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME,
     AST_LET, AST_DEF_VALUE, AST_DEF_TYPE, AST_EXTERN, AST_STMT_WITH, AST_STMT_RETURN,
-    AST_T_CALL, AST_V_CALL,
+    AST_TCALL, AST_VCALL,
     AST_UNARY, AST_BINARY,
     AST_T_PATTERN, AST_V_PATTERN,
     AST_FIELD__TEMPLATE_ITEM,AST_FIELD__TUPLE_ITEM,AST_FIELD__STRUCT_ITEM,AST_FIELD__PATTERN_ITEM
@@ -63,15 +63,14 @@ void AttachImportHeaderToAstModule(AstNode* module, AstNode* mapping);
 void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping);
 void PushStmtToAstModule(AstNode* module, AstNode* def);
 
-AstNode* CreateAstValueID(Loc loc, SymbolID symbolID);
-AstNode* CreateAstTypeID(Loc loc, SymbolID symbolID);
+AstNode* CreateAstVID(Loc loc, SymbolID symbolID);
 AstNode* CreateAstIntLiteral(Loc loc, size_t value, int base);
 AstNode* CreateAstFloatLiteral(Loc loc, long double value);
 AstNode* CreateAstStringLiteral(Loc loc, int* valueSb);
-AstNode* CreateAstParen(Loc loc, AstNode* it);
+AstNode* CreateAstVParen(Loc loc, AstNode* it);
 AstNode* CreateAstUnit(Loc loc);
 
-AstNode* CreateAstTuple(Loc loc);
+AstNode* CreateAstVTuple(Loc loc);
 AstNode* CreateAstStruct(Loc loc);
 AstNode* CreateAstChain(Loc loc);
 AstNode* CreateAstPattern(Loc loc, int isTemplatePattern);
@@ -99,10 +98,14 @@ AstNode* CreateAstDefTypeStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNod
 AstNode* CreateAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec);
 AstNode* CreateAstWithStmt(Loc loc, AstNode* checked);
 
-AstNode* CreateAstValueCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
-AstNode* CreateAstTemplateCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
+AstNode* CreateAstVCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
+AstNode* CreateAstTCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
 AstNode* CreateAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg);
+
+AstNode* CreateAstTID(Loc loc, SymbolID symbolID);
+AstNode* CreateAstTTuple(Loc loc);
+AstNode* CreateAstTParen(Loc loc, AstNode* it);
 
 //
 // Getters:

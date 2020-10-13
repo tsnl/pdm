@@ -95,7 +95,6 @@ static RawAstNode* parseTypespec(Parser* p);
 static RawAstNode* tryParseTypespec(Parser* p);
 static RawAstNode* tryParsePrimaryTypespec(Parser* p);
 static RawAstNode* tryParsePostfixTypespec(Parser* p);
-static RawAstNode** helpParseCsTypespecList(Parser* p);
 
 // shared string helpers:
 static RawAstNode* parseString(Parser* p);
@@ -223,10 +222,8 @@ RawAstNode* tryParseStmt(Parser* p) {
 RawAstNode* parseLetStmt(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
 
-    // todo: parse a pattern here
-
     SymbolID lhs = SYM_NULL; {
-        TokenInfo idTokenInfo = lookaheadInfo(p, 0);
+        TokenInfo idTokenInfo = lookaheadInfo(p,0);
         if (expect(p, TK_VID, "the defined (lhs) identifier")) {
             lhs = idTokenInfo.as.ID_symbolID;
         } else {
@@ -235,7 +232,7 @@ RawAstNode* parseLetStmt(Parser* p) {
     }
     AstNode* typespec = NULL; {
         if (match(p,TK_COLON)) {
-            typespec = tryParsePrimaryExpr(p);
+            typespec = parseTypespec(p);
             if (!typespec) {
                 FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
                 PostFeedback(
@@ -357,6 +354,8 @@ RawAstNode* parseDefTypeStmt(Parser* p) {
         optPattern = parseTemplatePattern(p);
     }
 
+    if (!expect(p,TK_BIND,"'='")) { return NULL; }
+
     AstNode* optRhs = NULL;
     if (match(p,TK_BIND)) {
         optRhs = parseExpr(p);
@@ -425,7 +424,7 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
         { 
             TokenInfo idTokenInfo = lookaheadInfo(p, 0);
             if (expect(p, TK_VID, "a bound value identifier")) {
-                return CreateAstValueID(idTokenInfo.loc, idTokenInfo.as.ID_symbolID);
+                return CreateAstVID(idTokenInfo.loc, idTokenInfo.as.ID_symbolID);
             } else {
                 return NULL;
             }
@@ -484,7 +483,7 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
             if (match(p, TK_COMMA)) {
                 // tuple
                 RawAstNode* firstExpr = expr;
-                expr = CreateAstTuple(loc);
+                expr = CreateAstVTuple(loc);
 
                 PushFieldToAstTuple(GetAstNodeLoc(firstExpr), expr, firstExpr);
                 do {
@@ -496,7 +495,7 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
                 } while (match(p, TK_COMMA));
             } else {
                 // paren
-                expr = CreateAstParen(loc, expr);
+                expr = CreateAstVParen(loc, expr);
             }
 
             if (!expect(p, TK_RPAREN, "a closing ')'")) {
@@ -616,24 +615,11 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
             
             return CreateAstIte(loc,cond,ifTrue,ifFalse);
         }
-        // case TK_LTHAN:
-        // {
-        //     // cast expression
-        //     expect(p,TK_LTHAN,"'<'");
-        //     RawAstNode* typespec = tryParsePostfixExpr(p);
-        //     if (!typespec) {
-        //         // todo: post feedback here.
-        //         return NULL;
-        //     }
-        //     expect(p, TK_GTHAN,"'>'");
-        //     RawAstNode* rhs = tryParsePrimaryExpr(p);
-        //     if (rhs) {
-        //         return CreateAstCast(loc,typespec,rhs);
-        //     } else {
-        //         // todo: post feedback here.
-        //         return NULL;
-        //     }
-        // }
+    
+        //
+        // Checking for a cast expression:
+        //
+
         default: 
         { 
             return NULL; 
@@ -717,7 +703,7 @@ RawAstNode* tryParseCallExpr(Parser* p) {
     } else if (nodesCount == 1) {
         result = nodesSB[0];
     } else {
-        result = CreateAstValueCall(loc,nodesSB[0],nodesSB+1,nodesCount-1);
+        result = CreateAstVCall(loc,nodesSB[0],nodesSB+1,nodesCount-1);
     }
 
     sb_free(nodesSB);
@@ -828,7 +814,9 @@ void parsePatternElementWithoutTail(Parser* p, RawAstNode* pattern, int* okP, To
 int isFirstTypespecTokenKind(TokenKind kind) {
     return (
         kind == TK_TID ||
-        kind == TK_LPAREN ||
+        kind == TK_LSQBRK ||
+        kind == TK_KW_STRUCT ||
+        kind == TK_KW_ENUM ||
         0
     );
 }
@@ -848,16 +836,70 @@ RawAstNode* parseTypespec(Parser* p) {
     }
 }
 RawAstNode* tryParseTypespec(Parser* p) {
-    return NULL;
+    return tryParsePostfixTypespec(p);
 }
 RawAstNode* tryParsePrimaryTypespec(Parser* p) {
+    TokenKind firstKind = lookaheadKind(p,0);
+    TokenInfo firstInfo = lookaheadInfo(p,0);
+    if (match(p,TK_TID)) {
+        return CreateAstTypeID(firstInfo.loc,firstInfo.as.ID_symbolID);
+    }
+    else if (match(p,TK_LSQBRK)) {
+        RawAstNode* firstNestedTypespec = tryParseTypespec(p);
+        if (firstNestedTypespec) {
+            RawAstNode* result;
+            if (match(p,TK_COMMA)) {
+                result = CreateAstTypeTuple(firstInfo.loc);
+                PushFieldToAstTuple(GetAstNodeLoc(firstNestedTypespec),result,firstNestedTypespec);
+                do {
+                    RawAstNode* nestedTypespecItem = parseTypespec(p);
+                    if (nestedTypespecItem) {
+                        PushFieldToAstTuple(GetAstNodeLoc(nestedTypespecItem),result,nestedTypespecItem);
+                    } else {
+                        return NULL;
+                    }
+                } while (match(p,TK_COMMA));
+            } else {
+                result = CreateAstTParen(firstInfo.loc,firstNestedTypespec);
+            }
+            if (!expect(p,TK_RSQBRK,"']'")) {
+                return NULL;
+            }
+            return result;
+        } else {
+            return NULL;
+        }
+    }
+    else if (match(p,TK_KW_STRUCT) || match(p,TK_KW_ENUM)) {
+        if (DEBUG) {
+            printf("!!- NotImplemented: 'struct' and 'enum' typespecs.\n");
+        }
+    }
     return NULL;
 }
 RawAstNode* tryParsePostfixTypespec(Parser* p) {
-    return NULL;
-}
-RawAstNode** helpParseCsTypespecList(Parser* p) {
-    return NULL;
+    RawAstNode* lhs = tryParsePrimaryExpr(p);
+    while (match(p,TK_LSQBRK)) {
+        RawAstNode** argsSB = NULL; {
+            while (isFirstTypespecTokenKind(lookaheadKind(p,0))) {
+                RawAstNode* arg = tryParseTypespec(p);
+                if (arg == NULL) {
+                    return NULL;
+                } else {
+                    sb_push(argsSB,arg);
+                }
+            }
+        }
+
+        // updating LHS:
+        lhs = CreateAstTCall(GetAstNodeLoc(lhs),lhs,argsSB,sb_count(argsSB));
+        sb_free(argsSB);
+
+        if (!expect(p,TK_RSQBRK,"']'")) {
+            return NULL;
+        }
+    }
+    return lhs;
 }
 
 //

@@ -13,5 +13,4 @@
 #define MAX_JOB_COUNT (1)
 #define MAX_PRIMER_COUNT (MAX_JOB_COUNT)
 
-
 #endif  // INCLUDED_CONFIG_H

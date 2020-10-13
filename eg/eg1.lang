@@ -10,7 +10,7 @@ namespace eg1;
 # Circles:
 #
 
-Circle = struct {
+Circle = Struct {
     center: (F32,F32),
     radius: (F32)
 } with {
@@ -81,7 +81,7 @@ newDict[K,V] () = {
 # Enums:
 #
 
-Color = enum {
+Color = Enum {
     rgba: (U8,U8,U8,U8),
     hsva: (U8,U8,U8,U8),
     name: String,

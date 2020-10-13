@@ -197,14 +197,16 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintChar(cp,rtChar);
             break;
         }
-        case AST_PAREN:
+        case AST_VPAREN:
+        case AST_TPAREN:
         {
             PrintText(cp, "(");
             PrintNode(cp, GetAstParenItem(node));
             PrintText(cp, ")");
             break;
         }
-        case AST_TUPLE:
+        case AST_VTUPLE:
+        case AST_TTUPLE:
         {
             PrintChar(cp, '(');
             int tupleCount = GetAstTupleLength(node);
@@ -280,8 +282,8 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintText(cp, ", ...)");
             break;
         }
-        case AST_T_CALL:
-        case AST_V_CALL:
+        case AST_TCALL:
+        case AST_VCALL:
         {
             PrintNode(cp, GetAstCallLhs(node));
             int isTemplate = IsAstCallTemplate(node);

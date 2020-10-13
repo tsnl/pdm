@@ -78,32 +78,28 @@ struct TyperCfg {
     size_t maxBinaryIntrinsicCount;
     size_t maxPhiCount;
 };
-TyperCfg CreateDefaultTyperCfg(void);
-Typer* CreateTyper(TyperCfg config);
+TyperCfg NewDefaultTyperCfg(void);
+Typer* NewTyper(TyperCfg config);
 
 //
 // Constructor methods:
 //
 
-Type* GetUnitType(Typer* typer);
-Type* GetIntType(Typer* typer, IntWidth width);
-Type* GetFloatType(Typer* typer, FloatWidth width);
-Type* GetPtrType(Typer* typer, Type* pointee);
-Type* GetFuncType(Typer* typer, int argsCount, Type* args[], Type* image);
-Type* GetTypefuncType(Typer* typer, Type* arg, Type* body);
-Type* GetTupleType(Typer* typer, InputTypeFieldList const* inputFieldList);
-Type* GetUnionType(Typer* typer, InputTypeFieldList const* inputFieldList);
-Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* arg);
-Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* ltArg, Type* rtArg);
-Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse);
-
-Type* CreateMetavarType(Loc loc, Typer* typer, char const* format, ...);
+Type* NewOrGetUnitType(Typer* typer);
+Type* NewOrGetIntType(Typer* typer, IntWidth width);
+Type* NewOrGetFloatType(Typer* typer, FloatWidth width);
+Type* NewOrGetPtrType(Typer* typer, Type* pointee);
+Type* NewOrGetFuncType(Typer* typer, int argsCount, Type* args[], Type* image);
+Type* NewOrGetTypefuncType(Typer* typer, Type* arg, Type* body);
+Type* NewOrGetTupleType(Typer* typer, InputTypeFieldList const* inputFieldList);
+Type* NewOrGetUnionType(Typer* typer, InputTypeFieldList const* inputFieldList);
+Type* NewMetavarType(Loc loc, Typer* typer, char const* format, ...);
 
 //
 // Getter methods for type info:
 //
 
-Type* GetConcreteType(Typer* typer, Type* type);
+// Type* GetTypeSoln(Typer* typer, Type* type);
 TypeKind GetTypeKind(Type* typeP);
 IntWidth GetIntTypeWidth(Type* typeP);
 int GetIntTypeWidthInBits(Type* type);
@@ -114,8 +110,8 @@ int GetFuncTypeArgCount(Type* func);
 Type* GetFuncTypeArgArray(Type* func);
 Type* GetFuncTypeArgAt(Type* func, int index);
 Type* GetFuncTypeImage(Type* func);
-int GetTupleTypeLength(Type* type);
-int GetUnionTypeLength(Type* type);
+int GetTupleTypeFieldCount(Type* type);
+int GetUnionTypeFieldCount(Type* type);
 void MapCompoundType(Typer* typer, Type* compound, FieldCB cb, void* context);
 
 char const* GetMetatypeName(Type* typeP);
@@ -125,15 +121,8 @@ char const* GetMetatypeName(Type* typeP);
 //
 
 void TypeNode(Typer* typer, AstNode* node);
-int Typecheck(Typer* typer);
+int CheckTyper(Typer* typer);
 size_t GetTypeSizeInBytes(Typer* typer, Type* type);
-
-//
-// Emitter output:
-//
-
-void* GetTypeLlvmRepr(Type* type);
-void SetTypeLlvmRepr(Type* type, void* repr);
 
 //
 // Debug:

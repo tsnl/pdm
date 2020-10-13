@@ -30,6 +30,8 @@ static SymbolID kwFunSymbolID = 0;
 static SymbolID kwAndSymbolID = 0;
 static SymbolID kwXOrSymbolID = 0;
 static SymbolID kwOrSymbolID = 0;
+static SymbolID kwStructSymbolID = 0;
+static SymbolID kwEnumSymbolID = 0;
 
 static TokenKind lexOneToken(Source* source, TokenInfo* infoP);
 static TokenKind lexOneSimpleToken(Source* source, TokenInfo* infoP);
@@ -69,6 +71,8 @@ void InitLexer(void) {
     kwAndSymbolID = strings_intern(symbolsDict, "and");
     kwXOrSymbolID = strings_intern(symbolsDict, "xor");
     kwOrSymbolID = strings_intern(symbolsDict, "or");
+    kwStructSymbolID = strings_intern(symbolsDict, "Struct");
+    kwEnumSymbolID = strings_intern(symbolsDict, "Enum");
 }
 
 void DeInitLexer(void) {
