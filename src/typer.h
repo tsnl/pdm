@@ -128,7 +128,7 @@ char const* GetMetatypeName(Type* typeP);
 //
 
 void TypeNode(Typer* typer, AstNode* node);
-int CheckTyper(Typer* typer);
+int SolveAndCheckTyper(Typer* typer);
 size_t GetTypeSizeInBytes(Typer* typer, Type* type);
 
 //

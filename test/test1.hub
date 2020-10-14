@@ -1,4 +1,4 @@
-fibonacci (x:u64,y:u64) = {
+fibonacci (x:U64,y:U64) = {
 	if x == 0 then {
 		0
 	} else if x == 1 then {

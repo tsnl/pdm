@@ -109,20 +109,24 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintChar(cp, '"');
             break;
         }
-        case AST_DEF_VALUE:
+        case AST_VDEF:
         {
-            PrintText(cp, "def ");
+            PrintText(cp, "value ");
             PrintText(cp, GetSymbolText(GetAstDefValueStmtLhs(node)));
+            AstNode* optTemplatePattern = GetAstDefValueStmtOptTemplatePattern(node);
+            if (optTemplatePattern) {
+                PrintNode(cp,optTemplatePattern);
+            }
             PrintText(cp, " = ");
             PrintNode(cp, GetAstDefValueStmtRhs(node));
             break;
         }
-        case AST_DEF_TYPE:
+        case AST_TDEF:
         {
             SymbolID name = GetAstTypedefStmtName(node);
             AstNode* pattern = GetAstTypedefStmtOptPattern(node);
             AstNode* rhs = GetAstTypedefStmtOptRhs(node);
-            PrintText(cp,"typedef ");
+            PrintText(cp,"type ");
             PrintText(cp,GetSymbolText(name));
             if (pattern) {
                 PrintNode(cp,pattern);
@@ -186,11 +190,11 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintNode(cp, GetAstLambdaBody(node));
             break;
         }
-        case AST_T_PATTERN:
-        case AST_V_PATTERN:
+        case AST_TPATTERN:
+        case AST_VPATTERN:
         {
-            char ltChar = (kind == AST_T_PATTERN ? '[':'(');
-            char rtChar = (kind == AST_T_PATTERN ? ']':')');
+            char ltChar = (kind == AST_TPATTERN ? '[':'(');
+            char rtChar = (kind == AST_TPATTERN ? ']':')');
             PrintChar(cp,ltChar);
             int patternLength = GetAstPatternLength(node);
             for (int index = 0; index < patternLength; index++) {

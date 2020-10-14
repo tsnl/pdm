@@ -68,7 +68,7 @@ int exportModule(Emitter* emitter, AstNode* moduleNode) {
 int exportModuleVisitor_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     switch (GetAstNodeKind(node)) {
-        case AST_DEF_VALUE:
+        case AST_VDEF:
         {
             // todo: emit 'def-val' statements
 

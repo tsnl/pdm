@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 #define SHORT_BUF_SIZE (256)
 

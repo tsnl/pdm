@@ -260,23 +260,16 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         {
             break;
         }
-        case AST_T_PATTERN:
-        case AST_V_PATTERN:
+        case AST_TPATTERN:
+        case AST_VPATTERN:
+        case AST_TPATTERN_SINGLETON:
+        case AST_VPATTERN_SINGLETON:
         {
             break;
         }
         case AST_VPAREN:
         case AST_CHAIN:
         {
-            pushFrame(primer, NULL, ASTCTX_VALUE, topFrameFunc(primer));
-            break;
-        }
-        case AST_DEF_VALUE:
-        {
-            // void* type = GetAstNodeType(node);
-            
-            // todo: check if multiple template arguments were provided. correct if so.
-
             pushFrame(primer, NULL, ASTCTX_VALUE, topFrameFunc(primer));
             break;
         }
@@ -317,6 +310,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             SetAstNodeTypingExt_SingleV(node, GetAstNodeTypingExt_SingleV(GetAstFieldRhs(node)));
             break;
         }
+        case AST_VDEF:
         case AST_LAMBDA:
         {
             // pushing a new frame for the function's contents:
@@ -324,7 +318,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             break;
         }
         case AST_EXTERN:
-        case AST_DEF_TYPE:
+        case AST_TDEF:
         {
             pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
             break;
@@ -344,9 +338,9 @@ int primer_post(void* rawPrimer, AstNode* node) {
         case AST_VPAREN:
         case AST_LAMBDA:
         case AST_FIELD__PATTERN_ITEM:
-        case AST_DEF_TYPE:
         case AST_EXTERN:
-        case AST_DEF_VALUE:
+        case AST_VDEF:
+        case AST_TDEF:
         {
             popFrame(primer);
             break;
@@ -381,7 +375,7 @@ int PrimeModule(Primer* primer, AstNode* module) {
         AstNode* stmt = GetAstModuleStmtAt(module, index);
         Loc loc = GetAstNodeLoc(stmt);
         AstKind stmtKind = GetAstNodeKind(stmt);
-        if (stmtKind == AST_DEF_VALUE) {
+        if (stmtKind == AST_VDEF) {
             SymbolID lhs = GetAstDefValueStmtLhs(stmt);
             void* valueType = NewMetavarType(loc,primer->typer,"def-func:%s",GetSymbolText(lhs));
             pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE);
@@ -391,7 +385,7 @@ int PrimeModule(Primer* primer, AstNode* module) {
             void* valueType = NewMetavarType(loc,primer->typer,"extern:%s",GetSymbolText(lhs));
             pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE);
             SetAstNodeTypingExt_SingleV(stmt,valueType);
-        } else if (stmtKind == AST_DEF_TYPE) {
+        } else if (stmtKind == AST_TDEF) {
             SymbolID lhs = GetAstTypedefStmtName(stmt);
             char const* symbolText = GetSymbolText(lhs);
             void* typingType = NewMetavarType(loc,primer->typer,"typedef:%s",symbolText);

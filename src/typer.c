@@ -60,8 +60,8 @@ typedef struct MetaInfoExt MetaInfoExt;
 typedef struct FuncInfo FuncInfo;
 typedef struct TypefuncInfo TypefuncInfo;
 typedef struct ModuleInfo ModuleInfo;
-typedef struct IntrinsicInfo IntrinsicInfo;
-typedef struct PhiInfo PhiInfo;
+// typedef struct IntrinsicInfo IntrinsicInfo;
+// typedef struct PhiInfo PhiInfo;
 
 typedef struct SubOrSuperTypeRec SubOrSuperTypeRec;
 typedef SubOrSuperTypeRec SubtypeRec;
@@ -104,6 +104,11 @@ struct MetaInfoExt {
     Loc createdLoc;
     SubtypeRec* deferredSubSB;
     SupertypeRec* deferredSuperSB;
+
+    // todo: add multiple 'meta solvers' for different cases:
+    // - unary intrinsic
+    // - binary intrinsic
+    // - toggle use 'test' (subtypes) as soln (only in phi, ...)
 };
 struct FuncInfo {
     Type** domainArray;
@@ -195,7 +200,7 @@ static int isAncestorATN(AdtTrieNode* parent, AdtTrieNode* child);
 // usage:
 // - call 'requireSubtyping' to assert that A sup B, thereby modifying the system.
 static SubtypingResult requireSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub);
-static int solveAllMetavars(Typer* typer);
+static int solveAndCheckAllMetavars(Typer* typer);
 // helpers (1)...
 static SubtypingResult helpRequestSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub);
 static SubtypingResult helpRequestSubtyping_intSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub);
@@ -209,10 +214,6 @@ static SubtypingResult helpRequestSubtyping_genericMetaSub(Typer* typer, char co
 static SubtypingResult mergeSubtypingResults(SubtypingResult fst, SubtypingResult snd);
 // helpers (2)...
 static Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP);
-static Type* getSubmostConcreteSupertype(Typer* typer, Type* it);
-static Type* getSupermostConcreteSubtype(Typer* typer, Type* it);
-static Type* getMostGeneralConcreteSuperOrSubtype(Typer* typer, Type* it, int superNotSub);
-static Type* helpGetMostGeneralConcreteSuperOrSubtype(Typer* typer, Type* it, int superNotSub, Type*** visitedSBPtr);
 // helpers (3)...
 static void resetSubtypingError(Typer* typer);
 static char const* getAndResetSubtypingError(Typer* typer);
@@ -448,7 +449,7 @@ SubtypingResult requireSubtyping(Typer* typer, char const* why, Loc locWhere, Ty
     // returning whatever result we obtained.
     return result;
 }
-int solveAllMetavars(Typer* typer) {
+int solveAndCheckAllMetavars(Typer* typer) {
     // todo: consider sorting in dependency order and avoiding multi-pass approach?
 
     int maxPassCount = 5000;
@@ -509,6 +510,8 @@ int solveAllMetavars(Typer* typer) {
     // - if meta is solved, just return the solution
     // - else forward super/sub types
     // - beware of forwarding cycles! if cycle detected, terminate without adding unsolved-meta super/sub, since already added.
+
+    return failureCountLastPass;
 }
 
 //
@@ -915,66 +918,6 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
         }
     }
 }
-Type* getConcreteSoln(Typer* typer, Type* metavar, Type*** visitedMetavarSBP) {
-    
-}
-Type* getSubmostConcreteSupertype(Typer* typer, Type* it) { 
-    
-}
-Type* getSupermostConcreteSubtype(Typer* typer, Type* it) {
-
-}
-Type* getMostGeneralConcreteSuperOrSubtype(Typer* typer, Type* it, int superNotSub) {
-    Type** visitedSB = NULL;
-    Type* result = helpGetMostGeneralConcreteSuperOrSubtype(typer,it,superNotSub,&visitedSB);
-    sb_free(visitedSB);
-    return result;
-}
-Type* helpGetMostGeneralConcreteSuperOrSubtype(Typer* typer, Type* it, int superNotSub, Type*** visitedSBPtr) {
-    // "most general" => test against this to test against all sub/super types.
-    // - most general supertype => submost supertype
-    // - most general subtype => supermost subtype
-    // in particular,
-    // - primitives: the type itself satisfies either condition.
-    // - compounds: recursively apply to arguments, return result.
-    // - metavars: use (and if reqd, update) solution
-
-    switch (it->kind)
-    {
-        case T_UNIT:
-        case T_INT:
-        case T_FLOAT:
-        {
-            return it;
-        }
-        case T_PTR:
-        {
-            Type* concretePointee = getMostGeneralConcreteSuperOrSubtype(typer,it->as.Ptr_pointee,superNotSub);
-            if (concretePointee) {
-                return NewOrGetPtrType(typer,concretePointee);
-            } else {
-                return NULL;
-            }
-        }
-        case T_FUNC:
-        {
-            Type* concreteImage = getMostGeneralConcreteSuperOrSubtype(typer,it->as.Func.image,superNotSub);
-            break;
-        }
-        case T_TUPLE:
-        {
-            break;
-        }
-        case T_META:
-        {
-            break;
-        }
-        default:
-        {
-            break;
-        }
-    }
-}
 
 //
 // typing constraint helpers (3)
@@ -1054,11 +997,11 @@ int typer_post(void* rawTyper, AstNode* node) {
         {
             size_t value = GetAstIntLiteralValue(node);
             Type* type;
-            if (value < (1u << 8)) {
+            if (value < (1ULL << 8)) {
                 type = NewOrGetIntType(typer,INT_8);
-            } else if (value < (1u << 16)) {
+            } else if (value < (1ULL << 16)) {
                 type = NewOrGetIntType(typer,INT_16);
-            } else if (value < (1u << 32)) {
+            } else if (value < (1ULL << 32)) {
                 type = NewOrGetIntType(typer,INT_32);
             } else {
                 type = NewOrGetIntType(typer,INT_64);
@@ -1123,15 +1066,18 @@ int typer_post(void* rawTyper, AstNode* node) {
         }
         case AST_LAMBDA:
         {
-            int argsCount;
-            Type** argsTypes = GetAstNodeTypingExt_ArrayV(GetAstLambdaPatternAt(node),&argsCount);
+            COMPILER_ERROR("DISABLED: typer for AST_LAMBDA");
+
+            int argsCount = CountAstLambdaPatterns(node);
+            // Type** argsTypes = GetAstNodeTypingExt_ArrayV(GetAstLambdaPatternAt(node,index),&argsCount);
+            Type** argsTypes = NULL;
             Type* rhsType = GetAstNodeTypingExt_SingleV(GetAstLambdaBody(node));
             if (rhsType) {
                 SetAstNodeTypingExt_SingleV(node, NewOrGetFuncType(typer, argsCount, argsTypes, rhsType));
             }
             break;
         }
-        case AST_DEF_VALUE:
+        case AST_VDEF:
         {
             // module items can be used in value and typing contexts
             // todo: make these types the results of Typefunc instances
@@ -1155,12 +1101,12 @@ int typer_post(void* rawTyper, AstNode* node) {
 
                 Type* rhsValueType = GetAstNodeTypingExt_SingleV(rhs);
                 if (rhsValueType) {
-                    requireSubtype(loc, rhsValueType, fieldType);
+                    requireSubtyping(typer,"value-field-rhs",loc, rhsValueType,fieldType);
                 }
 
                 Type* rhsTypingType = GetAstNodeTypingExt_SingleT(rhs);
                 if (rhsTypingType) {
-                    requireSubtype(loc, rhsTypingType, fieldType);
+                    requireSubtyping(typer,"type-field-rhs",loc, rhsTypingType,fieldType);
                 }
             }
             break;
@@ -1181,7 +1127,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             SetAstNodeTypingExt_SingleV(node,tv);
             break;
         }
-        case AST_V_PATTERN:
+        case AST_VPATTERN:
         {
             // todo: update with an array for multiple items
             if (DEBUG) {
@@ -1250,33 +1196,42 @@ int typer_post(void* rawTyper, AstNode* node) {
         }
         case AST_UNARY:
         {
+            COMPILER_ERROR("DISABLED: GetUnaryIntrinsicType in typer for AST_UNARY.");
+            
             AstUnaryOperator operator = GetAstUnaryOperator(node);
             AstNode* arg = GetAstUnaryOperand(node);
             Type* argType = GetAstNodeTypingExt_SingleV(arg);
-            Type* type = GetUnaryIntrinsicType(typer,nodeLoc,operator,argType);
+            // Type* type = GetUnaryIntrinsicType(typer,nodeLoc,operator,argType);
+            Type* type = NULL;
             SetAstNodeTypingExt_SingleV(node,type);
             break;
         }
         case AST_BINARY:
         {
+            COMPILER_ERROR("DISABLED: GetBinaryIntrinsicType in typer for AST_BINARY.");
+            
             AstBinaryOperator binop = GetAstBinaryOperator(node);
             AstNode* ltArg = GetAstBinaryLtOperand(node);
             AstNode* rtArg = GetAstBinaryRtOperand(node);
             Type* ltArgType = GetAstNodeTypingExt_SingleV(ltArg);
             Type* rtArgType = GetAstNodeTypingExt_SingleV(rtArg);
-            Type* type = GetBinaryIntrinsicType(typer,nodeLoc,binop,ltArgType,rtArgType);
+            // Type* type = GetBinaryIntrinsicType(typer,nodeLoc,binop,ltArgType,rtArgType);
+            Type* type = NULL;
             SetAstNodeTypingExt_SingleV(node,type);
             break;
         }
         case AST_ITE:
         {
+            COMPILER_ERROR("DISABLED: GetPhiType in typer for AST_ITE.");
+
             AstNode* cond = GetAstIteCond(node);
             AstNode* ifTrue = GetAstIteIfTrue(node);
             AstNode* ifFalse = GetAstIteIfFalse(node);
             Type* condType = GetAstNodeTypingExt_SingleV(cond);
             Type* ifTrueType = GetAstNodeTypingExt_SingleV(ifTrue);
             Type* ifFalseType = ifFalse ? GetAstNodeTypingExt_SingleV(ifFalse) : NewOrGetUnitType(typer);
-            Type* type = GetPhiType(typer,nodeLoc,condType,ifTrueType,ifFalseType);
+            // Type* type = GetPhiType(typer,nodeLoc,condType,ifTrueType,ifFalseType);
+            Type* type = NULL;
             SetAstNodeTypingExt_SingleV(node,type);
             break;
         }
@@ -1316,7 +1271,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             SetAstNodeTypingExt_SingleV(node,itType);
             break;
         }
-        case AST_DEF_TYPE:
+        case AST_TDEF:
         {
             Loc loc = GetAstNodeLoc(node);
             AstNode* optRhs = GetAstTypedefStmtOptRhs(node);
@@ -1345,7 +1300,7 @@ int typer_post(void* rawTyper, AstNode* node) {
 
             if (defType && typespecType) {
                 // filling typespecType as a solution (supertype) for defType
-                requireSubtyping(loc,typespecType,defType);
+                requireSubtyping(typer,"extern",loc,typespecType,defType);
             }
 
             break;
@@ -1767,8 +1722,8 @@ void TypeNode(Typer* typer, AstNode* node) {
 // Type checker:
 //
 
-int CheckTyper(Typer* typer) {
-    return checkTyper(typer);
+int SolveAndCheckTyper(Typer* typer) {
+    return solveAndCheckAllMetavars(typer);
 }
 
 size_t GetTypeSizeInBytes(Typer* typer, Type* type) {

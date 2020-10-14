@@ -104,7 +104,7 @@ int InterpTypecheckModules(Interp* interp) {
         LoadedSource loadedSource = interp->loadedSourceSb[i];
         TypeNode(interp->typer, loadedSource.moduleAstNode);
     }
-    return CheckTyper(interp->typer);
+    return SolveAndCheckTyper(interp->typer);
 }
 int InterpCompile(Interp* interp) {
     int result = 1;

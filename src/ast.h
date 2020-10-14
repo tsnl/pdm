@@ -26,10 +26,10 @@ enum AstKind {
     AST_LAMBDA,
     AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME,
-    AST_LET, AST_DEF_VALUE, AST_DEF_TYPE, AST_EXTERN, AST_STMT_WITH, AST_STMT_RETURN,
+    AST_LET, AST_VDEF, AST_TDEF, AST_EXTERN, AST_STMT_WITH, AST_STMT_RETURN,
     AST_TCALL, AST_VCALL,
     AST_UNARY, AST_BINARY,
-    AST_T_PATTERN, AST_V_PATTERN,   // TODO: Add support for singleton patterns (more complex pattern expressions)
+    AST_TPATTERN, AST_VPATTERN, AST_TPATTERN_SINGLETON, AST_VPATTERN_SINGLETON,
     AST_FIELD__TEMPLATE_ITEM,AST_FIELD__TUPLE_ITEM,AST_FIELD__STRUCT_ITEM,AST_FIELD__PATTERN_ITEM
 };
 
@@ -58,22 +58,25 @@ enum AstContext {
 // Constructors:
 //
 
-AstNode* CreateAstModule(Loc loc, SymbolID moduleID);
+AstNode* NewAstModule(Loc loc, SymbolID moduleID);
 void AttachImportHeaderToAstModule(AstNode* module, AstNode* mapping);
 void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping);
 void PushStmtToAstModule(AstNode* module, AstNode* def);
 
-AstNode* CreateAstVID(Loc loc, SymbolID symbolID);
-AstNode* CreateAstIntLiteral(Loc loc, size_t value, int base);
-AstNode* CreateAstFloatLiteral(Loc loc, long double value);
-AstNode* CreateAstStringLiteral(Loc loc, int* valueSb);
-AstNode* CreateAstVParen(Loc loc, AstNode* it);
-AstNode* CreateAstUnit(Loc loc);
+AstNode* NewAstVID(Loc loc, SymbolID symbolID);
+AstNode* NewAstIntLiteral(Loc loc, size_t value, int base);
+AstNode* NewAstFloatLiteral(Loc loc, long double value);
+AstNode* NewAstStringLiteral(Loc loc, int* valueSb);
+AstNode* NewAstVParen(Loc loc, AstNode* it);
+AstNode* NewAstUnit(Loc loc);
 
-AstNode* CreateAstVTuple(Loc loc);
-AstNode* CreateAstStruct(Loc loc);
-AstNode* CreateAstChain(Loc loc);
-AstNode* CreateAstPattern(Loc loc, int isTemplatePattern);
+AstNode* NewAstVTuple(Loc loc);
+AstNode* NewAstVStruct(Loc loGetc);
+AstNode* NewAstChain(Loc loc);
+AstNode* NewAstTPatternSingleton(Loc loc, SymbolID name, AstNode* rhs);
+AstNode* NewAstVPatternSingleton(Loc loc, SymbolID name, AstNode* rhs);
+AstNode* NewAstTPattern(Loc loc);
+AstNode* NewAstVPattern(Loc loc);
 
 void PushFieldToAstTuple(Loc loc, AstNode* tuple, AstNode* value);
 void PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value);
@@ -82,30 +85,33 @@ void PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* ty
 void PushStmtToAstChain(AstNode* chain, AstNode* statement);
 void SetAstChainResult(AstNode* chain, AstNode* result);
 
-AstNode* CreateAstIte(Loc loc, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse);
-AstNode* CreateAstDotIndex(Loc loc, AstNode* lhs, size_t index);
-AstNode* CreateAstDotName(Loc loc, AstNode* lhs, SymbolID rhs);
+AstNode* NewAstIte(Loc loc, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse);
+AstNode* NewAstDotIndex(Loc loc, AstNode* lhs, size_t index);
+AstNode* NewAstDotName(Loc loc, AstNode* lhs, SymbolID rhs);
 
-AstNode* CreateAstLambda(Loc loc, AstNode** patterns, int patternCount, AstNode* body);
-void AddAstLambdaDefn(AstNode* lambda, void* defn);
-void ReqAstLambdaDefn(AstNode* lambda, void* defn);
-int CountAstLambdaCaptures(AstNode* lambda);
-void* GetAstLambdaCaptureAt(AstNode* lambda, int index);
+AstNode* NewAstLambda(Loc loc, AstNode** patterns, int patternCount, AstNode* body);
 
-AstNode* CreateAstLetStmt(Loc loc, SymbolID lhs, AstNode* optTypespec, AstNode* rhs);
-AstNode* CreateAstDefValueStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* patterns[], int patternsCount, AstNode* rhs);
-AstNode* CreateAstDefTypeStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* optRhs);
-AstNode* CreateAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec);
-AstNode* CreateAstWithStmt(Loc loc, AstNode* checked);
+AstNode* NewAstLetStmt(Loc loc, AstNode* lhsPattern, AstNode* rhs);
+AstNode* NewAstVDefStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* patterns[], int patternsCount, AstNode* rhs);
+AstNode* NewAstTDefStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* optRhs);
+AstNode* NewAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec);
+AstNode* NewAstWithStmt(Loc loc, AstNode* checked);
 
-AstNode* CreateAstVCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
-AstNode* CreateAstTCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
-AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
-AstNode* CreateAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg);
+AstNode* NewAstVCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
+AstNode* NewAstTCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
+AstNode* NewAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
+AstNode* NewAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg);
 
 AstNode* NewAstTID(Loc loc, SymbolID symbolID);
 AstNode* NewAstTTuple(Loc loc);
 AstNode* NewAstTParen(Loc loc, AstNode* it);
+
+//
+// Lambda capture registration:
+//
+
+void AddAstLambdaDefn(AstNode* lambda, void* defn);
+void ReqAstLambdaDefn(AstNode* lambda, void* defn);
 
 //
 // Getters:
@@ -145,7 +151,9 @@ size_t GetAstDotIndexRhs(AstNode* dot);
 AstNode* GetAstDotNameLhs(AstNode* dot);
 SymbolID GetAstDotNameRhs(AstNode* dot);
 
+int CountAstLambdaCaptures(AstNode* lambda);
 int CountAstLambdaPatterns(AstNode* lambda);
+void* GetAstLambdaCaptureAt(AstNode* lambda, int index);
 AstNode* GetAstLambdaPatternAt(AstNode* lambda, int index);
 AstNode* GetAstLambdaBody(AstNode* lambda);
 
@@ -167,12 +175,10 @@ AstBinaryOperator GetAstBinaryOperator(AstNode* binary);
 AstNode* GetAstBinaryLtOperand(AstNode* binary);
 AstNode* GetAstBinaryRtOperand(AstNode* binary);
 
-SymbolID GetAstLetStmtLhs(AstNode* bindStmt);
+AstNode* GetAstLetStmtLhs(AstNode* bindStmt);
 AstNode* GetAstLetStmtRhs(AstNode* bindStmt);
 
 AstNode* GetAstDefValueStmtOptTemplatePattern(AstNode* defStmt);
-int GetAstDefValueStmtArgCount(AstNode* defStmt);
-AstNode* GetAstDefValueStmtArgAt(AstNode* defStmt);
 SymbolID GetAstDefValueStmtLhs(AstNode* defStmt);
 AstNode* GetAstDefValueStmtRhs(AstNode* defStmt);
 
