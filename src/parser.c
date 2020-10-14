@@ -6,6 +6,7 @@
 #include "stb/stretchy_buffer.h"
 
 #include "config.h"
+#include "useful.h"
 #include "lexer.h"
 
 #define PARSER_LOOKAHEAD_COUNT (2)
@@ -429,15 +430,6 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
                 return NULL;
             }
         }
-        case TK_TID:
-        {
-            TokenInfo idTokenInfo = lookaheadInfo(p, 0);
-            if (expect(p, TK_VID, "a bound type identifier")) {
-                return NewAstTID(idTokenInfo.loc, idTokenInfo.as.ID_symbolID);
-            } else {
-                return NULL;
-            }
-        }
         case TK_DINT_LIT: 
         case TK_XINT_LIT: 
         { 
@@ -583,9 +575,6 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
                 return NULL;
             }
             RawAstNode* pattern = parseValuePattern(p);
-            if (!pattern) {
-                return NULL;
-            }
             if (!expect(p, TK_ARROW, "'->'")) {
                 return NULL;
             }
@@ -619,6 +608,12 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
         //
         // Checking for a cast expression:
         //
+
+        case TK_TID:
+        {
+            COMPILER_ERROR("NotImplemented: cast expressions");
+            return NULL;
+        }
 
         default: 
         { 
@@ -716,6 +711,12 @@ int isFirstValuePatternTokenKind(TokenKind kind) {
 int isFirstTemplatePatternTokenKind(TokenKind kind) {
     return kind == TK_TID || kind == TK_LSQBRK;
 }
+RawAstNode* parseValuePattern(Parser* p) {
+    return helpParsePattern(p,1);
+}
+RawAstNode* parseTemplatePattern(Parser* p) {
+    return helpParsePattern(p,0);
+}
 RawAstNode* helpParsePattern(Parser* p, int notTemplatePattern) {
     // by design, [...] means a type param, (...) means a value param.
     TokenKind lpTk,rpTk;
@@ -762,20 +763,10 @@ RawAstNode* helpParsePattern(Parser* p, int notTemplatePattern) {
         }   
     } else {
         // item:T
-        if (DEBUG) {
-            printf("!!- NotImplemented: single-item patterns.\n");
-        } else {
-            assert(0 && "NotImplemented: single item patterns.");
-        }
+        COMPILER_ERROR("NotImplemented: single-item patterns.\n");
     }
 
     return pattern;
-}
-RawAstNode* parseValuePattern(Parser* p) {
-    return helpParsePattern(p,1);
-}
-RawAstNode* parseTemplatePattern(Parser* p) {
-    return helpParsePattern(p,0);
 }
 void parsePatternElement(Parser* p, RawAstNode* pattern, int* okP, int hasTail, TokenKind idTokenKind) {
     if (hasTail) {
@@ -814,7 +805,7 @@ void parsePatternElementWithoutTail(Parser* p, RawAstNode* pattern, int* okP, To
 int isFirstTypespecTokenKind(TokenKind kind) {
     return (
         kind == TK_TID ||
-        kind == TK_LSQBRK ||
+        kind == TK_LPAREN ||
         kind == TK_KW_STRUCT ||
         kind == TK_KW_ENUM ||
         0
@@ -844,12 +835,12 @@ RawAstNode* tryParsePrimaryTypespec(Parser* p) {
     if (match(p,TK_TID)) {
         return NewAstTID(firstInfo.loc,firstInfo.as.ID_symbolID);
     }
-    else if (match(p,TK_LSQBRK)) {
+    else if (match(p,TK_LPAREN)) {
         RawAstNode* firstNestedTypespec = tryParseTypespec(p);
         if (firstNestedTypespec) {
             RawAstNode* result;
             if (match(p,TK_COMMA)) {
-                result = CreateAstTTuple(firstInfo.loc);
+                result = NewAstTTuple(firstInfo.loc);
                 PushFieldToAstTuple(GetAstNodeLoc(firstNestedTypespec),result,firstNestedTypespec);
                 do {
                     RawAstNode* nestedTypespecItem = parseTypespec(p);
@@ -860,9 +851,9 @@ RawAstNode* tryParsePrimaryTypespec(Parser* p) {
                     }
                 } while (match(p,TK_COMMA));
             } else {
-                result = CreateAstTParen(firstInfo.loc,firstNestedTypespec);
+                result = NewAstTParen(firstInfo.loc,firstNestedTypespec);
             }
-            if (!expect(p,TK_RSQBRK,"']'")) {
+            if (!expect(p,TK_RPAREN,"')'")) {
                 return NULL;
             }
             return result;

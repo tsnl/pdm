@@ -65,7 +65,7 @@ struct AstDotName {
     SymbolID symbol;
 };
 struct AstLambda {
-    AstNode* pattern;
+    AstNodeList* patternList;
     AstNode* body;
     Defn** capturesSB;
     Defn** localsSB;
@@ -329,7 +329,7 @@ AstNode* CreateAstVTuple(Loc loc) {
     return tupleNode;
 }
 AstNode* CreateAstStruct(Loc loc) {
-    AstNode* structNode = newNode(loc, AST_STRUCT);
+    AstNode* structNode = newNode(loc, AST_VSTRUCT);
     structNode->as.GenericList_items = newNodeList();
     return structNode;
 }
@@ -404,9 +404,14 @@ AstNode* CreateAstDotName(Loc loc, AstNode* lhs, SymbolID rhs) {
     return dotNode;
 }
 
-AstNode* CreateAstLambda(Loc loc, AstNode* pattern, AstNode* body) {
+AstNode* CreateAstLambda(Loc loc, AstNode** patterns, int patternCount, AstNode* body) {
     AstNode* lambdaNode = newNode(loc, AST_LAMBDA);
-    lambdaNode->as.Lambda.pattern = pattern;
+    lambdaNode->as.Lambda.patternList = newNodeList(); {
+        for (int patternIndex = 0; patternIndex < patternCount; patternIndex++) {
+            AstNode* pattern = patterns[patternIndex];
+            pushListElement(lambdaNode->as.Lambda.patternList,pattern);
+        }
+    }
     lambdaNode->as.Lambda.body = body;
     lambdaNode->as.Lambda.capturesSB = NULL;
     lambdaNode->as.Lambda.localsSB = NULL;
@@ -460,18 +465,15 @@ AstNode* CreateAstLetStmt(Loc loc, SymbolID lhs, AstNode* optTypespec, AstNode* 
     return letNode;
 }
 AstNode* CreateAstDefValueStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* patterns[], int patternsCount, AstNode* rhs) {
+    COMPILER_ASSERT(patternsCount > 0 && patterns, "Cannot create a 'def' statement with 0 patterns. Create a 'let' statement instead.");
+
     AstNode* defNode = newNode(loc, AST_DEF_VALUE);
     defNode->as.Def.lhs = lhs;
     defNode->as.Def.optTemplatePattern = optTemplatePattern;
     
-    // de-sugaring patterns to iteratively update rhs:
-    defNode->as.Def.rhs = rhs;
-    for (int index = 0; index < patternsCount; index++) {
-        AstNode* pattern = patterns[index];
-        Loc patternLoc = GetAstNodeLoc(pattern);
-        defNode->as.Def.rhs = CreateAstLambda(patternLoc, pattern, defNode->as.Def.rhs);
-    }
-
+    // de-sugaring patterns into a lambda:
+    defNode->as.Def.rhs = CreateAstLambda(loc,patterns,patternsCount,rhs);
+    
     // todo: un-disable multi-pattern def statements
     int multiPatternDefStatementsDisabled = 1;
     if (multiPatternDefStatementsDisabled && patternsCount > 1) {
@@ -528,12 +530,12 @@ AstNode* NewAstTID(Loc loc, SymbolID symbolID) {
     idNode->as.ID.defn = NULL;
     return idNode;
 }
-AstNode* CreateAstTTuple(Loc loc) {
+AstNode* NewAstTTuple(Loc loc) {
     AstNode* tupleNode = newNode(loc,AST_TTUPLE);
     tupleNode->as.GenericList_items = newNodeList();
     return tupleNode;
 }
-AstNode* CreateAstTParen(Loc loc, AstNode* it) {
+AstNode* NewAstTParen(Loc loc, AstNode* it) {
     AstNode* parenNode = newNode(loc,AST_TPAREN);
     parenNode->as.Paren_item = it;
     return parenNode;
@@ -615,7 +617,7 @@ AstNode* GetAstTupleItemAt(AstNode* node, int index) {
 }
 AstNode* GetAstStructFieldAt(AstNode* node, int index) {
     if (DEBUG) {
-        assert(node->kind == AST_STRUCT);
+        assert(node->kind == AST_VSTRUCT);
     }
     return listItemAt(node->as.GenericList_items, index);
 }
@@ -677,11 +679,14 @@ SymbolID GetAstDotNameRhs(AstNode* dot) {
     return dot->as.DotNm.symbol;
 }
 
-AstNode* GetAstLambdaPattern(AstNode* node) {
+int CountAstLambdaPatterns(AstNode* lambda) {
+    return countList(lambda->as.Lambda.patternList);
+}
+AstNode* GetAstLambdaPatternAt(AstNode* node, int index) {
     if (DEBUG) {
         assert(node->kind == AST_LAMBDA);
     }
-    return node->as.Lambda.pattern;
+    return listItemAt(node->as.Lambda.patternList,index);
 }
 AstNode* GetAstLambdaBody(AstNode* node) {
     if (DEBUG) {
@@ -790,13 +795,19 @@ AstNode* GetAstBinaryRtOperand(AstNode* binary) {
     return binary->as.Binary.rtOperand;
 }
 
-AstNode* GetAstDefStmtOptTemplatePattern(AstNode* def) {
+AstNode* GetAstDefValueStmtOptTemplatePattern(AstNode* def) {
     return def->as.Def.optTemplatePattern;
 }
-SymbolID GetAstDefStmtLhs(AstNode* def) {
+int GetAstDefValueStmtArgCount(AstNode* def) {
+    
+}
+AstNode* GetAstDefValueStmtArgAt(AstNode* def) {
+
+}
+SymbolID GetAstDefValueStmtLhs(AstNode* def) {
     return def->as.Def.lhs;
 }
-AstNode* GetAstDefStmtRhs(AstNode* def) {
+AstNode* GetAstDefValueStmtRhs(AstNode* def) {
     return def->as.Def.rhs;
 }
 
@@ -952,24 +963,32 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         }
         case AST_LAMBDA:
         {
-            return (
-                RecursivelyVisitAstNode(context, GetAstLambdaPattern(node), preVisitorCb, postVisitorCb) &&
-                RecursivelyVisitAstNode(context, GetAstLambdaBody(node), preVisitorCb, postVisitorCb)
-            );
+            AstNode* lambda = node;
+
+            // visiting each arg pattern:
+            int patternCount = CountAstLambdaPatterns(lambda);
+            for (int patternIndex = 0; patternIndex < patternCount; patternIndex++) {
+                AstNode* pattern = GetAstLambdaPatternAt(node,patternIndex);
+                if (!RecursivelyVisitAstNode(context,pattern,preVisitorCb,postVisitorCb)) {
+                    return 0;
+                }
+            }
+
+            // visiting the body:
+            if (!RecursivelyVisitAstNode(context,GetAstLambdaBody(node),preVisitorCb,postVisitorCb)) {
+                return 0;
+            }
+
+            // all ok!
+            return 1;
         }
         case AST_DOT_INDEX:
         {
-            return (
-                RecursivelyVisitAstNode(context, GetAstDotIndexLhs(node), preVisitorCb, postVisitorCb)
-                // visit(context, GetAstDotIndexRhs(node), preVisitorCb, postVisitorCb)
-            );
+            return RecursivelyVisitAstNode(context, GetAstDotIndexLhs(node), preVisitorCb, postVisitorCb);
         }
         case AST_DOT_NAME:
         {
-            return (
-                RecursivelyVisitAstNode(context, GetAstDotNameLhs(node), preVisitorCb, postVisitorCb)
-                // visit(context, GetAstDotNameRhs(node), preVisitorCb, postVisitorCb)
-            );
+            return RecursivelyVisitAstNode(context, GetAstDotNameLhs(node), preVisitorCb, postVisitorCb);
         }
         case AST_UNARY:
         {
@@ -988,7 +1007,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         }
         case AST_DEF_VALUE:
         {
-            return RecursivelyVisitAstNode(context,GetAstDefStmtRhs(node),preVisitorCb,postVisitorCb);
+            return RecursivelyVisitAstNode(context,GetAstDefValueStmtRhs(node),preVisitorCb,postVisitorCb);
         }
         case AST_STMT_WITH:
         {
@@ -1033,7 +1052,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             }
             return 1;
         }
-        case AST_STRUCT:
+        case AST_VSTRUCT:
         {
             size_t structLength = GetAstTupleLength(node);
             for (size_t index = 0; index < structLength; index++) {
@@ -1190,9 +1209,10 @@ char const* AstKindAsText(AstKind kind) {
         case AST_LITERAL_FLOAT: return "AST_LITERAL_FLOAT"; 
         case AST_LITERAL_STRING: return "AST_LITERAL_STRING"; 
         case AST_UNIT: return "AST_UNIT"; 
-        case AST_VPAREN: return "AST_PAREN"; 
-        case AST_VTUPLE: return "AST_TUPLE"; 
-        case AST_STRUCT: return "AST_STRUCT"; 
+        case AST_TPAREN: return "AST_TPAREN";
+        case AST_VPAREN: return "AST_VPAREN"; 
+        case AST_VTUPLE: return "AST_VTUPLE"; 
+        case AST_VSTRUCT: return "AST_VSTRUCT"; 
         case AST_CHAIN: return "AST_CHAIN";
         case AST_LAMBDA: return "AST_LAMBDA";
         case AST_ITE: return "AST_ITE";

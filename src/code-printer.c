@@ -112,9 +112,9 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         case AST_DEF_VALUE:
         {
             PrintText(cp, "def ");
-            PrintText(cp, GetSymbolText(GetAstDefStmtLhs(node)));
+            PrintText(cp, GetSymbolText(GetAstDefValueStmtLhs(node)));
             PrintText(cp, " = ");
-            PrintNode(cp, GetAstDefStmtRhs(node));
+            PrintNode(cp, GetAstDefValueStmtRhs(node));
             break;
         }
         case AST_DEF_TYPE:
@@ -161,7 +161,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         }
         case AST_LAMBDA:
         {
-            PrintChar(cp,'$');
+            PrintText(cp,"fun ");
             int printCaptures = 0;
             if (printCaptures) {
                 int captureCount = CountAstLambdaCaptures(node);
@@ -174,9 +174,15 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                     }
                 }
                 PrintChar(cp, '}');
+                PrintChar(cp, ' ');
             }
-            PrintNode(cp, GetAstLambdaPattern(node));
-            PrintText(cp, " ");
+            int patternCount = CountAstLambdaPatterns(node);
+            for (int patternIndex = 0; patternIndex < patternCount; patternIndex++) {
+                AstNode* pattern = GetAstLambdaPatternAt(node,patternIndex);
+                PrintNode(cp,pattern);
+                PrintChar(cp,' ');
+            }
+            PrintText(cp, " -> ");
             PrintNode(cp, GetAstLambdaBody(node));
             break;
         }
@@ -219,7 +225,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintChar(cp, ')');
             break;
         }
-        case AST_STRUCT:
+        case AST_VSTRUCT:
         {
             PrintChar(cp, '{');
             IndentPrinter(cp);

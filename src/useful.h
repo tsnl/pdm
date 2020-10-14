@@ -51,8 +51,8 @@ inline bool streq(char const* s, char const* t) {
 #define COMPILER_ASSERT_VA(C,M,...) if (!(C)) {__compilerErrorHandler(__FILE__,__LINE__,"Assertion failed: " #C, M, __VA_ARGS__)}
 
 #define COMPILER_ERROR(M) (__compilerErrorHandler(__FILE__,__LINE__,M))
-#define COMPILER_ASSERT(C,M) ((C) ? (C) : __compilerErrorHandler(__FILE__,__LINE__,"Assertion failed: " #C, M))
+#define COMPILER_ASSERT(C,M) ((C) ? (1) : __compilerErrorHandler(__FILE__,__LINE__,"Assertion failed: " #C, M))
 
-static int __compilerErrorHandler(char const* filename, long int line, char const* format, ...);
+int __compilerErrorHandler(char const* filename, long int line, char const* format, ...);
 
 #endif  // INCLUDED_USEFUL_H

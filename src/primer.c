@@ -256,7 +256,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             SetAstNodeTypingExt_SingleV(node,type);
             break;
         }
-        case AST_STRUCT:
+        case AST_VSTRUCT:
         {
             break;
         }
@@ -382,7 +382,7 @@ int PrimeModule(Primer* primer, AstNode* module) {
         Loc loc = GetAstNodeLoc(stmt);
         AstKind stmtKind = GetAstNodeKind(stmt);
         if (stmtKind == AST_DEF_VALUE) {
-            SymbolID lhs = GetAstDefStmtLhs(stmt);
+            SymbolID lhs = GetAstDefValueStmtLhs(stmt);
             void* valueType = NewMetavarType(loc,primer->typer,"def-func:%s",GetSymbolText(lhs));
             pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE);
             SetAstNodeTypingExt_SingleV(stmt,valueType);

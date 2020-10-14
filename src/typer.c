@@ -184,7 +184,7 @@ Type* pushToTypeBuf(TypeBuf* buf, TypeKind kind);
 
 // ATNs: a way to track compounds:
 static AdtTrieNode* newATN(AdtTrieNode* parent, Type* owner);
-static AdtTrieNode* getAtnChild(AdtTrieNode* root, AdtOperator operator, InputTypeFieldNode const* inputFieldList, int noNewEdges);
+static AdtTrieNode* getAtnChild(AdtTrieNode* root, AdtOperator operator, TypeField* typefields, int typefieldCount, int index, int noNewEdges);
 static AdtTrieNode* getCommonAncestorATN(AdtTrieNode* a, AdtTrieNode* b);
 static int isAncestorATN(AdtTrieNode* parent, AdtTrieNode* child);
 
@@ -347,8 +347,8 @@ AdtTrieNode* newATN(AdtTrieNode* parent, Type* owner) {
     }
     return trieNode;
 }
-AdtTrieNode* getAtnChild(AdtTrieNode* parent, AdtOperator operator, InputTypeFieldNode const* inputField, int noNewEdges) {
-    if (inputField == NULL) {
+AdtTrieNode* getAtnChild(AdtTrieNode* parent, AdtOperator operator, TypeField* typefields, int typefieldCount, int index, int noNewEdges) {
+    if (index >= typefieldCount) {
         return parent;
     } else {
         if (DEBUG) {
@@ -373,16 +373,15 @@ AdtTrieNode* getAtnChild(AdtTrieNode* parent, AdtOperator operator, InputTypeFie
             }
                 
             int operatorMatch = (operator == edge.operator);
-            int nameMatch = (inputField->name == edge.name);
+            int nameMatch = (typefields[index].name == edge.name);
             int typeMatch = 0;
-            if (inputField->type != NULL) {
-                typeMatch = (inputField->type == edge.type);
+            if (typefields[index].type != NULL) {
+                typeMatch = (typefields[index].type == edge.type);
             }
             if (operatorMatch && nameMatch && typeMatch) {
                 return getAtnChild(
-                    child,
-                    operator,
-                    inputField->next,
+                    child,operator,
+                    typefields,typefieldCount,index+1,
                     noNewEdges
                 );
             }
@@ -392,14 +391,9 @@ AdtTrieNode* getAtnChild(AdtTrieNode* parent, AdtOperator operator, InputTypeFie
             return NULL;
         } else {
             AdtTrieNode* infant = newATN(parent, NULL);
-            AdtTrieEdge edge = {operator, inputField->name, inputField->type, infant};
+            AdtTrieEdge edge = {operator, typefields[index].name, typefields[index].type, infant};
             sb_push(parent->edgesSb, edge);
-            return getAtnChild(
-                infant,
-                operator,
-                inputField->next,
-                noNewEdges
-            );
+            return getAtnChild(infant,operator, typefields,typefieldCount,index+1, 0);
         }
     }
 }
@@ -1130,7 +1124,7 @@ int typer_post(void* rawTyper, AstNode* node) {
         case AST_LAMBDA:
         {
             int argsCount;
-            Type** argsTypes = GetAstNodeTypingExt_ArrayV(GetAstLambdaPattern(node),&argsCount);
+            Type** argsTypes = GetAstNodeTypingExt_ArrayV(GetAstLambdaPatternAt(node),&argsCount);
             Type* rhsType = GetAstNodeTypingExt_SingleV(GetAstLambdaBody(node));
             if (rhsType) {
                 SetAstNodeTypingExt_SingleV(node, NewOrGetFuncType(typer, argsCount, argsTypes, rhsType));
@@ -1143,24 +1137,8 @@ int typer_post(void* rawTyper, AstNode* node) {
             // todo: make these types the results of Typefunc instances
             Loc loc = GetAstNodeLoc(node);
             Type* definedValueType = GetAstNodeTypingExt_SingleV(node);
-            Type* definedTypingType = GetAstNodeTypingExt_SingleT(node);
-            
-            AstNode* desugaredRhs = GetAstDefStmtRhs(node);
-            Type* desugaredRhsType = GetAstNodeTypingExt_SingleV(desugaredRhs);
 
-            AstNode* rhs = GetAstDefStmtRhs(node);
-            Type* rhsType = GetAstNodeTypingExt_SingleV(rhs);
-
-            if (desugaredRhsType && rhsType && definedValueType) {
-                requireSubtyping(typer,"",loc, desugaredRhsType, definedValueType);
-                requireSubtype(typer,"",loc, rhsType, definedTypingType);
-            } else {
-                if (DEBUG) {
-                    printf("!!- Skipping `define` subtyping\n");
-                } else {
-                    assert(0 && "Skipping 'define' subtyping.");
-                }
-            }
+            COMPILER_ERROR("NotImplemented: typer for AST_DEF_VALUE.");
             break;
         }
         case AST_FIELD__TEMPLATE_ITEM:
@@ -1243,37 +1221,21 @@ int typer_post(void* rawTyper, AstNode* node) {
             // }
             break;
         }
-        case AST_STRUCT:
-        {
-            InputTypeFieldNode* inputTypeFieldHead = NULL;
-            for (int index = GetAstStructLength(node)-1; index >= 0; --index) {
-                AstNode* field = GetAstStructFieldAt(node, index);
-                SymbolID fieldName = GetAstFieldName(field);
-                
-                InputTypeFieldNode* typingITF = malloc(sizeof(InputTypeFieldNode));
-                typingITF->name = fieldName;
-                typingITF->type = GetAstNodeTypingExt_SingleV(field);
-                typingITF->next = inputTypeFieldHead;
-                inputTypeFieldHead = typingITF;
-            }
-            Type* tuple = NewOrGetTupleType(typer, inputTypeFieldHead);
-            SetAstNodeTypingExt_SingleV(node,tuple);
-            break;
-        }
+        case AST_VSTRUCT:
         case AST_VTUPLE:
         {
-            InputTypeFieldNode* inputTypeFieldHead = NULL;
-            int tupleCount = GetAstTupleLength(node);
-            for (int index = tupleCount-1; index >= 0; index--) {
-                AstNode* field = GetAstTupleItemAt(node, index);
+            int fieldCount = GetAstStructLength(node);
+            TypeField* typefieldBuf = malloc(fieldCount*sizeof(TypeField));
+            for (int index = 0; index < fieldCount; index++) {
+                AstNode* field = GetAstStructFieldAt(node,index);
                 SymbolID fieldName = GetAstFieldName(field);
-                InputTypeFieldNode* typingITF = malloc(sizeof(InputTypeFieldNode));
-                typingITF->name = fieldName;
-                typingITF->type = GetAstNodeTypingExt_SingleV(field);
-                typingITF->next = inputTypeFieldHead;
-                inputTypeFieldHead = typingITF;
+                Type* fieldType = GetAstNodeTypingExt_SingleV(field);
+
+                typefieldBuf[index] = (TypeField) {fieldName,fieldType};
             }
-            SetAstNodeTypingExt_SingleV(node, NewOrGetTupleType(typer, inputTypeFieldHead));
+            Type* tuple = NewOrGetTupleType(typer,typefieldBuf,fieldCount);
+            SetAstNodeTypingExt_SingleV(node,tuple);
+            free(typefieldBuf);
             break;
         }
         case AST_CHAIN:
@@ -1333,7 +1295,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             Type* retType = NewMetavarType(loc, typer, "in-ret");
             
             Type* actualFuncType = NewOrGetFuncType(typer, argsCount, argsTypes, retType);
-            requireSubtyping(typer,loc,"", GetAstNodeTypingExt_SingleV(lhs), actualFuncType);
+            requireSubtyping(typer,"value-call",loc, GetAstNodeTypingExt_SingleV(lhs), actualFuncType);
             
             SetAstNodeTypingExt_SingleV(node,retType);
             break;
@@ -1383,7 +1345,7 @@ int typer_post(void* rawTyper, AstNode* node) {
 
             if (defType && typespecType) {
                 // filling typespecType as a solution (supertype) for defType
-                requireSubtype(loc,typespecType,defType);
+                requireSubtyping(loc,typespecType,defType);
             }
 
             break;
@@ -1640,15 +1602,15 @@ Type* NewOrGetTypefuncType(Typer* typer, Type* arg, Type* body) {
     typefuncType->as.Typefunc.body = body;
     return typefuncType;
 }
-Type* NewOrGetTupleType(Typer* typer, InputTypeFieldList const* inputFieldList) {
+Type* NewOrGetTupleType(Typer* typer, TypeField* typefields, int typefieldCount) {
     Type* tupleType = pushToTypeBuf(&typer->tupleTypeBuf,T_TUPLE);
-    tupleType->as.Compound_atn = getAtnChild(&typer->anyATN, ADT_MUL, inputFieldList, 0);
+    tupleType->as.Compound_atn = getAtnChild(&typer->anyATN, ADT_MUL, typefields,typefieldCount,0, 0);
     tupleType->as.Compound_atn->owner = tupleType;
     return tupleType;
 }
-Type* NewOrGetUnionType(Typer* typer, InputTypeFieldList const* inputFieldList) {
+Type* NewOrGetUnionType(Typer* typer, TypeField* typefields, int typefieldCount) {
     Type* unionType = pushToTypeBuf(&typer->unionTypeBuf,T_UNION);
-    unionType->as.Compound_atn = getAtnChild(&typer->anyATN, ADT_SUM, inputFieldList, 0);
+    unionType->as.Compound_atn = getAtnChild(&typer->anyATN, ADT_SUM, typefields,typefieldCount,0, 0);
     unionType->as.Compound_atn->owner = unionType;
     return unionType;
 }

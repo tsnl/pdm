@@ -52,7 +52,7 @@ addImage[T] lt:Image[T] rt:Image[T] = {
 
 mulImage[T] i:Image[T] x:U8 = {
     scalePixelByX = (
-        fun p {
+        fun p => {
             mulPixel p x
         }
     );

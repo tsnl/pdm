@@ -51,13 +51,20 @@ enum FloatWidth {
 
 typedef struct Type Type;
 typedef void(*FieldCB)(Typer* typer, void* context, SymbolID name, Type* type);
-typedef struct InputTypeFieldNode InputTypeFieldNode;
-typedef struct InputTypeFieldNode InputTypeFieldList;
 
-struct InputTypeFieldNode {
+// typedef struct InputTypeFieldNode InputTypeFieldNode;
+// typedef struct InputTypeFieldNode InputTypeFieldList;
+
+// struct InputTypeFieldNode {
+//     SymbolID name;
+//     Type* type;
+//     InputTypeFieldNode* next;
+// };
+
+typedef struct TypeField TypeField;
+struct TypeField {
     SymbolID name;
     Type* type;
-    InputTypeFieldNode* next;
 };
 
 //
@@ -91,8 +98,8 @@ Type* NewOrGetFloatType(Typer* typer, FloatWidth width);
 Type* NewOrGetPtrType(Typer* typer, Type* pointee);
 Type* NewOrGetFuncType(Typer* typer, int argsCount, Type* args[], Type* image);
 Type* NewOrGetTypefuncType(Typer* typer, Type* arg, Type* body);
-Type* NewOrGetTupleType(Typer* typer, InputTypeFieldList const* inputFieldList);
-Type* NewOrGetUnionType(Typer* typer, InputTypeFieldList const* inputFieldList);
+Type* NewOrGetTupleType(Typer* typer, TypeField* typefields, int typefieldCount);
+Type* NewOrGetUnionType(Typer* typer, TypeField* typefields, int typefieldCount);
 Type* NewMetavarType(Loc loc, Typer* typer, char const* format, ...);
 
 //

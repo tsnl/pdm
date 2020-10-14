@@ -22,14 +22,14 @@ enum AstKind {
     AST_TID, AST_VID,
     AST_LITERAL_INT, AST_LITERAL_FLOAT, AST_LITERAL_STRING, 
     AST_UNIT, AST_VPAREN, AST_VTUPLE, AST_TPAREN, AST_TTUPLE,
-    AST_STRUCT, AST_CHAIN,
+    AST_VSTRUCT, AST_CHAIN,
     AST_LAMBDA,
     AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME,
     AST_LET, AST_DEF_VALUE, AST_DEF_TYPE, AST_EXTERN, AST_STMT_WITH, AST_STMT_RETURN,
     AST_TCALL, AST_VCALL,
     AST_UNARY, AST_BINARY,
-    AST_T_PATTERN, AST_V_PATTERN,
+    AST_T_PATTERN, AST_V_PATTERN,   // TODO: Add support for singleton patterns (more complex pattern expressions)
     AST_FIELD__TEMPLATE_ITEM,AST_FIELD__TUPLE_ITEM,AST_FIELD__STRUCT_ITEM,AST_FIELD__PATTERN_ITEM
 };
 
@@ -86,7 +86,7 @@ AstNode* CreateAstIte(Loc loc, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse)
 AstNode* CreateAstDotIndex(Loc loc, AstNode* lhs, size_t index);
 AstNode* CreateAstDotName(Loc loc, AstNode* lhs, SymbolID rhs);
 
-AstNode* CreateAstLambda(Loc loc, AstNode* pattern, AstNode* body);
+AstNode* CreateAstLambda(Loc loc, AstNode** patterns, int patternCount, AstNode* body);
 void AddAstLambdaDefn(AstNode* lambda, void* defn);
 void ReqAstLambdaDefn(AstNode* lambda, void* defn);
 int CountAstLambdaCaptures(AstNode* lambda);
@@ -104,8 +104,8 @@ AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
 AstNode* CreateAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg);
 
 AstNode* NewAstTID(Loc loc, SymbolID symbolID);
-AstNode* CreateAstTTuple(Loc loc);
-AstNode* CreateAstTParen(Loc loc, AstNode* it);
+AstNode* NewAstTTuple(Loc loc);
+AstNode* NewAstTParen(Loc loc, AstNode* it);
 
 //
 // Getters:
@@ -145,7 +145,8 @@ size_t GetAstDotIndexRhs(AstNode* dot);
 AstNode* GetAstDotNameLhs(AstNode* dot);
 SymbolID GetAstDotNameRhs(AstNode* dot);
 
-AstNode* GetAstLambdaPattern(AstNode* lambda);
+int CountAstLambdaPatterns(AstNode* lambda);
+AstNode* GetAstLambdaPatternAt(AstNode* lambda, int index);
 AstNode* GetAstLambdaBody(AstNode* lambda);
 
 AstNode* GetAstWithStmtChecked(AstNode* checkStmt);
@@ -169,9 +170,11 @@ AstNode* GetAstBinaryRtOperand(AstNode* binary);
 SymbolID GetAstLetStmtLhs(AstNode* bindStmt);
 AstNode* GetAstLetStmtRhs(AstNode* bindStmt);
 
-AstNode* GetAstDefStmtOptTemplatePattern(AstNode* defStmt);
-SymbolID GetAstDefStmtLhs(AstNode* defStmt);
-AstNode* GetAstDefStmtRhs(AstNode* defStmt);
+AstNode* GetAstDefValueStmtOptTemplatePattern(AstNode* defStmt);
+int GetAstDefValueStmtArgCount(AstNode* defStmt);
+AstNode* GetAstDefValueStmtArgAt(AstNode* defStmt);
+SymbolID GetAstDefValueStmtLhs(AstNode* defStmt);
+AstNode* GetAstDefValueStmtRhs(AstNode* defStmt);
 
 AstNode* GetAstValStmtOptTemplatePattern(AstNode* valStmt);
 SymbolID GetAstValStmtLhs(AstNode* valStmt);
