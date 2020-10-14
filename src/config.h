@@ -4,6 +4,7 @@
 #define MAX_ID_LEN (256)
 
 #define DEBUG (1)
+#define DEBUG__PRINT_LOADED_MODULES (1)
 
 // Tune these two parameters to allocate memory for the AST.
 #define MAX_AST_NODE_COUNT (64 * 1024)

@@ -7,6 +7,8 @@
 #include <llvm-c/Core.h>
 #include "stb/stretchy_buffer.h"
 
+#include "useful.h"
+
 typedef struct Emitter Emitter;
 struct Emitter {
     Typer* typer;
@@ -51,7 +53,7 @@ int exportModuleHeaders(Emitter* emitter, AstNode* moduleNode) {
 int exportModuleHeaderVisitor_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     if (GetAstNodeKind(node) == AST_LAMBDA) {
-        ExportedType exportedFuncType = exportType(emitter->typer,GetSingleAstNodeTypingExtV(node));
+        ExportedType exportedFuncType = exportType(emitter->typer,GetAstNodeTypingExt_SingleV(node));
         ExportedValue* funcValue = malloc(sizeof(ExportedValue));
         funcValue->exprNode = node;
         funcValue->type = exportedFuncType;
@@ -92,8 +94,11 @@ ExportedType exportType(Typer* typer, Type* type) {
     // converts a compiler 'Type' into an LLVM Type.
     // 1:1 conversion wherever possible, no magic.
 
+    COMPILER_ERROR("STUBBED: exportType.");
+    return (ExportedType) {};
+
     ExportedType exportedType;
-    exportedType.native = GetTypeSoln(typer,type);
+    // exportedType.native = GetTypeSoln(typer,type);
     exportedType.llvm = NULL;
 
     if (exportedType.native) {
@@ -210,91 +215,94 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
     // converts a compiler expression into an LLVM expression, building as required.
     Typer* typer = emitter->typer;
 
-    ExportedValue exportedValue;
-    Type* valueType = GetSingleAstNodeTypingExtV(exprNode);
-    Type* concreteType = GetTypeSoln(typer,valueType);
+    COMPILER_ERROR("STUBBED: 'exportValue'");
+    return (ExportedValue) {};
 
-    exportedValue.exprNode = exprNode;
-    exportedValue.llvmValueRef = NULL;
-    exportedValue.type = exportType(emitter->typer,concreteType);
+    // ExportedValue exportedValue;
+    // Type* valueType = GetSingleAstNodeTypingExtV(exprNode);
+    // // Type* concreteType = GetTypeSoln(typer,valueType);
 
-    if (exportedValue.exprNode) {
-        switch (GetAstNodeKind(exportedValue.exprNode)) {
+    // exportedValue.exprNode = exprNode;
+    // exportedValue.llvmValueRef = NULL;
+    // exportedValue.type = exportType(emitter->typer,concreteType);
+
+    // if (exportedValue.exprNode) {
+    //     switch (GetAstNodeKind(exportedValue.exprNode)) {
             
-            //
-            // ID,FUNC: just fetch the stored EValue from the symbol table.
-            //
+    //         //
+    //         // ID,FUNC: just fetch the stored EValue from the symbol table.
+    //         //
 
-            case AST_LAMBDA:
-            {
-                ExportedValue* lambdaSynthetic = GetAstNodeLlvmRepr(exportedValue.exprNode);
-                exportedValue.llvmValueRef = lambdaSynthetic->llvmValueRef;
-                break;
-            }
+    //         case AST_LAMBDA:
+    //         {
+    //             ExportedValue* lambdaSynthetic = GetAstNodeLlvmRepr(exportedValue.exprNode);
+    //             exportedValue.llvmValueRef = lambdaSynthetic->llvmValueRef;
+    //             break;
+    //         }
 
-            //
-            // UNIT: represented by a NULL llvmValueRef
-            //
+    //         //
+    //         // UNIT: represented by a NULL llvmValueRef
+    //         //
 
-            case AST_UNIT:
-            {
-                exportedValue.llvmValueRef = NULL;
-                break;
-            }
+    //         case AST_UNIT:
+    //         {
+    //             exportedValue.llvmValueRef = NULL;
+    //             break;
+    //         }
 
-            //
-            // INT,FLOAT: llvmValueRef is the value.
-            //
+    //         //
+    //         // INT,FLOAT: llvmValueRef is the value.
+    //         //
 
-            case AST_LITERAL_INT:
-            {
-                size_t intValue = GetAstIntLiteralValue(exportedValue.exprNode);
-                exportedValue.llvmValueRef = LLVMConstInt(exportedValue.type.llvm,intValue,0);
-                break;
-            }
-            case AST_LITERAL_FLOAT:
-            {
-                long double floatValue = GetAstFloatLiteralValue(exportedValue.exprNode);
-                exportedValue.llvmValueRef = LLVMConstReal(exportedValue.type.llvm,floatValue);
-                break;
-            }
+    //         case AST_LITERAL_INT:
+    //         {
+    //             size_t intValue = GetAstIntLiteralValue(exportedValue.exprNode);
+    //             exportedValue.llvmValueRef = LLVMConstInt(exportedValue.type.llvm,intValue,0);
+    //             break;
+    //         }
+    //         case AST_LITERAL_FLOAT:
+    //         {
+    //             long double floatValue = GetAstFloatLiteralValue(exportedValue.exprNode);
+    //             exportedValue.llvmValueRef = LLVMConstReal(exportedValue.type.llvm,floatValue);
+    //             break;
+    //         }
 
-            //
-            // STRUCT,TUPLE,UNION,ARRAY: llvmValueRef is a pointer to the value.
-            //
+    //         //
+    //         // STRUCT,TUPLE,UNION,ARRAY: llvmValueRef is a pointer to the value.
+    //         //
 
-            case AST_VTUPLE:
-            case AST_STRUCT:
-            {
-                // LLVMConstStruct();
-                exportedValue.llvmValueRef = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"tuple");
-                break;
-            }
+    //         case AST_VTUPLE:
+    //         case AST_STRUCT:
+    //         {
+    //             // LLVMConstStruct();
+    //             exportedValue.llvmValueRef = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"tuple");
+    //             break;
+    //         }
             
-            //
-            // STRING: data stored C-style, pointer to first byte returned.
-            // todo: store string length
-            //
+    //         //
+    //         // STRING: data stored C-style, pointer to first byte returned.
+    //         // todo: store string length
+    //         //
 
-            // case AST_LITERAL_STRING:
-            // {
-            //     char const* strValue = GetAstStringLiteralValue(value.exprNode);
-            //     size_t len = strlen(strValue);
-            //     value.llvmValueRef = LLVMConstString(strValue,len,0);
-            //     break;
-            // }
+    //         // case AST_LITERAL_STRING:
+    //         // {
+    //         //     char const* strValue = GetAstStringLiteralValue(value.exprNode);
+    //         //     size_t len = strlen(strValue);
+    //         //     value.llvmValueRef = LLVMConstString(strValue,len,0);
+    //         //     break;
+    //         // }
             
-            // todo: emitExpr for tuples:
-            // - always returns a pointer to a tuple.
+    //         // todo: emitExpr for tuples:
+    //         // - always returns a pointer to a tuple.
 
-            default:
-            {
-                break;
-            }
-        }
-    }
+    //         default:
+    //         {
+    //             break;
+    //         }
+    //     }
+    // }
     
-    return exportedValue;
+    // return exportedValue;
 }
 
 void buildLlvmField(Typer* typer, void* rawSBP, SymbolID name, Type* type) {

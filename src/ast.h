@@ -103,7 +103,7 @@ AstNode* CreateAstTCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
 AstNode* CreateAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
 AstNode* CreateAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg);
 
-AstNode* CreateAstTID(Loc loc, SymbolID symbolID);
+AstNode* NewAstTID(Loc loc, SymbolID symbolID);
 AstNode* CreateAstTTuple(Loc loc);
 AstNode* CreateAstTParen(Loc loc, AstNode* it);
 
@@ -188,15 +188,15 @@ AstNode* GetAstTypedefStmtOptRhs(AstNode* td);
 // Symbol and type storage:
 //
 
-void* GetSingleAstNodeTypingExtV(AstNode* node);
-void* GetSingleAstNodeTypingExtT(AstNode* node);
-void* GetArrayAstNodeTypingExtV(AstNode* node, int* lenP);
-void* GetArrayAstNodeTypingExtT(AstNode* node, int* lenP);
+void* GetAstNodeTypingExt_SingleV(AstNode* node);
+void* GetAstNodeTypingExt_SingleT(AstNode* node);
+void* GetAstNodeTypingExt_ArrayV(AstNode* node, int* lenP);
+void* GetAstNodeTypingExt_ArrayT(AstNode* node, int* lenP);
 
-void SetSingleAstNodeTypingExtV(AstNode* node, void* type);
-void SetSingleAstNodeTypingExtT(AstNode* node, void* type);
-void SetArrayAstNodeTypingExtV(AstNode* node, int count, void* typeArray);
-void SetArrayAstNodeTypingExtT(AstNode* node, int count, void* typeArray);
+void SetAstNodeTypingExt_SingleV(AstNode* node, void* type);
+void SetAstNodeTypingExt_SingleT(AstNode* node, void* type);
+void SetAstNodeTypingExt_ArrayV(AstNode* node, int count, void* typeArray);
+void SetAstNodeTypingExt_ArrayT(AstNode* node, int count, void* typeArray);
 
 AstNode* GetAstNodeParentFunc(AstNode* node);
 void SetAstNodeParentFunc(AstNode* node, AstNode* parentFunc);

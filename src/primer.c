@@ -253,7 +253,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             SymbolID defnID = GetAstLetStmtLhs(node);
             void* type = NewMetavarType(loc, primer->typer, "let:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_VALUE);
-            SetSingleAstNodeTypingExtV(node, type);
+            SetAstNodeTypingExt_SingleV(node,type);
             break;
         }
         case AST_STRUCT:
@@ -295,7 +295,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             // todo: valueTypeP encodes a first-order type
             void* type = NewMetavarType(loc, primer->typer, "template:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_TYPING);
-            SetSingleAstNodeTypingExtV(node, type);
+            SetAstNodeTypingExt_SingleV(node, type);
             break;
         }
         case AST_FIELD__PATTERN_ITEM:
@@ -305,7 +305,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             SymbolID defnID = GetAstFieldName(node);
             void* type = NewMetavarType(loc, primer->typer, "pattern:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_VALUE);
-            SetSingleAstNodeTypingExtV(node, type);
+            SetAstNodeTypingExt_SingleV(node, type);
 
             // pushing a typing frame for RHS
             pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
@@ -314,7 +314,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         case AST_FIELD__STRUCT_ITEM:
         {
             // SymbolID defnID = GetAstFieldName(node);
-            SetSingleAstNodeTypingExtV(node, GetSingleAstNodeTypingExtV(GetAstFieldRhs(node)));
+            SetAstNodeTypingExt_SingleV(node, GetAstNodeTypingExt_SingleV(GetAstFieldRhs(node)));
             break;
         }
         case AST_LAMBDA:
@@ -385,18 +385,18 @@ int PrimeModule(Primer* primer, AstNode* module) {
             SymbolID lhs = GetAstDefStmtLhs(stmt);
             void* valueType = NewMetavarType(loc,primer->typer,"def-func:%s",GetSymbolText(lhs));
             pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE);
-            SetSingleAstNodeTypingExtV(stmt,valueType);
+            SetAstNodeTypingExt_SingleV(stmt,valueType);
         } else if (stmtKind == AST_EXTERN) {
             SymbolID lhs = GetAstExternStmtName(stmt);
             void* valueType = NewMetavarType(loc,primer->typer,"extern:%s",GetSymbolText(lhs));
             pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE);
-            SetSingleAstNodeTypingExtV(stmt,valueType);
+            SetAstNodeTypingExt_SingleV(stmt,valueType);
         } else if (stmtKind == AST_DEF_TYPE) {
             SymbolID lhs = GetAstTypedefStmtName(stmt);
             char const* symbolText = GetSymbolText(lhs);
             void* typingType = NewMetavarType(loc,primer->typer,"typedef:%s",symbolText);
             pushSymbol(primer,lhs,typingType,stmt,ASTCTX_TYPING);
-            SetSingleAstNodeTypingExtT(stmt, typingType);
+            SetAstNodeTypingExt_SingleT(stmt, typingType);
         } else {
             if (DEBUG) {
                 printf("!!- PrimeModule: Unsupported statement kind in module\n");

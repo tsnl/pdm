@@ -58,6 +58,7 @@ add_executable(pc
     src/symbols.h
     src/typer.c
     src/typer.h
+    src/useful.c
     src/useful.h
 )
 

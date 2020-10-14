@@ -48,7 +48,7 @@ Interp* CreateInterp(void) {
 
     Interp* interp = malloc(sizeof(Interp));
     interp->loadedSourceSb = NULL;
-    interp->typer = CreateTyper(CreateDefaultTyperCfg());
+    interp->typer = NewTyper(NewDefaultTyperCfg());
     interp->primer = CreatePrimer(interp->typer);
     return interp;
 }
@@ -75,7 +75,7 @@ int InterpLoadModuleSource(Interp* interp, Source* scriptSource) {
             return 0;
         }
 
-        if (DEBUG) {
+        if (DEBUG && DEBUG__PRINT_LOADED_MODULES) {
             // DEBUG: module dump
             printf("Loaded module '%s':\n", scriptSource->path);
             CodePrinter printer = CreateCodePrinter(stdout, 0);
@@ -104,7 +104,7 @@ int InterpTypecheckModules(Interp* interp) {
         LoadedSource loadedSource = interp->loadedSourceSb[i];
         TypeNode(interp->typer, loadedSource.moduleAstNode);
     }
-    return Typecheck(interp->typer);
+    return CheckTyper(interp->typer);
 }
 int InterpCompile(Interp* interp) {
     int result = 1;

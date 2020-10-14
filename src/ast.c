@@ -2,6 +2,7 @@
 
 #include <assert.h>
 
+#include "useful.h"
 #include "config.h"
 #include "source.h"
 #include "symbols.h"
@@ -218,7 +219,7 @@ int countList(AstNodeList* list) {
 AstNode* listItemAt(AstNodeList* list, int index) {
     if (DEBUG) {
         if (index < 0) {
-            // invalid index
+            COMPILER_ERROR("listItemAt: invalid list index");
             return NULL;
         }
     }
@@ -286,13 +287,7 @@ void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping) {
 }
 void PushStmtToAstModule(AstNode* module, AstNode* def) {
     AstKind nodeKind = GetAstNodeKind(def);
-    if (!isStmtKindModuleLevel(nodeKind)) {
-        if (DEBUG) {
-            printf("!!- Cannot push non-def/extern to AstModule.\n");
-        } else {
-            assert(0 && "Cannot push non-def/extern to AstModule");
-        }
-    }
+    COMPILER_ASSERT(isStmtKindModuleLevel(nodeKind), "Cannot push non-def/extern to AstModule.");
     pushListElement(module->as.Module.items, def);
 }
 
@@ -480,11 +475,7 @@ AstNode* CreateAstDefValueStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePatter
     // todo: un-disable multi-pattern def statements
     int multiPatternDefStatementsDisabled = 1;
     if (multiPatternDefStatementsDisabled && patternsCount > 1) {
-        if (DEBUG) {
-            printf("!!- NotImplemented: curried multi-pattern 'def' statement.\n");
-        } else {
-            assert(0 && "NotImplemented: curried multi-pattern 'def' statement");
-        }
+        COMPILER_ERROR("DISABLED: multi-pattern 'def' statements.\n");
         return NULL;
     }
 
@@ -530,7 +521,7 @@ AstNode* CreateAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode*
     return binaryNode;
 }
 
-AstNode* CreateAstTID(Loc loc, SymbolID symbolID) {
+AstNode* NewAstTID(Loc loc, SymbolID symbolID) {
     AstNode* idNode = newNode(loc, AST_TID);
     idNode->as.ID.name = symbolID;
     idNode->as.ID.lookupScope = NULL;
@@ -840,57 +831,47 @@ AstNode* GetAstTypedefStmtOptRhs(AstNode* td) {
 // Scoper and typer storage:
 //
 
-int GetAstNodeTypingExtVCount(AstNode* node) {
-    return node->typingExtCount_v;
-}
-int GetAstNodeTypingExtTCount(AstNode* node) {
-    return node->typingExtCount_t;
-}
-void* GetSingleAstNodeTypingExtV(AstNode* node) {
-    if (DEBUG) {
-        assert(node->typingExtCount_v == -1);
-    }
+void* GetAstNodeTypingExt_SingleV(AstNode* node) {
+    COMPILER_ASSERT(node->typingExtCount_v == -1,"single ext <=> count == -1");
     return node->typingExt_v;
 }
-void* GetSingleAstNodeTypingExtT(AstNode* node) {
-    if (DEBUG) {
-        assert(node->typingExtCount_t == -1);
-    }
+void* GetAstNodeTypingExt_SingleT(AstNode* node) {
+    COMPILER_ASSERT(node->typingExtCount_t == -1,"single ext <=> count == -1");
     return node->typingExt_t;
 }
-void* GetArrayAstNodeTypingExtV(AstNode* node, int* lenP) {
+void* GetAstNodeTypingExt_ArrayV(AstNode* node, int* lenP) {
     *lenP = node->typingExtCount_v;
     return node->typingExt_v;
 }
-void* GetArrayAstNodeTypingExtT(AstNode* node, int* lenP) {
+void* GetAstNodeTypingExt_ArrayT(AstNode* node, int* lenP) {
     *lenP = node->typingExtCount_t;
     return node->typingExt_t;
 }
-void SetSingleAstNodeTypingExtV(AstNode* node, void* type) {
+void SetAstNodeTypingExt_SingleV(AstNode* node, void* type) {
     if (DEBUG) {
-        if (!type) {
-            printf("!!- SetAstNodeValueType: null arg set\n");
-            return;
-        }
+        COMPILER_ASSERT(type,"SetAstNodeTypingExt_SingleV: null arg set.");
     }
     node->typingExt_v = type;
     node->typingExtCount_v = -1;
 }
-void SetSingleAstNodeTypingExtT(AstNode* node, void* type) {
+void SetAstNodeTypingExt_SingleT(AstNode* node, void* type) {
     if (DEBUG) {
-        if (!type) {
-            printf("!!- SetAstNodeValueType: null arg set\n");
-            return;
-        }
+        COMPILER_ASSERT(type,"SetAstNodeTypingExt_SingleT: null arg set.");
     }
     node->typingExt_t = type;
     node->typingExtCount_t = -1;
 }
-void SetArrayAstNodeTypingExtV(AstNode* node, int count, void* typeArray) {
+void SetAstNodeTypingExt_ArrayV(AstNode* node, int count, void* typeArray) {
+    if (DEBUG && count) {
+        COMPILER_ASSERT(typeArray,"SetAstNodeTypingExt_ArrayV: NULL array for non-empty count.");
+    }
     node->typingExtCount_v = count;
     node->typingExt_v = typeArray;
 }
-void SetArrayAstNodeTypingExtT(AstNode* node, int count, void* typeArray) {
+void SetAstNodeTypingExt_ArrayT(AstNode* node, int count, void* typeArray) {
+    if (DEBUG && count) {
+        COMPILER_ASSERT(typeArray,"SetAstNodeTypingExt_ArrayT: NULL array for non-empty count.");
+    }
     node->typingExtCount_t = count;
     node->typingExt_t = typeArray;
 }
@@ -914,11 +895,7 @@ AstNode* GetAstNodeParentFunc(AstNode* node) {
 }
 void SetAstNodeParentFunc(AstNode* node, AstNode* parentFunc) {
     if (parentFunc->kind != AST_LAMBDA) {
-        if (DEBUG) {
-            printf("!!- non-lambda parent func in `SetAstNodeParentFunc`.\n");
-        } else {
-            assert(0 && "!!- non-lambda parent func in `SetAstNodeParentFunc`.");
-        }
+        COMPILER_ERROR("non-lambda parent func in 'SetAstNodeParentFunc'.");
     }
     node->parentFunc = parentFunc;
 }
@@ -1129,29 +1106,17 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         }
         case AST_NULL:
         {
-            if (DEBUG) {
-                printf("!!- Cannot visit a NULL AST node.");
-            } else {
-                assert(0 && "Cannot visit a NULL AST node.");
-            }
+            COMPILER_ERROR("Cannot visit a NULL AST node.");
             return 0;
         }
         case AST_ERROR:
         {
-            if (DEBUG) {
-                printf("!!- Cannot visit an ERROR AST node.\n");
-            } else {
-                assert(0 && "Cannot visit an ERROR AST node.");
-            }
+            COMPILER_ERROR("Cannot visit an ERROR AST node.");
             return 0;
         }
         default:
         {
-            if (DEBUG) {
-                printf("!!- Unsupported AST node in 'visit' of type %s.\n", AstKindAsText(nodeKind));
-            } else {
-                assert(0 && "Unsupported AST node in 'visit'");
-            }
+            COMPILER_ERROR_VA("Unsupported AST node in 'visit' of type %s.", AstKindAsText(nodeKind));
             return 0;
         }
     }

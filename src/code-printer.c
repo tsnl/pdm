@@ -6,6 +6,7 @@
 
 #include "stb/stretchy_buffer.h"
 
+#include "useful.h"
 #include "primer.h"
 
 #define BUFFER_SIZE (1024)
@@ -74,10 +75,8 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                 PrintFormattedText(cp, "%zu", GetAstIntLiteralValue(node));
             } else if (base == 16) {
                 PrintFormattedText(cp, "0x%zx", GetAstIntLiteralValue(node));
-            } else if (DEBUG) {
-                printf("!!- invalid base %d while printing literal int", base);
             } else {
-                assert(0 && "invalid 'base' while printing literal int.");
+                COMPILER_ERROR_VA("Invalid base '%d' while printing literal int",base);
             }
             break;
         }

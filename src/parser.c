@@ -433,7 +433,7 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
         {
             TokenInfo idTokenInfo = lookaheadInfo(p, 0);
             if (expect(p, TK_VID, "a bound type identifier")) {
-                return CreateAstTypeID(idTokenInfo.loc, idTokenInfo.as.ID_symbolID);
+                return NewAstTID(idTokenInfo.loc, idTokenInfo.as.ID_symbolID);
             } else {
                 return NULL;
             }
@@ -842,14 +842,14 @@ RawAstNode* tryParsePrimaryTypespec(Parser* p) {
     TokenKind firstKind = lookaheadKind(p,0);
     TokenInfo firstInfo = lookaheadInfo(p,0);
     if (match(p,TK_TID)) {
-        return CreateAstTypeID(firstInfo.loc,firstInfo.as.ID_symbolID);
+        return NewAstTID(firstInfo.loc,firstInfo.as.ID_symbolID);
     }
     else if (match(p,TK_LSQBRK)) {
         RawAstNode* firstNestedTypespec = tryParseTypespec(p);
         if (firstNestedTypespec) {
             RawAstNode* result;
             if (match(p,TK_COMMA)) {
-                result = CreateAstTypeTuple(firstInfo.loc);
+                result = CreateAstTTuple(firstInfo.loc);
                 PushFieldToAstTuple(GetAstNodeLoc(firstNestedTypespec),result,firstNestedTypespec);
                 do {
                     RawAstNode* nestedTypespecItem = parseTypespec(p);
