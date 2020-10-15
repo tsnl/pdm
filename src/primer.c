@@ -4,6 +4,7 @@
 
 #include "stb/stretchy_buffer.h"
 
+#include "useful.h"
 #include "symbols.h"
 #include "config.h"
 #include "typer.h"
@@ -79,13 +80,11 @@ void pushSymbol(Primer* primer, SymbolID defnID, void* type, AstNode* defnAstNod
 }
 Scope* pushFrame(Primer* primer, Scope* optNewScope, AstContext ctx, AstNode* func) {
     if (func) {
-        if (GetAstNodeKind(func) != AST_LAMBDA) {
-            if (DEBUG) {
-                printf("!!- non-lambda parent func in `pushFrame`.\n");
-            } else {
-                assert(0 && "non-lambda parent func in `pushFrame`");
-            }
-        }
+        AstKind nodeKind = GetAstNodeKind(func);
+        COMPILER_ASSERT_VA(
+            nodeKind == AST_LAMBDA, 
+            "Non-lambda parent func in `pushFrame`: %s", AstKindAsText(nodeKind)
+        );
     }
 
     Scope* topScope = topFrameScope(primer);
@@ -222,6 +221,9 @@ Defn* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstCo
 // Implementation:
 //
 
+// primer_pre and primer_post are the pre and post visitor callbacks for the primer pass.
+// - primer_pre runs before all children are visited (prefix order)
+// - primer_post runs after all children are visited (postfix order)
 static int primer_pre(void* primer, AstNode* node);
 static int primer_post(void* primer, AstNode* node);
 
@@ -247,7 +249,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             SetAstNodeLookupContext(node, ASTCTX_VALUE);
             break;
         }
-        case AST_LET:
+        case AST_VLET:
         {
             Loc loc = GetAstNodeLoc(node);
             SymbolID defnID = GetAstLetStmtLhs(node);
@@ -262,8 +264,6 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         }
         case AST_TPATTERN:
         case AST_VPATTERN:
-        case AST_TPATTERN_SINGLETON:
-        case AST_VPATTERN_SINGLETON:
         {
             break;
         }
@@ -281,36 +281,49 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         {
             break;
         }
-        case AST_FIELD__TEMPLATE_ITEM:
+        case AST_TPATTERN_SINGLETON:
+        case AST_TPATTERN_FIELD:
         {
             Loc loc = GetAstNodeLoc(node);
-            SymbolID defnID = GetAstFieldName(node);
-            // todo: valueTypeP encodes a first-order type
-            void* type = NewMetavarType(loc, primer->typer, "template:%s", GetSymbolText(defnID));
+            SymbolID defnID = SYM_NULL;
+            if (kind == AST_TPATTERN_SINGLETON) {
+                defnID = GetAstFieldName(node);
+            } else {
+                COMPILER_ASSERT(kind == AST_TPATTERN_FIELD, "Expected kind to be either AST_TPATTERN_SINGLETON or AST_TPATTERN_SINGLETON");
+                defnID = GetAstFieldName(node);
+            }
+            void* type = NewMetavarType(loc, primer->typer, "tpattern:%s", GetSymbolText(defnID));
             pushSymbol(primer, defnID, type, node, ASTCTX_TYPING);
             SetAstNodeTypingExt_SingleV(node, type);
             break;
         }
-        case AST_FIELD__PATTERN_ITEM:
+        case AST_VPATTERN_SINGLETON:
+        case AST_VPATTERN_FIELD:
         {
             Loc loc = GetAstNodeLoc(node);
-            // defining the formal arg symbol in the lambda scope:
-            SymbolID defnID = GetAstFieldName(node);
-            void* type = NewMetavarType(loc, primer->typer, "pattern:%s", GetSymbolText(defnID));
-            pushSymbol(primer, defnID, type, node, ASTCTX_VALUE);
-            SetAstNodeTypingExt_SingleV(node, type);
+            SymbolID defnID = SYM_NULL;
+            if (kind == AST_VPATTERN_SINGLETON) {
+                defnID = GetAstSingletonPatternName(node);
+            } else {
+                COMPILER_ASSERT(kind == AST_VPATTERN_FIELD, "expected either ast_vpattern_singleton or ast_field__pattern_item");
+                defnID = GetAstFieldName(node);
+            }
+
+            // defining a value symbol:
+            void* patternType = NewMetavarType(loc, primer->typer, "vpattern:%s", GetSymbolText(defnID));
+            pushSymbol(primer, defnID, patternType, node, ASTCTX_VALUE);
+            SetAstNodeTypingExt_SingleV(node, patternType);
 
             // pushing a typing frame for RHS
             pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
             break;
         }
-        case AST_FIELD__STRUCT_ITEM:
+        case AST_VSTRUCT_FIELD:
         {
             // SymbolID defnID = GetAstFieldName(node);
             SetAstNodeTypingExt_SingleV(node, GetAstNodeTypingExt_SingleV(GetAstFieldRhs(node)));
             break;
         }
-        case AST_VDEF:
         case AST_LAMBDA:
         {
             // pushing a new frame for the function's contents:
@@ -337,11 +350,11 @@ int primer_post(void* rawPrimer, AstNode* node) {
         case AST_CHAIN:
         case AST_VPAREN:
         case AST_LAMBDA:
-        case AST_FIELD__PATTERN_ITEM:
+        case AST_VPATTERN_FIELD:
         case AST_EXTERN:
-        case AST_VDEF:
         case AST_TDEF:
         {
+            // pop for each case where a frame is pushed in `primer_pre`.
             popFrame(primer);
             break;
         }

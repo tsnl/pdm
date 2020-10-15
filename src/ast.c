@@ -364,7 +364,7 @@ AstNode* NewAstVPattern(Loc loc) { return newAstPattern(loc,AST_VPATTERN); }
 AstNode* NewAstTPattern(Loc loc) { return newAstPattern(loc,AST_TPATTERN); }
 
 void PushFieldToAstTuple(Loc loc, AstNode* tuple, AstNode* value) {
-    AstNode* field = newNode(loc, AST_FIELD__TUPLE_ITEM);
+    AstNode* field = newNode(loc, AST_VTUPLE_FIELD);
     field->as.Field.name = SYM_NULL;
     field->as.Field.rhs = value;
     field->as.Field.index = countList(tuple->as.GenericList_items);
@@ -372,7 +372,7 @@ void PushFieldToAstTuple(Loc loc, AstNode* tuple, AstNode* value) {
     pushListElement(tuple->as.GenericList_items, field);
 }
 void PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value) {
-    AstNode* field = newNode(loc, AST_FIELD__STRUCT_ITEM);
+    AstNode* field = newNode(loc, AST_VSTRUCT_FIELD);
     field->as.Field.name = name;
     field->as.Field.rhs = value;
     field->as.Field.index = countList(struct_->as.GenericList_items);
@@ -381,7 +381,7 @@ void PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* val
 }
 void PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec) {
     assert(pattern->kind == AST_TPATTERN || pattern->kind == AST_VPATTERN);
-    AstKind fieldKind = (pattern->kind == AST_TPATTERN ? AST_FIELD__TEMPLATE_ITEM : AST_FIELD__PATTERN_ITEM);
+    AstKind fieldKind = (pattern->kind == AST_TPATTERN ? AST_TPATTERN_FIELD : AST_VPATTERN_FIELD);
     AstNode* field = newNode(loc, fieldKind);
     field->as.Field.name = name;
     field->as.Field.rhs = typespec;
@@ -434,7 +434,7 @@ AstNode* NewAstLambda(Loc loc, AstNode** patterns, int patternCount, AstNode* bo
 }
 
 AstNode* NewAstLetStmt(Loc loc, AstNode* lhs, AstNode* rhs) {
-    AstNode* letNode = newNode(loc, AST_LET);
+    AstNode* letNode = newNode(loc, AST_VLET);
     letNode->as.Let.lhs = lhs;
     letNode->as.Let.rhs = rhs;
     return letNode;
@@ -603,14 +603,27 @@ AstNode* GetAstParenItem(AstNode* node) {
     return node->as.Paren_item;
 }
 
+int GetAstPatternLength(AstNode* node) {
+    COMPILER_ASSERT(node->kind == AST_TPATTERN || node->kind == AST_VPAREN, "Expected multi-pattern AST nodes.");
+    return countList(node->as.GenericList_items);
+}
+AstNode* GetAstPatternFieldAt(AstNode* node, int index) {
+    if (DEBUG) {
+        COMPILER_ASSERT(node->kind == AST_TPATTERN || node->kind == AST_VPAREN, "Expected multi-pattern AST nodes.");
+    }
+    return listItemAt(node->as.GenericList_items, index);
+}
+SymbolID GetAstSingletonPatternName(AstNode* node) {
+    return node->as.Pattern_Singleton.name;
+}
+AstNode* GetAstSingletonPatternRhs(AstNode* node) {
+    return node->as.Pattern_Singleton.rhs;
+}
+
 int GetAstTupleLength(AstNode* node) {
     return countList(node->as.GenericList_items);
 }
 int GetAstStructLength(AstNode* node) {
-    return countList(node->as.GenericList_items);
-}
-int GetAstPatternLength(AstNode* node) {
-    COMPILER_ASSERT(node->kind == AST_TPATTERN || node->kind == AST_VPAREN, "Expected multi-pattern AST nodes.");
     return countList(node->as.GenericList_items);
 }
 int GetAstChainPrefixLength(AstNode* node) {
@@ -629,12 +642,6 @@ AstNode* GetAstTupleItemAt(AstNode* node, int index) {
 AstNode* GetAstStructFieldAt(AstNode* node, int index) {
     if (DEBUG) {
         assert(node->kind == AST_VSTRUCT);
-    }
-    return listItemAt(node->as.GenericList_items, index);
-}
-AstNode* GetAstPatternFieldAt(AstNode* node, int index) {
-    if (DEBUG) {
-        COMPILER_ASSERT(node->kind == AST_TPATTERN || node->kind == AST_VPAREN, "Expected multi-pattern AST nodes.");
     }
     return listItemAt(node->as.GenericList_items, index);
 }
@@ -692,13 +699,13 @@ SymbolID GetAstDotNameRhs(AstNode* dot) {
 
 AstNode* GetAstLetStmtLhs(AstNode* bindStmt) {
     if (DEBUG) {
-        assert(bindStmt->kind == AST_LET);
+        assert(bindStmt->kind == AST_VLET);
     }
     return bindStmt->as.Let.lhs;
 }
 AstNode* GetAstLetStmtRhs(AstNode* bindStmt) {
     if (DEBUG) {
-        assert(bindStmt->kind == AST_LET);
+        assert(bindStmt->kind == AST_VLET);
     }
     return bindStmt->as.Let.rhs;
 }
@@ -754,10 +761,10 @@ int IsAstCallTemplate(AstNode* call) {
 SymbolID GetAstFieldName(AstNode* field) {
     if (DEBUG) {
         assert(
-            field->kind == AST_FIELD__PATTERN_ITEM ||
-            field->kind == AST_FIELD__STRUCT_ITEM ||
-            field->kind == AST_FIELD__TEMPLATE_ITEM ||
-            field->kind == AST_FIELD__TUPLE_ITEM
+            field->kind == AST_VPATTERN_FIELD ||
+            field->kind == AST_VSTRUCT_FIELD ||
+            field->kind == AST_TPATTERN_FIELD ||
+            field->kind == AST_VTUPLE_FIELD
         );
     }
     return field->as.Field.name;
@@ -765,10 +772,10 @@ SymbolID GetAstFieldName(AstNode* field) {
 AstNode* GetAstFieldRhs(AstNode* field) {
     if (DEBUG) {
         assert(
-            field->kind == AST_FIELD__PATTERN_ITEM ||
-            field->kind == AST_FIELD__STRUCT_ITEM ||
-            field->kind == AST_FIELD__TEMPLATE_ITEM ||
-            field->kind == AST_FIELD__TUPLE_ITEM
+            field->kind == AST_VPATTERN_FIELD ||
+            field->kind == AST_VSTRUCT_FIELD ||
+            field->kind == AST_TPATTERN_FIELD ||
+            field->kind == AST_VTUPLE_FIELD
         );
     }
     return field->as.Field.rhs;
@@ -916,9 +923,10 @@ AstNode* GetAstNodeParentFunc(AstNode* node) {
     return node->parentFunc;
 }
 void SetAstNodeParentFunc(AstNode* node, AstNode* parentFunc) {
-    if (parentFunc->kind != AST_LAMBDA) {
-        COMPILER_ERROR("non-lambda parent func in 'SetAstNodeParentFunc'.");
-    }
+    COMPILER_ASSERT_VA(
+        parentFunc->kind == AST_LAMBDA,
+        "non-lambda parent func of kind '%s' in 'SetAstNodeParentFunc'", AstKindAsText(parentFunc->kind)
+    );
     node->parentFunc = parentFunc;
 }
 
@@ -1012,9 +1020,12 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
                 RecursivelyVisitAstNode(context, GetAstBinaryRtOperand(node), preVisitorCb, postVisitorCb)
             );
         }
-        case AST_LET:
+        case AST_VLET:
         {
-            return RecursivelyVisitAstNode(context, GetAstLetStmtRhs(node), preVisitorCb, postVisitorCb);
+            return (
+                RecursivelyVisitAstNode(context, GetAstLetStmtLhs(node), preVisitorCb, postVisitorCb) &&
+                RecursivelyVisitAstNode(context, GetAstLetStmtRhs(node), preVisitorCb, postVisitorCb)
+            );
         }
         case AST_VDEF:
         {
@@ -1049,6 +1060,11 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
                     return 0;
                 }
             }
+            return 1;
+        }
+        case AST_TPATTERN_SINGLETON:
+        case AST_VPATTERN_SINGLETON:
+        {
             return 1;
         }
         case AST_VTUPLE:
@@ -1089,10 +1105,10 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             }
             return 1;
         }
-        case AST_FIELD__PATTERN_ITEM:
-        case AST_FIELD__STRUCT_ITEM:
-        case AST_FIELD__TEMPLATE_ITEM:
-        case AST_FIELD__TUPLE_ITEM:
+        case AST_VPATTERN_FIELD:
+        case AST_VSTRUCT_FIELD:
+        case AST_TPATTERN_FIELD:
+        case AST_VTUPLE_FIELD:
         {
             AstNode* rhs = GetAstFieldRhs(node);
             if (rhs && !RecursivelyVisitAstNode(context, rhs, preVisitorCb, postVisitorCb)) {
@@ -1229,7 +1245,7 @@ char const* AstKindAsText(AstKind kind) {
         case AST_ITE: return "AST_ITE";
         case AST_DOT_INDEX: return "AST_DOT_INDEX"; 
         case AST_DOT_NAME: return "AST_DOT_NAME";
-        case AST_LET: return "AST_LET"; 
+        case AST_VLET: return "AST_LET"; 
         case AST_VDEF: return "AST_DEF"; 
         case AST_TDEF: return "AST_TYPEDEF"; 
         case AST_EXTERN: return "AST_EXTERN"; 
@@ -1239,12 +1255,14 @@ char const* AstKindAsText(AstKind kind) {
         case AST_TCALL: return "AST_T_CALL";
         case AST_UNARY: return "AST_UNARY"; 
         case AST_BINARY: return "AST_BINARY";
-        case AST_TPATTERN: return "AST_T_PATTERN"; 
-        case AST_VPATTERN: return "AST_V_PATTERN";
-        case AST_FIELD__TEMPLATE_ITEM: return "AST_FIELD__TEMPLATE_ITEM";
-        case AST_FIELD__TUPLE_ITEM: return "AST_FIELD__TUPLE_ITEM";
-        case AST_FIELD__STRUCT_ITEM: return "AST_FIELD__STRUCT_ITEM";
-        case AST_FIELD__PATTERN_ITEM: return "AST_FIELD__PATTERN_ITEM";
+        case AST_TPATTERN: return "AST_TPATTERN"; 
+        case AST_VPATTERN: return "AST_VPATTERN";
+        case AST_TPATTERN_SINGLETON: return "AST_TPATTERN_SINGLETON";
+        case AST_VPATTERN_SINGLETON: return "AST_VPATTERN_SINGLETON";
+        case AST_TPATTERN_FIELD: return "AST_FIELD__TEMPLATE_ITEM";
+        case AST_VTUPLE_FIELD: return "AST_FIELD__TUPLE_ITEM";
+        case AST_VSTRUCT_FIELD: return "AST_FIELD__STRUCT_ITEM";
+        case AST_VPATTERN_FIELD: return "AST_FIELD__PATTERN_ITEM";
         default: return "AST_?";
     }
 }

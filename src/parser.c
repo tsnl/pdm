@@ -62,9 +62,9 @@ static RawAstNode* tryParseStmt(Parser* p);
 static RawAstNode* parseLetStmt(Parser* p);
 static RawAstNode* parseReturnStmt(Parser* p);
 static RawAstNode* parseYieldStmt(Parser* p);
-static RawAstNode* parseDefValueStmt(Parser* p);
+static RawAstNode* parseVDefStmt(Parser* p);
 static RawAstNode* parseExternStmt(Parser* p);
-static RawAstNode* parseDefTypeStmt(Parser* p);
+static RawAstNode* parseTDefStmt(Parser* p);
 static RawAstNode* parseWithStmt(Parser* p);
 // static RawAstNode* parseValStmt(Parser* p);
 
@@ -199,11 +199,22 @@ int expect(Parser* p, TokenKind tokenKind, char const* expectedDesc) {
 RawAstNode* tryParseStmt(Parser* p) {
     TokenKind tokenKind = lookaheadKind(p,0);
     switch (tokenKind) {
+        case TK_KW_DEF:
+        {
+            if (lookaheadKind(p,1) == TK_VID) {
+                return parseVDefStmt(p);
+            } else if (lookaheadKind(p,1) == TK_TID) {
+                return parseTDefStmt(p);
+            } else {
+                expectError(p,"a TID or VID");
+                return NULL;
+            }
+        }
         case TK_KW_WITH:
         {
             return parseWithStmt(p);
         }
-        case TK_VID:
+        case TK_KW_LET:
         {
             return parseLetStmt(p);
         }
@@ -223,6 +234,10 @@ RawAstNode* tryParseStmt(Parser* p) {
 }
 RawAstNode* parseLetStmt(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
+
+    if (!expect(p,TK_KW_LET,"'let'")) {
+        return NULL;
+    }
 
     AstNode* lhs = parseValuePattern(p);
     AstNode* typespec = NULL; {
@@ -267,8 +282,12 @@ RawAstNode* parseYieldStmt(Parser* p) {
     }
     return NULL;
 }
-RawAstNode* parseDefValueStmt(Parser* p) {
+RawAstNode* parseVDefStmt(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
+
+    if (!expect(p,TK_KW_DEF,"'def'")) {
+        return NULL;
+    }
 
     // parsing an ID
     SymbolID lhs = SYM_NULL; {
@@ -303,7 +322,7 @@ RawAstNode* parseDefValueStmt(Parser* p) {
             }
         } else {
             FeedbackNote* note = CreateFeedbackNote("see definition here...",loc,NULL);
-            PostFeedback(FBK_ERROR,note,"Unexpected/invalid pattern in definition: '%s'", GetSymbolText(lhs));
+            PostFeedback(FBK_ERROR,note,"Unexpected/invalid pattern in definition of '%s'", GetSymbolText(lhs));
             return NULL;
         }
     }
@@ -337,7 +356,7 @@ RawAstNode* parseExternStmt(Parser* p) {
     RawAstNode* externNode = NewAstExternStmt(loc,name,typespec);
     return externNode;
 }
-RawAstNode* parseDefTypeStmt(Parser* p) {
+RawAstNode* parseTDefStmt(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
     
     TokenInfo idTokenInfo = lookaheadInfo(p,0);
@@ -457,21 +476,26 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
                 return NULL;
             }
 
+            // () => unit
             if (match(p, TK_RPAREN)) {
                 return NewAstUnit(loc);
             }
 
+            // (expr) | (expr,expr,...)
             RawAstNode* expr = parseExpr(p);
             if (!expr) {
                 return NULL;
             }
 
             if (match(p, TK_COMMA)) {
-                // tuple
+                // tuple (expr,expr,...)
                 RawAstNode* firstExpr = expr;
                 expr = NewAstVTuple(loc);
 
+                // pushing first field:
                 PushFieldToAstTuple(GetAstNodeLoc(firstExpr), expr, firstExpr);
+
+                // pushing remaining fields:
                 do {
                     RawAstNode* nextExpr = parseExpr(p);
                     if (!nextExpr) {
@@ -480,7 +504,7 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
                     PushFieldToAstTuple(GetAstNodeLoc(nextExpr), expr, nextExpr);
                 } while (match(p, TK_COMMA));
             } else {
-                // paren
+                // paren (expr)
                 expr = NewAstVParen(loc, expr);
             }
 
@@ -608,7 +632,7 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
         //
 
         case TK_TID:
-        {
+        {   
             COMPILER_ERROR("NotImplemented: cast expressions");
             return NULL;
         }
@@ -782,10 +806,14 @@ void parsePatternElementWithTail(Parser* p, RawAstNode* pattern, int* okP, Token
     
     SymbolID symbolID = lookaheadInfo(p,0).as.ID_symbolID;
     if (expect(p,idTokenKind,"a pattern label")) {
-        if (expect(p,TK_COLON,"':'")) {
-            RawAstNode* typespec = parseTypespec(p);
+        RawAstNode* typespec = NULL;
+        if (match(p,TK_COLON)) {
+            typespec = parseTypespec(p);
             PushFieldToAstPattern(patternLoc, pattern, symbolID, typespec);
-        }    
+        } else {
+            typespec = NULL;
+            COMPILER_ERROR("NotImplemented: omitted tails for value typespecs.");
+        }
     }
     *okP = 0;
 }
@@ -818,8 +846,6 @@ int isFirstTypespecTokenKind(TokenKind kind) {
     return (
         kind == TK_TID ||
         kind == TK_LPAREN ||
-        kind == TK_KW_STRUCT ||
-        kind == TK_KW_ENUM ||
         0
     );
 }
@@ -873,16 +899,20 @@ RawAstNode* tryParsePrimaryTypespec(Parser* p) {
             return NULL;
         }
     }
-    else if (match(p,TK_KW_STRUCT) || match(p,TK_KW_ENUM)) {
-        if (DEBUG) {
-            printf("!!- NotImplemented: 'struct' and 'enum' typespecs.\n");
-        }
+    else if (match(p,TK_LCYBRK)) {
+        COMPILER_ERROR("NotImplemented: 'struct' typespec expressions. ({...})");
+        return NULL;
+    }
+    else if (match(p,TK_LSQBRK)) {
+        COMPILER_ERROR("NotImplemented: 'enum' typespec expressions. ([...])");
+        return NULL;
     }
     return NULL;
 }
 RawAstNode* tryParsePostfixTypespec(Parser* p) {
-    RawAstNode* lhs = tryParsePrimaryExpr(p);
+    RawAstNode* lhs = tryParsePrimaryTypespec(p);
     while (match(p,TK_LSQBRK)) {
+        // parsing args:
         RawAstNode** argsSB = NULL; {
             while (isFirstTypespecTokenKind(lookaheadKind(p,0))) {
                 RawAstNode* arg = tryParseTypespec(p);
@@ -893,14 +923,14 @@ RawAstNode* tryParsePostfixTypespec(Parser* p) {
                 }
             }
         }
-
-        // updating LHS:
-        lhs = NewAstTCall(GetAstNodeLoc(lhs),lhs,argsSB,sb_count(argsSB));
-        sb_free(argsSB);
-
+        // parsing closing rhs:
         if (!expect(p,TK_RSQBRK,"']'")) {
             return NULL;
         }
+
+        // constructing new expr and updating LHS:
+        lhs = NewAstTCall(GetAstNodeLoc(lhs),lhs,argsSB,sb_count(argsSB));
+        sb_free(argsSB);
     }
     return lhs;
 }
@@ -932,11 +962,11 @@ RawAstNode* ParseSource(Source* source) {
         if (match(&p,TK_SEMICOLON)) {
             // no-op
         } else {
-            if (lookaheadKind(&p,0) == TK_VID) {
-                RawAstNode* def = parseDefValueStmt(&p);
+            if (lookaheadKind(&p,0) == TK_KW_DEF && lookaheadKind(&p,1) == TK_VID) {
+                RawAstNode* def = parseVDefStmt(&p);
                 PushStmtToAstModule(module,def);
-            } else if (lookaheadKind(&p,0) == TK_TID) {
-                RawAstNode* td = parseDefTypeStmt(&p);
+            } else if (lookaheadKind(&p,0) == TK_KW_DEF && lookaheadKind(&p,1) == TK_VID) {
+                RawAstNode* td = parseTDefStmt(&p);
                 PushStmtToAstModule(module,td);
             } else if (lookaheadKind(&p,0) == TK_KW_EXTERN) {
                 RawAstNode* def = parseExternStmt(&p);

@@ -26,11 +26,11 @@ enum AstKind {
     AST_LAMBDA,
     AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME,
-    AST_LET, AST_VDEF, AST_TDEF, AST_EXTERN, AST_STMT_WITH, AST_STMT_RETURN,
+    AST_VLET, AST_VDEF, AST_TDEF, AST_EXTERN, AST_STMT_WITH, AST_STMT_RETURN,
     AST_TCALL, AST_VCALL,
     AST_UNARY, AST_BINARY,
     AST_TPATTERN, AST_VPATTERN, AST_TPATTERN_SINGLETON, AST_VPATTERN_SINGLETON,
-    AST_FIELD__TEMPLATE_ITEM,AST_FIELD__TUPLE_ITEM,AST_FIELD__STRUCT_ITEM,AST_FIELD__PATTERN_ITEM
+    AST_TPATTERN_FIELD,AST_VTUPLE_FIELD,AST_VSTRUCT_FIELD,AST_VPATTERN_FIELD
 };
 
 enum AstUnaryOperator {
@@ -132,14 +132,17 @@ long double GetAstFloatLiteralValue(AstNode* node);
 int const* GetAstStringLiteralValue(AstNode* node);
 AstNode* GetAstParenItem(AstNode* node);
 
+int GetAstPatternLength(AstNode* node);
+AstNode* GetAstPatternFieldAt(AstNode* node, int index);
+SymbolID GetAstSingletonPatternName(AstNode* node);
+AstNode* GetAstSingletonPatternRhs(AstNode* node);
+
 int GetAstTupleLength(AstNode* node);
 int GetAstStructLength(AstNode* node);
-int GetAstPatternLength(AstNode* node);
 int GetAstChainPrefixLength(AstNode* node);
 AstNode* GetAstChainResult(AstNode* node);
 AstNode* GetAstTupleItemAt(AstNode* node, int index);
 AstNode* GetAstStructFieldAt(AstNode* node, int index);
-AstNode* GetAstPatternFieldAt(AstNode* node, int index);
 AstNode* GetAstChainPrefixStmtAt(AstNode* node, int index);
 
 AstNode* GetAstIteCond(AstNode* ite);

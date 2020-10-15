@@ -114,7 +114,7 @@ FloatWidth GetFloatTypeWidth(Type* typeP);
 int GetFloatTypeWidthInBits(Type* type);
 Type* GetPtrTypePointee(Type* typeP);
 int GetFuncTypeArgCount(Type* func);
-Type* GetFuncTypeArgArray(Type* func);
+Type** GetFuncTypeArgArray(Type* func);
 Type* GetFuncTypeArgAt(Type* func, int index);
 Type* GetFuncTypeImage(Type* func);
 int GetTupleTypeFieldCount(Type* type);

@@ -27,11 +27,11 @@ static SymbolID kwYieldSymbolID = 0;
 static SymbolID kwExternSymbolID = 0;
 static SymbolID kwTypedefSymbolID = 0;
 static SymbolID kwFunSymbolID = 0;
+static SymbolID kwDefSymbolID = 0;
+static SymbolID kwLetSymbolID = 0;
 static SymbolID kwAndSymbolID = 0;
 static SymbolID kwXOrSymbolID = 0;
 static SymbolID kwOrSymbolID = 0;
-static SymbolID kwStructSymbolID = 0;
-static SymbolID kwEnumSymbolID = 0;
 
 static TokenKind lexOneToken(Source* source, TokenInfo* infoP);
 static TokenKind lexOneSimpleToken(Source* source, TokenInfo* infoP);
@@ -68,11 +68,11 @@ void InitLexer(void) {
     kwExternSymbolID = strings_intern(symbolsDict, "extern");
     kwTypedefSymbolID = strings_intern(symbolsDict, "typedef");
     kwFunSymbolID = strings_intern(symbolsDict, "fun");
+    kwDefSymbolID = strings_intern(symbolsDict, "def");
+    kwLetSymbolID = strings_intern(symbolsDict, "let");
     kwAndSymbolID = strings_intern(symbolsDict, "and");
     kwXOrSymbolID = strings_intern(symbolsDict, "xor");
     kwOrSymbolID = strings_intern(symbolsDict, "or");
-    kwStructSymbolID = strings_intern(symbolsDict, "Struct");
-    kwEnumSymbolID = strings_intern(symbolsDict, "Enum");
 }
 
 void DeInitLexer(void) {
@@ -481,6 +481,8 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* infoP) {
     if (kwID == kwYieldSymbolID) { return TK_KW_YIELD; }
     if (kwID == kwExternSymbolID) { return TK_KW_EXTERN; }
     if (kwID == kwFunSymbolID) { return TK_KW_FUN; }
+    if (kwID == kwDefSymbolID) { return TK_KW_DEF; }
+    if (kwID == kwLetSymbolID) { return TK_KW_LET; }
     if (kwID == kwAndSymbolID) { return TK_KW_AND; }
     if (kwID == kwXOrSymbolID) { return TK_KW_XOR; }
     if (kwID == kwOrSymbolID) { return TK_KW_OR; }

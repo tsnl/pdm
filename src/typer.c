@@ -157,7 +157,7 @@ struct Typer {
 
     AdtTrieNode anyATN;
 
-    char const* subtypingError;
+    char* subtypingError;
 };
 
 struct SubOrSuperTypeRec {
@@ -216,7 +216,7 @@ static SubtypingResult mergeSubtypingResults(SubtypingResult fst, SubtypingResul
 static Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP);
 // helpers (3)...
 static void resetSubtypingError(Typer* typer);
-static char const* getAndResetSubtypingError(Typer* typer);
+static char* getAndResetSubtypingError(Typer* typer);
 static void setGenericSubtypingError(Typer* typer, char const* format, ...);
 static void setMismatchedKindsSubtypingError(Typer* typer, Type* sup, Type* sub);
 // helpers (4)
@@ -432,7 +432,7 @@ SubtypingResult requireSubtyping(Typer* typer, char const* why, Loc locWhere, Ty
     SubtypingResult result = helpRequestSubtyping(typer,why,locWhere,super,sub);
     
     // if the operation failed, and we were supposed to write, generating feedback from the subtyping error (must be present).
-    char const* subtypingError = getAndResetSubtypingError(typer);
+    char* subtypingError = getAndResetSubtypingError(typer);
     if (subtypingError) {
         if (result == SUBTYPING_FAILURE) {
             FeedbackNote* note = CreateFeedbackNote("caused here...",locWhere,NULL);
@@ -443,7 +443,7 @@ SubtypingResult requireSubtyping(Typer* typer, char const* why, Loc locWhere, Ty
         }
         free(subtypingError);
     } else {
-        COMPILER_ERROR("helper returned SUBTYPING_FAILURE but subtypingError (string) is NULL.");
+        COMPILER_ERROR("helper returned SUBTYPING_FAILURE but subtypingError (string) is unset/NULL.");
     }
 
     // returning whatever result we obtained.
@@ -803,20 +803,29 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
         {
             AdtTrieNode* atn = type->as.Compound_atn;
             int fieldsCount = atn->depth;
-            Type** concreteFieldsBuf = malloc(sizeof(Type) * fieldsCount);
+            TypeField* concreteFieldsBuf = malloc(sizeof(TypeField) * fieldsCount);
+
             for (AdtTrieNode* currentATN = atn; currentATN->parent; currentATN = currentATN->parent) {
                 AdtTrieEdge edge = currentATN->parent->edgesSb[currentATN->parentEdgeIndex];
-                Type* fieldType = edge.type;
-                Type* concreteFieldType = getConcreteSoln(typer,fieldType,visitedMetavarSBP);
+                Type* concreteFieldType = getConcreteSoln(typer,edge.type,visitedMetavarSBP);
                 if (concreteFieldType == NULL) {
                     return NULL;
                 } else {
-                    concreteFieldsBuf[currentATN->depth-1] = concreteFieldType;
+                    concreteFieldsBuf[currentATN->depth-1] = (TypeField){edge.name,concreteFieldType};
                 }
             }
+            Type* result = NULL;
+            if (type->kind == T_TUPLE) {
+                result = NewOrGetTupleType(typer,concreteFieldsBuf,fieldsCount);
+            } else if (type->kind == T_UNION) {
+                result = NewOrGetUnionType(typer,concreteFieldsBuf,fieldsCount);
+            } else {
+                COMPILER_ERROR("Expected a T_TUPLE or T_UNION here.");
+                result = NULL;
+            }
 
-            // todo: convert concreteFieldsBuf to ITF/replace ITFs
-            COMPILER_ERROR("NotImplemented.");
+            free(concreteFieldsBuf);
+            return result;
         }
         case T_META:
         {
@@ -916,6 +925,14 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
 
             return metavar->as.Meta.soln;
         }
+        default:
+        {
+            COMPILER_ERROR_VA(
+                "NotImplemented: 'getConcreteSoln' for type of kind '%s'",
+                TypeKindAsText(type->kind)
+            );
+            return NULL;
+        }
     }
 }
 
@@ -929,9 +946,10 @@ void resetSubtypingError(Typer* typer) {
         typer->subtypingError = NULL;
     }
 }
-char const* getAndResetSubtypingError(Typer* typer) {
-    char const* message = typer->subtypingError;
+char* getAndResetSubtypingError(Typer* typer) {
+    char* message = typer->subtypingError;
     if (message) {
+        // reset, but do not free! just move out and return.
         typer->subtypingError = NULL;
     }
     return message;
@@ -1055,7 +1073,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             // TODO: type a module
             break;
         }
-        case AST_LET:
+        case AST_VLET:
         {
             Type* lhsValueType = GetAstNodeTypingExt_SingleV(node);
             Type* rhsType = GetAstNodeTypingExt_SingleV(GetAstLetStmtRhs(node));
@@ -1087,32 +1105,60 @@ int typer_post(void* rawTyper, AstNode* node) {
             COMPILER_ERROR("NotImplemented: typer for AST_DEF_VALUE.");
             break;
         }
-        case AST_FIELD__TEMPLATE_ITEM:
-        case AST_FIELD__PATTERN_ITEM:
+        case AST_TPATTERN_FIELD:
+        case AST_TPATTERN_SINGLETON:
+        case AST_VPATTERN_SINGLETON:
+        case AST_VPATTERN_FIELD:
         {
-            // metatypes created by scoper (since lexically scoped)
-            // AstNodeTypingType and ValueType already set.
+            // metatypes created by scoper (since lexically scoped), so TypingExt_V/T already set.
             
-            // subtyping from RHS if present
-            AstNode* rhs = GetAstFieldRhs(node);
-            Type* fieldType = GetAstNodeTypingExt_SingleV(node);
-            if (rhs && fieldType) {
+            int isField = ((nodeKind == AST_TPATTERN_FIELD) || (nodeKind == AST_VPATTERN_FIELD));
+            int isPatternSingleton = ((nodeKind == AST_TPATTERN_SINGLETON) || (nodeKind == AST_VPATTERN_SINGLETON));
+            COMPILER_ASSERT(isField ^ isPatternSingleton, "Bad field/singleton context setup.");
+            
+            int typingContext = ((nodeKind == AST_TPATTERN_FIELD) || (nodeKind == AST_TPATTERN_SINGLETON));
+            int valueContext = ((nodeKind == AST_VPATTERN_FIELD) || (nodeKind == AST_VPATTERN_SINGLETON));
+            COMPILER_ASSERT(typingContext ^ valueContext, "Bad typing/value context setup.");
+
+            // getting the RHS:
+            AstNode* rhs = NULL;
+            if (isField) {
+                rhs = GetAstFieldRhs(node);
+            } else {
+                rhs = GetAstSingletonPatternRhs(node);
+            }
+            
+            // getting the RHS type:
+            Type* fieldType = NULL;
+            if (typingContext) {
+                fieldType = GetAstNodeTypingExt_SingleT(node);
+            } else {
+                fieldType = GetAstNodeTypingExt_SingleV(node);
+            }
+
+            // subtyping from RHS if present:
+            if (rhs) {
+                COMPILER_ASSERT(fieldType, "Non-null RHS but null field type in Typer.");
+
                 Loc loc = GetAstNodeLoc(node);
 
-                Type* rhsValueType = GetAstNodeTypingExt_SingleV(rhs);
-                if (rhsValueType) {
-                    requireSubtyping(typer,"value-field-rhs",loc, rhsValueType,fieldType);
+                if (valueContext) {
+                    Type* rhsValueType = GetAstNodeTypingExt_SingleV(rhs);
+                    if (rhsValueType) {
+                        requireSubtyping(typer,"value-field-rhs",loc, rhsValueType,fieldType);
+                    }
                 }
-
-                Type* rhsTypingType = GetAstNodeTypingExt_SingleT(rhs);
-                if (rhsTypingType) {
-                    requireSubtyping(typer,"type-field-rhs",loc, rhsTypingType,fieldType);
+                if (typingContext) {
+                    Type* rhsTypingType = GetAstNodeTypingExt_SingleT(rhs);
+                    if (rhsTypingType) {
+                        requireSubtyping(typer,"type-field-rhs",loc, rhsTypingType,fieldType);
+                    }
                 }
             }
             break;
         }
-        case AST_FIELD__STRUCT_ITEM:
-        case AST_FIELD__TUPLE_ITEM:
+        case AST_VSTRUCT_FIELD:
+        case AST_VTUPLE_FIELD:
         {
             Loc loc = GetAstNodeLoc(node);
             AstNode* rhs = GetAstFieldRhs(node);
@@ -1660,7 +1706,7 @@ Type* GetPtrTypePointee(Type* type) {
 int GetFuncTypeArgCount(Type* func) {
     return func->as.Func.domainCount;
 }
-Type* GetFuncTypeArgArray(Type* func) {
+Type** GetFuncTypeArgArray(Type* func) {
     return func->as.Func.domainArray;
 }
 Type* GetFuncTypeArgAt(Type* func, int index) {

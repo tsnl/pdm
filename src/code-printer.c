@@ -111,7 +111,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         }
         case AST_VDEF:
         {
-            PrintText(cp, "value ");
+            PrintText(cp, "def ");
             PrintText(cp, GetSymbolText(GetAstDefValueStmtLhs(node)));
             AstNode* optTemplatePattern = GetAstDefValueStmtOptTemplatePattern(node);
             if (optTemplatePattern) {
@@ -123,6 +123,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         }
         case AST_TDEF:
         {
+            PrintText(cp, "define ");
             SymbolID name = GetAstTypedefStmtName(node);
             AstNode* pattern = GetAstTypedefStmtOptPattern(node);
             AstNode* rhs = GetAstTypedefStmtOptRhs(node);
@@ -147,10 +148,10 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintNode(cp, typespec);
             break;
         }
-        case AST_FIELD__PATTERN_ITEM:
-        case AST_FIELD__STRUCT_ITEM:
-        case AST_FIELD__TEMPLATE_ITEM:
-        case AST_FIELD__TUPLE_ITEM:
+        case AST_VPATTERN_FIELD:
+        case AST_VTUPLE_FIELD:
+        case AST_TPATTERN_FIELD:
+        case AST_VSTRUCT_FIELD:
         {
             SymbolID lhs = GetAstFieldName(node);
             if (lhs != SYM_NULL) {
@@ -186,7 +187,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                 PrintNode(cp,pattern);
                 PrintChar(cp,' ');
             }
-            PrintText(cp, " -> ");
+            PrintText(cp, "-> ");
             PrintNode(cp, GetAstLambdaBody(node));
             break;
         }
@@ -204,6 +205,15 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                 }
             }
             PrintChar(cp,rtChar);
+            break;
+        }
+        case AST_TPATTERN_SINGLETON:
+        case AST_VPATTERN_SINGLETON:
+        {
+            PrintText(cp,GetSymbolText(GetAstSingletonPatternName(node)));
+            PrintChar(cp,':');
+            PrintNode(cp,GetAstSingletonPatternRhs(node));
+            // PrintText(cp,GetSymbolText())
             break;
         }
         case AST_VPAREN:
@@ -275,10 +285,10 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintChar(cp, '}');
             break;
         }
-        case AST_LET:
+        case AST_VLET:
         {
             PrintText(cp, "let ");
-            PrintText(cp, GetSymbolText(GetAstLetStmtLhs(node)));
+            PrintNode(cp, GetAstLetStmtLhs(node));
             PrintText(cp, " = ");
             PrintNode(cp, GetAstLetStmtRhs(node));
             break;
