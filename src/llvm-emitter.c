@@ -53,7 +53,8 @@ int exportModuleHeaders(Emitter* emitter, AstNode* moduleNode) {
 int exportModuleHeaderVisitor_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     if (GetAstNodeKind(node) == AST_LAMBDA) {
-        ExportedType exportedFuncType = exportType(emitter->typer,GetAstNodeTypingExt_SingleV(node));
+        Type* funcType = GetAstNodeTypingExt_Value(node);
+        ExportedType exportedFuncType = exportType(emitter->typer,funcType);
         ExportedValue* funcValue = malloc(sizeof(ExportedValue));
         funcValue->exprNode = node;
         funcValue->type = exportedFuncType;
@@ -94,11 +95,8 @@ ExportedType exportType(Typer* typer, Type* type) {
     // converts a compiler 'Type' into an LLVM Type.
     // 1:1 conversion wherever possible, no magic.
 
-    COMPILER_ERROR("STUBBED: exportType.");
-    return (ExportedType) {};
-
     ExportedType exportedType;
-    // exportedType.native = GetTypeSoln(typer,type);
+    exportedType.native = GetTypeSoln(typer,type);
     exportedType.llvm = NULL;
 
     if (exportedType.native) {
@@ -142,16 +140,16 @@ ExportedType exportType(Typer* typer, Type* type) {
             }
             case T_TUPLE:
             {
-                ExportedType* exportFields = NULL;
-                MapCompoundType(typer,type,buildLlvmField,&exportFields);
+                ExportedType* exportFieldsSB = NULL;
+                MapCompoundType(typer,type,buildLlvmField,&exportFieldsSB);
                 
-                int fieldCount = sb_count(exportFields);
+                int fieldCount = sb_count(exportFieldsSB);
                 LLVMTypeRef* fieldLlvmTypes = malloc(fieldCount*sizeof(LLVMTypeRef));
                 for (int i = 0; i < fieldCount; i++) {
-                    ExportedType eField = exportFields[i];
-                    fieldLlvmTypes[i] = eField.llvm;
+                    ExportedType exportedField = exportFieldsSB[i];
+                    fieldLlvmTypes[i] = exportedField.llvm;
                 }
-                sb_free(exportFields);
+                sb_free(exportFieldsSB);
 
                 exportedType.llvm = LLVMStructType(fieldLlvmTypes,fieldCount,0);
                 free(fieldLlvmTypes);

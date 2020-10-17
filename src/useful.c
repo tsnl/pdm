@@ -16,5 +16,7 @@ int __compilerErrorHandler(char const* filename, long int line, char const* pref
     } else {
         assert(0 && "A fatal compiler error occurred.");
     }
+
+    // always returns 0, so it can be used as an error branch
     return 0;
 }

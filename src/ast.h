@@ -200,15 +200,10 @@ AstNode* GetAstTypedefStmtOptRhs(AstNode* td);
 // Symbol and type storage:
 //
 
-void* GetAstNodeTypingExt_SingleV(AstNode* node);
-void* GetAstNodeTypingExt_SingleT(AstNode* node);
-void* GetAstNodeTypingExt_ArrayV(AstNode* node, int* lenP);
-void* GetAstNodeTypingExt_ArrayT(AstNode* node, int* lenP);
-
-void SetAstNodeTypingExt_SingleV(AstNode* node, void* type);
-void SetAstNodeTypingExt_SingleT(AstNode* node, void* type);
-void SetAstNodeTypingExt_ArrayV(AstNode* node, int count, void* typeArray);
-void SetAstNodeTypingExt_ArrayT(AstNode* node, int count, void* typeArray);
+void* GetAstNodeTypingExt_Value(AstNode* node);
+void* GetAstNodeTypingExt_Type(AstNode* node);
+void SetAstNodeTypingExt_Value(AstNode* node, void* type);
+void SetAstNodeTypingExt_Type(AstNode* node, void* type);
 
 AstNode* GetAstNodeParentFunc(AstNode* node);
 void SetAstNodeParentFunc(AstNode* node, AstNode* parentFunc);

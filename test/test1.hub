@@ -1,4 +1,10 @@
-def fibonacci x:U64 y:U64 = {
-	let w:U64 = 0;
+def example () = {
+	let w:U64 = 32;
+	let o:U32 = 64;
 	w
 };
+
+# def fibonacci x:U64 y:U64 = {
+#     let w:U64 = 0;
+#     w
+# };

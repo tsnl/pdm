@@ -160,10 +160,8 @@ struct AstNode {
     Loc loc;
     AstKind kind;
     AstInfo as;
-    int typingExtCount_v;
-    int typingExtCount_t;
-    void* typingExt_v;
-    void* typingExt_t;
+    void* typingExt_value;
+    void* typingExt_type;
     AstContext lookupContext;
     void* llvmRepr;
     AstNode* parentFunc;
@@ -189,8 +187,8 @@ AstNode* newNode(Loc loc, AstKind kind) {
     AstNode* node = &allocatedNodes[allocatedNodeCount++];
     node->loc = loc;
     node->kind = kind;
-    node->typingExt_v = NULL;
-    node->typingExt_t = NULL;
+    node->typingExt_value = NULL;
+    node->typingExt_type = NULL;
     node->lookupContext = __ASTCTX_NONE;
     node->llvmRepr = NULL;
     node->parentFunc = NULL;
@@ -604,12 +602,12 @@ AstNode* GetAstParenItem(AstNode* node) {
 }
 
 int GetAstPatternLength(AstNode* node) {
-    COMPILER_ASSERT(node->kind == AST_TPATTERN || node->kind == AST_VPAREN, "Expected multi-pattern AST nodes.");
+    COMPILER_ASSERT(node->kind == AST_TPATTERN || node->kind == AST_VPATTERN, "Expected multi-pattern AST nodes.");
     return countList(node->as.GenericList_items);
 }
 AstNode* GetAstPatternFieldAt(AstNode* node, int index) {
     if (DEBUG) {
-        COMPILER_ASSERT(node->kind == AST_TPATTERN || node->kind == AST_VPAREN, "Expected multi-pattern AST nodes.");
+        COMPILER_ASSERT(node->kind == AST_TPATTERN || node->kind == AST_VPATTERN, "Expected multi-pattern AST nodes.");
     }
     return listItemAt(node->as.GenericList_items, index);
 }
@@ -860,49 +858,23 @@ AstNode* GetAstTypedefStmtOptRhs(AstNode* td) {
 // Scoper and typer storage:
 //
 
-void* GetAstNodeTypingExt_SingleV(AstNode* node) {
-    COMPILER_ASSERT(node->typingExtCount_v == -1,"single ext <=> count == -1");
-    return node->typingExt_v;
+void* GetAstNodeTypingExt_Value(AstNode* node) {
+    return node->typingExt_value;
 }
-void* GetAstNodeTypingExt_SingleT(AstNode* node) {
-    COMPILER_ASSERT(node->typingExtCount_t == -1,"single ext <=> count == -1");
-    return node->typingExt_t;
+void* GetAstNodeTypingExt_Type(AstNode* node) {
+    return node->typingExt_type;
 }
-void* GetAstNodeTypingExt_ArrayV(AstNode* node, int* lenP) {
-    *lenP = node->typingExtCount_v;
-    return node->typingExt_v;
-}
-void* GetAstNodeTypingExt_ArrayT(AstNode* node, int* lenP) {
-    *lenP = node->typingExtCount_t;
-    return node->typingExt_t;
-}
-void SetAstNodeTypingExt_SingleV(AstNode* node, void* type) {
+void SetAstNodeTypingExt_Value(AstNode* node, void* type) {
     if (DEBUG) {
-        COMPILER_ASSERT(type,"SetAstNodeTypingExt_SingleV: null arg set.");
+        COMPILER_ASSERT(type,"SetAstNodeTypingExt_Value: null arg set.");
     }
-    node->typingExt_v = type;
-    node->typingExtCount_v = -1;
+    node->typingExt_value = type;
 }
-void SetAstNodeTypingExt_SingleT(AstNode* node, void* type) {
+void SetAstNodeTypingExt_Type(AstNode* node, void* type) {
     if (DEBUG) {
-        COMPILER_ASSERT(type,"SetAstNodeTypingExt_SingleT: null arg set.");
+        COMPILER_ASSERT(type,"SetAstNodeTypingExt_Type: null arg set.");
     }
-    node->typingExt_t = type;
-    node->typingExtCount_t = -1;
-}
-void SetAstNodeTypingExt_ArrayV(AstNode* node, int count, void* typeArray) {
-    if (DEBUG && count) {
-        COMPILER_ASSERT(typeArray,"SetAstNodeTypingExt_ArrayV: NULL array for non-empty count.");
-    }
-    node->typingExtCount_v = count;
-    node->typingExt_v = typeArray;
-}
-void SetAstNodeTypingExt_ArrayT(AstNode* node, int count, void* typeArray) {
-    if (DEBUG && count) {
-        COMPILER_ASSERT(typeArray,"SetAstNodeTypingExt_ArrayT: NULL array for non-empty count.");
-    }
-    node->typingExtCount_t = count;
-    node->typingExt_t = typeArray;
+    node->typingExt_type = type;
 }
 
 // void SetAstTypedefStmtValueDefnType(AstNode* node, void* valueDefn) {

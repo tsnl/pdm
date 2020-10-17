@@ -92,9 +92,9 @@ Typer* NewTyper(TyperCfg config);
 // Constructor methods:
 //
 
-Type* NewOrGetUnitType(Typer* typer);
-Type* NewOrGetIntType(Typer* typer, IntWidth width);
-Type* NewOrGetFloatType(Typer* typer, FloatWidth width);
+Type* GetUnitType(Typer* typer);
+Type* GetIntType(Typer* typer, IntWidth width);
+Type* GetFloatType(Typer* typer, FloatWidth width);
 Type* NewOrGetPtrType(Typer* typer, Type* pointee);
 Type* NewOrGetFuncType(Typer* typer, int argsCount, Type* args[], Type* image);
 Type* NewOrGetTypefuncType(Typer* typer, Type* arg, Type* body);
@@ -129,7 +129,9 @@ char const* GetMetatypeName(Type* typeP);
 
 void TypeNode(Typer* typer, AstNode* node);
 int SolveAndCheckTyper(Typer* typer);
+
 size_t GetTypeSizeInBytes(Typer* typer, Type* type);
+Type* GetTypeSoln(Typer* typer, Type* type);
 
 //
 // Debug:
