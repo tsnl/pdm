@@ -33,6 +33,8 @@ int main() {
 
     // TODO: execute, emit an executable, or just exit after reporting the program's validity.
     DestroyInterp(interp);
+
+    printf("Compilation succeded.\n");
     return 0;
 }
 

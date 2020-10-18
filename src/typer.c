@@ -959,6 +959,23 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
                     }
                 }
 
+                if (metavar->as.Meta.soln) {
+                    // since we have found a solution, we can propagate this info to all super and subtypes.
+                    // this should be requested by super and subtypes later, but this may be required since we get only concrete types earlier.
+                    int subtypeCount = sb_count(metavar->as.Meta.ext->deferredSubSB);
+                    SubtypingResult result = SUBTYPING_CONFIRM;
+                    for (int subtypeIndex = 0; subtypeIndex < subtypeCount; subtypeIndex++) {
+                        SubtypeRec subtypeRec = metavar->as.Meta.ext->deferredSubSB[subtypeIndex];
+                        
+                        SubtypingResult subtypeResult = requireSubtyping(typer,subtypeRec.why,subtypeRec.loc,metavar->as.Meta.soln,subtypeRec.ptr);
+                        result = mergeSubtypingResults(result,subtypeResult);
+                    }
+                    if (result == SUBTYPING_FAILURE) {
+                        COMPILER_ERROR("Invalid metavar solution; returned SUBTYPING_FAILURE when applied to subtypes.");
+                        return NULL;
+                    }
+
+                }
                 return metavar->as.Meta.soln;
             }
         }
