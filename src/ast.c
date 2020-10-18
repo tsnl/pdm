@@ -1037,7 +1037,8 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         case AST_TPATTERN_SINGLETON:
         case AST_VPATTERN_SINGLETON:
         {
-            return 1;
+            AstNode* rhs = GetAstSingletonPatternRhs(node);
+            return RecursivelyVisitAstNode(context,rhs,preVisitorCb,postVisitorCb);
         }
         case AST_VTUPLE:
         case AST_TTUPLE:
