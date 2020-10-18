@@ -454,11 +454,17 @@ SubtypingResult requireSubtyping(Typer* typer, char const* why, Loc locWhere, Ty
 }
 int solveAndCheckAllMetavars(Typer* typer) {
     // todo: consider sorting in dependency order and avoiding multi-pass approach?
+    int printDebugSnapshots = 1;
 
     int maxPassCount = 5000;
     int failureCountThisPass = -1;
     int failureCountLastPass = -1;
     
+    if (DEBUG && printDebugSnapshots) {
+        printf("!!- SNAPSHOT[INIT]\n");
+        printTyper(typer);
+    }
+
     int passIndex;
     for (passIndex = 0; passIndex < maxPassCount; passIndex++) {
         failureCountThisPass = 0;
@@ -483,6 +489,12 @@ int solveAndCheckAllMetavars(Typer* typer) {
             // COMPILER_ERROR("NotImplemented: validate 'solution' in solveAllMetavars.");
         }
 
+        // dump:
+        if (DEBUG && printDebugSnapshots)
+            printf("!!- SNAPSHOT[PASS %d/%d]\n", passIndex+1,maxPassCount);
+            printTyper(typer);
+
+        // determining whether or not to terminate:
         if (failureCountLastPass < 0) {
             failureCountLastPass = failureCountThisPass;
         } else {
@@ -797,18 +809,25 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
                 return NULL;
             }
 
+            Type* concreteResult = NULL;
+
+            int failed = 0;
             int argsCount = type->as.Func.domainCount;
             Type** concreteArgsBuf = malloc(sizeof(Type) * argsCount);
             for (int domainIndex = 0; domainIndex < argsCount; domainIndex++) {
                 Type* concreteArg = getConcreteSoln(typer,type->as.Func.domainArray[domainIndex],visitedMetavarSBP);
                 if (concreteArg == NULL) {
-                    return NULL;
+                    failed = 1;
+                    break;
                 }
                 concreteArgsBuf[domainIndex] = concreteArg;
             }
+            if (!failed) {
+                concreteResult = NewOrGetFuncType(typer,argsCount,concreteArgsBuf,concreteImage);
+            }
             
-            Type* concreteResult = NewOrGetFuncType(typer,argsCount,concreteArgsBuf,concreteImage);
-            free(concreteArgsBuf); concreteArgsBuf = NULL;
+            free(concreteArgsBuf); 
+            concreteArgsBuf = NULL;
             return concreteResult;
         }
         case T_TUPLE:
@@ -880,7 +899,7 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
                                 hypothesis = concreteSupertype;
                             } else {
                                 SubtypingResult comparison = requireSubtyping(
-                                    typer,"hypothesis update",metavar->as.Meta.ext->createdLoc,
+                                    typer,"get-hypothesis",metavar->as.Meta.ext->createdLoc,
                                     concreteSupertype,hypothesis
                                 );
                                 COMPILER_ASSERT(comparison != SUBTYPING_DEFERRED, "expected 'getConcreteSoln' to return concrete types; no deferral allowed.");
@@ -904,7 +923,7 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
                                 test = concreteSubtype;
                             } else {
                                 SubtypingResult comparison = requireSubtyping(
-                                    typer,"hypothesis update",metavar->as.Meta.ext->createdLoc,
+                                    typer,"get-test",metavar->as.Meta.ext->createdLoc,
                                     test,concreteSubtype
                                 );
                                 COMPILER_ASSERT(comparison != SUBTYPING_DEFERRED, "expected 'getConcreteSoln' to return concrete types; no deferral allowed.");
@@ -928,7 +947,7 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
                     metavar->as.Meta.soln = hypothesis;
                 } else {
                     // subtype and supertype info => compare and return if OK.
-                    SubtypingResult result = requireSubtyping(typer,"transitivity",metavar->as.Meta.ext->createdLoc,hypothesis,test);
+                    SubtypingResult result = requireSubtyping(typer,"new-soln-update",metavar->as.Meta.ext->createdLoc,hypothesis,test);
                     COMPILER_ASSERT(result != SUBTYPING_DEFERRED, "expected 'requireSubtyping' to operate on purely concrete args; no deferral allowed.");
                     if (result == SUBTYPING_CONFIRM) {
                         // hypothesis works!
@@ -1191,19 +1210,14 @@ int typer_post(void* rawTyper, AstNode* node) {
                 COMPILER_ASSERT(fieldType, "Non-null RHS but null field type in Typer.");
 
                 Loc loc = GetAstNodeLoc(node);
-
-                if (valueContext) {
-                    Type* rhsValueType = GetAstNodeTypingExt_Value(rhs);
-                    if (rhsValueType) {
-                        requireSubtyping(typer,"value-field-rhs",loc, rhsValueType,fieldType);
-                    }
+                Type* rhsTypingType = GetAstNodeTypingExt_Type(rhs);
+                if (rhsTypingType) {
+                    requireSubtyping(typer,"type-field-rhs",loc, rhsTypingType,fieldType);
+                } else {
+                    COMPILER_ERROR("RHS type is NULL.");
                 }
-                if (typingContext) {
-                    Type* rhsTypingType = GetAstNodeTypingExt_Type(rhs);
-                    if (rhsTypingType) {
-                        requireSubtyping(typer,"type-field-rhs",loc, rhsTypingType,fieldType);
-                    }
-                }
+            } else {
+                COMPILER_ERROR("No RHS provided.");
             }
             break;
         }
@@ -1336,12 +1350,12 @@ int typer_post(void* rawTyper, AstNode* node) {
                     actualArgsTypes[argIndex] = GetAstNodeTypingExt_Value(actualArgNode);
                 }
             }
-            Type* retType = NewMetavarType(loc, typer, "in-ret");
+            Type* retType = NewMetavarType(loc, typer, "vcall-ret");
             
             Type* actualFuncType = NewOrGetFuncType(typer, actualArgsCount, actualArgsTypes, retType);
             
             // requiring the formal functype to supertype the actual functype
-            requireSubtyping(typer,"value-call",loc, formalFuncType,actualFuncType);
+            requireSubtyping(typer,"vcall",loc, formalFuncType,actualFuncType);
             
             SetAstNodeTypingExt_Value(node,retType);
             break;
@@ -1500,10 +1514,10 @@ void printType(Typer* typer, Type* type) {
         }
         case T_META:
         {
-            int printSupAndSubTypeCount = 0;
+            int printSupAndSubTypeCount = 1;
             if (printSupAndSubTypeCount) {
                 printf(
-                    "meta %s[%d,%d]",
+                    "meta %s (%d supers, %d subs)",
                     type->as.Meta.name, sb_count(type->as.Meta.ext->deferredSuperSB), sb_count(type->as.Meta.ext->deferredSubSB)
                 );
             } else {

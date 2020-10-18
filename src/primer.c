@@ -183,15 +183,15 @@ inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn
 Scope* newRootScope(Typer* typer) {
     Scope* root = NULL;
     
-    root = newScope(root, Symbol("u1"), GetIntType(typer,INT_1), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("u8"), GetIntType(typer,INT_8), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("u16"), GetIntType(typer,INT_16), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("u32"), GetIntType(typer,INT_32), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("u64"), GetIntType(typer,INT_64), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("u128"), GetIntType(typer,INT_128), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("U1"), GetIntType(typer,INT_1), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("U8"), GetIntType(typer,INT_8), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("U16"), GetIntType(typer,INT_16), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("U32"), GetIntType(typer,INT_32), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("U64"), GetIntType(typer,INT_64), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("U128"), GetIntType(typer,INT_128), NULL, ASTCTX_TYPING);
 
-    root = newScope(root, Symbol("f32"), GetFloatType(typer,FLOAT_32), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("f64"), GetFloatType(typer,FLOAT_64), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("F32"), GetFloatType(typer,FLOAT_32), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("F64"), GetFloatType(typer,FLOAT_64), NULL, ASTCTX_TYPING);
     
     return root;
 }
@@ -293,6 +293,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             } else {
                 defnID = GetAstFieldName(node);
             }
+
             void* patternType = NewMetavarType(loc, primer->typer, "%cpattern:%s", (isValue ? 'v':'t'), GetSymbolText(defnID));
             pushSymbol(primer, defnID, patternType, node, (isValue ? ASTCTX_VALUE:ASTCTX_TYPING));
             
