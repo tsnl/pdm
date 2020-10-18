@@ -1890,13 +1890,14 @@ size_t GetTypeSizeInBytes(Typer* typer, Type* type) {
             // fixme: size computation for unions uses a hard-coded, fixed 8-byte tag.
             return 8+size;  // tag+data 
         }
+        case T_FUNC:
+        {
+            // fixme: hard-coded func pointer size
+            return 8;
+        }
         default:
         {
-            if (DEBUG) {
-                printf("!!- Unknown type kind in GetTypeSizeInBytes: %s", TypeKindAsText(typeKind));
-            } else {
-                assert(0 && "Unknown type kind in GetTypeSizeInBytes.");
-            }
+            COMPILER_ERROR_VA("Unknown type kind in GetTypeSizeInBytes: %s", TypeKindAsText(typeKind));
             return -1;
         }
     }

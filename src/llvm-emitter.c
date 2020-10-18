@@ -4,10 +4,24 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <llvm-c/Core.h>
 #include "stb/stretchy_buffer.h"
 
+#include <llvm-c/Core.h>
+#include <llvm-c/ExecutionEngine.h>
+#include <llvm-c/Target.h>
+#include <llvm-c/Analysis.h>
+#include <llvm-c/BitWriter.h>
+
 #include "useful.h"
+
+// See Paul Smith's "How to Get Started with LLVM C API"
+// - https://www.pauladamsmith.com/blog/2015/01/how-to-get-started-with-llvm-c-api.html
+
+// See Eli Bendersky's Python implementation of the LLVM Kaleidoscope demo:
+// - https://github.com/eliben/pykaleidoscope/blob/master/chapter3and4.py
+
+// See wickedchicken's GitHub examples:
+// - https://github.com/wickedchicken/llvm-c-example/blob/master/fac.c
 
 typedef struct Emitter Emitter;
 struct Emitter {
@@ -33,8 +47,8 @@ struct ExportedType {
     LLVMTypeRef llvm;
 };
 struct ExportedValue {
-    AstNode* exprNode;
-    LLVMValueRef llvmValueRef;
+    AstNode* native;
+    LLVMValueRef llvm;
     ExportedType type;
 };
 static int exportModuleHeaders(Emitter* emitter, AstNode* moduleNode);
@@ -56,9 +70,10 @@ int exportModuleHeaderVisitor_pre(void* rawEmitter, AstNode* node) {
         Type* funcType = GetAstNodeTypingExt_Value(node);
         ExportedType exportedFuncType = exportType(emitter->typer,funcType);
         ExportedValue* funcValue = malloc(sizeof(ExportedValue));
-        funcValue->exprNode = node;
+        funcValue->native = node;
         funcValue->type = exportedFuncType;
-        funcValue->llvmValueRef = LLVMAddFunction(emitter->module,"synthetic-function",exportedFuncType.llvm);
+        funcValue->llvm = LLVMAddFunction(emitter->module,"synthetic-function",exportedFuncType.llvm);
+        LLVMSetFunctionCallConv(funcValue->llvm,LLVMCCallConv);
         SetAstNodeLlvmRepr(node,funcValue);
     }
     return 1;
@@ -69,17 +84,29 @@ int exportModule(Emitter* emitter, AstNode* moduleNode) {
 int exportModuleVisitor_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     switch (GetAstNodeKind(node)) {
+        case AST_LAMBDA:
+        {
+            ExportedValue* syntheticFunctionExportedValue = GetAstNodeLlvmRepr(node);
+            LLVMValueRef syntheticFunction = syntheticFunctionExportedValue->llvm;
+
+            LLVMBasicBlockRef entryBB = LLVMAppendBasicBlock(syntheticFunction,"entry");
+            // todo: destructure arguments, store somewhere?
+            // todo: emit RHS here
+            // ExportedValue returnValue = exportValue(emitter,GetAstLambdaBody(node));
+            break;
+        }
         case AST_VDEF:
         {
-            // todo: emit 'def-val' statements
-
-            // AstNode* rhsNode = GetAstDefStmtRhs(node);
-            // ExportedType exportedType = exportType(emitter->typer,GetSingleAstNodeTypingExtV(rhsNode));
-            
-            // todo: append a basic block here.
-
-            // ExportedValue exportedDesugaredRhsValue = exportValue(emitter,rhsNode);
-            
+            SymbolID lhs = GetAstDefValueStmtLhs(node);
+            AstNode* rhsNode = GetAstDefValueStmtRhs(node);
+            ExportedValue exportedRhs = exportValue(emitter,rhsNode);
+            LLVMSetValueName(exportedRhs.llvm,GetSymbolText(lhs));
+            break;
+        }
+        case AST_EXTERN:
+        {
+            // todo: add support for 'extern' value definitions; values with external linkage.
+            COMPILER_ERROR("NotImplemented: AST_EXTERN");
             break;
         }
         default:
@@ -213,94 +240,95 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
     // converts a compiler expression into an LLVM expression, building as required.
     Typer* typer = emitter->typer;
 
-    COMPILER_ERROR("STUBBED: 'exportValue'");
-    return (ExportedValue) {};
+    // alloca-ing some memory for each value, relying on LLVM's mem2reg pass to optimize where unnecessary:
+    ExportedValue exportedValue;
+    exportedValue.native = exprNode;
+    exportedValue.type = exportType(emitter->typer,GetAstNodeTypingExt_Value(exprNode));
+    exportedValue.llvm = NULL;
+    if (GetTypeKind(exportedValue.type.native) != T_FUNC) {
+        int typeSizeInBytes = GetTypeSizeInBytes(typer,exportedValue.type.native);
+        if (typeSizeInBytes) {
+            exportedValue.llvm = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,NULL);
+        }
+    }
 
-    // ExportedValue exportedValue;
-    // Type* valueType = GetSingleAstNodeTypingExtV(exprNode);
-    // // Type* concreteType = GetTypeSoln(typer,valueType);
-
-    // exportedValue.exprNode = exprNode;
-    // exportedValue.llvmValueRef = NULL;
-    // exportedValue.type = exportType(emitter->typer,concreteType);
-
-    // if (exportedValue.exprNode) {
-    //     switch (GetAstNodeKind(exportedValue.exprNode)) {
+    if (exportedValue.native) {
+        switch (GetAstNodeKind(exportedValue.native)) {
             
-    //         //
-    //         // ID,FUNC: just fetch the stored EValue from the symbol table.
-    //         //
+            //
+            // ID,FUNC: just fetch the stored EValue from the symbol table.
+            //
 
-    //         case AST_LAMBDA:
-    //         {
-    //             ExportedValue* lambdaSynthetic = GetAstNodeLlvmRepr(exportedValue.exprNode);
-    //             exportedValue.llvmValueRef = lambdaSynthetic->llvmValueRef;
-    //             break;
-    //         }
+            case AST_LAMBDA:
+            {
+                ExportedValue* lambdaSynthetic = GetAstNodeLlvmRepr(exportedValue.native);
+                exportedValue.llvm = lambdaSynthetic->llvm;
+                break;
+            }
 
-    //         //
-    //         // UNIT: represented by a NULL llvmValueRef
-    //         //
+            //
+            // UNIT: represented by a NULL llvm
+            //
 
-    //         case AST_UNIT:
-    //         {
-    //             exportedValue.llvmValueRef = NULL;
-    //             break;
-    //         }
+            case AST_UNIT:
+            {
+                break;
+            }
 
-    //         //
-    //         // INT,FLOAT: llvmValueRef is the value.
-    //         //
+            //
+            // INT,FLOAT: llvmValueRef is the value.
+            //
 
-    //         case AST_LITERAL_INT:
-    //         {
-    //             size_t intValue = GetAstIntLiteralValue(exportedValue.exprNode);
-    //             exportedValue.llvmValueRef = LLVMConstInt(exportedValue.type.llvm,intValue,0);
-    //             break;
-    //         }
-    //         case AST_LITERAL_FLOAT:
-    //         {
-    //             long double floatValue = GetAstFloatLiteralValue(exportedValue.exprNode);
-    //             exportedValue.llvmValueRef = LLVMConstReal(exportedValue.type.llvm,floatValue);
-    //             break;
-    //         }
+            case AST_LITERAL_INT:
+            {
+                size_t intValue = GetAstIntLiteralValue(exportedValue.native);
+                LLVMValueRef stored = LLVMConstInt(exportedValue.type.llvm,intValue,0);
+                LLVMBuildStore(emitter->builder,stored,exportedValue.llvm);
+                break;
+            }
+            case AST_LITERAL_FLOAT:
+            {
+                long double floatValue = GetAstFloatLiteralValue(exportedValue.native);
+                LLVMValueRef stored = LLVMConstReal(exportedValue.type.llvm,floatValue);
+                LLVMBuildStore(emitter->builder,stored,exportedValue.llvm);
+                break;
+            }
 
-    //         //
-    //         // STRUCT,TUPLE,UNION,ARRAY: llvmValueRef is a pointer to the value.
-    //         //
+            //
+            // STRUCT,TUPLE,UNION,ARRAY: llvmValueRef is a pointer to the value.
+            //
 
-    //         case AST_VTUPLE:
-    //         case AST_STRUCT:
-    //         {
-    //             // LLVMConstStruct();
-    //             exportedValue.llvmValueRef = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"tuple");
-    //             break;
-    //         }
+            case AST_VTUPLE:
+            case AST_VSTRUCT:
+            {
+                // LLVMConstStruct();
+                break;
+            }
             
-    //         //
-    //         // STRING: data stored C-style, pointer to first byte returned.
-    //         // todo: store string length
-    //         //
+            //
+            // STRING: data stored C-style, pointer to first byte returned.
+            // todo: store string length
+            //
 
-    //         // case AST_LITERAL_STRING:
-    //         // {
-    //         //     char const* strValue = GetAstStringLiteralValue(value.exprNode);
-    //         //     size_t len = strlen(strValue);
-    //         //     value.llvmValueRef = LLVMConstString(strValue,len,0);
-    //         //     break;
-    //         // }
+            // case AST_LITERAL_STRING:
+            // {
+            //     char const* strValue = GetAstStringLiteralValue(value.exprNode);
+            //     size_t len = strlen(strValue);
+            //     value.llvmValueRef = LLVMConstString(strValue,len,0);
+            //     break;
+            // }
             
-    //         // todo: emitExpr for tuples:
-    //         // - always returns a pointer to a tuple.
+            // todo: emitExpr for tuples:
+            // - always returns a pointer to a tuple.
 
-    //         default:
-    //         {
-    //             break;
-    //         }
-    //     }
-    // }
+            default:
+            {
+                break;
+            }
+        }
+    }
     
-    // return exportedValue;
+    return exportedValue;
 }
 
 void buildLlvmField(Typer* typer, void* rawSBP, SymbolID name, Type* type) {
@@ -318,5 +346,12 @@ int EmitLlvmModule(Typer* typer, AstNode* module) {
     int result = 1;
     result = exportModuleHeaders(&emitter,module) && result;
     result = exportModule(&emitter,module) && result;
+
+    int debugPrintLlvmLL = 1;
+    if (DEBUG && debugPrintLlvmLL) {
+        printf("!!- LLVM Module Dump:\n");
+        LLVMDumpModule(emitter.module);
+    }
+
     return result;
 }
