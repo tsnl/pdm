@@ -1,18 +1,6 @@
-def example () = {
-	let w:U64 = 32;
-	let o:U32 = 64;
-	w
-};
+def answer () = 42;
 
-def identity_u64 y:U64 = {
-	y
+def question () = {
+    let fortytwo:U64 = answer ();
+    fortytwo
 };
-
-def identity z:U64 = {
-	identity_u64 z
-};
-
-# def fibonacci x:U64 y:U64 = {
-#     let w:U64 = 0;
-#     w
-# };

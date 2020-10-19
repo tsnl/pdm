@@ -245,7 +245,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             IndentPrinter(cp);
             PrintChar(cp, '\n');
 
-            int structCount = GetAstStructLength(node);
+            int structCount = CountAstStructFields(node);
             for (int index = 0; index < structCount; index++) {
                 AstNode* field = GetAstStructFieldAt(node, index);
                 PrintChar(cp, '\t');

@@ -203,6 +203,7 @@ static SubtypingResult requireSubtyping(Typer* typer, char const* why, Loc locWh
 static int solveAndCheckAllMetavars(Typer* typer);
 // helpers (1)...
 static SubtypingResult helpRequestSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub);
+static SubtypingResult helpRequestSubtyping_unitSuper(Typer* typer,char const* why,Loc loc, Type* super, Type* sub);
 static SubtypingResult helpRequestSubtyping_intSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub);
 static SubtypingResult helpRequestSubtyping_floatSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub);
 static SubtypingResult helpRequestSubtyping_ptrSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub);
@@ -543,6 +544,7 @@ int solveAndCheckAllMetavars(Typer* typer) {
 SubtypingResult helpRequestSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub) {
     switch (super->kind)
     {
+        case T_UNIT: { return helpRequestSubtyping_unitSuper(typer,why,locWhere,super,sub); }
         case T_INT: { return helpRequestSubtyping_intSuper(typer,why,locWhere,super,sub); }
         case T_FLOAT: { return helpRequestSubtyping_floatSuper(typer,why,locWhere,super,sub); }
         case T_PTR: { return helpRequestSubtyping_ptrSuper(typer,why,locWhere,super,sub); }
@@ -553,6 +555,24 @@ SubtypingResult helpRequestSubtyping(Typer* typer, char const* why, Loc locWhere
         default:
         {
             COMPILER_ERROR_VA("NotImplemented: helpRequestSubtyping for super of unknown type kind %s.", TypeKindAsText(super->kind));
+            return SUBTYPING_FAILURE;
+        }
+    }
+}
+SubtypingResult helpRequestSubtyping_unitSuper(Typer* typer,char const* why,Loc loc, Type* super, Type* sub) {
+    switch (sub->kind)
+    {
+        case T_UNIT:
+        {
+            return SUBTYPING_CONFIRM;
+        }
+        case T_META:
+        {
+            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub);
+        }
+        default:
+        {
+            setMismatchedKindsSubtypingError(typer,super,sub);
             return SUBTYPING_FAILURE;
         }
     }
@@ -1287,7 +1307,7 @@ int typer_post(void* rawTyper, AstNode* node) {
         case AST_VSTRUCT:
         case AST_VTUPLE:
         {
-            int fieldCount = GetAstStructLength(node);
+            int fieldCount = CountAstStructFields(node);
             TypeField* typefieldBuf = malloc(fieldCount*sizeof(TypeField));
             for (int index = 0; index < fieldCount; index++) {
                 AstNode* field = GetAstStructFieldAt(node,index);
@@ -1890,13 +1910,14 @@ size_t GetTypeSizeInBytes(Typer* typer, Type* type) {
             // fixme: size computation for unions uses a hard-coded, fixed 8-byte tag.
             return 8+size;  // tag+data 
         }
+        case T_FUNC:
+        {
+            // fixme: hard-coded func pointer size
+            return 8;
+        }
         default:
         {
-            if (DEBUG) {
-                printf("!!- Unknown type kind in GetTypeSizeInBytes: %s", TypeKindAsText(typeKind));
-            } else {
-                assert(0 && "Unknown type kind in GetTypeSizeInBytes.");
-            }
+            COMPILER_ERROR_VA("Unknown type kind in GetTypeSizeInBytes: %s", TypeKindAsText(typeKind));
             return -1;
         }
     }

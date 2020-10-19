@@ -621,7 +621,7 @@ AstNode* GetAstSingletonPatternRhs(AstNode* node) {
 int GetAstTupleLength(AstNode* node) {
     return countList(node->as.GenericList_items);
 }
-int GetAstStructLength(AstNode* node) {
+int CountAstStructFields(AstNode* node) {
     return countList(node->as.GenericList_items);
 }
 int GetAstChainPrefixLength(AstNode* node) {

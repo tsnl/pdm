@@ -138,7 +138,7 @@ SymbolID GetAstSingletonPatternName(AstNode* node);
 AstNode* GetAstSingletonPatternRhs(AstNode* node);
 
 int GetAstTupleLength(AstNode* node);
-int GetAstStructLength(AstNode* node);
+int CountAstStructFields(AstNode* node);
 int GetAstChainPrefixLength(AstNode* node);
 AstNode* GetAstChainResult(AstNode* node);
 AstNode* GetAstTupleItemAt(AstNode* node, int index);
