@@ -55,6 +55,7 @@ typedef struct AdtTrieEdge AdtTrieEdge;
 
 typedef struct TypeBuf TypeBuf;
 
+typedef struct IntInfo IntInfo;
 typedef struct MetaInfo MetaInfo;
 typedef struct MetaInfoExt MetaInfoExt;
 typedef struct FuncInfo FuncInfo;
@@ -94,6 +95,10 @@ struct TypeBuf {
     Type* ptr;
 };
 
+struct IntInfo {
+    IntWidth width;
+    int isSigned;
+};
 struct MetaInfo {
     void* soln;
     char* name;
@@ -104,6 +109,7 @@ struct MetaInfoExt {
     Loc createdLoc;
     SubtypeRec* deferredSubSB;
     SupertypeRec* deferredSuperSB;
+    int solnUpdatedThisPass;
 
     // todo: add multiple 'meta solvers' for different cases:
     // - unary intrinsic
@@ -123,7 +129,7 @@ struct ModuleInfo {
     // todo: implement type ModuleInfo
 };
 union GenericTypeInfo {
-    IntWidth Int_width;
+    IntInfo Int;
     FloatWidth Float_width;
     Type* Ptr_pointee;
     MetaInfo Meta;
@@ -142,7 +148,8 @@ struct Typer {
 
     Type anyType;
     Type unitType;
-    Type intType[__INT_COUNT];
+    Type unsignedIntType[__INT_COUNT];
+    Type signedIntType[__INT_COUNT];
     Type floatType[__FLOAT_COUNT];
     
     TypeBuf metatypeBuf;
@@ -232,7 +239,7 @@ static void accumulateCompoundFieldSizeSum(Typer* typer, void* sumP, SymbolID na
 static void accumulateCompoundFieldSizeMax(Typer* typer, void* maxP, SymbolID name, Type* type);
 
 // printing:
-static void printTyper(Typer* typer);
+static void printTyper(Typer* typer, int metaOnly);
 static void printType(Typer* typer, Type* type);
 static void printTypeLn(Typer* typer, Type* type);
 
@@ -273,13 +280,18 @@ Typer* newTyper(TyperCfg config) {
     typer->floatType[FLOAT_32] = newType(T_FLOAT,(union GenericTypeInfo){.Float_width=FLOAT_32});
     typer->floatType[FLOAT_64] = newType(T_FLOAT,(union GenericTypeInfo){.Float_width=FLOAT_64});
 
-    typer->intType[INT_1] = newType(T_INT,(union GenericTypeInfo){.Int_width=INT_1});
-    typer->intType[INT_8] = newType(T_INT,(union GenericTypeInfo){.Int_width=INT_8});
-    typer->intType[INT_16] = newType(T_INT,(union GenericTypeInfo){.Int_width=INT_16});
-    typer->intType[INT_32] = newType(T_INT,(union GenericTypeInfo){.Int_width=INT_32});
-    typer->intType[INT_64] = newType(T_INT,(union GenericTypeInfo){.Int_width=INT_64});
-    typer->intType[INT_64] = newType(T_INT,(union GenericTypeInfo){.Int_width=INT_64});
-    typer->intType[INT_128] = newType(T_INT,(union GenericTypeInfo){.Int_width=INT_128});
+    typer->unsignedIntType[INT_1] = newType(T_INT,(union GenericTypeInfo){.Int={.width=INT_1,.isSigned=0}});
+    typer->unsignedIntType[INT_8] = newType(T_INT,(union GenericTypeInfo){.Int={.width=INT_8,.isSigned=0}});
+    typer->unsignedIntType[INT_16] = newType(T_INT,(union GenericTypeInfo){.Int={.width=INT_16,.isSigned=0}});
+    typer->unsignedIntType[INT_32] = newType(T_INT,(union GenericTypeInfo){.Int={.width=INT_32,.isSigned=0}});
+    typer->unsignedIntType[INT_64] = newType(T_INT,(union GenericTypeInfo){.Int={.width=INT_64,.isSigned=0}});
+    typer->unsignedIntType[INT_128] = newType(T_INT,(union GenericTypeInfo){.Int={.width=INT_128,.isSigned=0}});
+    
+    typer->signedIntType[INT_8] = newType(T_INT,(union GenericTypeInfo){.Int={.width=INT_8,.isSigned=1}});
+    typer->signedIntType[INT_16] = newType(T_INT,(union GenericTypeInfo){.Int={.width=INT_16,.isSigned=1}});
+    typer->signedIntType[INT_32] = newType(T_INT,(union GenericTypeInfo){.Int={.width=INT_32,.isSigned=1}});
+    typer->signedIntType[INT_64] = newType(T_INT,(union GenericTypeInfo){.Int={.width=INT_64,.isSigned=1}});
+    typer->signedIntType[INT_128] = newType(T_INT,(union GenericTypeInfo){.Int={.width=INT_128,.isSigned=1}});
     
     typer->metatypeBuf = newTypeBuf("metatypeBuf", typer->backupCfg.maxMetavarCount);
     typer->metatypeExtBuf = malloc(sizeof(MetaInfoExt) * typer->backupCfg.maxMetavarCount);
@@ -463,7 +475,7 @@ int solveAndCheckAllMetavars(Typer* typer) {
     
     if (DEBUG && printDebugSnapshots) {
         printf("!!- SNAPSHOT[INIT]\n");
-        printTyper(typer);
+        printTyper(typer,0);
     }
 
     int passIndex;
@@ -473,6 +485,7 @@ int solveAndCheckAllMetavars(Typer* typer) {
             Type* metavar = &typer->metatypeBuf.ptr[metavarIndex];
             
             Type** visitedSB = NULL;
+            metavar->as.Meta.ext->solnUpdatedThisPass = 0;
             Type* solution = getConcreteSoln(typer,metavar,&visitedSB);
             sb_free(visitedSB);
 
@@ -493,7 +506,7 @@ int solveAndCheckAllMetavars(Typer* typer) {
         // dump:
         if (DEBUG && printDebugSnapshots)
             printf("!!- SNAPSHOT[PASS %d/%d]\n", passIndex+1,maxPassCount);
-            printTyper(typer);
+            printTyper(typer,1);
 
         // determining whether or not to terminate:
         if (failureCountLastPass < 0) {
@@ -583,7 +596,11 @@ SubtypingResult helpRequestSubtyping_intSuper(Typer* typer, char const* why, Loc
         case T_INT:
         {
             // A subtypes B <=> width(A) >= width(B)
-            if (sub->as.Int_width >= super->as.Int_width) {
+            if (sub->as.Int.isSigned != super->as.Int.isSigned) {
+                setGenericSubtypingError(typer,"subtyping mismatch: signed and unsigned");
+                return SUBTYPING_FAILURE;
+            }
+            if (sub->as.Int.width >= super->as.Int.width) {
                 return SUBTYPING_CONFIRM;
             } else {
                 int subWidthInBits = GetIntTypeWidthInBits(sub);
@@ -609,7 +626,7 @@ SubtypingResult helpRequestSubtyping_floatSuper(Typer* typer, char const* why, L
         case T_FLOAT:
         {
             // A subtypes B <=> width(A) >= width(B)
-            if (sub->as.Int_width >= super->as.Int_width) {
+            if (sub->as.Int.width >= super->as.Int.width) {
                 return SUBTYPING_CONFIRM;
             } else {
                 int subWidthInBits = GetFloatTypeWidthInBits(sub);
@@ -936,7 +953,7 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
                 Type* test = NULL; {
                     int subtypeCount = sb_count(metavar->as.Meta.ext->deferredSubSB);
                     for (int subtypeIndex = 0; subtypeIndex < subtypeCount; subtypeIndex++) {
-                        SubtypeRec subtypeRec = metavar->as.Meta.ext->deferredSuperSB[subtypeIndex];
+                        SubtypeRec subtypeRec = metavar->as.Meta.ext->deferredSubSB[subtypeIndex];
                         Type* concreteSubtype = getConcreteSoln(typer,subtypeRec.ptr,visitedMetavarSBP);
                         if (concreteSubtype) {
                             if (test == NULL) {
@@ -995,6 +1012,8 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
                         return NULL;
                     }
 
+                    // updating the 'solution found' flag:
+                    metavar->as.Meta.ext->solnUpdatedThisPass = 1;
                 }
                 return metavar->as.Meta.soln;
             }
@@ -1159,7 +1178,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             Type* rhsType = GetAstNodeTypingExt_Value(rhs);
 
             if (lhsType && rhsType) {
-                requireSubtyping(typer, "<lhs> = <rhs>",loc, rhsType,lhsType);
+                requireSubtyping(typer, "<lhs> = <rhs>",loc, lhsType,rhsType);
             } else {
                 COMPILER_ERROR("typer: lhsValueType or rhsType is NULL (or both) in AST_VLET");
             }
@@ -1399,11 +1418,7 @@ int typer_post(void* rawTyper, AstNode* node) {
         }
         case AST_TCALL:
         {
-            if (DEBUG) {
-                printf("!!- NotImplemented: typing AST_T_CALL\n");
-            } else {
-                assert(0 && "NotImplemented: typing AST_T_CALL");
-            }
+            COMPILER_ERROR("NotImplemented: typing AST_TCALL");
             break;
         }
         case AST_VPAREN:
@@ -1423,10 +1438,12 @@ int typer_post(void* rawTyper, AstNode* node) {
                 Type* metavarType = GetAstNodeTypingExt_Type(node);
 
                 // filling rhsType as a solution for the typing metavar:
-                if (rhsType && metavarType) {
+                int inputsOk = (
+                    COMPILER_ASSERT(rhsType,"Invalid rhsType while typing 'tdef' statement.") && 
+                    COMPILER_ASSERT(metavarType,"Invalid lhsType while typing 'tdef' statement.")
+                );
+                if (inputsOk) {
                     requireSubtyping(typer,"<Lhs> = <Rhs>",loc,rhsType,metavarType);
-                } else {
-                    printf("!!- Skipping `typedef` subtyping.\n");
                 }
             }
             break;
@@ -1449,14 +1466,7 @@ int typer_post(void* rawTyper, AstNode* node) {
         }
         default:
         {
-            if (DEBUG) {
-                // TODO: replace with assertion for production
-                if (DEBUG) {
-                    printf("!!- Not implemented: TypeNode for AST node kind %s\n", AstKindAsText(nodeKind));
-                } else {
-                    assert(0 && "Not implemented: TypeNode for AST node kind <?>");
-                }
-            }
+            COMPILER_ERROR_VA("NotImplemented: TypeNode for AST node kind %s",AstKindAsText(nodeKind));
             break;
         }
     }
@@ -1488,38 +1498,41 @@ void accumulateCompoundFieldSizeMax(Typer* typer, void* rawMaxP, SymbolID name, 
     }
 }
 
-void printTyper(Typer* typer) {
+void printTyper(Typer* typer, int metaOnly) {
     printf("!!- Typer dump:\n");
-    printTypeLn(typer, &typer->intType[INT_1]);
-    printTypeLn(typer, &typer->intType[INT_8]);
-    printTypeLn(typer, &typer->intType[INT_16]);
-    printTypeLn(typer, &typer->intType[INT_32]);
-    printTypeLn(typer, &typer->intType[INT_64]);
-    printTypeLn(typer, &typer->intType[INT_128]);
-    printTypeLn(typer, &typer->floatType[FLOAT_32]);
-    printTypeLn(typer, &typer->floatType[FLOAT_64]);
+    
+    if (!metaOnly) {
+        printTypeLn(typer, &typer->unsignedIntType[INT_1]);
+        printTypeLn(typer, &typer->unsignedIntType[INT_8]);
+        printTypeLn(typer, &typer->unsignedIntType[INT_16]);
+        printTypeLn(typer, &typer->unsignedIntType[INT_32]);
+        printTypeLn(typer, &typer->unsignedIntType[INT_64]);
+        printTypeLn(typer, &typer->unsignedIntType[INT_128]);
+        printTypeLn(typer, &typer->floatType[FLOAT_32]);
+        printTypeLn(typer, &typer->floatType[FLOAT_64]);
 
-    int it;
-    for (it = 0; it < typer->ptrTypeBuf.count; it++) {
-        printTypeLn(typer, &typer->ptrTypeBuf.ptr[it]);
-    }
-    for (it = 0; it < typer->typefuncTypeBuf.count; it++) {
-        printTypeLn(typer, &typer->typefuncTypeBuf.ptr[it]);
-    }
-    for (it = 0; it < typer->funcTypeBuf.count; it++) {
-        printTypeLn(typer, &typer->funcTypeBuf.ptr[it]);
-    }
-    for (it = 0; it < typer->moduleTypeBuf.count; it++) {
-        printTypeLn(typer, &typer->moduleTypeBuf.ptr[it]);
-    }
-    for (it = 0; it < typer->tupleTypeBuf.count; it++) {
-        printTypeLn(typer, &typer->tupleTypeBuf.ptr[it]);
-    }
-    for (it = 0; it < typer->unionTypeBuf.count; it++) {
-        printTypeLn(typer, &typer->unionTypeBuf.ptr[it]);
+        int it;
+        for (it = 0; it < typer->ptrTypeBuf.count; it++) {
+            printTypeLn(typer, &typer->ptrTypeBuf.ptr[it]);
+        }
+        for (it = 0; it < typer->typefuncTypeBuf.count; it++) {
+            printTypeLn(typer, &typer->typefuncTypeBuf.ptr[it]);
+        }
+        for (it = 0; it < typer->funcTypeBuf.count; it++) {
+            printTypeLn(typer, &typer->funcTypeBuf.ptr[it]);
+        }
+        for (it = 0; it < typer->moduleTypeBuf.count; it++) {
+            printTypeLn(typer, &typer->moduleTypeBuf.ptr[it]);
+        }
+        for (it = 0; it < typer->tupleTypeBuf.count; it++) {
+            printTypeLn(typer, &typer->tupleTypeBuf.ptr[it]);
+        }
+        for (it = 0; it < typer->unionTypeBuf.count; it++) {
+            printTypeLn(typer, &typer->unionTypeBuf.ptr[it]);
+        }
     }
 
-    for (it = 0; it < typer->metatypeBuf.count; it++) {
+    for (int it = 0; it < typer->metatypeBuf.count; it++) {
         printTypeLn(typer, &typer->metatypeBuf.ptr[it]);
     }
 }
@@ -1554,11 +1567,16 @@ void printType(Typer* typer, Type* type) {
             int printSupAndSubTypeCount = 1;
             if (printSupAndSubTypeCount) {
                 printf(
-                    "meta %s (%d supers, %d subs)",
+                    "meta%s %s (%d supers, %d subs)",
+                    (type->as.Meta.ext->solnUpdatedThisPass ? "*" : ""),
                     type->as.Meta.name, sb_count(type->as.Meta.ext->deferredSuperSB), sb_count(type->as.Meta.ext->deferredSubSB)
                 );
             } else {
-                printf("meta %s", type->as.Meta.name);
+                printf(
+                    "meta%s %s", 
+                    (type->as.Meta.ext->solnUpdatedThisPass ? "*" : ""),
+                    type->as.Meta.name
+                );
             }
             if (type->as.Meta.soln) {
                 printf(" soln:");
@@ -1645,7 +1663,7 @@ Type* GetUnitType(Typer* typer) {
     return &typer->unitType;
 }
 Type* GetIntType(Typer* typer, IntWidth width) {
-    return &typer->intType[width];
+    return &typer->unsignedIntType[width];
 }
 Type* GetFloatType(Typer* typer, FloatWidth width) {
     return &typer->floatType[width];
@@ -1737,6 +1755,7 @@ Type* NewMetavarType(Loc loc, Typer* typer, char const* format, ...) {
     metatype->as.Meta.ext->createdLoc = loc;
     metatype->as.Meta.ext->deferredSuperSB = NULL;
     metatype->as.Meta.ext->deferredSubSB = NULL;
+    metatype->as.Meta.ext->solnUpdatedThisPass = 0;
     metatype->as.Meta.poisoned = 0;
     return metatype;
 }
@@ -1751,7 +1770,7 @@ TypeKind GetTypeKind(Type* type) {
 IntWidth GetIntTypeWidth(Type* type) {
     if (type) {
         if (type->kind == T_INT) {
-            return type->as.Int_width;
+            return type->as.Int.width;
         } else if (type->kind == T_META) {
             return GetIntTypeWidth(type);
         }
@@ -1760,7 +1779,7 @@ IntWidth GetIntTypeWidth(Type* type) {
 }
 int GetIntTypeWidthInBits(Type* type) {
     assert(type->kind == T_INT);
-    switch (type->as.Int_width)
+    switch (type->as.Int.width)
     {
         case INT_1: return 1;
         case INT_8: return 8;
@@ -1878,7 +1897,7 @@ size_t GetTypeSizeInBytes(Typer* typer, Type* type) {
         }
         case T_INT:
         {
-            switch (type->as.Int_width)
+            switch (type->as.Int.width)
             {
                 case INT_1: return 1;
                 case INT_8: return 1;
@@ -1931,7 +1950,7 @@ Type* GetTypeSoln(Typer* typer, Type* type) {
 //
 
 void PrintTyper(Typer* typer) {
-    printTyper(typer);
+    printTyper(typer,0);
 }
 
 //

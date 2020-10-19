@@ -1,4 +1,7 @@
-def answer () = 42;
+def answer () = {
+    let result:U64 = U64 42;
+    result
+};
 
 def question () = {
     let fortytwo:U64 = answer ();

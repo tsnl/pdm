@@ -48,7 +48,7 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
         if (loc.offset >= 0) {
             fprintf(stderr, " [%s:%d:%d]", noteP->loc.source->path, 1+loc.lineIndex, 1+loc.colIndex);
         }
-        fprintf(stderr, "\n");
+        fprintf(stderr, "\n\n");
     }
 }
 int GetErrorPosted(void) {

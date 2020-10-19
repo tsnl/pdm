@@ -328,6 +328,11 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
             break;
         }
+        case AST_VCAST:
+        {
+            COMPILER_ERROR("NotImplemented: how do we prime AST_VCAST? First typespec, then value, all in one expr... may need wrappers.");
+            break;
+        }
         default:
         {
             break;

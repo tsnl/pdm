@@ -12,7 +12,7 @@ int __compilerErrorHandler(char const* filename, long int line, char const* pref
         va_list ap; va_start(ap,format);
         vprintf(format,ap);
         va_end(ap);
-        printf("\n");
+        printf("\n\n");
     } else {
         assert(0 && "A fatal compiler error occurred.");
     }

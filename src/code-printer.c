@@ -327,6 +327,13 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             }
             break;
         }
+        case AST_VCAST:
+        {
+            PrintNode(cp,GetAstVCastTypespec(node));
+            PrintChar(cp,' ');
+            PrintNode(cp,GetAstVCastRhs(node));
+            break;
+        }
         case AST_UNARY:
         {
             PrintText(cp, AstUnaryOperatorAsText(GetAstUnaryOperator(node)));

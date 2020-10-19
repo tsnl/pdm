@@ -21,7 +21,10 @@ enum AstKind {
     AST_MODULE,
     AST_TID, AST_VID,
     AST_LITERAL_INT, AST_LITERAL_FLOAT, AST_LITERAL_STRING, 
-    AST_UNIT, AST_VPAREN, AST_VTUPLE, AST_TPAREN, AST_TTUPLE,
+    AST_UNIT, 
+    AST_VCAST,
+    AST_VPAREN, AST_VTUPLE, 
+    AST_TPAREN, AST_TTUPLE,
     AST_VSTRUCT, AST_CHAIN,
     AST_LAMBDA,
     AST_ITE,
@@ -105,6 +108,8 @@ AstNode* NewAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rt
 AstNode* NewAstTID(Loc loc, SymbolID symbolID);
 AstNode* NewAstTTuple(Loc loc);
 AstNode* NewAstTParen(Loc loc, AstNode* it);
+
+AstNode* NewAstVCast(Loc loc,AstNode* toTypespec,AstNode* fromExpr);
 
 //
 // Lambda capture registration:
@@ -195,6 +200,9 @@ AstNode* GetAstExternTypespec(AstNode* externDef);
 SymbolID GetAstTypedefStmtName(AstNode* td);
 AstNode* GetAstTypedefStmtOptPattern(AstNode* td);
 AstNode* GetAstTypedefStmtOptRhs(AstNode* td);
+
+AstNode* GetAstVCastTypespec(AstNode* vcast);
+AstNode* GetAstVCastRhs(AstNode* vcast);
 
 //
 // Symbol and type storage:

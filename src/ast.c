@@ -33,6 +33,7 @@ typedef struct AstInt               AstInt;
 typedef struct AstChain             AstChain;
 typedef struct AstStruct            AstStruct;
 typedef struct AstPatternSingleton  AstPatternSingleton;
+typedef struct AstVCast             AstVCast;
 
 struct AstNodeList {
     size_t count;
@@ -128,6 +129,10 @@ struct AstPatternSingleton {
     SymbolID name;
     AstNode* rhs;
 };
+struct AstVCast {
+    AstNode* toTypespec;
+    AstNode* fromExpr;
+};
 
 union AstInfo {
     AstModule           Module;
@@ -154,6 +159,7 @@ union AstInfo {
     AstChain            Chain;
     AstNode*            Paren_item;
     AstPatternSingleton Pattern_Singleton;
+    AstVCast            VCast;
 };
 
 struct AstNode {
@@ -289,6 +295,7 @@ void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping) {
     module->as.Module.exportHeader = mapping;
 }
 void PushStmtToAstModule(AstNode* module, AstNode* def) {
+    COMPILER_ASSERT(def != NULL,"Cannot push NULL stmt to AstModule.");
     AstKind nodeKind = GetAstNodeKind(def);
     COMPILER_ASSERT(isStmtKindModuleLevel(nodeKind), "Cannot push non-def/extern to AstModule.");
     pushListElement(module->as.Module.items, def);
@@ -509,6 +516,13 @@ AstNode* NewAstTParen(Loc loc, AstNode* it) {
     AstNode* parenNode = newNode(loc,AST_TPAREN);
     parenNode->as.Paren_item = it;
     return parenNode;
+}
+
+AstNode* NewAstVCast(Loc loc,AstNode* toTypespec,AstNode* fromExpr) {
+    AstNode* vcastNode = newNode(loc,AST_VCAST);
+    vcastNode->as.VCast.toTypespec = toTypespec;
+    vcastNode->as.VCast.fromExpr = fromExpr;
+    return vcastNode;
 }
 
 //
@@ -854,6 +868,13 @@ AstNode* GetAstTypedefStmtOptRhs(AstNode* td) {
     return td->as.Typedef.optRhs;
 }
 
+AstNode* GetAstVCastTypespec(AstNode* vcast) {
+    return vcast->as.VCast.toTypespec;
+}
+AstNode* GetAstVCastRhs(AstNode* vcast) {
+    return vcast->as.VCast.fromExpr;
+}
+
 //
 // Scoper and typer storage:
 //
@@ -1123,6 +1144,18 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
             }
             return 1;
         }
+        case AST_VCAST:
+        {
+            AstNode* toTypespec = GetAstVCastTypespec(node);
+            if (!RecursivelyVisitAstNode(context,toTypespec,preVisitorCb,postVisitorCb)) {
+                return 0;
+            }
+            AstNode* fromExpr = GetAstVCastRhs(node);
+            if (!RecursivelyVisitAstNode(context,fromExpr,preVisitorCb,postVisitorCb)) {
+                return 0;
+            }
+            return 1;
+        }
         case AST_NULL:
         {
             COMPILER_ERROR("Cannot visit a NULL AST node.");
@@ -1224,18 +1257,19 @@ char const* AstKindAsText(AstKind kind) {
         case AST_EXTERN: return "AST_EXTERN"; 
         case AST_STMT_WITH: return "AST_STMT_WITH"; 
         case AST_STMT_RETURN: return "AST_STMT_RETURN";
-        case AST_VCALL: return "AST_V_CALL";
-        case AST_TCALL: return "AST_T_CALL";
+        case AST_VCALL: return "AST_VCALL";
+        case AST_TCALL: return "AST_TCALL";
         case AST_UNARY: return "AST_UNARY"; 
         case AST_BINARY: return "AST_BINARY";
         case AST_TPATTERN: return "AST_TPATTERN"; 
         case AST_VPATTERN: return "AST_VPATTERN";
         case AST_TPATTERN_SINGLETON: return "AST_TPATTERN_SINGLETON";
         case AST_VPATTERN_SINGLETON: return "AST_VPATTERN_SINGLETON";
-        case AST_TPATTERN_FIELD: return "AST_FIELD__TEMPLATE_ITEM";
-        case AST_VTUPLE_FIELD: return "AST_FIELD__TUPLE_ITEM";
-        case AST_VSTRUCT_FIELD: return "AST_FIELD__STRUCT_ITEM";
-        case AST_VPATTERN_FIELD: return "AST_FIELD__PATTERN_ITEM";
+        case AST_TPATTERN_FIELD: return "AST_TPATTERN_FIELD";
+        case AST_VTUPLE_FIELD: return "AST_VTUPLE_FIELD";
+        case AST_VSTRUCT_FIELD: return "AST_VSTRUCT_FIELD";
+        case AST_VPATTERN_FIELD: return "AST_VPATTERN_FIELD";
+        case AST_VCAST: return "AST_VCAST";
         default: return "AST_?";
     }
 }

@@ -393,6 +393,7 @@ RawAstNode* parseWithStmt(Parser* p) {
 int isFirstExprTokenKind(TokenKind kind) {
     return (
         kind == TK_VID ||
+        kind == TK_TID ||
         kind == TK_SQSTRING_LIT ||
         kind == TK_DQSTRING_LIT ||
         kind == TK_DINT_LIT ||
@@ -633,8 +634,11 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
 
         case TK_TID:
         {   
-            COMPILER_ERROR("NotImplemented: cast expressions");
-            return NULL;
+            RawAstNode* typespec = parseTypespec(p);
+            RawAstNode* rhs = parseExpr(p);
+            Loc loc = GetAstNodeLoc(typespec);
+            RawAstNode* castExpr = NewAstVCast(loc,typespec,rhs);
+            return castExpr;
         }
 
         default: 
@@ -709,6 +713,10 @@ RawAstNode* tryParseCallExpr(Parser* p) {
     RawAstNode** nodesSB = NULL;
     while (isFirstExprTokenKind(lookaheadKind(p,0))) {
         RawAstNode* arg = tryParseBinaryExpr(p);
+        if (arg == NULL) {
+            // invalid arg => terminate search.
+            return NULL;
+        }
         sb_push(nodesSB,arg);
     }
 
@@ -962,19 +970,20 @@ RawAstNode* ParseSource(Source* source) {
         if (match(&p,TK_SEMICOLON)) {
             // no-op
         } else {
+            RawAstNode* stmt = NULL;
             if (lookaheadKind(&p,0) == TK_KW_DEF && lookaheadKind(&p,1) == TK_VID) {
-                RawAstNode* def = parseVDefStmt(&p);
-                PushStmtToAstModule(module,def);
+                stmt = parseVDefStmt(&p);
             } else if (lookaheadKind(&p,0) == TK_KW_DEF && lookaheadKind(&p,1) == TK_VID) {
-                RawAstNode* td = parseTDefStmt(&p);
-                PushStmtToAstModule(module,td);
+                stmt = parseTDefStmt(&p);
             } else if (lookaheadKind(&p,0) == TK_KW_EXTERN) {
-                RawAstNode* def = parseExternStmt(&p);
-                PushStmtToAstModule(module,def);
-            } else {
+                stmt = parseExternStmt(&p);
+            } 
+            if (stmt == NULL) {
                 FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
                 PostFeedback(FBK_ERROR,note,"Invalid module item");
                 break;
+            } else {
+                PushStmtToAstModule(module,stmt);
             }
 
             if (!expect(&p,TK_SEMICOLON,"a terminating ';'")) {
