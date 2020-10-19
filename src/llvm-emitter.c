@@ -24,6 +24,15 @@
 // See wickedchicken's GitHub examples:
 // - https://github.com/wickedchicken/llvm-c-example/blob/master/fac.c
 
+// See Paul Smith's "How to Get Started with LLVM C API"
+// - https://www.pauladamsmith.com/blog/2015/01/how-to-get-started-with-llvm-c-api.html
+
+// See Eli Bendersky's Python implementation of the LLVM Kaleidoscope demo:
+// - https://github.com/eliben/pykaleidoscope/blob/master/chapter3and4.py
+
+// See wickedchicken's GitHub examples:
+// - https://github.com/wickedchicken/llvm-c-example/blob/master/fac.c
+
 typedef struct Emitter Emitter;
 struct Emitter {
     Typer* typer;
