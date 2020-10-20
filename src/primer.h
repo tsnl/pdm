@@ -15,6 +15,7 @@ struct Scope {
     AstNode* defnAstNode;
     AstContext context;
     void* type;
+    int isOverloadedDefn;
 };
 struct Frame {
     AstContext context;

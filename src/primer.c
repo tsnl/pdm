@@ -31,7 +31,7 @@ size_t allocatedPrimersCount = 0;
 Primer allocatedPrimers[MAX_PRIMER_COUNT];
 
 static Primer* createPrimer(Typer* typer);
-static void pushSymbol(Primer* primer, SymbolID defnID, void* type, AstNode* node, AstContext context);
+static void pushSymbol(Primer* primer, SymbolID defnID, void* type, AstNode* node, AstContext context, int isOverloadedDefn);
 static Scope* pushFrame(Primer* primer, Scope* scope, AstContext ctx, AstNode* func);
 static Frame popFrame(Primer* primer);
 Frame* topFrame(Primer* primer);
@@ -41,7 +41,7 @@ static AstContext topFrameContext(Primer* primer);
 
 static size_t allocatedScopeCount = 0;
 static Scope allocatedScopes[MAX_AST_NODE_COUNT];
-inline static Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn, AstContext context);
+inline static Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn, AstContext context, int isOverloadedDefn);
 static Scope* newRootScope(Typer* typer);
 static Defn* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context);
 
@@ -65,10 +65,10 @@ Primer* createPrimer(Typer* typer) {
 
     return primer;
 }
-void pushSymbol(Primer* primer, SymbolID defnID, void* type, AstNode* defnAstNode, AstContext context) {
+void pushSymbol(Primer* primer, SymbolID defnID, void* type, AstNode* defnAstNode, AstContext context, int isOverloadedDefn) {
     if (defnID) {
         Scope* parent = topFrameScope(primer);
-        Scope* scope = newScope(parent, defnID, type, defnAstNode, context);
+        Scope* scope = newScope(parent, defnID, type, defnAstNode, context, isOverloadedDefn);
         primer->frameStackSB[primer->frameStackCount-1].endScope = scope;
 
         AstNode* topLambda = topFrameFunc(primer);
@@ -171,34 +171,38 @@ AstContext topFrameContext(Primer* primer) {
     return primer->frameStackSB[primer->frameStackCount-1].context;
 }
 
-inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defnAstNode, AstContext context) {
+inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defnAstNode, AstContext context, int isOverloadedDefn) {
     Scope* scope = &allocatedScopes[allocatedScopeCount++];
     scope->parent = parent;
     scope->defnID = defnID;
     scope->type = type;
     scope->context = context;
     scope->defnAstNode = defnAstNode;
+    scope->isOverloadedDefn = isOverloadedDefn;
     return scope;
 }
 Scope* newRootScope(Typer* typer) {
     Scope* root = NULL;
     
-    root = newScope(root, Symbol("U1"), GetIntType(typer,INT_1,0), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("U8"), GetIntType(typer,INT_8,0), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("U16"), GetIntType(typer,INT_16,0), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("U32"), GetIntType(typer,INT_32,0), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("U64"), GetIntType(typer,INT_64,0), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("U128"), GetIntType(typer,INT_128,0), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("U1"), GetIntType(typer,INT_1,0), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, Symbol("U8"), GetIntType(typer,INT_8,0), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, Symbol("U16"), GetIntType(typer,INT_16,0), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, Symbol("U32"), GetIntType(typer,INT_32,0), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, Symbol("U64"), GetIntType(typer,INT_64,0), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, Symbol("U128"), GetIntType(typer,INT_128,0), NULL, ASTCTX_TYPING, 0);
 
-    root = newScope(root, Symbol("S8"), GetIntType(typer,INT_8,1), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("S16"), GetIntType(typer,INT_16,1), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("S32"), GetIntType(typer,INT_32,1), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("S64"), GetIntType(typer,INT_64,1), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("S128"), GetIntType(typer,INT_128,1), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("S8"), GetIntType(typer,INT_8,1), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, Symbol("S16"), GetIntType(typer,INT_16,1), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, Symbol("S32"), GetIntType(typer,INT_32,1), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, Symbol("S64"), GetIntType(typer,INT_64,1), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, Symbol("S128"), GetIntType(typer,INT_128,1), NULL, ASTCTX_TYPING, 0);
 
-    root = newScope(root, Symbol("F32"), GetFloatType(typer,FLOAT_32), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("F64"), GetFloatType(typer,FLOAT_64), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("F32"), GetFloatType(typer,FLOAT_32), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, Symbol("F64"), GetFloatType(typer,FLOAT_64), NULL, ASTCTX_TYPING, 0);
     
+    // builtin operator overloads:
+    COMPILER_ERROR("NotImplemented: defining builtin operator functions in 'primer'.");
+
     return root;
 }
 Defn* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context) {
@@ -287,7 +291,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         case AST_VPATTERN_SINGLETON:
         case AST_VPATTERN_FIELD:
         {
-            // defining and 
+            // defining and storing on pattern
 
             int isTyping = ((kind == AST_TPATTERN_SINGLETON) || (kind == AST_TPATTERN_FIELD));
             int isValue = ((kind == AST_VPATTERN_SINGLETON) || (kind == AST_VPATTERN_FIELD));
@@ -301,7 +305,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             }
 
             void* patternType = NewMetavarType(loc, primer->typer, "%cpattern:%s", (isValue ? 'v':'t'), GetSymbolText(defnID));
-            pushSymbol(primer, defnID, patternType, node, (isValue ? ASTCTX_VALUE:ASTCTX_TYPING));
+            pushSymbol(primer, defnID, patternType, node, (isValue ? ASTCTX_VALUE:ASTCTX_TYPING), 0);
             
             if (isValue) {
                 SetAstNodeTypingExt_Value(node,patternType);
@@ -403,18 +407,18 @@ int PrimeModule(Primer* primer, AstNode* module) {
         if (stmtKind == AST_VDEF) {
             SymbolID lhs = GetAstDefValueStmtLhs(stmt);
             void* valueType = NewMetavarType(loc,primer->typer,"def-func:%s",GetSymbolText(lhs));
-            pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE);
+            pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE,1);
             SetAstNodeTypingExt_Value(stmt,valueType);
         } else if (stmtKind == AST_EXTERN) {
             SymbolID lhs = GetAstExternStmtName(stmt);
             void* valueType = NewMetavarType(loc,primer->typer,"extern:%s",GetSymbolText(lhs));
-            pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE);
+            pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE,1);
             SetAstNodeTypingExt_Value(stmt,valueType);
         } else if (stmtKind == AST_TDEF) {
             SymbolID lhs = GetAstTypedefStmtName(stmt);
             char const* symbolText = GetSymbolText(lhs);
             void* typingType = NewMetavarType(loc,primer->typer,"typedef:%s",symbolText);
-            pushSymbol(primer,lhs,typingType,stmt,ASTCTX_TYPING);
+            pushSymbol(primer,lhs,typingType,stmt,ASTCTX_TYPING,0);
             SetAstNodeTypingExt_Type(stmt, typingType);
         } else {
             if (DEBUG) {
