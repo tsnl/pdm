@@ -102,8 +102,12 @@ Type* NewOrGetFuncType(Typer* typer, int argsCount, Type* args[], Type* image);
 Type* NewOrGetTypefuncType(Typer* typer, Type* arg, Type* body);
 Type* NewOrGetTupleType(Typer* typer, TypeField* typefields, int typefieldCount);
 Type* NewOrGetUnionType(Typer* typer, TypeField* typefields, int typefieldCount);
-Type* NewCastHelperType(Typer* typer, Type* to, Type* from);
 
+Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* arg);
+Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* ltArg, Type* rtArg);
+Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse);
+
+Type* NewCastHelperType(Typer* typer, Type* to, Type* from);
 Type* NewMetavarType(Loc loc, Typer* typer, char const* format, ...);
 
 //

@@ -418,9 +418,15 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
             }
 
             //
-            // Chain: evaluate each item and store in result
+            // Paren,Chain: evaluate each item and store in result
             //
             
+            case AST_VPAREN:
+            {
+                AstNode* vparen = exportedValue.native;
+                exportedValue.llvm = exportValue(emitter,GetAstParenItem(vparen)).llvm;
+                break;
+            }
             case AST_CHAIN:
             {
                 LLVMValueRef outValuePtr = NULL;
@@ -612,6 +618,132 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 }
                 break;
             }
+
+            //
+            // Unary and binary operators:
+            //
+
+            // todo: painstakingly implement each of these functions, but not as binary operators, but callable functions.
+            // todo: implement operator overloading to bridge functions with operator invocation.
+
+            // case AST_UNARY:
+            // {
+            //     AstNode* expr = exportedValue.native;
+            //     AstUnaryOperator op = GetAstUnaryOperator(expr);
+            //     AstNode* arg = GetAstUnaryOperand(expr);
+            //     LLVMValueRef llvmArg = emitExpr(emitter,arg);
+            //     switch (op)
+            //     {
+            //         case UOP_MINUS:
+            //         {
+            //             // todo: update UOP_MINUS in helpEmitExpr to support float as well as int (current)
+            //             LLVMValueRef result = LLVMBuildNeg(emitter->builder,llvmArg,"neg_result");
+            //         }
+            //         case UOP_PLUS:
+            //         {
+            //             // fixme: should this UOP_PLUS emitter be a little more rigorous?
+            //             return llvmArg;
+            //         }
+            //         case UOP_NOT:
+            //         {
+            //             return LLVMBuildNot(emitter->builder,llvmArg,"not_result");
+            //         }
+            //         default:
+            //         {
+            //             COMPILER_ERROR_VA("NotImplemented: AST_UNARY for helpEmitExpr with AstUnaryOperator %s", AstUnaryOperatorAsText(op));
+            //         }
+            //     }
+            // }
+            // case AST_BINARY:
+            // {
+            //     // todo: binary operators only support integers for now.
+            //     AstBinaryOperator op = GetAstBinaryOperator(expr);
+            //     AstNode* ltArg = GetAstBinaryLtOperand(expr);
+            //     AstNode* rtArg = GetAstBinaryRtOperand(expr);
+            //     LLVMValueRef llvmLtArg = emitExpr(emitter,ltArg);
+            //     LLVMValueRef llvmRtArg = emitExpr(emitter,rtArg);
+                
+            //     switch (op)
+            //     {
+            //         case BOP_MUL:
+            //         {
+            //             return LLVMBuildMul(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"mul");
+            //         }
+            //         case BOP_DIV:
+            //         {
+            //             return LLVMBuildUDiv(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"div");
+            //         }
+            //         case BOP_REM:
+            //         {
+            //             return LLVMBuildURem(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"rem");
+            //         }
+            //         case BOP_ADD:
+            //         {
+            //             return LLVMBuildAdd(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"sum");
+            //         }
+            //         case BOP_SUB:
+            //         {
+            //             return LLVMBuildSub(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"sub");
+            //         }
+            //         case BOP_AND:
+            //         {
+            //             return LLVMBuildAnd(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"and");
+            //         }
+            //         case BOP_XOR:
+            //         {
+            //             return LLVMBuildXor(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"xor");
+            //         }
+            //         case BOP_OR:
+            //         {
+            //             return LLVMBuildOr(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"or");
+            //         }
+            //         case BOP_LTHAN:
+            //         {
+            //             LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntULT,llvmLtArg,llvmRtArg,"lt");
+            //             return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+            //         }
+            //         case BOP_GTHAN:
+            //         {
+            //             LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntUGT,llvmLtArg,llvmRtArg,"gt");
+            //             // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+            //             return rawValue;
+            //         }
+            //         case BOP_LETHAN:
+            //         {
+            //             LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntULE,llvmLtArg,llvmRtArg,"le");
+            //             // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+            //             return rawValue;
+            //         }
+            //         case BOP_GETHAN:
+            //         {
+            //             LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntUGE,llvmLtArg,llvmRtArg,"ge");
+            //             return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+            //         }
+            //         case BOP_EQUALS:
+            //         {
+            //             // LLVMValueRef rawValue = LLVMBuildFCmp(emitter->llvmBuilder,LLVMRealOEQ,llvmLtArg,llvmRtArg,"eq");
+            //             LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntEQ,llvmLtArg,llvmRtArg,"eq");
+            //             // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+            //             return rawValue;
+            //         }
+            //         case BOP_NEQUALS:
+            //         {
+            //             // LLVMValueRef rawValue = LLVMBuildFCmp(emitter->llvmBuilder,LLVMRealONE,llvmLtArg,llvmRtArg,"eq");
+            //             LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntNE,llvmLtArg,llvmRtArg,"neq");
+            //             // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+            //             return rawValue;
+            //         }
+            //         default:
+            //         {
+            //             if (DEBUG) {
+            //                 printf("!!- NotImplemented: AST_BINARY in helpEmitExpr for BOP_?\n");
+            //             } else {
+            //                 assert(0 && "NotImplemented: AST_BINARY in helpEmitExpr for BOP_?");
+            //             }
+            //             return NULL;
+            //         }
+            //     }
+            // }
 
             //
             // STRING: data stored C-style, pointer to first byte returned.

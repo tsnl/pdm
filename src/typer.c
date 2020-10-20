@@ -1402,6 +1402,7 @@ int typer_post(void* rawTyper, AstNode* node) {
                 patternType = NewOrGetTupleType(typer,typefieldSB,sb_count(typefieldSB));
                 sb_free(typefieldSB);
             }
+            
             (isValuePattern ? SetAstNodeTypingExt_Value:SetAstNodeTypingExt_Type)(node,patternType);
 
             break;
@@ -1435,27 +1436,21 @@ int typer_post(void* rawTyper, AstNode* node) {
         }
         case AST_UNARY:
         {
-            COMPILER_ERROR("DISABLED: GetUnaryIntrinsicType in typer for AST_UNARY.");
-            
             AstUnaryOperator operator = GetAstUnaryOperator(node);
             AstNode* arg = GetAstUnaryOperand(node);
             Type* argType = GetAstNodeTypingExt_Value(arg);
-            // Type* type = GetUnaryIntrinsicType(typer,nodeLoc,operator,argType);
-            Type* type = NULL;
+            Type* type = GetUnaryIntrinsicType(typer,nodeLoc,operator,argType);
             SetAstNodeTypingExt_Value(node,type);
             break;
         }
         case AST_BINARY:
         {
-            COMPILER_ERROR("DISABLED: GetBinaryIntrinsicType in typer for AST_BINARY.");
-            
             AstBinaryOperator binop = GetAstBinaryOperator(node);
             AstNode* ltArg = GetAstBinaryLtOperand(node);
             AstNode* rtArg = GetAstBinaryRtOperand(node);
             Type* ltArgType = GetAstNodeTypingExt_Value(ltArg);
             Type* rtArgType = GetAstNodeTypingExt_Value(rtArg);
-            // Type* type = GetBinaryIntrinsicType(typer,nodeLoc,binop,ltArgType,rtArgType);
-            Type* type = NULL;
+            Type* type = GetBinaryIntrinsicType(typer,nodeLoc,binop,ltArgType,rtArgType);
             SetAstNodeTypingExt_Value(node,type);
             break;
         }
@@ -1834,6 +1829,121 @@ Type* NewOrGetUnionType(Typer* typer, TypeField* typefields, int typefieldCount)
     unionType->as.Compound_atn = getAtnChild(&typer->anyATN, ADT_SUM, typefields,typefieldCount,0, 0);
     unionType->as.Compound_atn->owner = unionType;
     return unionType;
+}
+Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* arg) {
+    switch (op)
+    {
+        case UOP_GETREF:
+        {
+            return NewOrGetPtrType(typer,arg);
+        }
+        case UOP_DEREF:
+        {
+            Type* pointee = NewMetavarType(loc,typer, "deref-pointee");
+            Type* derefedType = NewOrGetPtrType(typer,pointee);
+            if (requireSubtyping(typer,"unary '*' (deref) operator",loc,arg,derefedType)) {
+                return derefedType;
+            } else {
+                return NULL;
+            }
+        }
+        case UOP_PLUS:
+        case UOP_MINUS:
+        {
+            // todo: check if int **or float**
+            // for now, just assuming 'int'
+            if (requireSubtyping(typer,"unary +/- operator",loc,GetIntType(typer,INT_128,1),arg)) {
+                return arg;
+            } else {
+                PostFeedback(FBK_ERROR, NULL, "Unary operator '+' invalid with non-int type.");
+                return NULL;
+            }
+        }
+        case UOP_NOT:
+        {
+            if (requireSubtyping(typer,"unary 'not' operator",loc,GetIntType(typer,INT_1,0),arg)) {
+                return arg;
+            } else {
+                PostFeedback(FBK_ERROR, NULL, "Unary operator 'not' invalid with non-boolean type.");
+                return NULL;
+            }
+        }
+        default:
+        {
+            COMPILER_ERROR_VA("NotImplemented: GetUnaryIntrinsicType for AstUnaryOperator %s.", AstUnaryOperatorAsText(op));
+            return NULL;
+        }
+    }
+}
+Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* ltArg, Type* rtArg) {
+    switch (op)
+    {
+        case BOP_LTHAN:
+        case BOP_GTHAN:
+        case BOP_LETHAN:
+        case BOP_GETHAN:
+        case BOP_EQUALS:
+        case BOP_NEQUALS:
+        {
+            // expect args to be of the same type:
+            Type* boolType = GetIntType(typer,INT_1,0);
+            SubtypingResult lhsResult = requireSubtyping(typer,"binary-cmp-lhs",loc,ltArg,rtArg);
+            SubtypingResult rhsResult = requireSubtyping(typer,"binary-cmp-rhs",loc,rtArg,ltArg);
+            if ((lhsResult != SUBTYPING_FAILURE) && (rhsResult != SUBTYPING_FAILURE)) {
+                return boolType;
+            } else {
+                return NULL;
+            }
+        }
+        case BOP_AND:
+        case BOP_XOR:
+        case BOP_OR:
+        {
+            // expect args to both be bool:
+            Type* boolType = GetIntType(typer,INT_1,0);
+            SubtypingResult lhsResult = requireSubtyping(typer,"binary-bool-lhs",loc,boolType,ltArg);
+            SubtypingResult rhsResult = requireSubtyping(typer,"binary-bool-rhs",loc,boolType,rtArg);
+            if ((lhsResult != SUBTYPING_FAILURE) && (rhsResult != SUBTYPING_FAILURE)) {
+                return boolType;
+            } else {
+                return NULL;
+            }
+        }
+        case BOP_MUL:
+        case BOP_DIV:
+        case BOP_REM:
+        case BOP_ADD:
+        case BOP_SUB:
+        {
+            // todo: implement arithmetic operations for floats as well as ints
+            // for now, expect args and result to be signed ints.
+            Type* intType = GetIntType(typer,INT_64,1);
+            SubtypingResult lhsResult = requireSubtyping(typer,"binary-arithmetic-lhs",loc,intType,ltArg);
+            SubtypingResult rhsResult = requireSubtyping(typer,"binary-arithmetic-rhs",loc,intType,rtArg);
+            if ((lhsResult != SUBTYPING_FAILURE) && (rhsResult != SUBTYPING_FAILURE)) {
+                return intType;
+            } else {
+                return NULL;
+            }
+        }
+        default:
+        {
+            COMPILER_ERROR_VA("NotImplemented: GetBinaryIntrinsicType for AstBinaryOperator %s.", AstBinaryOperatorAsText(op));
+            return NULL;
+        }
+    }
+}
+Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse) {
+    Type* boolType = GetIntType(typer,INT_1,0);
+    if (requireSubtyping(typer,"if-bool",loc,boolType,cond) != SUBTYPING_FAILURE) {
+        Type* outType = NewMetavarType(loc,typer,"ite-result");
+        SubtypingResult thenResult = requireSubtyping(typer,"if-then-equality",loc,ifTrue,outType);
+        SubtypingResult elseResult = requireSubtyping(typer,"if-else-equality",loc,ifFalse,outType);
+        if ((thenResult != SUBTYPING_FAILURE) && (elseResult != SUBTYPING_FAILURE)) {
+            return outType;
+        }
+    }
+    return NULL;
 }
 Type* NewCastHelperType(Typer* typer, Type* to, Type* from) {
     Type* castType = pushToTypeBuf(&typer->miscTypeBuf,T_CAST);
