@@ -33,7 +33,8 @@ enum AstKind {
     AST_TCALL, AST_VCALL,
     AST_UNARY, AST_BINARY,
     AST_TPATTERN, AST_VPATTERN, AST_TPATTERN_SINGLETON, AST_VPATTERN_SINGLETON,
-    AST_TPATTERN_FIELD,AST_VTUPLE_FIELD,AST_VSTRUCT_FIELD,AST_VPATTERN_FIELD
+    AST_TPATTERN_FIELD,AST_VTUPLE_FIELD,AST_VSTRUCT_FIELD,AST_VPATTERN_FIELD,
+    AST_TYPE2VAL
 };
 
 enum AstUnaryOperator {
@@ -201,8 +202,10 @@ SymbolID GetAstTypedefStmtName(AstNode* td);
 AstNode* GetAstTypedefStmtOptPattern(AstNode* td);
 AstNode* GetAstTypedefStmtOptRhs(AstNode* td);
 
-AstNode* GetAstVCastTypespec(AstNode* vcast);
+AstNode* GetAstVCastToTypespecType2Val(AstNode* vcast);
 AstNode* GetAstVCastRhs(AstNode* vcast);
+
+AstNode* GetAstType2ValTypespec(AstNode* type2Val);
 
 //
 // Symbol and type storage:

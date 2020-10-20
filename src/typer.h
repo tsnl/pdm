@@ -22,6 +22,7 @@ enum TypeKind {
     T_PTR,
     T_FUNC,
     T_TUPLE, T_UNION,
+    T_CAST,
     T_TYPEFUNC,
     T_MODULE,
 
@@ -81,6 +82,7 @@ struct TyperCfg {
     size_t maxModuleCount;
     size_t maxStructCount;
     size_t maxUnionCount;
+    size_t maxMiscCount;
     size_t maxUnaryIntrinsicCount;
     size_t maxBinaryIntrinsicCount;
     size_t maxPhiCount;
@@ -93,13 +95,15 @@ Typer* NewTyper(TyperCfg config);
 //
 
 Type* GetUnitType(Typer* typer);
-Type* GetIntType(Typer* typer, IntWidth width);
+Type* GetIntType(Typer* typer, IntWidth width, int isSigned);
 Type* GetFloatType(Typer* typer, FloatWidth width);
 Type* NewOrGetPtrType(Typer* typer, Type* pointee);
 Type* NewOrGetFuncType(Typer* typer, int argsCount, Type* args[], Type* image);
 Type* NewOrGetTypefuncType(Typer* typer, Type* arg, Type* body);
 Type* NewOrGetTupleType(Typer* typer, TypeField* typefields, int typefieldCount);
 Type* NewOrGetUnionType(Typer* typer, TypeField* typefields, int typefieldCount);
+Type* NewCastHelperType(Typer* typer, Type* to, Type* from);
+
 Type* NewMetavarType(Loc loc, Typer* typer, char const* format, ...);
 
 //
@@ -107,8 +111,9 @@ Type* NewMetavarType(Loc loc, Typer* typer, char const* format, ...);
 //
 
 // Type* GetTypeSoln(Typer* typer, Type* type);
-TypeKind GetTypeKind(Type* typeP);
-IntWidth GetIntTypeWidth(Type* typeP);
+TypeKind GetTypeKind(Type* type);
+IntWidth GetIntTypeWidth(Type* type);
+int GetIntTypeIsSigned(Type* type);
 int GetIntTypeWidthInBits(Type* type);
 FloatWidth GetFloatTypeWidth(Type* typeP);
 int GetFloatTypeWidthInBits(Type* type);

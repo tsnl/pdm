@@ -130,7 +130,7 @@ struct AstPatternSingleton {
     AstNode* rhs;
 };
 struct AstVCast {
-    AstNode* toTypespec;
+    AstNode* toTypespecT2V;
     AstNode* fromExpr;
 };
 
@@ -160,6 +160,7 @@ union AstInfo {
     AstNode*            Paren_item;
     AstPatternSingleton Pattern_Singleton;
     AstVCast            VCast;
+    AstNode*            T2N_typespec;
 };
 
 struct AstNode {
@@ -520,7 +521,9 @@ AstNode* NewAstTParen(Loc loc, AstNode* it) {
 
 AstNode* NewAstVCast(Loc loc,AstNode* toTypespec,AstNode* fromExpr) {
     AstNode* vcastNode = newNode(loc,AST_VCAST);
-    vcastNode->as.VCast.toTypespec = toTypespec;
+    AstNode* toTypespecT2N = newNode(loc,AST_TYPE2VAL);
+    toTypespecT2N->as.T2N_typespec = toTypespec;
+    vcastNode->as.VCast.toTypespecT2V = toTypespecT2N;
     vcastNode->as.VCast.fromExpr = fromExpr;
     return vcastNode;
 }
@@ -868,11 +871,15 @@ AstNode* GetAstTypedefStmtOptRhs(AstNode* td) {
     return td->as.Typedef.optRhs;
 }
 
-AstNode* GetAstVCastTypespec(AstNode* vcast) {
-    return vcast->as.VCast.toTypespec;
+AstNode* GetAstVCastToTypespecType2Val(AstNode* vcast) {
+    return vcast->as.VCast.toTypespecT2V;
 }
 AstNode* GetAstVCastRhs(AstNode* vcast) {
     return vcast->as.VCast.fromExpr;
+}
+
+AstNode* GetAstType2ValTypespec(AstNode* type2Val) {
+    return type2Val->as.T2N_typespec;
 }
 
 //
@@ -947,7 +954,7 @@ void SetAstIdDefn(AstNode* node, void* defn) {
 // Visitor API:
 //
 
-inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb) {
+inline static int recursivelyVisitChildren(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb) {
     AstKind nodeKind = GetAstNodeKind(node);
     switch (nodeKind) {
         case AST_UNIT:
@@ -1146,7 +1153,7 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
         }
         case AST_VCAST:
         {
-            AstNode* toTypespec = GetAstVCastTypespec(node);
+            AstNode* toTypespec = GetAstVCastToTypespecType2Val(node);
             if (!RecursivelyVisitAstNode(context,toTypespec,preVisitorCb,postVisitorCb)) {
                 return 0;
             }
@@ -1155,6 +1162,10 @@ inline static int visitChildren(void* context, AstNode* node, VisitorCb preVisit
                 return 0;
             }
             return 1;
+        }
+        case AST_TYPE2VAL:
+        {
+            return RecursivelyVisitAstNode(context,GetAstType2ValTypespec(node),preVisitorCb,postVisitorCb);
         }
         case AST_NULL:
         {
@@ -1180,7 +1191,7 @@ int RecursivelyVisitAstNode(void* context, AstNode* node, VisitorCb preVisitorCb
             return 0;
         }
     }
-    if (!visitChildren(context, node, preVisitorCb, postVisitorCb)) {
+    if (!recursivelyVisitChildren(context, node, preVisitorCb, postVisitorCb)) {
         return 0;
     }
     if (postVisitorCb) {
@@ -1270,6 +1281,7 @@ char const* AstKindAsText(AstKind kind) {
         case AST_VSTRUCT_FIELD: return "AST_VSTRUCT_FIELD";
         case AST_VPATTERN_FIELD: return "AST_VPATTERN_FIELD";
         case AST_VCAST: return "AST_VCAST";
+        case AST_TYPE2VAL: return "AST_TYPE2VAL";
         default: return "AST_?";
     }
 }

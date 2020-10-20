@@ -1,9 +1,3 @@
-def answer () = {
-    let result:U64 = U64 42;
-    result
-};
-
-def question () = {
-    let fortytwo:U64 = answer ();
-    fortytwo
+def adder x:S64 y:S64 = {
+    x+y
 };

@@ -183,12 +183,18 @@ inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn
 Scope* newRootScope(Typer* typer) {
     Scope* root = NULL;
     
-    root = newScope(root, Symbol("U1"), GetIntType(typer,INT_1), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("U8"), GetIntType(typer,INT_8), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("U16"), GetIntType(typer,INT_16), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("U32"), GetIntType(typer,INT_32), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("U64"), GetIntType(typer,INT_64), NULL, ASTCTX_TYPING);
-    root = newScope(root, Symbol("U128"), GetIntType(typer,INT_128), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("U1"), GetIntType(typer,INT_1,0), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("U8"), GetIntType(typer,INT_8,0), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("U16"), GetIntType(typer,INT_16,0), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("U32"), GetIntType(typer,INT_32,0), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("U64"), GetIntType(typer,INT_64,0), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("U128"), GetIntType(typer,INT_128,0), NULL, ASTCTX_TYPING);
+
+    root = newScope(root, Symbol("S8"), GetIntType(typer,INT_8,1), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("S16"), GetIntType(typer,INT_16,1), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("S32"), GetIntType(typer,INT_32,1), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("S64"), GetIntType(typer,INT_64,1), NULL, ASTCTX_TYPING);
+    root = newScope(root, Symbol("S128"), GetIntType(typer,INT_128,1), NULL, ASTCTX_TYPING);
 
     root = newScope(root, Symbol("F32"), GetFloatType(typer,FLOAT_32), NULL, ASTCTX_TYPING);
     root = newScope(root, Symbol("F64"), GetFloatType(typer,FLOAT_64), NULL, ASTCTX_TYPING);
@@ -330,7 +336,14 @@ int primer_pre(void* rawPrimer, AstNode* node) {
         }
         case AST_VCAST:
         {
-            COMPILER_ERROR("NotImplemented: how do we prime AST_VCAST? First typespec, then value, all in one expr... may need wrappers.");
+            // push a value scope, let type2val push a separate type scope.
+            pushFrame(primer,NULL,ASTCTX_VALUE,topFrameFunc(primer));
+            break;
+        }
+        case AST_TYPE2VAL:
+        {
+            // push a type scope, just for this little typespec
+            pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
             break;
         }
         default:
@@ -350,6 +363,8 @@ int primer_post(void* rawPrimer, AstNode* node) {
         case AST_VPATTERN_FIELD:
         case AST_EXTERN:
         case AST_TDEF:
+        case AST_VCAST:
+        case AST_TYPE2VAL:
         {
             // pop for each case where a frame is pushed in `primer_pre`.
             popFrame(primer);
