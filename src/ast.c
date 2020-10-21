@@ -161,6 +161,7 @@ union AstInfo {
     AstPatternSingleton Pattern_Singleton;
     AstVCast            VCast;
     AstNode*            T2N_typespec;
+    AstBuiltinVDefKind  BuiltinVDef_kind;
 };
 
 struct AstNode {
@@ -528,6 +529,12 @@ AstNode* NewAstVCast(Loc loc,AstNode* toTypespec,AstNode* fromExpr) {
     return vcastNode;
 }
 
+AstNode* NewAstBuiltinVDefStmt(SymbolID lhs, AstBuiltinVDefKind builtinVDefKind) {
+    AstNode* builtinVDefNode = newNode(NullLoc(),AST_VDEF_BUILTIN);
+    builtinVDefNode->as.BuiltinVDef_kind = builtinVDefNode;
+    return builtinVDefNode;
+}
+
 //
 // Lambda capture registration:
 //
@@ -880,6 +887,10 @@ AstNode* GetAstVCastRhs(AstNode* vcast) {
 
 AstNode* GetAstType2ValTypespec(AstNode* type2Val) {
     return type2Val->as.T2N_typespec;
+}
+
+AstBuiltinVDefKind GetAstBuiltinVDefKind(AstNode* builtinVDef) {
+    return builtinVDef->as.BuiltinVDef_kind;
 }
 
 //

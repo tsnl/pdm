@@ -9,6 +9,379 @@
 #include "config.h"
 #include "typer.h"
 
+// Taking static references to pre-defined symbols:
+static int symbols_loaded = 0;
+
+static SymbolID symbol_u1 = SYM_NULL;
+static SymbolID symbol_u8 = SYM_NULL;
+static SymbolID symbol_u16 = SYM_NULL;
+static SymbolID symbol_u32 = SYM_NULL;
+static SymbolID symbol_u64 = SYM_NULL;
+static SymbolID symbol_u128 = SYM_NULL;
+static SymbolID symbol_s8 = SYM_NULL;
+static SymbolID symbol_s16 = SYM_NULL;
+static SymbolID symbol_s32 = SYM_NULL;
+static SymbolID symbol_s64 = SYM_NULL;
+static SymbolID symbol_s128 = SYM_NULL;
+static SymbolID symbol_f32 = SYM_NULL;
+static SymbolID symbol_f64 = SYM_NULL;
+
+static SymbolID symbol_operator_mul_f64 = SYM_NULL;
+static SymbolID symbol_operator_mul_f32 = SYM_NULL;
+static SymbolID symbol_operator_mul_s128 = SYM_NULL;
+static SymbolID symbol_operator_mul_s64 = SYM_NULL;
+static SymbolID symbol_operator_mul_s32 = SYM_NULL;
+static SymbolID symbol_operator_mul_s16 = SYM_NULL;
+static SymbolID symbol_operator_mul_s8 = SYM_NULL;
+static SymbolID symbol_operator_mul_u128 = SYM_NULL;
+static SymbolID symbol_operator_mul_u64 = SYM_NULL;
+static SymbolID symbol_operator_mul_u32 = SYM_NULL;
+static SymbolID symbol_operator_mul_u16 = SYM_NULL;
+static SymbolID symbol_operator_mul_u8 = SYM_NULL;
+static SymbolID symbol_operator_mul_u1 = SYM_NULL;
+
+static SymbolID symbol_operator_div_f64 = SYM_NULL;
+static SymbolID symbol_operator_div_f32 = SYM_NULL;
+static SymbolID symbol_operator_quo_s128 = SYM_NULL;
+static SymbolID symbol_operator_quo_s64 = SYM_NULL;
+static SymbolID symbol_operator_quo_s32 = SYM_NULL;
+static SymbolID symbol_operator_quo_s16 = SYM_NULL;
+static SymbolID symbol_operator_quo_s8 = SYM_NULL;
+static SymbolID symbol_operator_quo_u128 = SYM_NULL;
+static SymbolID symbol_operator_quo_u64 = SYM_NULL;
+static SymbolID symbol_operator_quo_u32 = SYM_NULL;
+static SymbolID symbol_operator_quo_u16 = SYM_NULL;
+static SymbolID symbol_operator_quo_u8 = SYM_NULL;
+static SymbolID symbol_operator_quo_u1 = SYM_NULL;
+
+static SymbolID symbol_operator_rem_s128 = SYM_NULL;
+static SymbolID symbol_operator_rem_s64 = SYM_NULL;
+static SymbolID symbol_operator_rem_s32 = SYM_NULL;
+static SymbolID symbol_operator_rem_s16 = SYM_NULL;
+static SymbolID symbol_operator_rem_s8 = SYM_NULL;
+static SymbolID symbol_operator_rem_u128 = SYM_NULL;
+static SymbolID symbol_operator_rem_u64 = SYM_NULL;
+static SymbolID symbol_operator_rem_u32 = SYM_NULL;
+static SymbolID symbol_operator_rem_u16 = SYM_NULL;
+static SymbolID symbol_operator_rem_u8 = SYM_NULL;
+static SymbolID symbol_operator_rem_u1 = SYM_NULL;
+
+static SymbolID symbol_operator_add_f64 = SYM_NULL;
+static SymbolID symbol_operator_add_f32 = SYM_NULL;
+static SymbolID symbol_operator_add_s128 = SYM_NULL;
+static SymbolID symbol_operator_add_s64 = SYM_NULL;
+static SymbolID symbol_operator_add_s32 = SYM_NULL;
+static SymbolID symbol_operator_add_s16 = SYM_NULL;
+static SymbolID symbol_operator_add_s8 = SYM_NULL;
+static SymbolID symbol_operator_add_u128 = SYM_NULL;
+static SymbolID symbol_operator_add_u64 = SYM_NULL;
+static SymbolID symbol_operator_add_u32 = SYM_NULL;
+static SymbolID symbol_operator_add_u16 = SYM_NULL;
+static SymbolID symbol_operator_add_u8 = SYM_NULL;
+static SymbolID symbol_operator_add_u1 = SYM_NULL;
+
+static SymbolID symbol_operator_subtract_f64 = SYM_NULL;
+static SymbolID symbol_operator_subtract_f32 = SYM_NULL;
+static SymbolID symbol_operator_subtract_s128 = SYM_NULL;
+static SymbolID symbol_operator_subtract_s64 = SYM_NULL;
+static SymbolID symbol_operator_subtract_s32 = SYM_NULL;
+static SymbolID symbol_operator_subtract_s16 = SYM_NULL;
+static SymbolID symbol_operator_subtract_s8 = SYM_NULL;
+static SymbolID symbol_operator_subtract_u128 = SYM_NULL;
+static SymbolID symbol_operator_subtract_u64 = SYM_NULL;
+static SymbolID symbol_operator_subtract_u32 = SYM_NULL;
+static SymbolID symbol_operator_subtract_u16 = SYM_NULL;
+static SymbolID symbol_operator_subtract_u8 = SYM_NULL;
+static SymbolID symbol_operator_subtract_u1 = SYM_NULL;
+
+static SymbolID symbol_operator_lessThan_f64 = SYM_NULL;
+static SymbolID symbol_operator_lessThan_f32 = SYM_NULL;
+static SymbolID symbol_operator_lessThan_s128 = SYM_NULL;
+static SymbolID symbol_operator_lessThan_s64 = SYM_NULL;
+static SymbolID symbol_operator_lessThan_s32 = SYM_NULL;
+static SymbolID symbol_operator_lessThan_s16 = SYM_NULL;
+static SymbolID symbol_operator_lessThan_s8 = SYM_NULL;
+static SymbolID symbol_operator_lessThan_u128 = SYM_NULL;
+static SymbolID symbol_operator_lessThan_u64 = SYM_NULL;
+static SymbolID symbol_operator_lessThan_u32 = SYM_NULL;
+static SymbolID symbol_operator_lessThan_u16 = SYM_NULL;
+static SymbolID symbol_operator_lessThan_u8 = SYM_NULL;
+static SymbolID symbol_operator_lessThan_u1 = SYM_NULL;
+
+static SymbolID symbol_operator_greaterThan_f64 = SYM_NULL;
+static SymbolID symbol_operator_greaterThan_f32 = SYM_NULL;
+static SymbolID symbol_operator_greaterThan_s128 = SYM_NULL;
+static SymbolID symbol_operator_greaterThan_s64 = SYM_NULL;
+static SymbolID symbol_operator_greaterThan_s32 = SYM_NULL;
+static SymbolID symbol_operator_greaterThan_s16 = SYM_NULL;
+static SymbolID symbol_operator_greaterThan_s8 = SYM_NULL;
+static SymbolID symbol_operator_greaterThan_u128 = SYM_NULL;
+static SymbolID symbol_operator_greaterThan_u64 = SYM_NULL;
+static SymbolID symbol_operator_greaterThan_u32 = SYM_NULL;
+static SymbolID symbol_operator_greaterThan_u16 = SYM_NULL;
+static SymbolID symbol_operator_greaterThan_u8 = SYM_NULL;
+static SymbolID symbol_operator_greaterThan_u1 = SYM_NULL;
+
+static SymbolID symbol_operator_lessThanOrEquals_f64 = SYM_NULL;
+static SymbolID symbol_operator_lessThanOrEquals_f32 = SYM_NULL;
+static SymbolID symbol_operator_lessThanOrEquals_s128 = SYM_NULL;
+static SymbolID symbol_operator_lessThanOrEquals_s64 = SYM_NULL;
+static SymbolID symbol_operator_lessThanOrEquals_s32 = SYM_NULL;
+static SymbolID symbol_operator_lessThanOrEquals_s16 = SYM_NULL;
+static SymbolID symbol_operator_lessThanOrEquals_s8 = SYM_NULL;
+static SymbolID symbol_operator_lessThanOrEquals_u128 = SYM_NULL;
+static SymbolID symbol_operator_lessThanOrEquals_u64 = SYM_NULL;
+static SymbolID symbol_operator_lessThanOrEquals_u32 = SYM_NULL;
+static SymbolID symbol_operator_lessThanOrEquals_u16 = SYM_NULL;
+static SymbolID symbol_operator_lessThanOrEquals_u8 = SYM_NULL;
+static SymbolID symbol_operator_lessThanOrEquals_u1 = SYM_NULL;
+
+static SymbolID symbol_operator_greaterThanOrEquals_f64 = SYM_NULL;
+static SymbolID symbol_operator_greaterThanOrEquals_f32 = SYM_NULL;
+static SymbolID symbol_operator_greaterThanOrEquals_s128 = SYM_NULL;
+static SymbolID symbol_operator_greaterThanOrEquals_s64 = SYM_NULL;
+static SymbolID symbol_operator_greaterThanOrEquals_s32 = SYM_NULL;
+static SymbolID symbol_operator_greaterThanOrEquals_s16 = SYM_NULL;
+static SymbolID symbol_operator_greaterThanOrEquals_s8 = SYM_NULL;
+static SymbolID symbol_operator_greaterThanOrEquals_u128 = SYM_NULL;
+static SymbolID symbol_operator_greaterThanOrEquals_u64 = SYM_NULL;
+static SymbolID symbol_operator_greaterThanOrEquals_u32 = SYM_NULL;
+static SymbolID symbol_operator_greaterThanOrEquals_u16 = SYM_NULL;
+static SymbolID symbol_operator_greaterThanOrEquals_u8 = SYM_NULL;
+static SymbolID symbol_operator_greaterThanOrEquals_u1 = SYM_NULL;
+
+static SymbolID symbol_operator_equals_f64 = SYM_NULL;
+static SymbolID symbol_operator_equals_f32 = SYM_NULL;
+static SymbolID symbol_operator_equals_s128 = SYM_NULL;
+static SymbolID symbol_operator_equals_s64 = SYM_NULL;
+static SymbolID symbol_operator_equals_s32 = SYM_NULL;
+static SymbolID symbol_operator_equals_s16 = SYM_NULL;
+static SymbolID symbol_operator_equals_s8 = SYM_NULL;
+static SymbolID symbol_operator_equals_u128 = SYM_NULL;
+static SymbolID symbol_operator_equals_u64 = SYM_NULL;
+static SymbolID symbol_operator_equals_u32 = SYM_NULL;
+static SymbolID symbol_operator_equals_u16 = SYM_NULL;
+static SymbolID symbol_operator_equals_u8 = SYM_NULL;
+static SymbolID symbol_operator_equals_u1 = SYM_NULL;
+
+static SymbolID symbol_operator_notEquals_f64 = SYM_NULL;
+static SymbolID symbol_operator_notEquals_f32 = SYM_NULL;
+static SymbolID symbol_operator_notEquals_s128 = SYM_NULL;
+static SymbolID symbol_operator_notEquals_s64 = SYM_NULL;
+static SymbolID symbol_operator_notEquals_s32 = SYM_NULL;
+static SymbolID symbol_operator_notEquals_s16 = SYM_NULL;
+static SymbolID symbol_operator_notEquals_s8 = SYM_NULL;
+static SymbolID symbol_operator_notEquals_u128 = SYM_NULL;
+static SymbolID symbol_operator_notEquals_u64 = SYM_NULL;
+static SymbolID symbol_operator_notEquals_u32 = SYM_NULL;
+static SymbolID symbol_operator_notEquals_u16 = SYM_NULL;
+static SymbolID symbol_operator_notEquals_u8 = SYM_NULL;
+static SymbolID symbol_operator_notEquals_u1 = SYM_NULL;
+
+static SymbolID symbol_operator_and_u128 = SYM_NULL;
+static SymbolID symbol_operator_and_u64 = SYM_NULL;
+static SymbolID symbol_operator_and_u32 = SYM_NULL;
+static SymbolID symbol_operator_and_u16 = SYM_NULL;
+static SymbolID symbol_operator_and_u8 = SYM_NULL;
+static SymbolID symbol_operator_and_u1 = SYM_NULL;
+
+static SymbolID symbol_operator_xor_u128 = SYM_NULL;
+static SymbolID symbol_operator_xor_u64 = SYM_NULL;
+static SymbolID symbol_operator_xor_u32 = SYM_NULL;
+static SymbolID symbol_operator_xor_u16 = SYM_NULL;
+static SymbolID symbol_operator_xor_u8 = SYM_NULL;
+static SymbolID symbol_operator_xor_u1 = SYM_NULL;
+
+static SymbolID symbol_operator_or_u128 = SYM_NULL;
+static SymbolID symbol_operator_or_u64 = SYM_NULL;
+static SymbolID symbol_operator_or_u32 = SYM_NULL;
+static SymbolID symbol_operator_or_u16 = SYM_NULL;
+static SymbolID symbol_operator_or_u8 = SYM_NULL;
+static SymbolID symbol_operator_or_u1 = SYM_NULL;
+
+static void ensureStaticSymbolsLoaded(void);
+
+void ensureStaticSymbolsLoaded() {
+    if (symbols_loaded == 0) {
+        symbol_u1   = Symbol("U1");
+        symbol_u8   = Symbol("U8");
+        symbol_u16  = Symbol("U16");
+        symbol_u32  = Symbol("U32");
+        symbol_u64  = Symbol("U64");
+        symbol_u128 = Symbol("U128");
+        symbol_s8   = Symbol("S8");
+        symbol_s16  = Symbol("S16");
+        symbol_s32  = Symbol("S32");
+        symbol_s64  = Symbol("S64");
+        symbol_s128 = Symbol("S128");
+        symbol_f32  = Symbol("F32");
+        symbol_f64  = Symbol("F64");
+
+        symbol_operator_mul_f64  = Symbol("operator_mul_f64");
+        symbol_operator_mul_f32  = Symbol("operator_mul_f32");
+        symbol_operator_mul_s128 = Symbol("operator_mul_s128");
+        symbol_operator_mul_s64  = Symbol("operator_mul_s64");
+        symbol_operator_mul_s32  = Symbol("operator_mul_s32");
+        symbol_operator_mul_s16  = Symbol("operator_mul_s16");
+        symbol_operator_mul_s8   = Symbol("operator_mul_s8");
+        symbol_operator_mul_u128 = Symbol("operator_mul_u128");
+        symbol_operator_mul_u64  = Symbol("operator_mul_u64");
+        symbol_operator_mul_u32  = Symbol("operator_mul_u32");
+        symbol_operator_mul_u16  = Symbol("operator_mul_u16");
+        symbol_operator_mul_u8   = Symbol("operator_mul_u8");
+        symbol_operator_mul_u1   = Symbol("operator_mul_u1");
+
+        symbol_operator_div_f64  = Symbol("operator_div_f64");
+        symbol_operator_div_f32  = Symbol("operator_div_f32");
+        symbol_operator_quo_s128 = Symbol("operator_quo_s128");
+        symbol_operator_quo_s64  = Symbol("operator_quo_s64");
+        symbol_operator_quo_s32  = Symbol("operator_quo_s32");
+        symbol_operator_quo_s16  = Symbol("operator_quo_s16");
+        symbol_operator_quo_s8   = Symbol("operator_quo_s8");
+        symbol_operator_quo_u128 = Symbol("operator_quo_u128");
+        symbol_operator_quo_u64  = Symbol("operator_quo_u64");
+        symbol_operator_quo_u32  = Symbol("operator_quo_u32");
+        symbol_operator_quo_u16  = Symbol("operator_quo_u16");
+        symbol_operator_quo_u8   = Symbol("operator_quo_u8");
+        symbol_operator_quo_u1   = Symbol("operator_quo_u1");
+
+        symbol_operator_add_f64  = Symbol("operator_add_f64");
+        symbol_operator_add_f32  = Symbol("operator_add_f32");
+        symbol_operator_add_s128 = Symbol("operator_add_s128");
+        symbol_operator_add_s64  = Symbol("operator_add_s64");
+        symbol_operator_add_s32  = Symbol("operator_add_s32");
+        symbol_operator_add_s16  = Symbol("operator_add_s16");
+        symbol_operator_add_s8   = Symbol("operator_add_s8");
+        symbol_operator_add_u128 = Symbol("operator_add_u128");
+        symbol_operator_add_u64  = Symbol("operator_add_u64");
+        symbol_operator_add_u32  = Symbol("operator_add_u32");
+        symbol_operator_add_u16  = Symbol("operator_add_u16");
+        symbol_operator_add_u8   = Symbol("operator_add_u8");
+        symbol_operator_add_u1   = Symbol("operator_add_u1");
+
+        symbol_operator_subtract_f64  = Symbol("operator_subtract_f64");
+        symbol_operator_subtract_f32  = Symbol("operator_subtract_f32");
+        symbol_operator_subtract_s128 = Symbol("operator_subtract_s128");
+        symbol_operator_subtract_s64  = Symbol("operator_subtract_s64");
+        symbol_operator_subtract_s32  = Symbol("operator_subtract_s32");
+        symbol_operator_subtract_s16  = Symbol("operator_subtract_s16");
+        symbol_operator_subtract_s8   = Symbol("operator_subtract_s8");
+        symbol_operator_subtract_u128 = Symbol("operator_subtract_u128");
+        symbol_operator_subtract_u64  = Symbol("operator_subtract_u64");
+        symbol_operator_subtract_u32  = Symbol("operator_subtract_u32");
+        symbol_operator_subtract_u16  = Symbol("operator_subtract_u16");
+        symbol_operator_subtract_u8   = Symbol("operator_subtract_u8");
+        symbol_operator_subtract_u1   = Symbol("operator_subtract_u1");
+
+        symbol_operator_lessThan_f64  = Symbol("operator_lessThan_f64");
+        symbol_operator_lessThan_f32  = Symbol("operator_lessThan_f32");
+        symbol_operator_lessThan_s128 = Symbol("operator_lessThan_s128");
+        symbol_operator_lessThan_s64  = Symbol("operator_lessThan_s64");
+        symbol_operator_lessThan_s32  = Symbol("operator_lessThan_s32");
+        symbol_operator_lessThan_s16  = Symbol("operator_lessThan_s16");
+        symbol_operator_lessThan_s8   = Symbol("operator_lessThan_s8");
+        symbol_operator_lessThan_u128 = Symbol("operator_lessThan_u128");
+        symbol_operator_lessThan_u64  = Symbol("operator_lessThan_u64");
+        symbol_operator_lessThan_u32  = Symbol("operator_lessThan_u32");
+        symbol_operator_lessThan_u16  = Symbol("operator_lessThan_u16");
+        symbol_operator_lessThan_u8   = Symbol("operator_lessThan_u8");
+        symbol_operator_lessThan_u1   = Symbol("operator_lessThan_u1");
+
+        symbol_operator_greaterThan_f64  = Symbol("operator_greaterThan_f64");
+        symbol_operator_greaterThan_f32  = Symbol("operator_greaterThan_f32");
+        symbol_operator_greaterThan_s128 = Symbol("operator_greaterThan_s128");
+        symbol_operator_greaterThan_s64  = Symbol("operator_greaterThan_s64");
+        symbol_operator_greaterThan_s32  = Symbol("operator_greaterThan_s32");
+        symbol_operator_greaterThan_s16  = Symbol("operator_greaterThan_s16");
+        symbol_operator_greaterThan_s8   = Symbol("operator_greaterThan_s8");
+        symbol_operator_greaterThan_u128 = Symbol("operator_greaterThan_u128");
+        symbol_operator_greaterThan_u64  = Symbol("operator_greaterThan_u64");
+        symbol_operator_greaterThan_u32  = Symbol("operator_greaterThan_u32");
+        symbol_operator_greaterThan_u16  = Symbol("operator_greaterThan_u16");
+        symbol_operator_greaterThan_u8   = Symbol("operator_greaterThan_u8");
+        symbol_operator_greaterThan_u1   = Symbol("operator_greaterThan_u1");
+
+        symbol_operator_lessThanOrEquals_f64  = Symbol("operator_lessThanOrEquals_f64");
+        symbol_operator_lessThanOrEquals_f32  = Symbol("operator_lessThanOrEquals_f32");
+        symbol_operator_lessThanOrEquals_s128 = Symbol("operator_lessThanOrEquals_s128");
+        symbol_operator_lessThanOrEquals_s64  = Symbol("operator_lessThanOrEquals_s64");
+        symbol_operator_lessThanOrEquals_s32  = Symbol("operator_lessThanOrEquals_s32");
+        symbol_operator_lessThanOrEquals_s16  = Symbol("operator_lessThanOrEquals_s16");
+        symbol_operator_lessThanOrEquals_s8   = Symbol("operator_lessThanOrEquals_s8");
+        symbol_operator_lessThanOrEquals_u128 = Symbol("operator_lessThanOrEquals_u128");
+        symbol_operator_lessThanOrEquals_u64  = Symbol("operator_lessThanOrEquals_u64");
+        symbol_operator_lessThanOrEquals_u32  = Symbol("operator_lessThanOrEquals_u32");
+        symbol_operator_lessThanOrEquals_u16  = Symbol("operator_lessThanOrEquals_u16");
+        symbol_operator_lessThanOrEquals_u8   = Symbol("operator_lessThanOrEquals_u8");
+        symbol_operator_lessThanOrEquals_u1   = Symbol("operator_lessThanOrEquals_u1");
+
+        symbol_operator_greaterThanOrEquals_f64  = Symbol("operator_greaterThanOrEquals_f64");
+        symbol_operator_greaterThanOrEquals_f32  = Symbol("operator_greaterThanOrEquals_f32");
+        symbol_operator_greaterThanOrEquals_s128 = Symbol("operator_greaterThanOrEquals_s128");
+        symbol_operator_greaterThanOrEquals_s64  = Symbol("operator_greaterThanOrEquals_s64");
+        symbol_operator_greaterThanOrEquals_s32  = Symbol("operator_greaterThanOrEquals_s32");
+        symbol_operator_greaterThanOrEquals_s16  = Symbol("operator_greaterThanOrEquals_s16");
+        symbol_operator_greaterThanOrEquals_s8   = Symbol("operator_greaterThanOrEquals_s8");
+        symbol_operator_greaterThanOrEquals_u128 = Symbol("operator_greaterThanOrEquals_u128");
+        symbol_operator_greaterThanOrEquals_u64  = Symbol("operator_greaterThanOrEquals_u64");
+        symbol_operator_greaterThanOrEquals_u32  = Symbol("operator_greaterThanOrEquals_u32");
+        symbol_operator_greaterThanOrEquals_u16  = Symbol("operator_greaterThanOrEquals_u16");
+        symbol_operator_greaterThanOrEquals_u8   = Symbol("operator_greaterThanOrEquals_u8");
+        symbol_operator_greaterThanOrEquals_u1   = Symbol("operator_greaterThanOrEquals_u1");
+
+        symbol_operator_equals_f64  = Symbol("operator_equals_f64");
+        symbol_operator_equals_f32  = Symbol("operator_equals_f32");
+        symbol_operator_equals_s128 = Symbol("operator_equals_s128");
+        symbol_operator_equals_s64  = Symbol("operator_equals_s64");
+        symbol_operator_equals_s32  = Symbol("operator_equals_s32");
+        symbol_operator_equals_s16  = Symbol("operator_equals_s16");
+        symbol_operator_equals_s8   = Symbol("operator_equals_s8");
+        symbol_operator_equals_u128 = Symbol("operator_equals_u128");
+        symbol_operator_equals_u64  = Symbol("operator_equals_u64");
+        symbol_operator_equals_u32  = Symbol("operator_equals_u32");
+        symbol_operator_equals_u16  = Symbol("operator_equals_u16");
+        symbol_operator_equals_u8   = Symbol("operator_equals_u8");
+        symbol_operator_equals_u1   = Symbol("operator_equals_u1");
+
+        symbol_operator_notEquals_f64  = Symbol("operator_notEquals_f64");
+        symbol_operator_notEquals_f32  = Symbol("operator_notEquals_f32");
+        symbol_operator_notEquals_s128 = Symbol("operator_notEquals_s128");
+        symbol_operator_notEquals_s64  = Symbol("operator_notEquals_s64");
+        symbol_operator_notEquals_s32  = Symbol("operator_notEquals_s32");
+        symbol_operator_notEquals_s16  = Symbol("operator_notEquals_s16");
+        symbol_operator_notEquals_s8   = Symbol("operator_notEquals_s8");
+        symbol_operator_notEquals_u128 = Symbol("operator_notEquals_u128");
+        symbol_operator_notEquals_u64  = Symbol("operator_notEquals_u64");
+        symbol_operator_notEquals_u32  = Symbol("operator_notEquals_u32");
+        symbol_operator_notEquals_u16  = Symbol("operator_notEquals_u16");
+        symbol_operator_notEquals_u8   = Symbol("operator_notEquals_u8");
+        symbol_operator_notEquals_u1   = Symbol("operator_notEquals_u1");
+
+        symbol_operator_and_u128 = Symbol("operator_and_u128");
+        symbol_operator_and_u64  = Symbol("operator_and_u64");
+        symbol_operator_and_u32  = Symbol("operator_and_u32");
+        symbol_operator_and_u16  = Symbol("operator_and_u16");
+        symbol_operator_and_u8   = Symbol("operator_and_u8");
+        symbol_operator_and_u1   = Symbol("operator_and_u1");
+
+        symbol_operator_xor_u128 = Symbol("operator_xor_u128");
+        symbol_operator_xor_u64  = Symbol("operator_xor_u64");
+        symbol_operator_xor_u32  = Symbol("operator_xor_u32");
+        symbol_operator_xor_u16  = Symbol("operator_xor_u16");
+        symbol_operator_xor_u8   = Symbol("operator_xor_u8");
+        symbol_operator_xor_u1   = Symbol("operator_xor_u1");
+
+        symbol_operator_or_u128 = Symbol("operator_or_u128");
+        symbol_operator_or_u64  = Symbol("operator_or_u64");
+        symbol_operator_or_u32  = Symbol("operator_or_u32");
+        symbol_operator_or_u16  = Symbol("operator_or_u16");
+        symbol_operator_or_u8   = Symbol("operator_or_u8");
+        symbol_operator_or_u1   = Symbol("operator_or_u1");
+
+        symbols_loaded = 1;
+    }
+}
+
 // The primer performs `Lexical Analysis`, which involves traversing the AST, building a tree of
 // contexts from linked list node stored in stack frames, and using this tree to look up symbols'
 // types.
@@ -50,6 +423,8 @@ static Defn* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP
 //
 
 Primer* createPrimer(Typer* typer) {
+    ensureStaticSymbolsLoaded();
+    
     Primer* primer = NULL;
     if (allocatedPrimersCount < MAX_PRIMER_COUNT) {
         primer = &allocatedPrimers[allocatedPrimersCount++];
@@ -184,22 +559,24 @@ inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn
 Scope* newRootScope(Typer* typer) {
     Scope* root = NULL;
     
-    root = newScope(root, Symbol("U1"), GetIntType(typer,INT_1,0), NULL, ASTCTX_TYPING, 0);
-    root = newScope(root, Symbol("U8"), GetIntType(typer,INT_8,0), NULL, ASTCTX_TYPING, 0);
-    root = newScope(root, Symbol("U16"), GetIntType(typer,INT_16,0), NULL, ASTCTX_TYPING, 0);
-    root = newScope(root, Symbol("U32"), GetIntType(typer,INT_32,0), NULL, ASTCTX_TYPING, 0);
-    root = newScope(root, Symbol("U64"), GetIntType(typer,INT_64,0), NULL, ASTCTX_TYPING, 0);
-    root = newScope(root, Symbol("U128"), GetIntType(typer,INT_128,0), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, symbol_u1, GetIntType(typer,INT_1,0), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, symbol_u8, GetIntType(typer,INT_8,0), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, symbol_u16, GetIntType(typer,INT_16,0), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, symbol_u32, GetIntType(typer,INT_32,0), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, symbol_u64, GetIntType(typer,INT_64,0), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, symbol_u128, GetIntType(typer,INT_128,0), NULL, ASTCTX_TYPING, 0);
 
-    root = newScope(root, Symbol("S8"), GetIntType(typer,INT_8,1), NULL, ASTCTX_TYPING, 0);
-    root = newScope(root, Symbol("S16"), GetIntType(typer,INT_16,1), NULL, ASTCTX_TYPING, 0);
-    root = newScope(root, Symbol("S32"), GetIntType(typer,INT_32,1), NULL, ASTCTX_TYPING, 0);
-    root = newScope(root, Symbol("S64"), GetIntType(typer,INT_64,1), NULL, ASTCTX_TYPING, 0);
-    root = newScope(root, Symbol("S128"), GetIntType(typer,INT_128,1), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, symbol_s8, GetIntType(typer,INT_8,1), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, symbol_s16, GetIntType(typer,INT_16,1), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, symbol_s32, GetIntType(typer,INT_32,1), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, symbol_s64, GetIntType(typer,INT_64,1), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, symbol_s128, GetIntType(typer,INT_128,1), NULL, ASTCTX_TYPING, 0);
 
-    root = newScope(root, Symbol("F32"), GetFloatType(typer,FLOAT_32), NULL, ASTCTX_TYPING, 0);
-    root = newScope(root, Symbol("F64"), GetFloatType(typer,FLOAT_64), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, symbol_f32, GetFloatType(typer,FLOAT_32), NULL, ASTCTX_TYPING, 0);
+    root = newScope(root, symbol_f64, GetFloatType(typer,FLOAT_64), NULL, ASTCTX_TYPING, 0);
     
+    // todo: define symbol_*
+
     // builtin operator overloads:
     COMPILER_ERROR("NotImplemented: defining builtin operator functions in 'primer'.");
 
