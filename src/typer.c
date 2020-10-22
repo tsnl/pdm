@@ -577,6 +577,7 @@ SubtypingResult helpRequestSubtyping(Typer* typer, char const* why, Loc locWhere
         case T_TUPLE: { return helpRequestSubtyping_tupleSuper(typer,why,locWhere,super,sub); }
         case T_UNION: { return helpRequestSubtyping_unionSuper(typer,why,locWhere,super,sub); }
         case T_META: { return helpRequestSubtyping_metaSuper(typer,why,locWhere,super,sub); }
+        case T_CAST: { return helpRequestSubtyping_castSuper(typer,why,locWhere,super,sub); }
         default:
         {
             COMPILER_ERROR_VA("NotImplemented: helpRequestSubtyping for super of unknown type kind %s.", TypeKindAsText(super->kind));
@@ -1981,6 +1982,297 @@ Type* NewMetavarType(Loc loc, Typer* typer, char const* format, ...) {
     metatype->as.Meta.ext->solnUpdatedThisPass = 0;
     metatype->as.Meta.poisoned = 0;
     return metatype;
+}
+
+Type* GetAstBuiltinVDefType(Typer* typer, AstBuiltinVDefKind builtinVDefKind) {
+    Type* signed128 = GetIntType(typer,INT_128,1);
+    Type* signed64 = GetIntType(typer,INT_64,1);
+    Type* signed32 = GetIntType(typer,INT_32,1);
+    Type* signed16 = GetIntType(typer,INT_16,1);
+    Type* signed8 = GetIntType(typer,INT_8,1);
+    
+    Type* unsigned128 = GetIntType(typer,INT_128,0);
+    Type* unsigned64 = GetIntType(typer,INT_64,0);
+    Type* unsigned32 = GetIntType(typer,INT_32,0);
+    Type* unsigned16 = GetIntType(typer,INT_16,0);
+    Type* unsigned8 = GetIntType(typer,INT_8,0);
+    Type* unsigned1 = GetIntType(typer,INT_1,0);
+
+    Type* float64 = GetFloatType(typer,FLOAT_64);
+    Type* float32 = GetFloatType(typer,FLOAT_32);
+
+    Type* boolean = GetIntType(typer,INT_1,0);
+
+    switch (builtinVDefKind)
+    {
+        // for f64:
+        case AST_BUILTIN_MUL_F64:
+        case AST_BUILTIN_DIV_F64:
+        case AST_BUILTIN_ADD_F64:
+        case AST_BUILTIN_SUBTRACT_F64:
+        {
+            Type* args[] = {float64,float64};
+            return NewOrGetFuncType(typer,2,args,float64);
+        }
+        case AST_BUILTIN_LTHAN_F64:
+        case AST_BUILTIN_LETHAN_F64:
+        case AST_BUILTIN_GTHAN_F64:
+        case AST_BUILTIN_GETHAN_F64:
+        case AST_BUILTIN_EQUALS_F64:
+        case AST_BUILTIN_NOTEQUALS_F64:
+        {
+            Type* args[] = {float64,float64};
+            return NewOrGetFuncType(typer,2,args,boolean);
+        }
+
+        // for f32:
+        case AST_BUILTIN_MUL_F32:
+        case AST_BUILTIN_DIV_F32:
+        case AST_BUILTIN_ADD_F32:
+        case AST_BUILTIN_SUBTRACT_F32:
+        {
+            Type* args[] = {float32,float32};
+            return NewOrGetFuncType(typer,2,args,float32);
+        }
+        case AST_BUILTIN_LTHAN_F32:
+        case AST_BUILTIN_LETHAN_F32:
+        case AST_BUILTIN_GTHAN_F32:
+        case AST_BUILTIN_GETHAN_F32:
+        case AST_BUILTIN_EQUALS_F32:
+        case AST_BUILTIN_NOTEQUALS_F32:
+        {
+            Type* args[] = {float32,float32};
+            return NewOrGetFuncType(typer,2,args,boolean);
+        }
+
+        // for s128:
+        case AST_BUILTIN_MUL_S128:
+        case AST_BUILTIN_QUO_S128:
+        case AST_BUILTIN_REM_S128:
+        case AST_BUILTIN_ADD_S128:
+        case AST_BUILTIN_SUBTRACT_S128:
+        {
+            Type* args[] = {signed128,signed128};
+            return NewOrGetFuncType(typer,2,args,signed128);
+        }
+        case AST_BUILTIN_LTHAN_S128:
+        case AST_BUILTIN_LETHAN_S128:
+        case AST_BUILTIN_GTHAN_S128:
+        case AST_BUILTIN_GETHAN_S128:
+        case AST_BUILTIN_EQUALS_S128:
+        case AST_BUILTIN_NOTEQUALS_S128:
+        {
+            Type* args[] = {signed128,signed128};
+            return NewOrGetFuncType(typer,2,args,boolean);
+        }
+        // for s64:
+        case AST_BUILTIN_MUL_S64:
+        case AST_BUILTIN_QUO_S64:
+        case AST_BUILTIN_REM_S64:
+        case AST_BUILTIN_ADD_S64:
+        case AST_BUILTIN_SUBTRACT_S64:
+        {
+            Type* args[] = {signed64,signed64};
+            return NewOrGetFuncType(typer,2,args,signed64);
+        }
+        case AST_BUILTIN_LTHAN_S64:
+        case AST_BUILTIN_LETHAN_S64:
+        case AST_BUILTIN_GTHAN_S64:
+        case AST_BUILTIN_GETHAN_S64:
+        case AST_BUILTIN_EQUALS_S64:
+        case AST_BUILTIN_NOTEQUALS_S64:
+        {
+            Type* args[] = {signed64,signed64};
+            return NewOrGetFuncType(typer,2,args,boolean);
+        }
+        // for s32:
+        case AST_BUILTIN_MUL_S32:
+        case AST_BUILTIN_QUO_S32:
+        case AST_BUILTIN_REM_S32:
+        case AST_BUILTIN_ADD_S32:
+        case AST_BUILTIN_SUBTRACT_S32:
+        {
+            Type* args[] = {signed32,signed32};
+            return NewOrGetFuncType(typer,2,args,signed32);
+        }
+        case AST_BUILTIN_LTHAN_S32:
+        case AST_BUILTIN_LETHAN_S32:
+        case AST_BUILTIN_GTHAN_S32:
+        case AST_BUILTIN_GETHAN_S32:
+        case AST_BUILTIN_EQUALS_S32:
+        case AST_BUILTIN_NOTEQUALS_S32:
+        {
+            Type* args[] = {signed32,signed32};
+            return NewOrGetFuncType(typer,2,args,boolean);
+        }
+        // for s16:
+        case AST_BUILTIN_MUL_S16:
+        case AST_BUILTIN_QUO_S16:
+        case AST_BUILTIN_REM_S16:
+        case AST_BUILTIN_ADD_S16:
+        case AST_BUILTIN_SUBTRACT_S16:
+        {
+            Type* args[] = {signed16,signed16};
+            return NewOrGetFuncType(typer,2,args,signed16);
+        }
+        case AST_BUILTIN_LTHAN_S16:
+        case AST_BUILTIN_LETHAN_S16:
+        case AST_BUILTIN_GTHAN_S16:
+        case AST_BUILTIN_GETHAN_S16:
+        case AST_BUILTIN_EQUALS_S16:
+        case AST_BUILTIN_NOTEQUALS_S16:
+        {
+            Type* args[] = {signed16,signed16};
+            return NewOrGetFuncType(typer,2,args,boolean);
+        }
+        // for s8:
+        case AST_BUILTIN_MUL_S8:
+        case AST_BUILTIN_QUO_S8:
+        case AST_BUILTIN_REM_S8:
+        case AST_BUILTIN_ADD_S8:
+        case AST_BUILTIN_SUBTRACT_S8:
+        {
+            Type* args[] = {signed8,signed8};
+            return NewOrGetFuncType(typer,2,args,signed8);
+        }
+        case AST_BUILTIN_LTHAN_S8:
+        case AST_BUILTIN_LETHAN_S8:
+        case AST_BUILTIN_GTHAN_S8:
+        case AST_BUILTIN_GETHAN_S8:
+        case AST_BUILTIN_EQUALS_S8:
+        case AST_BUILTIN_NOTEQUALS_S8:
+        {
+            Type* args[] = {signed8,signed8};
+            return NewOrGetFuncType(typer,2,args,boolean);
+        }
+
+        // for u128:
+        case AST_BUILTIN_MUL_U128:
+        case AST_BUILTIN_QUO_U128:
+        case AST_BUILTIN_REM_U128:
+        case AST_BUILTIN_ADD_U128:
+        case AST_BUILTIN_SUBTRACT_U128:
+        {
+            Type* args[] = {unsigned128,unsigned128};
+            return NewOrGetFuncType(typer,2,args,unsigned128);
+        }
+        case AST_BUILTIN_LTHAN_U128:
+        case AST_BUILTIN_LETHAN_U128:
+        case AST_BUILTIN_GTHAN_U128:
+        case AST_BUILTIN_GETHAN_U128:
+        case AST_BUILTIN_EQUALS_U128:
+        case AST_BUILTIN_NOTEQUALS_U128:
+        {
+            Type* args[] = {unsigned128,unsigned128};
+            return NewOrGetFuncType(typer,2,args,boolean);
+        }
+        // for u64:
+        case AST_BUILTIN_MUL_U64:
+        case AST_BUILTIN_QUO_U64:
+        case AST_BUILTIN_REM_U64:
+        case AST_BUILTIN_ADD_U64:
+        case AST_BUILTIN_SUBTRACT_U64:
+        {
+            Type* args[] = {unsigned64,unsigned64};
+            return NewOrGetFuncType(typer,2,args,unsigned64);
+        }
+        case AST_BUILTIN_LTHAN_U64:
+        case AST_BUILTIN_LETHAN_U64:
+        case AST_BUILTIN_GTHAN_U64:
+        case AST_BUILTIN_GETHAN_U64:
+        case AST_BUILTIN_EQUALS_U64:
+        case AST_BUILTIN_NOTEQUALS_U64:
+        {
+            Type* args[] = {unsigned64,unsigned64};
+            return NewOrGetFuncType(typer,2,args,boolean);
+        }
+        // for u32:
+        case AST_BUILTIN_MUL_U32:
+        case AST_BUILTIN_QUO_U32:
+        case AST_BUILTIN_REM_U32:
+        case AST_BUILTIN_ADD_U32:
+        case AST_BUILTIN_SUBTRACT_U32:
+        {
+            Type* args[] = {unsigned32,unsigned32};
+            return NewOrGetFuncType(typer,2,args,unsigned32);
+        }
+        case AST_BUILTIN_LTHAN_U32:
+        case AST_BUILTIN_LETHAN_U32:
+        case AST_BUILTIN_GTHAN_U32:
+        case AST_BUILTIN_GETHAN_U32:
+        case AST_BUILTIN_EQUALS_U32:
+        case AST_BUILTIN_NOTEQUALS_U32:
+        {
+            Type* args[] = {unsigned32,unsigned32};
+            return NewOrGetFuncType(typer,2,args,boolean);
+        }
+        // for u16:
+        case AST_BUILTIN_MUL_U16:
+        case AST_BUILTIN_QUO_U16:
+        case AST_BUILTIN_REM_U16:
+        case AST_BUILTIN_ADD_U16:
+        case AST_BUILTIN_SUBTRACT_U16:
+        {
+            Type* args[] = {unsigned16,unsigned16};
+            return NewOrGetFuncType(typer,2,args,unsigned16);
+        }
+        case AST_BUILTIN_LTHAN_U16:
+        case AST_BUILTIN_LETHAN_U16:
+        case AST_BUILTIN_GTHAN_U16:
+        case AST_BUILTIN_GETHAN_U16:
+        case AST_BUILTIN_EQUALS_U16:
+        case AST_BUILTIN_NOTEQUALS_U16:
+        {
+            Type* args[] = {unsigned16,unsigned16};
+            return NewOrGetFuncType(typer,2,args,boolean);
+        }
+        // for u8:
+        case AST_BUILTIN_MUL_U8:
+        case AST_BUILTIN_QUO_U8:
+        case AST_BUILTIN_REM_U8:
+        case AST_BUILTIN_ADD_U8:
+        case AST_BUILTIN_SUBTRACT_U8:
+        {
+            Type* args[] = {unsigned8,unsigned8};
+            return NewOrGetFuncType(typer,2,args,unsigned8);
+        }
+        case AST_BUILTIN_LTHAN_U8:
+        case AST_BUILTIN_LETHAN_U8:
+        case AST_BUILTIN_GTHAN_U8:
+        case AST_BUILTIN_GETHAN_U8:
+        case AST_BUILTIN_EQUALS_U8:
+        case AST_BUILTIN_NOTEQUALS_U8:
+        {
+            Type* args[] = {unsigned8,unsigned8};
+            return NewOrGetFuncType(typer,2,args,boolean);
+        }
+        // for u1:
+        case AST_BUILTIN_MUL_U1:
+        case AST_BUILTIN_QUO_U1:
+        case AST_BUILTIN_REM_U1:
+        case AST_BUILTIN_ADD_U1:
+        case AST_BUILTIN_SUBTRACT_U1:
+        {
+            Type* args[] = {unsigned1,unsigned1};
+            return NewOrGetFuncType(typer,2,args,unsigned1);
+        }
+        case AST_BUILTIN_LTHAN_U1:
+        case AST_BUILTIN_LETHAN_U1:
+        case AST_BUILTIN_GTHAN_U1:
+        case AST_BUILTIN_GETHAN_U1:
+        case AST_BUILTIN_EQUALS_U1:
+        case AST_BUILTIN_NOTEQUALS_U1:
+        {
+            Type* args[] = {boolean,boolean};
+            return NewOrGetFuncType(typer,2,args,boolean);
+        }
+
+        default:
+        {
+            COMPILER_ERROR("NotImplemented: GetAstBuiltinVDefType for AST_BUILTIN_?");
+            return NULL;
+        }
+    }
 }
 
 //

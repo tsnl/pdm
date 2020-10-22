@@ -200,6 +200,47 @@ static SymbolID symbol_operator_or_u8 = SYM_NULL;
 static SymbolID symbol_operator_or_u1 = SYM_NULL;
 
 static void ensureStaticSymbolsLoaded(void);
+static Scope* builtinVDef(Scope* parent, Typer* typer, SymbolID symbolID, AstBuiltinVDefKind builtinVDefKind);
+
+// The primer performs `Lexical Analysis`, which involves traversing the AST, building a tree of
+// contexts from linked list node stored in stack frames, and using this tree to look up symbols'
+// types.
+// At the end of Lexical Analysis, we have a typeP for each typed expression, ready for 
+// typing/unification after analysis.
+// Crucially, each context contains at most *one* definition.
+
+struct Primer {
+    Scope* root;
+
+    // the typer is used by the primer to create metatypes.
+    Typer* typer;
+
+    // new scopes can extend previous ones, and are organized into 'frames' stored in this stack:
+    Frame* frameStackSB;
+    int frameStackCount;
+};
+
+size_t allocatedPrimersCount = 0;
+Primer allocatedPrimers[MAX_PRIMER_COUNT];
+
+static Primer* createPrimer(Typer* typer);
+static void pushSymbol(Primer* primer, SymbolID defnID, void* type, AstNode* node, AstContext context, int isOverloadedDefn);
+static Scope* pushFrame(Primer* primer, Scope* scope, AstContext ctx, AstNode* func);
+static Frame popFrame(Primer* primer);
+Frame* topFrame(Primer* primer);
+Scope* topFrameScope(Primer* primer);
+AstNode* topFrameFunc(Primer* primer);
+static AstContext topFrameContext(Primer* primer);
+
+static size_t allocatedScopeCount = 0;
+static Scope allocatedScopes[MAX_AST_NODE_COUNT];
+inline static Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn, AstContext context, int isOverloadedDefn);
+static Scope* newRootScope(Typer* typer);
+static Defn* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context);
+
+//
+// Static implementation:
+//
 
 void ensureStaticSymbolsLoaded() {
     if (symbols_loaded == 0) {
@@ -381,46 +422,12 @@ void ensureStaticSymbolsLoaded() {
         symbols_loaded = 1;
     }
 }
-
-// The primer performs `Lexical Analysis`, which involves traversing the AST, building a tree of
-// contexts from linked list node stored in stack frames, and using this tree to look up symbols'
-// types.
-// At the end of Lexical Analysis, we have a typeP for each typed expression, ready for 
-// typing/unification after analysis.
-// Crucially, each context contains at most *one* definition.
-
-struct Primer {
-    Scope* root;
-
-    // the typer is used by the primer to create metatypes.
-    Typer* typer;
-
-    // new scopes can extend previous ones, and are organized into 'frames' stored in this stack:
-    Frame* frameStackSB;
-    int frameStackCount;
-};
-
-size_t allocatedPrimersCount = 0;
-Primer allocatedPrimers[MAX_PRIMER_COUNT];
-
-static Primer* createPrimer(Typer* typer);
-static void pushSymbol(Primer* primer, SymbolID defnID, void* type, AstNode* node, AstContext context, int isOverloadedDefn);
-static Scope* pushFrame(Primer* primer, Scope* scope, AstContext ctx, AstNode* func);
-static Frame popFrame(Primer* primer);
-Frame* topFrame(Primer* primer);
-Scope* topFrameScope(Primer* primer);
-AstNode* topFrameFunc(Primer* primer);
-static AstContext topFrameContext(Primer* primer);
-
-static size_t allocatedScopeCount = 0;
-static Scope allocatedScopes[MAX_AST_NODE_COUNT];
-inline static Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn, AstContext context, int isOverloadedDefn);
-static Scope* newRootScope(Typer* typer);
-static Defn* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context);
-
-//
-// Static implementation:
-//
+Scope* builtinVDef(Scope* parent, Typer* typer, SymbolID symbolID, AstBuiltinVDefKind builtinVDefKind) {
+    AstNode* defnNode = NewAstBuiltinVDefStmt(symbolID,builtinVDefKind);
+    Type* type = GetAstBuiltinVDefType(typer,builtinVDefKind);
+    Scope* scope = newScope(parent, symbolID,type,defnNode, ASTCTX_TYPING, 1);
+    return scope;
+}
 
 Primer* createPrimer(Typer* typer) {
     ensureStaticSymbolsLoaded();
@@ -559,6 +566,10 @@ inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn
 Scope* newRootScope(Typer* typer) {
     Scope* root = NULL;
     
+    //
+    // Native scalar types:
+    //
+
     root = newScope(root, symbol_u1, GetIntType(typer,INT_1,0), NULL, ASTCTX_TYPING, 0);
     root = newScope(root, symbol_u8, GetIntType(typer,INT_8,0), NULL, ASTCTX_TYPING, 0);
     root = newScope(root, symbol_u16, GetIntType(typer,INT_16,0), NULL, ASTCTX_TYPING, 0);
@@ -574,11 +585,167 @@ Scope* newRootScope(Typer* typer) {
 
     root = newScope(root, symbol_f32, GetFloatType(typer,FLOAT_32), NULL, ASTCTX_TYPING, 0);
     root = newScope(root, symbol_f64, GetFloatType(typer,FLOAT_64), NULL, ASTCTX_TYPING, 0);
-    
-    // todo: define symbol_*
 
-    // builtin operator overloads:
-    COMPILER_ERROR("NotImplemented: defining builtin operator functions in 'primer'.");
+    //
+    // Builtin arithmetic operations:
+    //
+
+    // f64:
+    root = builtinVDef(root, typer, symbol_operator_mul_f64, AST_BUILTIN_MUL_F64);
+    root = builtinVDef(root, typer, symbol_operator_div_f64, AST_BUILTIN_DIV_F64);
+    root = builtinVDef(root, typer, symbol_operator_add_f64, AST_BUILTIN_ADD_F64);
+    root = builtinVDef(root, typer, symbol_operator_subtract_f64, AST_BUILTIN_SUBTRACT_F64);
+    root = builtinVDef(root, typer, symbol_operator_lessThan_f64, AST_BUILTIN_LTHAN_F64);
+    root = builtinVDef(root, typer, symbol_operator_greaterThan_f64, AST_BUILTIN_GTHAN_F64);
+    root = builtinVDef(root, typer, symbol_operator_lessThanOrEquals_f64, AST_BUILTIN_LETHAN_F64);
+    root = builtinVDef(root, typer, symbol_operator_greaterThanOrEquals_f64, AST_BUILTIN_GETHAN_F64);
+    root = builtinVDef(root, typer, symbol_operator_equals_f64, AST_BUILTIN_EQUALS_F64);
+    root = builtinVDef(root, typer, symbol_operator_notEquals_f64, AST_BUILTIN_NOTEQUALS_F64);
+    // f32:
+    root = builtinVDef(root, typer, symbol_operator_mul_f32, AST_BUILTIN_MUL_F32);
+    root = builtinVDef(root, typer, symbol_operator_div_f32, AST_BUILTIN_DIV_F32);
+    root = builtinVDef(root, typer, symbol_operator_add_f32, AST_BUILTIN_ADD_F32);
+    root = builtinVDef(root, typer, symbol_operator_subtract_f32, AST_BUILTIN_SUBTRACT_F32);
+    root = builtinVDef(root, typer, symbol_operator_lessThan_f32, AST_BUILTIN_LTHAN_F32);
+    root = builtinVDef(root, typer, symbol_operator_greaterThan_f32, AST_BUILTIN_GTHAN_F32);
+    root = builtinVDef(root, typer, symbol_operator_lessThanOrEquals_f32, AST_BUILTIN_LETHAN_F32);
+    root = builtinVDef(root, typer, symbol_operator_greaterThanOrEquals_f32, AST_BUILTIN_GETHAN_F32);
+    root = builtinVDef(root, typer, symbol_operator_equals_f32, AST_BUILTIN_EQUALS_F32);
+    root = builtinVDef(root, typer, symbol_operator_notEquals_f32, AST_BUILTIN_NOTEQUALS_F32);
+
+    // s128:
+    root = builtinVDef(root, typer, symbol_operator_mul_s128, AST_BUILTIN_MUL_S128);
+    root = builtinVDef(root, typer, symbol_operator_quo_s128, AST_BUILTIN_QUO_S128);
+    root = builtinVDef(root, typer, symbol_operator_rem_s128, AST_BUILTIN_REM_S128);
+    root = builtinVDef(root, typer, symbol_operator_add_s128, AST_BUILTIN_ADD_S128);
+    root = builtinVDef(root, typer, symbol_operator_subtract_s128, AST_BUILTIN_SUBTRACT_S128);
+    root = builtinVDef(root, typer, symbol_operator_lessThan_s128, AST_BUILTIN_LTHAN_S128);
+    root = builtinVDef(root, typer, symbol_operator_greaterThan_s128, AST_BUILTIN_GTHAN_S128);
+    root = builtinVDef(root, typer, symbol_operator_lessThanOrEquals_s128, AST_BUILTIN_LETHAN_S128);
+    root = builtinVDef(root, typer, symbol_operator_greaterThanOrEquals_s128, AST_BUILTIN_GETHAN_S128);
+    root = builtinVDef(root, typer, symbol_operator_equals_s128, AST_BUILTIN_EQUALS_S128);
+    root = builtinVDef(root, typer, symbol_operator_notEquals_s128, AST_BUILTIN_NOTEQUALS_S128);
+    // s64:
+    root = builtinVDef(root, typer, symbol_operator_mul_s64, AST_BUILTIN_MUL_S64);
+    root = builtinVDef(root, typer, symbol_operator_quo_s64, AST_BUILTIN_QUO_S64);
+    root = builtinVDef(root, typer, symbol_operator_rem_s64, AST_BUILTIN_REM_S64);
+    root = builtinVDef(root, typer, symbol_operator_add_s64, AST_BUILTIN_ADD_S64);
+    root = builtinVDef(root, typer, symbol_operator_subtract_s64, AST_BUILTIN_SUBTRACT_S64);
+    root = builtinVDef(root, typer, symbol_operator_lessThan_s64, AST_BUILTIN_LTHAN_S64);
+    root = builtinVDef(root, typer, symbol_operator_greaterThan_s64, AST_BUILTIN_GTHAN_S64);
+    root = builtinVDef(root, typer, symbol_operator_lessThanOrEquals_s64, AST_BUILTIN_LETHAN_S64);
+    root = builtinVDef(root, typer, symbol_operator_greaterThanOrEquals_s64, AST_BUILTIN_GETHAN_S64);
+    root = builtinVDef(root, typer, symbol_operator_equals_s64, AST_BUILTIN_EQUALS_S64);
+    root = builtinVDef(root, typer, symbol_operator_notEquals_s64, AST_BUILTIN_NOTEQUALS_S64);
+    // s32:
+    root = builtinVDef(root, typer, symbol_operator_mul_s32, AST_BUILTIN_MUL_S32);
+    root = builtinVDef(root, typer, symbol_operator_quo_s32, AST_BUILTIN_QUO_S32);
+    root = builtinVDef(root, typer, symbol_operator_rem_s32, AST_BUILTIN_REM_S32);
+    root = builtinVDef(root, typer, symbol_operator_add_s32, AST_BUILTIN_ADD_S32);
+    root = builtinVDef(root, typer, symbol_operator_subtract_s32, AST_BUILTIN_SUBTRACT_S32);
+    root = builtinVDef(root, typer, symbol_operator_lessThan_s32, AST_BUILTIN_LTHAN_S32);
+    root = builtinVDef(root, typer, symbol_operator_greaterThan_s32, AST_BUILTIN_GTHAN_S32);
+    root = builtinVDef(root, typer, symbol_operator_lessThanOrEquals_s32, AST_BUILTIN_LETHAN_S32);
+    root = builtinVDef(root, typer, symbol_operator_greaterThanOrEquals_s32, AST_BUILTIN_GETHAN_S32);
+    root = builtinVDef(root, typer, symbol_operator_equals_s32, AST_BUILTIN_EQUALS_S32);
+    root = builtinVDef(root, typer, symbol_operator_notEquals_s32, AST_BUILTIN_NOTEQUALS_S32);
+    // s16:
+    root = builtinVDef(root, typer, symbol_operator_mul_s16, AST_BUILTIN_MUL_S16);
+    root = builtinVDef(root, typer, symbol_operator_quo_s16, AST_BUILTIN_QUO_S16);
+    root = builtinVDef(root, typer, symbol_operator_rem_s16, AST_BUILTIN_REM_S16);
+    root = builtinVDef(root, typer, symbol_operator_add_s16, AST_BUILTIN_ADD_S16);
+    root = builtinVDef(root, typer, symbol_operator_subtract_s16, AST_BUILTIN_SUBTRACT_S16);
+    root = builtinVDef(root, typer, symbol_operator_lessThan_s16, AST_BUILTIN_LTHAN_S16);
+    root = builtinVDef(root, typer, symbol_operator_greaterThan_s16, AST_BUILTIN_GTHAN_S16);
+    root = builtinVDef(root, typer, symbol_operator_lessThanOrEquals_s16, AST_BUILTIN_LETHAN_S16);
+    root = builtinVDef(root, typer, symbol_operator_greaterThanOrEquals_s16, AST_BUILTIN_GETHAN_S16);
+    root = builtinVDef(root, typer, symbol_operator_equals_s16, AST_BUILTIN_EQUALS_S16);
+    root = builtinVDef(root, typer, symbol_operator_notEquals_s16, AST_BUILTIN_NOTEQUALS_S16);
+    // s8:
+    root = builtinVDef(root, typer, symbol_operator_quo_s8, AST_BUILTIN_QUO_S8);
+    root = builtinVDef(root, typer, symbol_operator_mul_s8, AST_BUILTIN_MUL_S8);
+    root = builtinVDef(root, typer, symbol_operator_rem_s8, AST_BUILTIN_REM_S8);
+    root = builtinVDef(root, typer, symbol_operator_add_s8, AST_BUILTIN_ADD_S8);
+    root = builtinVDef(root, typer, symbol_operator_subtract_s8, AST_BUILTIN_SUBTRACT_S8);
+    root = builtinVDef(root, typer, symbol_operator_lessThan_s8, AST_BUILTIN_LTHAN_S8);
+    root = builtinVDef(root, typer, symbol_operator_greaterThan_s8, AST_BUILTIN_GTHAN_S8);
+    root = builtinVDef(root, typer, symbol_operator_lessThanOrEquals_s8, AST_BUILTIN_LETHAN_S8);
+    root = builtinVDef(root, typer, symbol_operator_greaterThanOrEquals_s8, AST_BUILTIN_GETHAN_S8);
+    root = builtinVDef(root, typer, symbol_operator_equals_s8, AST_BUILTIN_EQUALS_S8);
+    root = builtinVDef(root, typer, symbol_operator_notEquals_s8, AST_BUILTIN_NOTEQUALS_S8);
+
+    // u128:
+    root = builtinVDef(root, typer, symbol_operator_mul_u128, AST_BUILTIN_MUL_U128);
+    root = builtinVDef(root, typer, symbol_operator_quo_u128, AST_BUILTIN_QUO_U128);
+    root = builtinVDef(root, typer, symbol_operator_rem_u128, AST_BUILTIN_REM_U128);
+    root = builtinVDef(root, typer, symbol_operator_add_u128, AST_BUILTIN_ADD_U128);
+    root = builtinVDef(root, typer, symbol_operator_subtract_u128, AST_BUILTIN_SUBTRACT_U128);
+    root = builtinVDef(root, typer, symbol_operator_lessThan_u128, AST_BUILTIN_LTHAN_U128);
+    root = builtinVDef(root, typer, symbol_operator_greaterThan_u128, AST_BUILTIN_GTHAN_U128);
+    root = builtinVDef(root, typer, symbol_operator_lessThanOrEquals_u128, AST_BUILTIN_LETHAN_U128);
+    root = builtinVDef(root, typer, symbol_operator_greaterThanOrEquals_u128, AST_BUILTIN_GETHAN_U128);
+    root = builtinVDef(root, typer, symbol_operator_equals_u128, AST_BUILTIN_EQUALS_U128);
+    root = builtinVDef(root, typer, symbol_operator_notEquals_u128, AST_BUILTIN_NOTEQUALS_U128);
+    // u64:
+    root = builtinVDef(root, typer, symbol_operator_mul_u64, AST_BUILTIN_MUL_U64);
+    root = builtinVDef(root, typer, symbol_operator_quo_u64, AST_BUILTIN_QUO_U64);
+    root = builtinVDef(root, typer, symbol_operator_rem_u64, AST_BUILTIN_REM_U64);
+    root = builtinVDef(root, typer, symbol_operator_add_u64, AST_BUILTIN_ADD_U64);
+    root = builtinVDef(root, typer, symbol_operator_subtract_u64, AST_BUILTIN_SUBTRACT_U64);
+    root = builtinVDef(root, typer, symbol_operator_lessThan_u64, AST_BUILTIN_LTHAN_U64);
+    root = builtinVDef(root, typer, symbol_operator_greaterThan_u64, AST_BUILTIN_GTHAN_U64);
+    root = builtinVDef(root, typer, symbol_operator_lessThanOrEquals_u64, AST_BUILTIN_LETHAN_U64);
+    root = builtinVDef(root, typer, symbol_operator_greaterThanOrEquals_u64, AST_BUILTIN_GETHAN_U64);
+    root = builtinVDef(root, typer, symbol_operator_equals_u64, AST_BUILTIN_EQUALS_U64);
+    root = builtinVDef(root, typer, symbol_operator_notEquals_u64, AST_BUILTIN_NOTEQUALS_U64);
+    // u32:
+    root = builtinVDef(root, typer, symbol_operator_mul_u32, AST_BUILTIN_MUL_U32);
+    root = builtinVDef(root, typer, symbol_operator_quo_u32, AST_BUILTIN_QUO_U32);
+    root = builtinVDef(root, typer, symbol_operator_rem_u32, AST_BUILTIN_REM_U32);
+    root = builtinVDef(root, typer, symbol_operator_add_u32, AST_BUILTIN_ADD_U32);
+    root = builtinVDef(root, typer, symbol_operator_subtract_u32, AST_BUILTIN_SUBTRACT_U32);
+    root = builtinVDef(root, typer, symbol_operator_lessThan_u32, AST_BUILTIN_LTHAN_U32);
+    root = builtinVDef(root, typer, symbol_operator_greaterThan_u32, AST_BUILTIN_GTHAN_U32);
+    root = builtinVDef(root, typer, symbol_operator_lessThanOrEquals_u32, AST_BUILTIN_LETHAN_U32);
+    root = builtinVDef(root, typer, symbol_operator_greaterThanOrEquals_u32, AST_BUILTIN_GETHAN_U32);
+    root = builtinVDef(root, typer, symbol_operator_equals_u32, AST_BUILTIN_EQUALS_U32);
+    root = builtinVDef(root, typer, symbol_operator_notEquals_u32, AST_BUILTIN_NOTEQUALS_U32);
+    // u16:
+    root = builtinVDef(root, typer, symbol_operator_mul_u16, AST_BUILTIN_MUL_U16);
+    root = builtinVDef(root, typer, symbol_operator_quo_u16, AST_BUILTIN_QUO_U16);
+    root = builtinVDef(root, typer, symbol_operator_rem_u16, AST_BUILTIN_REM_U16);
+    root = builtinVDef(root, typer, symbol_operator_add_u16, AST_BUILTIN_ADD_U16);
+    root = builtinVDef(root, typer, symbol_operator_subtract_u16, AST_BUILTIN_SUBTRACT_U16);
+    root = builtinVDef(root, typer, symbol_operator_lessThan_u16, AST_BUILTIN_LTHAN_U16);
+    root = builtinVDef(root, typer, symbol_operator_greaterThan_u16, AST_BUILTIN_GTHAN_U16);
+    root = builtinVDef(root, typer, symbol_operator_lessThanOrEquals_u16, AST_BUILTIN_LETHAN_U16);
+    root = builtinVDef(root, typer, symbol_operator_greaterThanOrEquals_u16, AST_BUILTIN_GETHAN_U16);
+    root = builtinVDef(root, typer, symbol_operator_equals_u16, AST_BUILTIN_EQUALS_U16);
+    root = builtinVDef(root, typer, symbol_operator_notEquals_u16, AST_BUILTIN_NOTEQUALS_U16);
+    // u8:
+    root = builtinVDef(root, typer, symbol_operator_quo_u8, AST_BUILTIN_QUO_U8);
+    root = builtinVDef(root, typer, symbol_operator_mul_u8, AST_BUILTIN_MUL_U8);
+    root = builtinVDef(root, typer, symbol_operator_rem_u8, AST_BUILTIN_REM_U8);
+    root = builtinVDef(root, typer, symbol_operator_add_u8, AST_BUILTIN_ADD_U8);
+    root = builtinVDef(root, typer, symbol_operator_subtract_u8, AST_BUILTIN_SUBTRACT_U8);
+    root = builtinVDef(root, typer, symbol_operator_lessThan_u8, AST_BUILTIN_LTHAN_U8);
+    root = builtinVDef(root, typer, symbol_operator_greaterThan_u8, AST_BUILTIN_GTHAN_U8);
+    root = builtinVDef(root, typer, symbol_operator_lessThanOrEquals_u8, AST_BUILTIN_LETHAN_U8);
+    root = builtinVDef(root, typer, symbol_operator_greaterThanOrEquals_u8, AST_BUILTIN_GETHAN_U8);
+    root = builtinVDef(root, typer, symbol_operator_equals_u8, AST_BUILTIN_EQUALS_U8);
+    root = builtinVDef(root, typer, symbol_operator_notEquals_u8, AST_BUILTIN_NOTEQUALS_U8);
+    // u1:
+    root = builtinVDef(root, typer, symbol_operator_quo_u1, AST_BUILTIN_QUO_U1);
+    root = builtinVDef(root, typer, symbol_operator_mul_u1, AST_BUILTIN_MUL_U1);
+    root = builtinVDef(root, typer, symbol_operator_rem_u1, AST_BUILTIN_REM_U1);
+    root = builtinVDef(root, typer, symbol_operator_add_u1, AST_BUILTIN_ADD_U1);
+    root = builtinVDef(root, typer, symbol_operator_subtract_u1, AST_BUILTIN_SUBTRACT_U1);
+    root = builtinVDef(root, typer, symbol_operator_lessThan_u1, AST_BUILTIN_LTHAN_U1);
+    root = builtinVDef(root, typer, symbol_operator_greaterThan_u1, AST_BUILTIN_GTHAN_U1);
+    root = builtinVDef(root, typer, symbol_operator_lessThanOrEquals_u1, AST_BUILTIN_LETHAN_U1);
+    root = builtinVDef(root, typer, symbol_operator_greaterThanOrEquals_u1, AST_BUILTIN_GETHAN_U1);
+    root = builtinVDef(root, typer, symbol_operator_equals_u1, AST_BUILTIN_EQUALS_U1);
+    root = builtinVDef(root, typer, symbol_operator_notEquals_u1, AST_BUILTIN_NOTEQUALS_U1);
 
     return root;
 }

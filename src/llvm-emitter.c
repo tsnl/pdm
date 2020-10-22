@@ -432,7 +432,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 LLVMValueRef outValuePtr = NULL;
 
                 // allocaing a result:
-                int sizeInBytes = GetTypeSizeInBytes(emitter,exportedValue.type.native);
+                int sizeInBytes = GetTypeSizeInBytes(emitter->typer,exportedValue.type.native);
                 if (sizeInBytes > 0) {
                     outValuePtr = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"chain_result");
                 }

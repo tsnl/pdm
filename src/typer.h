@@ -110,6 +110,8 @@ Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse)
 Type* NewCastHelperType(Typer* typer, Type* to, Type* from);
 Type* NewMetavarType(Loc loc, Typer* typer, char const* format, ...);
 
+Type* GetAstBuiltinVDefType(Typer* typer, AstBuiltinVDefKind builtinVDefKind);
+
 //
 // Getter methods for type info:
 //

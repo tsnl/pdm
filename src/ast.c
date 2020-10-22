@@ -531,7 +531,7 @@ AstNode* NewAstVCast(Loc loc,AstNode* toTypespec,AstNode* fromExpr) {
 
 AstNode* NewAstBuiltinVDefStmt(SymbolID lhs, AstBuiltinVDefKind builtinVDefKind) {
     AstNode* builtinVDefNode = newNode(NullLoc(),AST_VDEF_BUILTIN);
-    builtinVDefNode->as.BuiltinVDef_kind = builtinVDefNode;
+    builtinVDefNode->as.BuiltinVDef_kind = builtinVDefKind;
     return builtinVDefNode;
 }
 
