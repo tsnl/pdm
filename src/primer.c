@@ -590,6 +590,8 @@ Scope* newRootScope(Typer* typer) {
     // Builtin arithmetic operations:
     //
 
+    // TODO: define unary functions here
+
     // f64:
     root = builtinVDef(root, typer, symbol_operator_mul_f64, AST_BUILTIN_MUL_F64);
     root = builtinVDef(root, typer, symbol_operator_div_f64, AST_BUILTIN_DIV_F64);

@@ -1239,7 +1239,7 @@ char const binaryOperatorTextArray[__BOP_COUNT][4] = {
     [BOP_DIV] = "/",
     [BOP_REM] = "%",
     [BOP_ADD] = "+",
-    [BOP_SUB] = "-",
+    [BOP_SUBTRACT] = "-",
     [BOP_LTHAN] = "<", 
     [BOP_LETHAN] = "<=", 
     [BOP_GTHAN] = ">", 

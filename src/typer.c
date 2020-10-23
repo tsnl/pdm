@@ -617,12 +617,14 @@ SubtypingResult helpRequestSubtyping_intSuper(Typer* typer, char const* why, Loc
                 setGenericSubtypingError(typer,"subtyping mismatch: signed and unsigned");
                 return SUBTYPING_FAILURE;
             }
-            if (sub->as.Int.width >= super->as.Int.width) {
+            // we encode integer promotion as subtyping rather than implement a separate checker.
+            // error messages MUST EXPLICITLY CALL THIS 'promotion/truncation' rather than 'subtyping/supertyping'.
+            if (sub->as.Int.width <= super->as.Int.width) {
                 return SUBTYPING_CONFIRM;
             } else {
                 int subWidthInBits = GetIntTypeWidthInBits(sub);
                 int superWidthInBits = GetIntTypeWidthInBits(super);
-                setGenericSubtypingError(typer,"cannot promote subtype Int[%d] to supertype Int[%d]",subWidthInBits,superWidthInBits);
+                setGenericSubtypingError(typer,"cannot truncate Int[%d] to Int[%d]",subWidthInBits,superWidthInBits);
                 return SUBTYPING_FAILURE;
             }
         }
@@ -1805,7 +1807,7 @@ Type* NewOrGetFuncType(Typer* typer, int argsCount, Type* args[], Type* image) {
         }
     }
     // match not found, so allocating a new type:
-    Type* funcType = pushToTypeBuf(&typer->ptrTypeBuf,T_FUNC);
+    Type* funcType = pushToTypeBuf(&typer->funcTypeBuf,T_FUNC);
     funcType->as.Func.domainCount = argsCount;
     funcType->as.Func.domainArray = malloc(argsCount*sizeof(Type*));
     memcpy(funcType->as.Func.domainArray,args,argsCount*sizeof(Type*));
@@ -1851,9 +1853,9 @@ Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* ar
         case UOP_PLUS:
         case UOP_MINUS:
         {
-            // todo: check if int **or float**
-            // for now, just assuming 'int'
-            if (requireSubtyping(typer,"unary +/- operator",loc,GetIntType(typer,INT_128,1),arg)) {
+            // todo: check if signed int **or float**, else defer
+            // for now, just assuming signed int
+            if (requireSubtyping(typer,"unary +/- operator",loc,arg,GetIntType(typer,INT_8,1))) {
                 return arg;
             } else {
                 PostFeedback(FBK_ERROR, NULL, "Unary operator '+' invalid with non-int type.");
@@ -1862,7 +1864,7 @@ Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* ar
         }
         case UOP_NOT:
         {
-            if (requireSubtyping(typer,"unary 'not' operator",loc,GetIntType(typer,INT_1,0),arg)) {
+            if (requireSubtyping(typer,"unary 'not' operator",loc,arg,GetIntType(typer,INT_1,0))) {
                 return arg;
             } else {
                 PostFeedback(FBK_ERROR, NULL, "Unary operator 'not' invalid with non-boolean type.");
@@ -1914,7 +1916,7 @@ Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* 
         case BOP_DIV:
         case BOP_REM:
         case BOP_ADD:
-        case BOP_SUB:
+        case BOP_SUBTRACT:
         {
             // todo: implement arithmetic operations for floats as well as ints
             // for now, expect args and result to be signed ints.

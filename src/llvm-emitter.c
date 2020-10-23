@@ -67,7 +67,226 @@ static int exportModule(Emitter* emitter, AstNode* moduleNode);
 static int exportModuleVisitor_pre(void* emitter, AstNode* node);
 static ExportedType exportType(Typer* typer, Type* type);
 static ExportedValue exportValue(Emitter* emitter, AstNode* exprNode);
-// static ExportedValue emitPtrToValue(Typer* typer, ExportedValue pointee);
+static AstBuiltinVDefKind selectBuiltinUnaryVDefKind(Emitter* emitter, AstNode* expr);
+static AstBuiltinVDefKind selectBuiltinBinaryVDefKind(Emitter* emitter, AstNode* expr);
+static ExportedValue helpExportUnaryBuiltinVDefCall(Emitter* emitter, AstBuiltinVDefKind builtinVDefKind, ExportedValue arg);
+static ExportedValue helpExportBinaryBuiltinVDefCall(Emitter* emitter, AstBuiltinVDefKind builtinVDefKind, ExportedValue ltArg, ExportedValue rtArg);
+
+//
+// WIP: copy to appropriate section later.
+//
+
+static AstBuiltinVDefKind selectBuiltinUnaryVDefKind(Emitter* emitter, AstNode* expr) {
+    AstUnaryOperator op = GetAstUnaryOperator(expr);
+    AstNode* argNode = GetAstUnaryOperand(expr);
+    ExportedValue arg = exportValue(emitter,argNode);
+
+    TypeKind argTypeKind = GetTypeKind(arg.type.native);
+    if (op == UOP_PLUS) {
+        switch (argTypeKind) {
+            case T_INT: 
+            {
+                if (GetIntTypeIsSigned(arg.type.native)) {
+                    // signed...
+                    switch (GetIntTypeWidth(arg.type.native)) {
+                        case INT_8:   return AST_BUILTIN_POS_S8;
+                        case INT_16:  return AST_BUILTIN_POS_S16;
+                        case INT_32:  return AST_BUILTIN_POS_S32;
+                        case INT_64:  return AST_BUILTIN_POS_S64;
+                        case INT_128: return AST_BUILTIN_POS_S128;
+                        default: goto failure;
+                    }
+                } else {
+                    // unsigned...
+                    switch (GetIntTypeWidth(arg.type.native)) {
+                        case INT_1:   return AST_BUILTIN_POS_U1;
+                        case INT_8:   return AST_BUILTIN_POS_U8;
+                        case INT_16:  return AST_BUILTIN_POS_U16;
+                        case INT_32:  return AST_BUILTIN_POS_U32;
+                        case INT_64:  return AST_BUILTIN_POS_U64;
+                        case INT_128: return AST_BUILTIN_POS_U128;
+                        default: goto failure;
+                    }
+                }
+            }
+            case T_FLOAT:
+            {
+                switch (GetFloatTypeWidth(arg.type.native)) {
+                    case FLOAT_32: return AST_BUILTIN_POS_F32;
+                    case FLOAT_64: return AST_BUILTIN_POS_F64;
+                    default: goto failure;
+                }
+            }
+            default:
+            {
+                goto failure;
+            }
+        }
+    }
+    if (op == UOP_MINUS) {
+        switch (argTypeKind) {
+            case T_INT: 
+            {
+                if (GetIntTypeIsSigned(arg.type.native)) {
+                    // signed...
+                    switch (GetIntTypeWidth(arg.type.native)) {
+                        case INT_8:   return AST_BUILTIN_NEG_S8;
+                        case INT_16:  return AST_BUILTIN_NEG_S16;
+                        case INT_32:  return AST_BUILTIN_NEG_S32;
+                        case INT_64:  return AST_BUILTIN_NEG_S64;
+                        case INT_128: return AST_BUILTIN_NEG_S128;
+                        default: goto failure;
+                    }
+                }
+            }
+            case T_FLOAT:
+            {
+                switch (GetFloatTypeWidth(arg.type.native)) {
+                    case FLOAT_32: return AST_BUILTIN_NEG_F32;
+                    case FLOAT_64: return AST_BUILTIN_NEG_F64;
+                    default: goto failure;
+                }
+            }
+            default:
+            {
+                goto failure;
+            }
+        }
+    }
+    if (op == UOP_NOT) {
+        switch (argTypeKind) {
+            case T_INT:
+            {
+                if (!GetIntTypeIsSigned(arg.type.native)) {
+                    // unsigned only
+                    switch (GetIntTypeWidth(arg.type.native)) {
+                        case INT_1:   return AST_BUILTIN_NOT_U1;
+                        case INT_8:   return AST_BUILTIN_NOT_U8;
+                        case INT_16:  return AST_BUILTIN_NOT_U16;
+                        case INT_32:  return AST_BUILTIN_NOT_U32;
+                        case INT_64:  return AST_BUILTIN_NOT_U64;
+                        case INT_128: return AST_BUILTIN_NOT_U128;
+                        default: goto failure;
+                    }
+                }
+                break;
+            }
+            default:
+            {
+                goto failure;
+            }
+        }
+    }
+    
+    // if we arrive at this point in control flow without returning, it means we've failed.
+    failure: {
+        COMPILER_ERROR_VA("NotImplemented: 'selectBuiltinUnaryVDefKind' for %s (%s)", AstUnaryOperatorAsText(op), TypeKindAsText(argTypeKind));
+        return AST_BUILTIN_NULL;
+    }
+}
+AstBuiltinVDefKind selectBuiltinBinaryVDefKind(Emitter* emitter, AstNode* expr) {
+    ExportedValue ltArg = exportValue(emitter,GetAstBinaryLtOperand(expr));
+    ExportedValue rtArg = exportValue(emitter,GetAstBinaryLtOperand(expr));
+    TypeKind ltArgTypeKind = GetTypeKind(ltArg.type.native);
+    TypeKind rtArgTypeKind = GetTypeKind(rtArg.type.native);
+
+    AstBinaryOperator op = GetAstBinaryOperator(expr);
+
+    if (op == BOP_MUL) {
+        
+    }
+    if (op == BOP_DIV) {
+
+    }
+    if (op == BOP_REM) {
+
+    }
+
+    if (op == BOP_ADD) {
+
+    }
+    if (op == BOP_SUBTRACT) {
+
+    }
+    // ...
+
+    // if we arrive at this point in control flow without returning, it means we've failed.
+    failure: {
+        COMPILER_ERROR_VA("NotImplemented: selectBuiltinBinaryVDefKind for %s (%s,%s)", AstBinaryOperatorAsText(op), TypeKindAsText(ltArgTypeKind),TypeKindAsText(rtArgTypeKind));
+        return AST_BUILTIN_NULL;
+    }
+}
+ExportedValue helpExportUnaryBuiltinVDefCall(Emitter* emitter, AstBuiltinVDefKind builtinVDefKind, ExportedValue arg) {
+    // ASSUMING the actual arg has already been converted to the expected type, and that 'arg.llvm' stores a ptr to that value, emits inline instructions to perform the specified op.
+    // this is okay for unary builtins, but binary builtins may require one arg to be converted before invocation. e.g., 2+3.0
+    // this should be done in AST_VCALL.
+
+    // todo: create an exported value
+    // todo: return the exported value
+
+    LLVMValueRef loadedArg = LLVMBuildLoad(emitter->builder,arg.llvm,"loaded_for_builtin_uop");
+    LLVMValueRef loadedResult = NULL;
+
+    switch (builtinVDefKind)
+    {
+        case AST_BUILTIN_POS_F64:
+        case AST_BUILTIN_POS_F32:
+        case AST_BUILTIN_POS_S128:
+        case AST_BUILTIN_POS_S64:
+        case AST_BUILTIN_POS_S32:
+        case AST_BUILTIN_POS_S16:
+        case AST_BUILTIN_POS_S8:
+        case AST_BUILTIN_POS_U128:
+        case AST_BUILTIN_POS_U64:
+        case AST_BUILTIN_POS_U32:
+        case AST_BUILTIN_POS_U16:
+        case AST_BUILTIN_POS_U8:
+        case AST_BUILTIN_POS_U1:
+        {
+            // identity
+            return arg;
+        }
+
+        case AST_BUILTIN_NEG_F64:
+        case AST_BUILTIN_NEG_F32:
+        {
+            loadedResult = LLVMBuildFNeg(emitter->builder,loadedArg,"loaded_fneg");
+            break;
+        }
+        case AST_BUILTIN_NEG_S128:
+        case AST_BUILTIN_NEG_S64:
+        case AST_BUILTIN_NEG_S32:
+        case AST_BUILTIN_NEG_S16:
+        case AST_BUILTIN_NEG_S8:
+        {
+            // -x = ~x + 1
+            loadedResult = LLVMBuildNeg(emitter->builder,loadedArg,"loaded_neg");
+            break;
+        }
+        
+
+        default:
+        {
+            COMPILER_ERROR("NotImplemented: helpExportUnaryBuiltinVDefCall for AST_BUILTIN_?");
+            break;
+        }
+    }
+
+    if (loadedResult) {
+        LLVMValueRef builtinUOpResult = LLVMBuildAlloca(emitter->builder,arg.type.llvm,"builtin_uop_out");
+        LLVMBuildStore(emitter->builder,loadedResult,builtinUOpResult);
+        // LLVMBuildStore(emitter->builder,llvmParam,llvmParamMem);
+    }
+}
+ExportedValue helpExportBinaryBuiltinVDefCall(Emitter* emitter, AstBuiltinVDefKind builtinVDefKind, ExportedValue ltArg, ExportedValue rtArg) {
+
+}
+
+//
+//
+// End of WIP
+//
+//
 
 static void buildLlvmField(Typer* typer, void* sb, SymbolID name, Type* type);
 
@@ -450,7 +669,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 if (outValuePtr) {
                     exportedValue.llvm = outValuePtr;
                     LLVMValueRef loadedForChainYield = LLVMBuildLoad(emitter->builder,exportedResult.llvm,"chain_result_loaded");
-                    LLVMBuildStore(emitter->builder,loadedForChainYield,exportedValue.llvm);
+                    LLVMBuildStore(emitter->builder,exportedValue.llvm,loadedForChainYield);
                 }
                 break;
             }
@@ -486,18 +705,36 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
 
                 ExportedValue lhsValue = exportValue(emitter,GetAstCallLhs(exportedValue.native));
                 
+                // of the supplied actual args, we elide those of 'unit' type since LLVM does not support pure 'void' args.
+                // - (formal & actual args still paired correctly) since the formal and actual function have typechecked, we know parallel empty args will be elided on the defn and call side.
+                // - (even if empty) even in the degenerate case where all patterns are unit and elided, 0-args are understood by LLVM as a 0-ary function.
                 int argCount = GetAstCallArgCount(exportedValue.native);
                 LLVMValueRef* elidedLlvmArgs = NULL;
                 int elidedLlvmArgCount = 0;
                 for (int argIndex = 0; argIndex < argCount; argIndex++) {
                     AstNode* arg = GetAstCallArgAt(exportedValue.native,argIndex);
-                    ExportedValue exportedValue = exportValue(emitter,arg);
-                    if (GetTypeKind(exportedValue.type.native) != T_UNIT) {
+                    ExportedValue exportedActual = exportValue(emitter,arg);
+                    TypeKind exportedActual_typeKind = GetTypeKind(exportedActual.type.native);
+                    
+                    // TODO: implement conversion from subtype to supertype 
+                    // o i32 -> i64
+                    // o (i32,i32) -> (i64,i64)
+                    // - sub->super is all that is required, very predictable
+                    // - in the future, when we add classes, sub->super gets more complex, but stays fixed in compiler-world.
+                    // - if we introduce overloadable type conversions, overload resolution complexity balloons; high cost, low payoff.
+                    COMPILER_ASSERT(
+                        exportedActual.type.native == exportedFormal_type_native,
+                        "NotImplemented: implicit type conversions from subtype to supertype in AST_VCALL"
+                    );
+
+                    if (exportedActual_typeKind != T_UNIT) {
                         // allocating a new args buffer on demand:
                         if (elidedLlvmArgs == NULL) {
                             elidedLlvmArgs = malloc(argCount * sizeof(LLVMValueRef));
                         }
-                        elidedLlvmArgs[elidedLlvmArgCount++] = exportedValue.llvm;
+
+                        // pushing arg into existing buffer:
+                        elidedLlvmArgs[elidedLlvmArgCount++] = exportedActual.llvm;
                     }
                 }
                 
@@ -626,34 +863,24 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
             // todo: painstakingly implement each of these functions, but not as binary operators, but callable functions.
             // todo: implement operator overloading to bridge functions with operator invocation.
 
-            // case AST_UNARY:
-            // {
-            //     AstNode* expr = exportedValue.native;
-            //     AstUnaryOperator op = GetAstUnaryOperator(expr);
-            //     AstNode* arg = GetAstUnaryOperand(expr);
-            //     LLVMValueRef llvmArg = emitExpr(emitter,arg);
-            //     switch (op)
-            //     {
-            //         case UOP_MINUS:
-            //         {
-            //             // todo: update UOP_MINUS in helpEmitExpr to support float as well as int (current)
-            //             LLVMValueRef result = LLVMBuildNeg(emitter->builder,llvmArg,"neg_result");
-            //         }
-            //         case UOP_PLUS:
-            //         {
-            //             // fixme: should this UOP_PLUS emitter be a little more rigorous?
-            //             return llvmArg;
-            //         }
-            //         case UOP_NOT:
-            //         {
-            //             return LLVMBuildNot(emitter->builder,llvmArg,"not_result");
-            //         }
-            //         default:
-            //         {
-            //             COMPILER_ERROR_VA("NotImplemented: AST_UNARY for helpEmitExpr with AstUnaryOperator %s", AstUnaryOperatorAsText(op));
-            //         }
-            //     }
-            // }
+            case AST_UNARY:
+            {
+                AstNode* expr = exportedValue.native;
+                AstBuiltinVDefKind builtinVDefKind = selectBuiltinUnaryVDefKind(emitter,expr);
+                if (COMPILER_ASSERT(builtinVDefKind != AST_BUILTIN_NULL,"Selected NULL builtinVDefKind while exporting AST_UNARY")) {
+                    // todo: emit code based on the builtin vdef kind.
+                }
+                break;
+            }
+            case AST_BINARY:
+            {
+                AstNode* expr = exportedValue.native;
+                AstBuiltinVDefKind builtinVDefKind = selectBuiltinBinaryVDefKind(emitter,expr);
+                if (COMPILER_ASSERT(builtinVDefKind != AST_BUILTIN_NULL,"Selected NULL builtinVDefKind while exporting AST_BINARY")) {
+                    // todo: emit code based on the builtin vdef kind.
+                }
+                break;
+            }
             // case AST_BINARY:
             // {
             //     // todo: binary operators only support integers for now.
@@ -763,6 +990,8 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
 
             default:
             {
+                AstKind nodeKind = GetAstNodeKind(exportedValue.native);
+                COMPILER_ERROR_VA("NotImplemented: 'exportValue' for AST node of kind '%s'",AstKindAsText(nodeKind));
                 break;
             }
         }

@@ -44,7 +44,7 @@ static BinaryOpPrecedenceNode mulBinaryOpPrecedenceNode = {NULL, TK_ASTERISK, BO
 static BinaryOpPrecedenceNode divBinaryOpPrecedenceNode = {&mulBinaryOpPrecedenceNode, TK_FSLASH, BOP_DIV};
 static BinaryOpPrecedenceNode remBinaryOpPrecedenceNode = {&divBinaryOpPrecedenceNode, TK_PERCENT, BOP_REM};
 static BinaryOpPrecedenceNode addBinaryOpPrecedenceNode = {&remBinaryOpPrecedenceNode, TK_PLUS, BOP_ADD};
-static BinaryOpPrecedenceNode subBinaryOpPrecedenceNode = {&addBinaryOpPrecedenceNode, TK_MINUS, BOP_SUB};
+static BinaryOpPrecedenceNode subBinaryOpPrecedenceNode = {&addBinaryOpPrecedenceNode, TK_MINUS, BOP_SUBTRACT};
 static BinaryOpPrecedenceNode lThanBinaryOpPrecedenceNode = {&subBinaryOpPrecedenceNode, TK_LTHAN, BOP_LTHAN};
 static BinaryOpPrecedenceNode gThanBinaryOpPrecedenceNode = {&lThanBinaryOpPrecedenceNode, TK_GTHAN, BOP_GTHAN};
 static BinaryOpPrecedenceNode leThanBinaryOpPrecedenceNode = {&gThanBinaryOpPrecedenceNode, TK_LETHAN, BOP_LETHAN};
@@ -81,11 +81,11 @@ static RawAstNode* tryParseBinaryExpr(Parser* p);
 static RawAstNode* tryParseCallExpr(Parser* p);
 
 // patterns:
-static int isFirstValuePatternTokenKind(TokenKind kind);
-static int isFirstTemplatePatternTokenKind(TokenKind kind);
+static int isFirstVPatternTokenKind(TokenKind kind);
+static int isFirstTPatternTokenKind(TokenKind kind);
 static RawAstNode* helpParsePattern(Parser* p, int notTemplatePattern);
-static RawAstNode* parseValuePattern(Parser* p);
-static RawAstNode* parseTemplatePattern(Parser* p);
+static RawAstNode* parseVPattern(Parser* p);
+static RawAstNode* parseTPattern(Parser* p);
 static void parsePatternElement(Parser* p, RawAstNode* pattern, int* okP, int hasTail, TokenKind idTokenKind);
 static void parsePatternElementWithTail(Parser* p, RawAstNode* pattern, int* okP, TokenKind idTokenKind);
 static void parsePatternElementWithoutTail(Parser* p, RawAstNode* pattern, int* okP, TokenKind idTokenKind);
@@ -239,7 +239,7 @@ RawAstNode* parseLetStmt(Parser* p) {
         return NULL;
     }
 
-    AstNode* lhs = parseValuePattern(p);
+    AstNode* lhs = parseVPattern(p);
     AstNode* typespec = NULL; {
         if (match(p,TK_COLON)) {
             typespec = parseTypespec(p);
@@ -301,28 +301,25 @@ RawAstNode* parseVDefStmt(Parser* p) {
 
     // parsing an optional template pattern
     AstNode* optTemplatePattern = NULL;
-    if (isFirstTemplatePatternTokenKind(lookaheadKind(p,0))) {
-        optTemplatePattern = parseTemplatePattern(p);
+    if (isFirstTPatternTokenKind(lookaheadKind(p,0))) {
+        optTemplatePattern = parseTPattern(p);
     }
     
     RawAstNode** patternsSB = NULL;
     while (lookaheadKind(p,0) != TK_BIND) {
         RawAstNode* pattern = NULL;
-        if (isFirstValuePatternTokenKind(lookaheadKind(p,0))) {
-            pattern = parseValuePattern(p);
+        if (isFirstVPatternTokenKind(lookaheadKind(p,0))) {
+            pattern = parseVPattern(p);
             if (pattern) {
                 // PushPatternToAstDefStmt(defStmt,pattern);
                 sb_push(patternsSB, pattern);
             } else {
-                if (DEBUG) {
-                    printf("!!- Skipping pattern addition (index=%d)", sb_count(patternsSB));
-                } else {
-                    assert(0 && "Skipping pattern addition");
-                }
+                COMPILER_ERROR_VA("Skipping pattern addition (index=%d)",sb_count(patternsSB));
             }
         } else {
-            FeedbackNote* note = CreateFeedbackNote("see definition here...",loc,NULL);
-            PostFeedback(FBK_ERROR,note,"Unexpected/invalid pattern in definition of '%s'", GetSymbolText(lhs));
+            expectError(p,"a value pattern");
+            // FeedbackNote* note = CreateFeedbackNote("see definition here...",loc,NULL);
+            // PostFeedback(FBK_ERROR,note,"Unexpected/invalid pattern in definition of '%s'", GetSymbolText(lhs));
             return NULL;
         }
     }
@@ -364,8 +361,8 @@ RawAstNode* parseTDefStmt(Parser* p) {
     SymbolID name = idTokenInfo.as.ID_symbolID;
 
     AstNode* optPattern = NULL;
-    if (isFirstTemplatePatternTokenKind(lookaheadKind(p,0))) {
-        optPattern = parseTemplatePattern(p);
+    if (isFirstTPatternTokenKind(lookaheadKind(p,0))) {
+        optPattern = parseTPattern(p);
     }
 
     if (!expect(p,TK_BIND,"'='")) { return NULL; }
@@ -594,8 +591,8 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
                 return NULL;
             }
             RawAstNode** patternSB = NULL;
-            while (isFirstValuePatternTokenKind(lookaheadKind(p,0))) {
-                RawAstNode* pattern = parseValuePattern(p);
+            while (isFirstVPatternTokenKind(lookaheadKind(p,0))) {
+                RawAstNode* pattern = parseVPattern(p);
                 sb_push(patternSB,pattern);
             }
             if (!expect(p, TK_ARROW, "'->' after a sequence of value patterns")) {
@@ -735,16 +732,16 @@ RawAstNode* tryParseCallExpr(Parser* p) {
     return result;
 }
 
-int isFirstValuePatternTokenKind(TokenKind kind) {
-    return kind == TK_VID || kind == TK_LPAREN;
+int isFirstVPatternTokenKind(TokenKind kind) {
+    return kind == TK_VID || kind == TK_LCYBRK;
 }
-int isFirstTemplatePatternTokenKind(TokenKind kind) {
+int isFirstTPatternTokenKind(TokenKind kind) {
     return kind == TK_LSQBRK;
 }
-RawAstNode* parseValuePattern(Parser* p) {
+RawAstNode* parseVPattern(Parser* p) {
     return helpParsePattern(p,1);
 }
-RawAstNode* parseTemplatePattern(Parser* p) {
+RawAstNode* parseTPattern(Parser* p) {
     return helpParsePattern(p,0);
 }
 RawAstNode* helpParsePattern(Parser* p, int notTemplatePattern) {
@@ -754,11 +751,11 @@ RawAstNode* helpParsePattern(Parser* p, int notTemplatePattern) {
     char const* firstExpectMessage;
     char const* rpTkExpectMessage;
     if (notTemplatePattern) {
-        lpTk = TK_LPAREN;
-        rpTk = TK_RPAREN;
+        lpTk = TK_LCYBRK;
+        rpTk = TK_RCYBRK;
         idTk = TK_VID;
-        firstExpectMessage = "a value pattern (an opening '(' or a valueID)";
-        rpTkExpectMessage = "a closing ')'";
+        firstExpectMessage = "a value pattern (a valueID or an opening '{')";
+        rpTkExpectMessage = "a closing '}'";
     } else {
         lpTk = TK_LSQBRK;
         rpTk = TK_RSQBRK;

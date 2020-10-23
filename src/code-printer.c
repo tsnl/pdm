@@ -194,8 +194,8 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         case AST_TPATTERN:
         case AST_VPATTERN:
         {
-            char ltChar = (kind == AST_TPATTERN ? '[':'(');
-            char rtChar = (kind == AST_TPATTERN ? ']':')');
+            char ltChar = (kind == AST_TPATTERN ? '[':'{');
+            char rtChar = (kind == AST_TPATTERN ? ']':'}');
             PrintChar(cp,ltChar);
             int patternLength = GetAstPatternLength(node);
             for (int index = 0; index < patternLength; index++) {
