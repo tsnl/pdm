@@ -10,12 +10,9 @@ namespace eg1;
 # Circles:
 #
 
-def Circle = {
+struct Circle {
     center: (F32,F32),
     radius: (F32)
-} with {
-    center.x > 0,
-    center.y > 0
 };
 
 def circumference circle:Circle = {
@@ -30,8 +27,8 @@ def circumference circle:Circle = {
 # Pixels (generics):
 #
 
-def Pixel[T] = {r:T,g:T,b:T} :: subtypes[T,Scalar];
-def Image[T] = {name:String, size:(U32,U32), data:Buffer[Pixel[T]]};
+struct Pixel[T] {r:T,g:T,b:T};
+struct Image[T] {name:String, size:(U32,U32), data:Buffer[Pixel[T]]};
 
 def addPixel[T] p:Pixel[T] q:Pixel[T] = {
     Pixel[T] (p.r+q.r, p.g+q.g, p.b+q.b)
@@ -65,7 +62,7 @@ def mulImage[T] i:Image[T] x:U8 = {
 # Dicts (generics):
 #
 
-def Dict[K,V] = {
+struct Dict[K,V] = {
     # ...
 };
 
@@ -79,9 +76,9 @@ def newDict[K,V] () = {
 # Enums:
 #
 
-def Color = [
+enum Color {
     rgba: (U8,U8,U8,U8),
     hsva: (U8,U8,U8,U8),
     name: String,
     none
-];
+};

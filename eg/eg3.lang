@@ -1,0 +1,55 @@
+# Idea for compressed template notation
+# - 'class' and '[type]def' unchanged.
+# - conversely, each function may track a 'using'-list; captured types defined in 'using' clauses.
+#   - T in using-list must be explicitly provided if...
+#       1. T is used in the body, and
+#       2. T is not used in value args
+
+class Vehicle {
+    name :: ($) -> Text;
+    cost :: ($) -> I32;
+};
+
+#
+# templates:
+#
+
+def printVehicle [V:Vehicle] (v:V) = {
+    printf("vehicle {name:'%s', cost:%d}\n", name(v),cost(v));
+};
+def newVehicleList [V:Vehicle] () = {
+    newList[V]();
+};
+def newVehicleDict [K:Hashable,V:Vehicle] () = {
+    newDict[K,V]();
+};
+
+#
+# usage:
+#
+
+# here, 'Car' implements the class 'Vehicle'
+struct Car {
+    uname: Text,
+    fancyScore: I32
+};
+def name (c:Car) = {
+    c.uname;
+}
+def score (c:Car) = {
+    c.fancyScore
+};
+
+# we can now construct generic dictionaries/lists of 'Car':
+def newCarList () = {
+    newVehicleList();
+};
+def newCarDict () = {
+    newVehicleDict();
+};
+
+# we can invoke the generic 'printVehicle' function on 'Car' instances WITHOUT GENERIC ARGS.
+def testPrint () = {
+    let car = {"ABC",123};
+    printVehicle(car);
+};

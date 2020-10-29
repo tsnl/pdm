@@ -1,1 +1,140 @@
-PositiveInt[t] = t;
+#
+# In this example, we will demonstrate how 'typeclasses' work by implementing C++'s most basic Input and Output iterators:
+#   http://www.cplusplus.com/reference/iterator/
+# 1. (abstraction) users define abstract types in terms of REQUIREMENTS; symbol:T => (symbol:T exists in this namespace?)
+# 2. (extend) $ :: [T], multiple such statements (i.e. superclasses) possible, 
+#             (!!- compiler must detect impossible classes, allow type & value fields)
+# 3. (upstream implementation) users define funcs on abstract types
+# 4. (downstream implementation) implement functions on a concrete to QUALIFY the concrete as a class member
+#
+
+# Part 1: abstraction
+
+class Iterable [T:Any] = {
+    iter :: ^$ -> Iterator[T];
+};
+class Iterator [T:Any] = {
+    next :: ^$ -> Opt[$];
+};
+
+# Part 2: extension
+
+class InputIterator [T:Any] = {
+    $ :: Iterator[T];
+    equals    :: ($,$) -> U1;
+    notEquals :: ($,$) -> U1;
+    iteratee  :: ($) -> T;
+};
+class OutputIterator [T:Any] = {
+    $ :: InputIterator[T];
+    iterateePtr :: ($) -> ^T;
+};
+
+# Part 3: upstream implementation
+
+def mapInPlace [T:Any] iterator:Opt[OutputIterator[T]] func:^T->() = Unit {
+    match iterator {
+        some (iterator: OutputIterator[T]) -> {
+            let ptr = iterateePtr iterator;
+            discard func ptr;
+            mapInPlace (next iterator) func
+        };
+        none -> {};
+    };
+};
+
+def operator_deref [T:Any] iterator:InputIterator[T] = T {
+    iteratee iterator
+};
+def operator_set [T:Any] it:OutputIterator[T] value:T = Unit {
+    set iterateePtr it = value;
+};
+
+# Part 4: downstream implementation
+
+struct Slice [T:Any] {
+    lo: ^T,
+    hi: ^T,
+};
+struct SliceIterator [T:Any] {
+    ptr:   ^T,
+    slice: ^Slice[T]
+};
+
+def buf2slice [T:Any] buf:Buffer[T] = Slice[T] {
+    let lo = ptrAt buffer 0;
+    let hi = ptrAt buffer count-1;
+    (lo,hi)
+};
+
+def iter [T:Any] slice:^Slice[T] = SliceIterator[T] {
+    ptr: slice.lo,
+    slice: ^slice
+};
+def next [T:Any] si:SliceIterator[T] = Opt[SliceIterator[T]] {
+    let ptr = si.ptr + 1;
+    if ptr > si.slice.hi then {
+        none
+    } else {
+        some ({
+            ptr: ptr,
+            slice: si.slice
+        })
+    }
+};
+def next [T:Any] si:Opt[SliceIterator[T]] = Opt[SliceIterator[T]] {
+    match si with {
+        some it:SliceIterator[T] -> {
+            next si
+        };
+        none -> {
+            none
+        };
+    }
+};
+def iteratee    [T:Any] i:SliceIterator[T]                     = {*i.ptr};
+def iterateePtr [T:Any] i:SliceIterator[T]                     = {i.ptr};
+def equals      [T:Any] i:SliceIterator[T] j: SliceIterator[T] = {i.ptr == j.ptr};
+def notEquals   [T:Any] i:SliceIterator[T] j: SliceIterator[T] = {i.ptr != j.ptr};
+
+# Now, replace each '$' in classdef with SliceIterator[T] to verify...
+# - SliceIterator[T]: Iterator since...
+#   - next: Fn (SliceIterator[T]) -> Opt[SliceIterator[T]]
+# - SliceIterator[T]: InputIterator since...
+#   - SliceIterator[T]: Iterator
+#   - equals: Fn (SliceIterator[T],SliceIterator[T]) -> U1
+#   - notEquals: Fn (SliceIterator[T],SliceIterator[T]) -> U1
+#   - iteratee: Fn (SliceIterator[T]) -> T
+# - SliceIterator[T]: OutputIterator since...
+#   - SliceIterator[T]: InputIterator[T]
+#   - iterateePtr: Fn (^SliceIterator[T]) -> ^T
+
+# We can now use the upstream definitions provided.
+
+def test () = {
+    let count = 32;
+    let buffer = alloc[I32] 32;
+    
+    let index = 0;
+    loop {
+        if index > count {
+            break();
+        }
+        set ptrAt(buffer,index) = index;
+        set ^index = index+1;
+    };
+
+    let slice = buf2slice buffer;
+    let iterator = iter ^slice;
+
+    discard mapInPlace iterator square;
+    discard mapInPlace iterator justPrint;
+};
+
+def square it:^I32 = {
+    let itValue = *it;
+    set it = itValue*itValue;
+};
+def justPrint it:^I32 = {
+    println *it
+};
