@@ -214,20 +214,21 @@ static int isAncestorATN(AdtTrieNode* parent, AdtTrieNode* child);
 // 3. after typing (no more solution possible), call 'solveDeferredMetavars' 
 // usage:
 // - call 'requireSubtyping' to assert that A sup B, thereby modifying the system.
+static SubtypingResult checkSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub);
 static SubtypingResult requireSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub);
 static int solveAndCheckAllMetavars(Typer* typer);
 // helpers (1)...
-static SubtypingResult helpRequestSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub);
-static SubtypingResult helpRequestSubtyping_unitSuper(Typer* typer,char const* why,Loc loc, Type* super, Type* sub);
-static SubtypingResult helpRequestSubtyping_intSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub);
-static SubtypingResult helpRequestSubtyping_floatSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub);
-static SubtypingResult helpRequestSubtyping_ptrSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub);
-static SubtypingResult helpRequestSubtyping_funcSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub);
-static SubtypingResult helpRequestSubtyping_tupleSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub);
-static SubtypingResult helpRequestSubtyping_unionSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub);
-static SubtypingResult helpRequestSubtyping_castSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub);
-static SubtypingResult helpRequestSubtyping_metaSuper(Typer* typer, char const* why, Loc loc, Type* meta, Type* sub);
-static SubtypingResult helpRequestSubtyping_genericMetaSub(Typer* typer, char const* why, Loc loc, Type* super, Type* metaSub);
+static SubtypingResult helpSubtypeOp(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub, int noDeferral);
+static SubtypingResult helpSubtypeOp_unitSuper(Typer* typer,char const* why,Loc loc, Type* super, Type* sub, int noDeferral);
+static SubtypingResult helpSubtypeOp_intSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static SubtypingResult helpSubtypeOp_floatSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static SubtypingResult helpSubtypeOp_ptrSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static SubtypingResult helpSubtypeOp_funcSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static SubtypingResult helpSubtypeOp_tupleSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static SubtypingResult helpSubtypeOp_unionSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static SubtypingResult helpSubtypeOp_castSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static SubtypingResult helpSubtypeOp_metaSuper(Typer* typer, char const* why, Loc loc, Type* meta, Type* sub, int noDeferral);
+static SubtypingResult helpRequestSubtyping_genericMetaSub(Typer* typer, char const* why, Loc loc, Type* super, Type* metaSub, int noDeferral);
 static SubtypingResult mergeSubtypingResults(SubtypingResult fst, SubtypingResult snd);
 // helpers (2)...
 static Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP);
@@ -451,12 +452,19 @@ int isAncestorATN(AdtTrieNode* parent, AdtTrieNode* child) {
 //
 //
 
+SubtypingResult checkSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub) {
+    // leaving the subtyping error as is; attempts to overwrite fail
+
+    // performing the operation with noDefer=1 => don't add sup/sub, just return FAIL since it should be concretized.
+    SubtypingResult result = helpSubtypeOp(typer,why,locWhere,super,sub,1);
+    return result;
+}
 SubtypingResult requireSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub) {
     // clearing the subtyping error:
     resetSubtypingError(typer);
 
     // attempting to perform the operation:
-    SubtypingResult result = helpRequestSubtyping(typer,why,locWhere,super,sub);
+    SubtypingResult result = helpSubtypeOp(typer,why,locWhere,super,sub,0);
     
     // if the operation failed, and we were supposed to write, generating feedback from the subtyping error (must be present).
     char* subtypingError = getAndResetSubtypingError(typer);
@@ -566,18 +574,18 @@ int solveAndCheckAllMetavars(Typer* typer) {
 // typing constraint helpers (1)
 //
 
-SubtypingResult helpRequestSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub) {
+SubtypingResult helpSubtypeOp(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub, int noDeferral) {
     switch (super->kind)
     {
-        case T_UNIT: { return helpRequestSubtyping_unitSuper(typer,why,locWhere,super,sub); }
-        case T_INT: { return helpRequestSubtyping_intSuper(typer,why,locWhere,super,sub); }
-        case T_FLOAT: { return helpRequestSubtyping_floatSuper(typer,why,locWhere,super,sub); }
-        case T_PTR: { return helpRequestSubtyping_ptrSuper(typer,why,locWhere,super,sub); }
-        case T_FUNC: { return helpRequestSubtyping_funcSuper(typer,why,locWhere,super,sub); }
-        case T_TUPLE: { return helpRequestSubtyping_tupleSuper(typer,why,locWhere,super,sub); }
-        case T_UNION: { return helpRequestSubtyping_unionSuper(typer,why,locWhere,super,sub); }
-        case T_META: { return helpRequestSubtyping_metaSuper(typer,why,locWhere,super,sub); }
-        case T_CAST: { return helpRequestSubtyping_castSuper(typer,why,locWhere,super,sub); }
+        case T_UNIT: { return helpSubtypeOp_unitSuper(typer,why,locWhere,super,sub,noDeferral); }
+        case T_INT: { return helpSubtypeOp_intSuper(typer,why,locWhere,super,sub,noDeferral); }
+        case T_FLOAT: { return helpSubtypeOp_floatSuper(typer,why,locWhere,super,sub,noDeferral); }
+        case T_PTR: { return helpSubtypeOp_ptrSuper(typer,why,locWhere,super,sub,noDeferral); }
+        case T_FUNC: { return helpSubtypeOp_funcSuper(typer,why,locWhere,super,sub,noDeferral); }
+        case T_TUPLE: { return helpSubtypeOp_tupleSuper(typer,why,locWhere,super,sub,noDeferral); }
+        case T_UNION: { return helpSubtypeOp_unionSuper(typer,why,locWhere,super,sub,noDeferral); }
+        case T_META: { return helpSubtypeOp_metaSuper(typer,why,locWhere,super,sub,noDeferral); }
+        case T_CAST: { return helpSubtypeOp_castSuper(typer,why,locWhere,super,sub,noDeferral); }
         default:
         {
             COMPILER_ERROR_VA("NotImplemented: helpRequestSubtyping for super of unknown type kind %s.", TypeKindAsText(super->kind));
@@ -585,7 +593,7 @@ SubtypingResult helpRequestSubtyping(Typer* typer, char const* why, Loc locWhere
         }
     }
 }
-SubtypingResult helpRequestSubtyping_unitSuper(Typer* typer,char const* why,Loc loc, Type* super, Type* sub) {
+SubtypingResult helpSubtypeOp_unitSuper(Typer* typer,char const* why,Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind)
     {
         case T_UNIT:
@@ -594,11 +602,11 @@ SubtypingResult helpRequestSubtyping_unitSuper(Typer* typer,char const* why,Loc 
         }
         case T_META:
         {
-            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub);
+            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
         }
         case T_CAST:
         {
-            return helpRequestSubtyping_unitSuper(typer,why,loc,super,sub->as.Cast.to);
+            return helpSubtypeOp_unitSuper(typer,why,loc,super,sub->as.Cast.to,noDeferral);
         }
         default:
         {
@@ -607,7 +615,7 @@ SubtypingResult helpRequestSubtyping_unitSuper(Typer* typer,char const* why,Loc 
         }
     }
 }
-SubtypingResult helpRequestSubtyping_intSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub) {
+SubtypingResult helpSubtypeOp_intSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind)
     {
         case T_INT:
@@ -630,11 +638,11 @@ SubtypingResult helpRequestSubtyping_intSuper(Typer* typer, char const* why, Loc
         }
         case T_META:
         {
-            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub);
+            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
         }
         case T_CAST:
         {
-            return helpRequestSubtyping_intSuper(typer,why,loc,super,sub->as.Cast.to);
+            return helpSubtypeOp_intSuper(typer,why,loc,super,sub->as.Cast.to,noDeferral);
         }
         default:
         {
@@ -643,7 +651,7 @@ SubtypingResult helpRequestSubtyping_intSuper(Typer* typer, char const* why, Loc
         }
     }
 }
-SubtypingResult helpRequestSubtyping_floatSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub) {
+SubtypingResult helpSubtypeOp_floatSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind)
     {
         case T_FLOAT:
@@ -660,11 +668,11 @@ SubtypingResult helpRequestSubtyping_floatSuper(Typer* typer, char const* why, L
         }
         case T_META:
         {
-            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub);
+            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
         }
         case T_CAST:
         {
-            return helpRequestSubtyping_floatSuper(typer,why,loc,super,sub->as.Cast.to);
+            return helpSubtypeOp_floatSuper(typer,why,loc,super,sub->as.Cast.to,noDeferral);
         }
         default:
         {
@@ -673,20 +681,20 @@ SubtypingResult helpRequestSubtyping_floatSuper(Typer* typer, char const* why, L
         }
     }
 }
-SubtypingResult helpRequestSubtyping_ptrSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub) {
+SubtypingResult helpSubtypeOp_ptrSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind)
     {
         case T_PTR:
         {
-            return helpRequestSubtyping(typer,why,loc,GetPtrTypePointee(super),GetPtrTypePointee(sub));
+            return helpSubtypeOp(typer,why,loc,GetPtrTypePointee(super),GetPtrTypePointee(sub),noDeferral);
         }
         case T_META:
         {
-            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub);
+            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
         }
         case T_CAST:
         {
-            return helpRequestSubtyping_ptrSuper(typer,why,loc,super,sub->as.Cast.to);
+            return helpSubtypeOp_ptrSuper(typer,why,loc,super,sub->as.Cast.to,noDeferral);
         }
         default:
         {
@@ -695,7 +703,7 @@ SubtypingResult helpRequestSubtyping_ptrSuper(Typer* typer, char const* why, Loc
         }
     }
 }
-SubtypingResult helpRequestSubtyping_funcSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub) {
+SubtypingResult helpSubtypeOp_funcSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind)
     {
         case T_FUNC:
@@ -704,15 +712,19 @@ SubtypingResult helpRequestSubtyping_funcSuper(Typer* typer, char const* why, Lo
             int superArgCount = GetFuncTypeArgCount(super);
             int subArgCount = GetFuncTypeArgCount(sub);
             if (superArgCount != subArgCount) {
-                setGenericSubtypingError(typer,"function argument counts mismatched, got %d for supertype, %d for subtype",superArgCount,subArgCount);
+                setGenericSubtypingError(typer,
+                    "function argument counts mismatched, got %d for supertype, %d for subtype",
+                    superArgCount,subArgCount
+                );
                 return SUBTYPING_FAILURE;
             }
 
             // check 2: is the image (return type) subtyping in error?
-            SubtypingResult imageResult = helpRequestSubtyping(
+            SubtypingResult imageResult = helpSubtypeOp(
                 typer,
                 why,loc,
-                GetFuncTypeImage(super),GetFuncTypeImage(sub)
+                GetFuncTypeImage(super),GetFuncTypeImage(sub),
+                noDeferral
             );
             if (imageResult == SUBTYPING_FAILURE) {
                 setGenericSubtypingError(typer,"function return type subtyping failed");
@@ -726,7 +738,7 @@ SubtypingResult helpRequestSubtyping_funcSuper(Typer* typer, char const* why, Lo
                 Type* superArg = GetFuncTypeArgAt(super,argIndex);
                 Type* subArg = GetFuncTypeArgAt(sub,argIndex);
                 
-                SubtypingResult result = helpRequestSubtyping(typer,why,loc,superArg,subArg);
+                SubtypingResult result = helpSubtypeOp(typer,why,loc,superArg,subArg,noDeferral);
                 if (result == SUBTYPING_FAILURE) {
                     setGenericSubtypingError(typer,"function arg %d subtyping failed",argIndex);
                 }
@@ -741,11 +753,11 @@ SubtypingResult helpRequestSubtyping_funcSuper(Typer* typer, char const* why, Lo
         }
         case T_META:
         {
-            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub);
+            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
         }
         case T_CAST:
         {
-            return helpRequestSubtyping_funcSuper(typer,why,loc,super,sub->as.Cast.to);
+            return helpSubtypeOp_funcSuper(typer,why,loc,super,sub->as.Cast.to,noDeferral);
         }
         default:
         {
@@ -754,7 +766,7 @@ SubtypingResult helpRequestSubtyping_funcSuper(Typer* typer, char const* why, Lo
         }
     }
 }
-SubtypingResult helpRequestSubtyping_tupleSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub) {
+SubtypingResult helpSubtypeOp_tupleSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind) {
         case T_TUPLE:
         {
@@ -777,7 +789,7 @@ SubtypingResult helpRequestSubtyping_tupleSuper(Typer* typer, char const* why, L
                     AdtTrieEdge subEdge = subATN->parent->edgesSb[subATN->parentEdgeIndex];
                     mergedFieldResults = mergeSubtypingResults(
                         mergedFieldResults,
-                        helpRequestSubtyping(typer,why,loc,superEdge.type,subEdge.type)
+                        helpSubtypeOp(typer,why,loc,superEdge.type,subEdge.type,noDeferral)
                     );
 
                     superATN = superATN->parent;
@@ -788,11 +800,11 @@ SubtypingResult helpRequestSubtyping_tupleSuper(Typer* typer, char const* why, L
         }
         case T_META:
         {
-            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub);
+            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
         }
         case T_CAST:
         {
-            return helpRequestSubtyping_tupleSuper(typer,why,loc,super,sub->as.Cast.to);
+            return helpSubtypeOp_tupleSuper(typer,why,loc,super,sub->as.Cast.to,noDeferral);
         }
         default:
         {
@@ -801,7 +813,7 @@ SubtypingResult helpRequestSubtyping_tupleSuper(Typer* typer, char const* why, L
         }
     }
 }
-SubtypingResult helpRequestSubtyping_unionSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub) {
+SubtypingResult helpSubtypeOp_unionSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind) {
         case T_UNION:
         {
@@ -813,7 +825,10 @@ SubtypingResult helpRequestSubtyping_unionSuper(Typer* typer, char const* why, L
                 
                 // check 1: are the unions of the same length?
                 if (superATN->depth != subATN->depth) {
-                    setGenericSubtypingError(typer,"supertype %d-union and subtype %d-union do not have the same field count.",superATN->depth,subATN->depth);
+                    setGenericSubtypingError(typer,
+                        "supertype %d-union and subtype %d-union do not have the same field count.",
+                        superATN->depth,subATN->depth
+                    );
                     return SUBTYPING_FAILURE;
                 }
                 // check 2: merge helpReadOrWriteSubtyping on each corresponding field type:
@@ -823,7 +838,7 @@ SubtypingResult helpRequestSubtyping_unionSuper(Typer* typer, char const* why, L
                     AdtTrieEdge subEdge = subATN->parent->edgesSb[subATN->parentEdgeIndex];
                     mergedFieldResults = mergeSubtypingResults(
                         mergedFieldResults,
-                        helpRequestSubtyping(typer,why,loc,superEdge.type,subEdge.type)
+                        helpSubtypeOp(typer,why,loc,superEdge.type,subEdge.type,noDeferral)
                     );
                     superATN = superATN->parent;
                     subATN = subATN->parent;
@@ -833,11 +848,11 @@ SubtypingResult helpRequestSubtyping_unionSuper(Typer* typer, char const* why, L
         }
         case T_META:
         {
-            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub);
+            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
         }
         case T_CAST:
         {
-            return helpRequestSubtyping_unionSuper(typer,why,loc,super,sub->as.Cast.to);
+            return helpSubtypeOp_unionSuper(typer,why,loc,super,sub->as.Cast.to,noDeferral);
         }
         default:
         {
@@ -846,19 +861,27 @@ SubtypingResult helpRequestSubtyping_unionSuper(Typer* typer, char const* why, L
         }
     }
 }
-SubtypingResult helpRequestSubtyping_castSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub) {
+SubtypingResult helpSubtypeOp_castSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     // todo: check the cast at some point after solving metavars.
-    return helpRequestSubtyping(typer,why,loc,super->as.Cast.to,sub);
+    return helpSubtypeOp(typer,why,loc,super->as.Cast.to,sub,noDeferral);
 }
-SubtypingResult helpRequestSubtyping_metaSuper(Typer* typer, char const* why, Loc loc, Type* meta, Type* sub) {
-    SubtypeRec subtypingRec = {why,loc,sub};
-    sb_push(meta->as.Meta.ext->deferredSubSB, subtypingRec);
-    return SUBTYPING_DEFERRED;
+SubtypingResult helpSubtypeOp_metaSuper(Typer* typer, char const* why, Loc loc, Type* meta, Type* sub, int noDeferral) {
+    if (noDeferral) {
+        return SUBTYPING_FAILURE;
+    } else {
+        SubtypeRec subtypingRec = {why,loc,sub};
+        sb_push(meta->as.Meta.ext->deferredSubSB, subtypingRec);
+        return SUBTYPING_DEFERRED;
+    }
 }
-SubtypingResult helpRequestSubtyping_genericMetaSub(Typer* typer, char const* why, Loc loc, Type* super, Type* meta) {
-    SupertypeRec supertypingRec = {why,loc,super};
-    sb_push(meta->as.Meta.ext->deferredSuperSB, supertypingRec);
-    return SUBTYPING_DEFERRED;
+SubtypingResult helpRequestSubtyping_genericMetaSub(Typer* typer, char const* why, Loc loc, Type* super, Type* meta, int noDeferral) {
+    if (noDeferral) {
+        return SUBTYPING_FAILURE;
+    } else {
+        SupertypeRec supertypingRec = {why,loc,super};
+        sb_push(meta->as.Meta.ext->deferredSuperSB, supertypingRec);
+        return SUBTYPING_DEFERRED;
+    }
 }
 SubtypingResult mergeSubtypingResults(SubtypingResult fst, SubtypingResult snd) {
     return (fst < snd ? fst : snd);
@@ -982,7 +1005,7 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
                             if (hypothesis == NULL) {
                                 hypothesis = concreteSupertype;
                             } else {
-                                SubtypingResult comparison = requireSubtyping(
+                                SubtypingResult comparison = checkSubtyping(
                                     typer,"get-hypothesis",metavar->as.Meta.ext->createdLoc,
                                     concreteSupertype,hypothesis
                                 );
@@ -1608,6 +1631,11 @@ void printTyper(Typer* typer, int metaOnly) {
         printTypeLn(typer, &typer->unsignedIntType[INT_32]);
         printTypeLn(typer, &typer->unsignedIntType[INT_64]);
         printTypeLn(typer, &typer->unsignedIntType[INT_128]);
+        printTypeLn(typer, &typer->signedIntType[INT_8]);
+        printTypeLn(typer, &typer->signedIntType[INT_16]);
+        printTypeLn(typer, &typer->signedIntType[INT_32]);
+        printTypeLn(typer, &typer->signedIntType[INT_64]);
+        printTypeLn(typer, &typer->signedIntType[INT_128]);
         printTypeLn(typer, &typer->floatType[FLOAT_32]);
         printTypeLn(typer, &typer->floatType[FLOAT_64]);
 

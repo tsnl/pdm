@@ -1,8 +1,8 @@
-def adder x:S64 y:S64 = {
+def adder x:S64 y:S64 = S64 {
     x + y
 };
 
-def test_adder () = {
-    let sum = adder 0 1;
+def test_adder {} = {
+    let sum:S64 = adder 0 1;
     sum == 1
 };

@@ -186,27 +186,162 @@ static AstBuiltinVDefKind selectBuiltinUnaryVDefKind(Emitter* emitter, AstNode* 
 }
 AstBuiltinVDefKind selectBuiltinBinaryVDefKind(Emitter* emitter, AstNode* expr) {
     ExportedValue ltArg = exportValue(emitter,GetAstBinaryLtOperand(expr));
-    ExportedValue rtArg = exportValue(emitter,GetAstBinaryLtOperand(expr));
+    ExportedValue rtArg = exportValue(emitter,GetAstBinaryRtOperand(expr));
     TypeKind ltArgTypeKind = GetTypeKind(ltArg.type.native);
     TypeKind rtArgTypeKind = GetTypeKind(rtArg.type.native);
 
     AstBinaryOperator op = GetAstBinaryOperator(expr);
 
     if (op == BOP_MUL) {
-        
+        if (ltArgTypeKind == rtArgTypeKind) {
+            if (ltArgTypeKind == T_INT) {
+                if (GetIntTypeIsSigned(ltArg.type.native)) {
+                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
+                        case 1:   return AST_BUILTIN_MUL_U1;
+                        case 8:   return AST_BUILTIN_MUL_U8;
+                        case 16:  return AST_BUILTIN_MUL_U16;
+                        case 32:  return AST_BUILTIN_MUL_U32;
+                        case 64:  return AST_BUILTIN_MUL_U64;
+                        case 128: return AST_BUILTIN_MUL_U128;
+                        default: break;
+                    }
+                } else {
+                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
+                        case 8:   return AST_BUILTIN_MUL_S8;
+                        case 16:  return AST_BUILTIN_MUL_S16;
+                        case 32:  return AST_BUILTIN_MUL_S32;
+                        case 64:  return AST_BUILTIN_MUL_S64;
+                        case 128: return AST_BUILTIN_MUL_S128;
+                        default: break;
+                    }
+                }
+            } else if (ltArgTypeKind == T_FLOAT) {
+                switch (GetFloatTypeWidthInBits(ltArg.type.native)) {
+                    case 32: return AST_BUILTIN_MUL_F32;
+                    case 64: return AST_BUILTIN_MUL_F64;
+                }
+            }
+        }
     }
     if (op == BOP_DIV) {
-
+        if (ltArgTypeKind == rtArgTypeKind) {
+            if (ltArgTypeKind == T_INT) {
+                if (GetIntTypeIsSigned(ltArg.type.native)) {
+                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
+                        case 1:   return AST_BUILTIN_QUO_U1;
+                        case 8:   return AST_BUILTIN_QUO_U8;
+                        case 16:  return AST_BUILTIN_QUO_U16;
+                        case 32:  return AST_BUILTIN_QUO_U32;
+                        case 64:  return AST_BUILTIN_QUO_U64;
+                        case 128: return AST_BUILTIN_QUO_U128;
+                        default: break;
+                    }
+                } else {
+                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
+                        case 8:   return AST_BUILTIN_QUO_S8;
+                        case 16:  return AST_BUILTIN_QUO_S16;
+                        case 32:  return AST_BUILTIN_QUO_S32;
+                        case 64:  return AST_BUILTIN_QUO_S64;
+                        case 128: return AST_BUILTIN_QUO_S128;
+                        default: break;
+                    }
+                }
+            } else if (ltArgTypeKind == T_FLOAT) {
+                switch (GetFloatTypeWidthInBits(ltArg.type.native)) {
+                    case 32: return AST_BUILTIN_DIV_F32;
+                    case 64: return AST_BUILTIN_DIV_F64;
+                }
+            }
+        }
     }
     if (op == BOP_REM) {
-
+        if (ltArgTypeKind == rtArgTypeKind) {
+            if (ltArgTypeKind == T_INT) {
+                if (GetIntTypeIsSigned(ltArg.type.native)) {
+                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
+                        case 1:   return AST_BUILTIN_REM_U1;
+                        case 8:   return AST_BUILTIN_REM_U8;
+                        case 16:  return AST_BUILTIN_REM_U16;
+                        case 32:  return AST_BUILTIN_REM_U32;
+                        case 64:  return AST_BUILTIN_REM_U64;
+                        case 128: return AST_BUILTIN_REM_U128;
+                        default: break;
+                    }
+                } else {
+                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
+                        case 8:   return AST_BUILTIN_REM_S8;
+                        case 16:  return AST_BUILTIN_REM_S16;
+                        case 32:  return AST_BUILTIN_REM_S32;
+                        case 64:  return AST_BUILTIN_REM_S64;
+                        case 128: return AST_BUILTIN_REM_S128;
+                        default: break;
+                    }
+                }
+            }
+        }
     }
 
     if (op == BOP_ADD) {
-
+        if (ltArgTypeKind == rtArgTypeKind) {
+            if (ltArgTypeKind == T_INT) {
+                if (GetIntTypeIsSigned(ltArg.type.native)) {
+                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
+                        case 1:   return AST_BUILTIN_ADD_U1;
+                        case 8:   return AST_BUILTIN_ADD_U8;
+                        case 16:  return AST_BUILTIN_ADD_U16;
+                        case 32:  return AST_BUILTIN_ADD_U32;
+                        case 64:  return AST_BUILTIN_ADD_U64;
+                        case 128: return AST_BUILTIN_ADD_U128;
+                        default: break;
+                    }
+                } else {
+                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
+                        case 8:   return AST_BUILTIN_ADD_S8;
+                        case 16:  return AST_BUILTIN_ADD_S16;
+                        case 32:  return AST_BUILTIN_ADD_S32;
+                        case 64:  return AST_BUILTIN_ADD_S64;
+                        case 128: return AST_BUILTIN_ADD_S128;
+                        default: break;
+                    }
+                }
+            } else if (ltArgTypeKind == T_FLOAT) {
+                switch (GetFloatTypeWidthInBits(ltArg.type.native)) {
+                    case 32: return AST_BUILTIN_ADD_F32;
+                    case 64: return AST_BUILTIN_ADD_F64;
+                }
+            }
+        }
     }
     if (op == BOP_SUBTRACT) {
-
+        if (ltArgTypeKind == rtArgTypeKind) {
+            if (ltArgTypeKind == T_INT) {
+                if (GetIntTypeIsSigned(ltArg.type.native)) {
+                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
+                        case 1:   return AST_BUILTIN_SUBTRACT_U1;
+                        case 8:   return AST_BUILTIN_SUBTRACT_U8;
+                        case 16:  return AST_BUILTIN_SUBTRACT_U16;
+                        case 32:  return AST_BUILTIN_SUBTRACT_U32;
+                        case 64:  return AST_BUILTIN_SUBTRACT_U64;
+                        case 128: return AST_BUILTIN_SUBTRACT_U128;
+                        default: break;
+                    }
+                } else {
+                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
+                        case 8:   return AST_BUILTIN_SUBTRACT_S8;
+                        case 16:  return AST_BUILTIN_SUBTRACT_S16;
+                        case 32:  return AST_BUILTIN_SUBTRACT_S32;
+                        case 64:  return AST_BUILTIN_SUBTRACT_S64;
+                        case 128: return AST_BUILTIN_SUBTRACT_S128;
+                        default: break;
+                    }
+                }
+            } else if (ltArgTypeKind == T_FLOAT) {
+                switch (GetFloatTypeWidthInBits(ltArg.type.native)) {
+                    case 32: return AST_BUILTIN_SUBTRACT_F32;
+                    case 64: return AST_BUILTIN_SUBTRACT_F64;
+                }
+            }
+        }
     }
     // ...
 
@@ -277,9 +412,13 @@ ExportedValue helpExportUnaryBuiltinVDefCall(Emitter* emitter, AstBuiltinVDefKin
         LLVMBuildStore(emitter->builder,loadedResult,builtinUOpResult);
         // LLVMBuildStore(emitter->builder,llvmParam,llvmParamMem);
     }
+
+    COMPILER_ERROR("NotImplemented: helpExportUnaryBuiltinVDefCall");
+    ExportedValue dummy;
+    return dummy;
 }
 ExportedValue helpExportBinaryBuiltinVDefCall(Emitter* emitter, AstBuiltinVDefKind builtinVDefKind, ExportedValue ltArg, ExportedValue rtArg) {
-
+    COMPILER_ERROR("NotImplemented: helpExportBinaryBuiltinVDefCall");
 }
 
 //
@@ -722,8 +861,8 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                     // - sub->super is all that is required, very predictable
                     // - in the future, when we add classes, sub->super gets more complex, but stays fixed in compiler-world.
                     // - if we introduce overloadable type conversions, overload resolution complexity balloons; high cost, low payoff.
-                    COMPILER_ASSERT(
-                        exportedActual.type.native == exportedFormal_type_native,
+                    COMPILER_ERROR(
+                        // exportedActual.type.native == exportedFormal_type_native,
                         "NotImplemented: implicit type conversions from subtype to supertype in AST_VCALL"
                     );
 
@@ -870,6 +1009,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 if (COMPILER_ASSERT(builtinVDefKind != AST_BUILTIN_NULL,"Selected NULL builtinVDefKind while exporting AST_UNARY")) {
                     // todo: emit code based on the builtin vdef kind.
                 }
+                COMPILER_ERROR("NotImplemented: exportValue for AST_UNARY");
                 break;
             }
             case AST_BINARY:
@@ -879,6 +1019,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 if (COMPILER_ASSERT(builtinVDefKind != AST_BUILTIN_NULL,"Selected NULL builtinVDefKind while exporting AST_BINARY")) {
                     // todo: emit code based on the builtin vdef kind.
                 }
+                COMPILER_ERROR("NotImplemented: exportValue for AST_BINARY");
                 break;
             }
             // case AST_BINARY:

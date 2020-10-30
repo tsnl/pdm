@@ -20,9 +20,7 @@ find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "... Found LLVM version (${LLVM_PACKAGE_VERSION})")
 message(STATUS "... Using LLVMConfig.cmake in: ${LLVM_DIR}")
-
-# message(STATUS "... Found LLVM ${LLVM_PACKAGE_VERSION}")
-# message(STATUS "... Using LLVMConfig.cmake in: ${LLVM_DIR}")
+message(STATUS "... Add '/usr/local/Cellar/llvm/10.0.1_1/include/' to your IDE include path list for LLVM C API auto-complete.")
 
 # set (LLVM_ENABLE_PROJECTS "clang;clang-tools-extra;compiler-rt;libc")
 # set (CMAKE_CURRENT_BINARY_DIR "build")
