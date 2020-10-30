@@ -17,11 +17,11 @@ class Vehicle {
 def printVehicle [V:Vehicle] (v:V) = {
     printf("vehicle {name:'%s', cost:%d}\n", name(v),cost(v));
 };
-def newVehicleList [V:Vehicle] () = {
-    newList[V]();
+def newVehicleList (V:Vehicle) () = {
+    newList V;
 };
-def newVehicleDict [K:Hashable,V:Vehicle] () = {
-    newDict[K,V]();
+def newVehicleDict (K:Hashable) (V:Vehicle) = {
+    newDict K V;
 };
 
 #
@@ -42,10 +42,10 @@ def score (c:Car) = {
 
 # we can now construct generic dictionaries/lists of 'Car':
 def newCarList () = {
-    newVehicleList();
+    newVehicleList Car;
 };
 def newCarDict () = {
-    newVehicleDict();
+    newVehicleDict Text Car;
 };
 
 # we can invoke the generic 'printVehicle' function on 'Car' instances WITHOUT GENERIC ARGS.
