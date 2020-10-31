@@ -8,6 +8,7 @@
 #include "config.h"
 #include "useful.h"
 #include "lexer.h"
+#include "parser.tab.h"
 
 #define PARSER_LOOKAHEAD_COUNT (2)
 
@@ -17,6 +18,7 @@ typedef int(*TokenKindPredicate)(TokenKind tokenKind);
 struct ParserLookahead {
     TokenKind peekKind;
     TokenInfo peekInfo;
+    Span peekSpan;
 };
 struct Parser {
     Source* source;
@@ -25,6 +27,7 @@ struct Parser {
 static Parser createParser(Source* source);
 static TokenKind lookaheadKind(Parser* p, int index);
 static TokenInfo lookaheadInfo(Parser* p, int index);
+static Span lookaheadSpan(Parser* p, int index);
 static Loc lookaheadLoc(Parser* p, int index);
 static void advance(Parser* p);
 static int match(Parser* p, TokenKind tokenKind);
@@ -61,7 +64,7 @@ static BinaryOpPrecedenceNode* binaryOpPrecedenceListHead = &orBinaryOpPrecedenc
 static RawAstNode* tryParseStmt(Parser* p);
 static RawAstNode* parseLetStmt(Parser* p);
 static RawAstNode* parseReturnStmt(Parser* p);
-static RawAstNode* parseYieldStmt(Parser* p);
+static RawAstNode* parseDiscardStmt(Parser* p);
 static RawAstNode* parseVDefStmt(Parser* p);
 static RawAstNode* parseExternStmt(Parser* p);
 static RawAstNode* parseTDefStmt(Parser* p);
@@ -86,9 +89,9 @@ static int isFirstTPatternTokenKind(TokenKind kind);
 static RawAstNode* helpParsePattern(Parser* p, int notTemplatePattern);
 static RawAstNode* parseVPattern(Parser* p);
 static RawAstNode* parseTPattern(Parser* p);
-static void parsePatternElement(Parser* p, RawAstNode* pattern, int* okP, int hasTail, TokenKind idTokenKind);
-static void parsePatternElementWithTail(Parser* p, RawAstNode* pattern, int* okP, TokenKind idTokenKind);
-static void parsePatternElementWithoutTail(Parser* p, RawAstNode* pattern, int* okP, TokenKind idTokenKind);
+static void parsePatternElement(Parser* p, RawAstNode* pattern, int* okP, int hasTail, TokenKind idTokenKind, int isExplicit);
+static void parsePatternElementWithTail(Parser* p, RawAstNode* pattern, int* okP, TokenKind idTokenKind, int isExplicit);
+static void parsePatternElementWithoutTail(Parser* p, RawAstNode* pattern, int* okP, TokenKind idTokenKind, int isExplicit);
 static RawAstNode* parseRestOfVPatternSingleton(Parser* p, Loc loc, SymbolID name);
 
 // typespecs:
@@ -112,8 +115,10 @@ static Parser createParser(Source* source) {
     Parser p;
     p.source = source;
     for (int i = 0; i < PARSER_LOOKAHEAD_COUNT; i++) {
-        TokenKind kind = LexOneToken(source, &p.lookaheadBuffer[i].peekInfo);
-        p.lookaheadBuffer[i].peekKind = kind;
+        TokenKind kind = (
+            p.lookaheadBuffer[i].peekKind = 
+                LexOneToken(source, &p.lookaheadBuffer[i].peekInfo, &p.lookaheadBuffer[i].peekSpan)
+        );
         if (kind == TK_EOS || kind == TK_NULL) {
             break;
         }
@@ -126,8 +131,17 @@ static TokenKind lookaheadKind(Parser* p, int index) {
 static TokenInfo lookaheadInfo(Parser* p, int index) {
     return p->lookaheadBuffer[index].peekInfo;
 }
+static Span lookaheadSpan(Parser* p, int index) {
+    return p->lookaheadBuffer[index].peekSpan;
+}
 static Loc lookaheadLoc(Parser* p, int index) {
-    return lookaheadInfo(p,index).loc;
+    Span span = lookaheadSpan(p,index);
+    return (Loc) {
+        .source = span.source,
+        .offset = span.first_offset,
+        .lineIndex = span.first_line-1,
+        .colIndex = span.first_column-1
+    };
 }
 static void advance(Parser* p) {
     // copying look-aheads backward:
@@ -136,7 +150,7 @@ static void advance(Parser* p) {
     }
     // lexing the last token:
     ParserLookahead* lookaheadP = &p->lookaheadBuffer[PARSER_LOOKAHEAD_COUNT-1];
-    lookaheadP->peekKind = LexOneToken(p->source, &lookaheadP->peekInfo);
+    lookaheadP->peekKind = LexOneToken(p->source, &lookaheadP->peekInfo, &lookaheadP->peekSpan);
 }
 static int match(Parser* p, TokenKind tokenKind) {
     if (lookaheadKind(p,0) == tokenKind) {
@@ -158,9 +172,10 @@ inline static void expectError(Parser* p, char const* expectedDesc) {
     char errorText[512];
     TokenKind kind = lookaheadKind(p,0);
     TokenInfo info = lookaheadInfo(p,0);
+    Loc loc = lookaheadLoc(p,0);
     TokenToText(kind, &info, errorText, 512);
     
-    FeedbackNote* note = CreateFeedbackNote("here...", info.loc, NULL);
+    FeedbackNote* note = CreateFeedbackNote("here...", loc, NULL);
     PostFeedback(FBK_ERROR, note, "Before '%s' expected %s.", errorText, expectedDesc);
 }
 int expect(Parser* p, TokenKind tokenKind, char const* expectedDesc) {
@@ -222,9 +237,9 @@ RawAstNode* tryParseStmt(Parser* p) {
         {
             return parseReturnStmt(p);
         }
-        case TK_KW_YIELD:
+        case TK_KW_DISCARD:
         {
-            return parseYieldStmt(p);
+            return parseDiscardStmt(p);
         }
         default:
         {
@@ -273,12 +288,12 @@ RawAstNode* parseReturnStmt(Parser* p) {
     }
     return NULL;
 }
-RawAstNode* parseYieldStmt(Parser* p) {
+RawAstNode* parseDiscardStmt(Parser* p) {
     // todo: implement `parseReturnStmt`
     if (DEBUG) {
-        printf("!!- NotImplemented: parseYieldStmt\n");
+        printf("!!- NotImplemented: parseDiscardStmt\n");
     } else {
-        assert(0 && "NotImplemented: parseYieldStmt");
+        assert(0 && "NotImplemented: parseDiscardStmt");
     }
     return NULL;
 }
@@ -293,7 +308,7 @@ RawAstNode* parseVDefStmt(Parser* p) {
     SymbolID lhs = SYM_NULL; {
         TokenInfo idTokenInfo = lookaheadInfo(p,0);
         if (expect(p, TK_VID, "the defined (lhs) identifier")) {
-            lhs = idTokenInfo.as.ID_symbolID;
+            lhs = idTokenInfo.ID_symbolID;
         } else {
             return NULL;
         }
@@ -335,7 +350,7 @@ RawAstNode* parseVDefStmt(Parser* p) {
     }
     RawAstNode** patterns = patternsSB;
     int patternsCount = sb_count(patterns);
-    RawAstNode* defStmt = NewAstVDefStmt(loc,lhs,optTemplatePattern,patterns,patternsCount,rhs);
+    RawAstNode* defStmt = NewAstDefStmt(loc,lhs,optTemplatePattern,patterns,patternsCount,rhs);
     sb_free(patternsSB);
     return defStmt;
 }
@@ -345,7 +360,7 @@ RawAstNode* parseExternStmt(Parser* p) {
     
     TokenInfo idTokenInfo = lookaheadInfo(p,0);
     if (!expect(p,TK_VID,"an extern ID")) { return NULL; }
-    SymbolID name = idTokenInfo.as.ID_symbolID;
+    SymbolID name = idTokenInfo.ID_symbolID;
 
     if (!expect(p,TK_COLON,"':' followed by a type specifier")) { return NULL; }
     RawAstNode* typespec = parseExpr(p);
@@ -358,7 +373,7 @@ RawAstNode* parseTDefStmt(Parser* p) {
     
     TokenInfo idTokenInfo = lookaheadInfo(p,0);
     if (!expect(p,TK_TID,"a typedef ID")) { return NULL; }
-    SymbolID name = idTokenInfo.as.ID_symbolID;
+    SymbolID name = idTokenInfo.ID_symbolID;
 
     AstNode* optPattern = NULL;
     if (isFirstTPatternTokenKind(lookaheadKind(p,0))) {
@@ -372,7 +387,7 @@ RawAstNode* parseTDefStmt(Parser* p) {
         optRhs = parseExpr(p);
     }
 
-    return NewAstTDefStmt(loc,name,optPattern,optRhs);
+    return NewAstTypedefStmt(loc,name,optPattern,optRhs);
 }
 RawAstNode* parseWithStmt(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
@@ -384,7 +399,7 @@ RawAstNode* parseWithStmt(Parser* p) {
     if (!checked) {
         return NULL;
     }
-    return NewAstWithStmt(loc, checked);
+    return NewAstAssertStmt(loc, checked);
 }
 
 int isFirstExprTokenKind(TokenKind kind) {
@@ -398,7 +413,7 @@ int isFirstExprTokenKind(TokenKind kind) {
         kind == TK_FLOAT_LIT ||
         kind == TK_PLUS ||
         kind == TK_MINUS ||
-        kind == TK_NOT ||
+        kind == TK_KW_NOT ||
         kind == TK_CARET ||
         kind == TK_ASTERISK ||
         kind == TK_KW_FUN ||
@@ -434,9 +449,10 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
     switch (lookaheadKind(p,0)) {
         case TK_VID:
         { 
+            Loc idTokenLoc = lookaheadLoc(p, 0);
             TokenInfo idTokenInfo = lookaheadInfo(p, 0);
             if (expect(p, TK_VID, "a bound value identifier")) {
-                return NewAstVID(idTokenInfo.loc, idTokenInfo.as.ID_symbolID);
+                return NewAstVID(idTokenLoc, idTokenInfo.ID_symbolID);
             } else {
                 return NULL;
             }
@@ -444,11 +460,12 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
         case TK_DINT_LIT: 
         case TK_XINT_LIT: 
         { 
-            TokenInfo intTokenInfo = lookaheadInfo(p, 0);
+            TokenInfo intTokenInfo = lookaheadInfo(p,0);
+            Loc intTokenLoc = lookaheadLoc(p,0);
             if (match(p, TK_DINT_LIT)) {
-                return NewAstIntLiteral(intTokenInfo.loc, intTokenInfo.as.Int, 10);
+                return NewAstIntLiteral(intTokenLoc, intTokenInfo.Int, 10);
             } else if (match(p, TK_XINT_LIT)) {
-                return NewAstIntLiteral(intTokenInfo.loc, intTokenInfo.as.Int, 16);
+                return NewAstIntLiteral(intTokenLoc, intTokenInfo.Int, 16);
             } else {
                 expectError(p, "an integer literal");
                 return NULL;
@@ -457,8 +474,9 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
         case TK_FLOAT_LIT: 
         { 
             TokenInfo floatTokenInfo = lookaheadInfo(p, 0);
+            Loc floatTokenLoc = lookaheadLoc(p, 0);
             if (expect(p, TK_FLOAT_LIT, "a float literal")) {
-                return NewAstFloatLiteral(floatTokenInfo.loc, floatTokenInfo.as.Float);
+                return NewAstFloatLiteral(floatTokenLoc, floatTokenInfo.Float);
             } else {
                 return NULL;
             }
@@ -491,7 +509,7 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
                 expr = NewAstVTuple(loc);
 
                 // pushing first field:
-                PushFieldToAstTuple(GetAstNodeLoc(firstExpr), expr, firstExpr);
+                PushFieldToAstVTupleFromRaw(GetAstNodeLoc(firstExpr), expr, firstExpr);
 
                 // pushing remaining fields:
                 do {
@@ -499,7 +517,7 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
                     if (!nextExpr) {
                         return NULL;
                     }
-                    PushFieldToAstTuple(GetAstNodeLoc(nextExpr), expr, nextExpr);
+                    PushFieldToAstVTupleFromRaw(GetAstNodeLoc(nextExpr), expr, nextExpr);
                 } while (match(p, TK_COMMA));
             } else {
                 // paren (expr)
@@ -530,7 +548,7 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
                             if (!rhs) {
                                 return NULL;
                             }
-                            PushFieldToAstStruct(loc, structNode, labelInfo.as.ID_symbolID, rhs);
+                            PushFieldToAstVStructFromRaw(loc, structNode, labelInfo.ID_symbolID, rhs);
                         }
                     } else {
                         return NULL;
@@ -602,7 +620,7 @@ RawAstNode* tryParsePrimaryExpr(Parser* p) {
             if (!body) {
                 return NULL;
             }
-            return NewAstLambda(loc, patternSB,sb_count(patternSB), body);
+            return NewAstVLambda(loc, patternSB,sb_count(patternSB), body);
         }
         case TK_KW_IF:
         {
@@ -658,10 +676,10 @@ RawAstNode* tryParsePostfixExprSuffix(Parser* p, RawAstNode* lhs, int* stopP) {
     if (match(p, TK_DOT)) {
         TokenInfo dotSuffix = lookaheadInfo(p,0);
         if (match(p, TK_VID)) {
-            return NewAstDotName(loc, lhs, dotSuffix.as.ID_symbolID);
+            return NewAstDotName(loc, lhs, dotSuffix.ID_symbolID);
         }
         if (match(p, TK_DINT_LIT) || match(p, TK_XINT_LIT)) {
-            return NewAstDotIndex(GetAstNodeLoc(lhs), lhs, dotSuffix.as.Int);
+            return NewAstDotIndex(GetAstNodeLoc(lhs), lhs, dotSuffix.Int);
         }
     }
     *stopP = 1;
@@ -670,7 +688,7 @@ RawAstNode* tryParsePostfixExprSuffix(Parser* p, RawAstNode* lhs, int* stopP) {
 RawAstNode* tryParseUnaryExpr(Parser* p) {
     Loc loc = lookaheadLoc(p,0);
     AstUnaryOperator operator;
-    if (match(p, TK_NOT)) {
+    if (match(p, TK_KW_NOT)) {
         operator = UOP_NOT;
     } else if (match(p, TK_CARET)) {
         operator = UOP_GETREF;
@@ -750,18 +768,23 @@ RawAstNode* helpParsePattern(Parser* p, int notTemplatePattern) {
     TokenKind idTk;
     char const* firstExpectMessage;
     char const* rpTkExpectMessage;
+    int isExplicit;
     if (notTemplatePattern) {
         lpTk = TK_LCYBRK;
         rpTk = TK_RCYBRK;
         idTk = TK_VID;
         firstExpectMessage = "a value pattern (a valueID or an opening '{')";
         rpTkExpectMessage = "a closing '}'";
+        isExplicit = 1;
+
+        COMPILER_ERROR("NotImplemented: non-explicit type patterns; default to vpattern.");
     } else {
         lpTk = TK_LSQBRK;
         rpTk = TK_RSQBRK;
         idTk = TK_TID;
-        firstExpectMessage = "a type pattern (an opening '[')";
+        firstExpectMessage = "an implicit type pattern (an opening '[')";
         rpTkExpectMessage = "a closing ']'";
+        isExplicit = 0;
     }
 
     // acquiring the location of the first token:
@@ -773,7 +796,7 @@ RawAstNode* helpParsePattern(Parser* p, int notTemplatePattern) {
         // (items...)
         int ok = 1;
         while (lookaheadKind(p,0) == idTk) {
-            parsePatternElement(p, pattern, &ok, notTemplatePattern, idTk);
+            parsePatternElement(p, pattern, &ok, notTemplatePattern, idTk, isExplicit);
             if (!ok) {
                 // bad pattern element
                 return NULL;
@@ -789,7 +812,7 @@ RawAstNode* helpParsePattern(Parser* p, int notTemplatePattern) {
         }   
     } else if (notTemplatePattern && match(p,idTk)) {
         // value pattern singleton
-        SymbolID name = firstInfo.as.ID_symbolID;
+        SymbolID name = firstInfo.ID_symbolID;
         return parseRestOfVPatternSingleton(p,loc,name);
     } else {
         expectError(p,firstExpectMessage);
@@ -798,23 +821,23 @@ RawAstNode* helpParsePattern(Parser* p, int notTemplatePattern) {
 
     return pattern;
 }
-void parsePatternElement(Parser* p, RawAstNode* pattern, int* okP, int hasTail, TokenKind idTokenKind) {
+void parsePatternElement(Parser* p, RawAstNode* pattern, int* okP, int hasTail, TokenKind idTokenKind, int isExplicit) {
     if (hasTail) {
-        parsePatternElementWithTail(p, pattern, okP, idTokenKind);
+        parsePatternElementWithTail(p, pattern, okP, idTokenKind, isExplicit);
     } else {
-        parsePatternElementWithoutTail(p, pattern, okP, idTokenKind);
+        parsePatternElementWithoutTail(p, pattern, okP, idTokenKind, isExplicit);
     }
 }
-void parsePatternElementWithTail(Parser* p, RawAstNode* pattern, int* okP, TokenKind idTokenKind) {
+void parsePatternElementWithTail(Parser* p, RawAstNode* pattern, int* okP, TokenKind idTokenKind, int isExplicit) {
     *okP = 1;
     Loc patternLoc = lookaheadLoc(p,0);
     
-    SymbolID symbolID = lookaheadInfo(p,0).as.ID_symbolID;
+    SymbolID symbolID = lookaheadInfo(p,0).ID_symbolID;
     if (expect(p,idTokenKind,"a pattern label")) {
         RawAstNode* typespec = NULL;
         if (match(p,TK_COLON)) {
             typespec = parseTypespec(p);
-            PushFieldToAstPattern(patternLoc, pattern, symbolID, typespec);
+            PushFieldToAstVPatternFromRaw(patternLoc, pattern, symbolID, typespec, isExplicit);
         } else {
             typespec = NULL;
             COMPILER_ERROR("NotImplemented: omitted tails for value typespecs.");
@@ -822,11 +845,12 @@ void parsePatternElementWithTail(Parser* p, RawAstNode* pattern, int* okP, Token
     }
     *okP = 0;
 }
-void parsePatternElementWithoutTail(Parser* p, RawAstNode* pattern, int* okP, TokenKind idTokenKind) {
+void parsePatternElementWithoutTail(Parser* p, RawAstNode* pattern, int* okP, TokenKind idTokenKind, int isExplicit) {
     // just 1 ID
     TokenInfo ti = lookaheadInfo(p,0);
+    Loc tl = lookaheadLoc(p,0);
     if (expect(p, idTokenKind, "a pattern ID")) {
-        PushFieldToAstPattern(ti.loc, pattern, ti.as.ID_symbolID, NULL);
+        PushFieldToAstVPatternFromRaw(tl, pattern, ti.ID_symbolID, NULL, isExplicit);
     } else {
         *okP = 0;
     }
@@ -875,26 +899,27 @@ RawAstNode* tryParseTypespec(Parser* p) {
 RawAstNode* tryParsePrimaryTypespec(Parser* p) {
     TokenKind firstKind = lookaheadKind(p,0);
     TokenInfo firstInfo = lookaheadInfo(p,0);
+    Loc firstLoc = lookaheadLoc(p,0);
     if (match(p,TK_TID)) {
-        return NewAstTID(firstInfo.loc,firstInfo.as.ID_symbolID);
+        return NewAstTID(firstLoc,firstInfo.ID_symbolID);
     }
     else if (match(p,TK_LPAREN)) {
         RawAstNode* firstNestedTypespec = tryParseTypespec(p);
         if (firstNestedTypespec) {
             RawAstNode* result;
             if (match(p,TK_COMMA)) {
-                result = NewAstTTuple(firstInfo.loc);
-                PushFieldToAstTuple(GetAstNodeLoc(firstNestedTypespec),result,firstNestedTypespec);
+                result = NewAstTTuple(firstLoc);
+                PushFieldToAstVTupleFromRaw(GetAstNodeLoc(firstNestedTypespec),result,firstNestedTypespec);
                 do {
                     RawAstNode* nestedTypespecItem = parseTypespec(p);
                     if (nestedTypespecItem) {
-                        PushFieldToAstTuple(GetAstNodeLoc(nestedTypespecItem),result,nestedTypespecItem);
+                        PushFieldToAstVTupleFromRaw(GetAstNodeLoc(nestedTypespecItem),result,nestedTypespecItem);
                     } else {
                         return NULL;
                     }
                 } while (match(p,TK_COMMA));
             } else {
-                result = NewAstTParen(firstInfo.loc,firstNestedTypespec);
+                result = NewAstTParen(firstLoc,firstNestedTypespec);
             }
             if (!expect(p,TK_RPAREN,"')'")) {
                 return NULL;
@@ -946,8 +971,9 @@ RawAstNode* tryParsePostfixTypespec(Parser* p) {
 
 RawAstNode* parseString(Parser* p) {
     TokenInfo stringTokenInfo = lookaheadInfo(p, 0);
+    Loc stringTokenLoc = lookaheadLoc(p, 0);
     if (match(p, TK_SQSTRING_LIT) || match(p, TK_DQSTRING_LIT)) {
-        return NewAstStringLiteral(stringTokenInfo.loc, stringTokenInfo.as.UnicodeStringSb);
+        return NewAstStringLiteral(stringTokenLoc, stringTokenInfo.UnicodeStringSb);
     } else {
         expectError(p, "a string literal");
         return NULL;
@@ -958,38 +984,38 @@ RawAstNode* parseString(Parser* p) {
 // API:
 //
 
-RawAstNode* ParseSource(Source* source) {
-    Parser p = createParser(source);
-    RawAstNode* module = NewAstModule(lookaheadLoc(&p,0), SYM_NULL);    // todo: allow script name in syntax or remove from spec
-    while (lookaheadKind(&p,0) != TK_EOS) {
-        // todo: add support for import/export/params/etc...
-        Loc loc = lookaheadLoc(&p,0);
-        if (match(&p,TK_SEMICOLON)) {
-            // no-op
-        } else {
-            RawAstNode* stmt = NULL;
-            if (lookaheadKind(&p,0) == TK_KW_DEF && lookaheadKind(&p,1) == TK_VID) {
-                stmt = parseVDefStmt(&p);
-            } else if (lookaheadKind(&p,0) == TK_KW_DEF && lookaheadKind(&p,1) == TK_VID) {
-                stmt = parseTDefStmt(&p);
-            } else if (lookaheadKind(&p,0) == TK_KW_EXTERN) {
-                stmt = parseExternStmt(&p);
-            } 
-            if (stmt == NULL) {
-                FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
-                PostFeedback(FBK_ERROR,note,"Invalid module item");
-                break;
-            } else {
-                PushStmtToAstModule(module,stmt);
-            }
+// RawAstNode* ParseSource(Source* source) {
+//     Parser p = createParser(source);
+//     RawAstNode* module = NewAstModule(lookaheadLoc(&p,0), SYM_NULL);    // todo: allow script name in syntax or remove from spec
+//     while (lookaheadKind(&p,0) != TK_EOS) {
+//         // todo: add support for import/export/params/etc...
+//         Loc loc = lookaheadLoc(&p,0);
+//         if (match(&p,TK_SEMICOLON)) {
+//             // no-op
+//         } else {
+//             RawAstNode* stmt = NULL;
+//             if (lookaheadKind(&p,0) == TK_KW_DEF && lookaheadKind(&p,1) == TK_VID) {
+//                 stmt = parseVDefStmt(&p);
+//             } else if (lookaheadKind(&p,0) == TK_KW_DEF && lookaheadKind(&p,1) == TK_VID) {
+//                 stmt = parseTDefStmt(&p);
+//             } else if (lookaheadKind(&p,0) == TK_KW_EXTERN) {
+//                 stmt = parseExternStmt(&p);
+//             } 
+//             if (stmt == NULL) {
+//                 FeedbackNote* note = CreateFeedbackNote("here...",loc,NULL);
+//                 PostFeedback(FBK_ERROR,note,"Invalid module item");
+//                 break;
+//             } else {
+//                 PushStmtToAstModule(module,stmt);
+//             }
 
-            if (!expect(&p,TK_SEMICOLON,"a terminating ';'")) {
-                break;
-            }
-        }
-    }
-    return module;
-}
+//             if (!expect(&p,TK_SEMICOLON,"a terminating ';'")) {
+//                 break;
+//             }
+//         }
+//     }
+//     return module;
+// }
 
 // GRAND PARSER TODO:
 // - match

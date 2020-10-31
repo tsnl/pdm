@@ -464,7 +464,7 @@ Scope* pushFrame(Primer* primer, Scope* optNewScope, AstContext ctx, AstNode* fu
     if (func) {
         AstKind nodeKind = GetAstNodeKind(func);
         COMPILER_ASSERT_VA(
-            nodeKind == AST_LAMBDA, 
+            nodeKind == AST_VLAMBDA, 
             "Non-lambda parent func in `pushFrame`: %s", AstKindAsText(nodeKind)
         );
     }
@@ -785,37 +785,24 @@ static int primer_post(void* primer, AstNode* node);
 
 int primer_pre(void* rawPrimer, AstNode* node) {
     Primer* primer = rawPrimer;
-    SetAstNodeLookupContext(node,topFrameContext(primer));
     AstNode* topFunc = topFrameFunc(primer);
     if (topFunc) {
         SetAstNodeParentFunc(node,topFunc);
     }
+
+    // whatever the node, we store if it is evaluated in a type or value context here:
+    SetAstNodeLookupContext(node,topFrameContext(primer));
     
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_TID:
         {
             SetAstIdLookupScope(node, topFrameScope(primer));
-            SetAstNodeLookupContext(node, ASTCTX_TYPING);
             break;
         }
         case AST_VID:
         {
             SetAstIdLookupScope(node, topFrameScope(primer));
-            SetAstNodeLookupContext(node, ASTCTX_VALUE);
-            break;
-        }
-        case AST_VLET:
-        {
-            break;
-        }
-        case AST_VSTRUCT:
-        {
-            break;
-        }
-        case AST_TPATTERN:
-        case AST_VPATTERN:
-        {
             break;
         }
         case AST_VPAREN:
@@ -824,32 +811,18 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             pushFrame(primer, NULL, ASTCTX_VALUE, topFrameFunc(primer));
             break;
         }
-        case AST_UNARY:
-        {
-            break;
-        }
-        case AST_BINARY:
-        {
-            break;
-        }
-        case AST_TPATTERN_SINGLETON:
         case AST_TPATTERN_FIELD:
-        case AST_VPATTERN_SINGLETON:
         case AST_VPATTERN_FIELD:
+        case AST_TPATTERN_SINGLETON_FIELD:
+        case AST_VPATTERN_SINGLETON_FIELD:
         {
             // defining and storing on pattern
-
-            int isTyping = ((kind == AST_TPATTERN_SINGLETON) || (kind == AST_TPATTERN_FIELD));
-            int isValue = ((kind == AST_VPATTERN_SINGLETON) || (kind == AST_VPATTERN_FIELD));
+            int isTyping = (kind == AST_TPATTERN_FIELD || kind == AST_TPATTERN_SINGLETON_FIELD);
+            int isValue = (kind == AST_VPATTERN_FIELD || kind == AST_VPATTERN_SINGLETON_FIELD);
 
             Loc loc = GetAstNodeLoc(node);
-            SymbolID defnID = SYM_NULL;
-            if (kind == AST_TPATTERN_SINGLETON || kind == AST_VPATTERN_SINGLETON) {
-                defnID = GetAstSingletonPatternName(node);
-            } else {
-                defnID = GetAstFieldName(node);
-            }
-
+            SymbolID defnID = GetAstFieldName(node);
+            
             void* patternType = NewMetavarType(loc, primer->typer, "%cpattern:%s", (isValue ? 'v':'t'), GetSymbolText(defnID));
             pushSymbol(primer, defnID, patternType, node, (isValue ? ASTCTX_VALUE:ASTCTX_TYPING), 0);
             
@@ -863,7 +836,6 @@ int primer_pre(void* rawPrimer, AstNode* node) {
                 // pushing a new typing frame for RHS in mixed (value/type) items:
                 pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
             }
-
             break;
         }
         case AST_VSTRUCT_FIELD:
@@ -872,14 +844,14 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             SetAstNodeTypingExt_Value(node, GetAstNodeTypingExt_Value(GetAstFieldRhs(node)));
             break;
         }
-        case AST_LAMBDA:
+        case AST_VLAMBDA:
         {
             // pushing a new frame for the function's contents:
             pushFrame(primer,NULL,ASTCTX_VALUE,node);
             break;
         }
         case AST_EXTERN:
-        case AST_TDEF:
+        case AST_STMT_TDEF:
         {
             pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
             break;
@@ -896,6 +868,12 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
             break;
         }
+        case AST_VAL2TYPE:
+        {
+            // push a value scope, just for this little value
+            pushFrame(primer,NULL,ASTCTX_VALUE,topFrameFunc(primer));
+            break;
+        }
         default:
         {
             break;
@@ -909,12 +887,14 @@ int primer_post(void* rawPrimer, AstNode* node) {
     switch (kind) {
         case AST_CHAIN:
         case AST_VPAREN:
-        case AST_LAMBDA:
+        case AST_VLAMBDA:
         case AST_VPATTERN_FIELD:
+        case AST_VPATTERN_SINGLETON_FIELD:
         case AST_EXTERN:
-        case AST_TDEF:
+        case AST_STMT_TDEF:
         case AST_VCAST:
         case AST_TYPE2VAL:
+        case AST_VAL2TYPE:
         {
             // pop for each case where a frame is pushed in `primer_pre`.
             popFrame(primer);
@@ -950,7 +930,7 @@ int PrimeModule(Primer* primer, AstNode* module) {
         AstNode* stmt = GetAstModuleStmtAt(module, index);
         Loc loc = GetAstNodeLoc(stmt);
         AstKind stmtKind = GetAstNodeKind(stmt);
-        if (stmtKind == AST_VDEF) {
+        if (stmtKind == AST_STMT_VDEF) {
             SymbolID lhs = GetAstDefValueStmtLhs(stmt);
             void* valueType = NewMetavarType(loc,primer->typer,"def-func:%s",GetSymbolText(lhs));
             pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE,1);
@@ -960,7 +940,7 @@ int PrimeModule(Primer* primer, AstNode* module) {
             void* valueType = NewMetavarType(loc,primer->typer,"extern:%s",GetSymbolText(lhs));
             pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE,1);
             SetAstNodeTypingExt_Value(stmt,valueType);
-        } else if (stmtKind == AST_TDEF) {
+        } else if (stmtKind == AST_STMT_TDEF) {
             SymbolID lhs = GetAstTypedefStmtName(stmt);
             char const* symbolText = GetSymbolText(lhs);
             void* typingType = NewMetavarType(loc,primer->typer,"typedef:%s",symbolText);

@@ -109,7 +109,13 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintChar(cp, '"');
             break;
         }
-        case AST_VDEF:
+        case AST_STMT_DISCARD:
+        {
+            PrintText(cp, "discard ");
+            PrintNode(cp, GetAstDiscardStmtDiscarded(node));
+            break;
+        }
+        case AST_STMT_VDEF:
         {
             PrintText(cp, "def ");
             PrintText(cp, GetSymbolText(GetAstDefValueStmtLhs(node)));
@@ -121,7 +127,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintNode(cp, GetAstDefValueStmtRhs(node));
             break;
         }
-        case AST_TDEF:
+        case AST_STMT_TDEF:
         {
             PrintText(cp, "define ");
             SymbolID name = GetAstTypedefStmtName(node);
@@ -148,10 +154,13 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintNode(cp, typespec);
             break;
         }
+        case AST_ORPHANED_FIELD:
         case AST_VPATTERN_FIELD:
         case AST_VTUPLE_FIELD:
         case AST_TPATTERN_FIELD:
         case AST_VSTRUCT_FIELD:
+        case AST_VPATTERN_SINGLETON_FIELD:
+        case AST_TPATTERN_SINGLETON_FIELD:
         {
             SymbolID lhs = GetAstFieldName(node);
             if (lhs != SYM_NULL) {
@@ -164,7 +173,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             }
             break;
         }
-        case AST_LAMBDA:
+        case AST_VLAMBDA:
         {
             PrintText(cp,"fun ");
             int printCaptures = 0;
@@ -172,7 +181,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                 int captureCount = CountAstLambdaCaptures(node);
                 PrintChar(cp, '{');
                 for (int index = 0; index < captureCount; index++) {
-                    Defn* captureDefn = GetAstLambdaCaptureAt(node,index);
+                    Defn* captureDefn = GetAstVLambdaCaptureAt(node,index);
                     PrintText(cp,GetSymbolText(captureDefn->defnID));
                     if (index == captureCount-1) {
                         PrintChar(cp,',');
@@ -181,21 +190,17 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                 PrintChar(cp, '}');
                 PrintChar(cp, ' ');
             }
-            int patternCount = CountAstLambdaPatterns(node);
-            for (int patternIndex = 0; patternIndex < patternCount; patternIndex++) {
-                AstNode* pattern = GetAstLambdaPatternAt(node,patternIndex);
-                PrintNode(cp,pattern);
-                PrintChar(cp,' ');
-            }
-            PrintText(cp, "-> ");
-            PrintNode(cp, GetAstLambdaBody(node));
+            AstNode* pattern = GetAstVLambdaPattern(node);
+            PrintNode(cp, pattern);
+            PrintText(cp, " -> ");
+            PrintNode(cp, GetAstVLambdaBody(node));
             break;
         }
         case AST_TPATTERN:
         case AST_VPATTERN:
         {
-            char ltChar = (kind == AST_TPATTERN ? '[':'{');
-            char rtChar = (kind == AST_TPATTERN ? ']':'}');
+            char ltChar = (kind == AST_TPATTERN ? '[':'(');
+            char rtChar = (kind == AST_TPATTERN ? ']':')');
             PrintChar(cp,ltChar);
             int patternLength = GetAstPatternLength(node);
             for (int index = 0; index < patternLength; index++) {
@@ -210,10 +215,8 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         case AST_TPATTERN_SINGLETON:
         case AST_VPATTERN_SINGLETON:
         {
-            PrintText(cp,GetSymbolText(GetAstSingletonPatternName(node)));
-            PrintChar(cp,':');
-            PrintNode(cp,GetAstSingletonPatternRhs(node));
-            // PrintText(cp,GetSymbolText())
+            AstNode* field = GetAstSingletonPatternField(node);
+            PrintNode(cp,field);
             break;
         }
         case AST_VPAREN:
@@ -285,7 +288,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintChar(cp, '}');
             break;
         }
-        case AST_VLET:
+        case AST_STMT_VLET:
         {
             PrintText(cp, "let ");
             PrintNode(cp, GetAstLetStmtLhs(node));
@@ -293,10 +296,10 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             PrintNode(cp, GetAstLetStmtRhs(node));
             break;
         }
-        case AST_STMT_WITH:
+        case AST_STMT_ASSERT:
         {
-            PrintText(cp, "check(");
-            PrintNode(cp, GetAstWithStmtChecked(node));
+            PrintText(cp, "assert (");
+            PrintNode(cp, GetAstAssertStmtChecked(node));
             // todo: print the check message here.
             PrintText(cp, ", ...)");
             break;
@@ -306,30 +309,27 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         {
             PrintNode(cp, GetAstCallLhs(node));
             int isTemplate = IsAstCallTemplate(node);
+            char lpTk,rpTk;
             if (isTemplate) {
-                PrintChar(cp,'[');
-                int argCount = GetAstCallArgCount(node);
-                for (int argIndex = 0; argIndex < argCount; argIndex++) {
-                    AstNode* arg = GetAstCallArgAt(node,argIndex);
-                    PrintNode(cp,arg);
-                    if (argIndex+1 != argCount) {
-                        PrintChar(cp,',');
-                    }
-                }
-                PrintChar(cp,']');
+                lpTk = '['; rpTk = ']';
             } else {
-                int argCount = GetAstCallArgCount(node);
-                for (int argIndex = 0; argIndex < argCount; argIndex++) {
-                    AstNode* arg = GetAstCallArgAt(node,argIndex);
-                    PrintChar(cp,' ');
-                    PrintNode(cp,arg);
+                lpTk = '('; rpTk = ')';
+            }
+            PrintChar(cp,lpTk);
+            int argCount = GetAstCallArgCount(node);
+            for (int argIndex = 0; argIndex < argCount; argIndex++) {
+                AstNode* arg = GetAstCallArgAt(node,argIndex);
+                PrintNode(cp,arg);
+                if (argIndex+1 != argCount) {
+                    PrintChar(cp,',');
                 }
             }
+            PrintChar(cp,rpTk);
             break;
         }
         case AST_VCAST:
         {
-            PrintNode(cp,GetAstVCastToTypespecType2Val(node));
+            PrintNode(cp,GetAstVCastTypespec(node));
             PrintChar(cp,' ');
             PrintNode(cp,GetAstVCastRhs(node));
             break;

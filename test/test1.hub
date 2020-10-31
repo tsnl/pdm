@@ -1,8 +1,8 @@
-def adder x:S64 y:S64 = S64 {
-    x + y
+def hello (omega:S32) = S64 {
+    let x:S32 = omega;
+    x
 };
 
-def test_adder {} = {
-    let sum:S64 = adder 0 1;
-    sum == 1
+def fibonacci (n:S32) = S32 {
+    n+1
 };

@@ -232,7 +232,7 @@ LLVMValueRef copyToPtr(Emitter* emitter, LLVMValueRef dstPtr, LLVMValueRef src, 
 LLVMValueRef emitExpr(Emitter* emitter, AstNode* expr) {
     LLVMValueRef value;
     AstKind exprKind = GetAstNodeKind(expr);
-    if (exprKind == AST_LAMBDA || exprKind == AST_FIELD__PATTERN_ITEM) {
+    if (exprKind == AST_VLAMBDA || exprKind == AST_FIELD__PATTERN_ITEM) {
         value = GetAstNodeLlvmRepr(expr);
         if (value) {
             // LLVMSetValueName(value,"expr");
@@ -241,7 +241,7 @@ LLVMValueRef emitExpr(Emitter* emitter, AstNode* expr) {
     }
     value = helpEmitExpr(emitter,expr);
     if (value) {
-        if (exprKind == AST_LAMBDA || exprKind == AST_FIELD__PATTERN_ITEM) {
+        if (exprKind == AST_VLAMBDA || exprKind == AST_FIELD__PATTERN_ITEM) {
             SetAstNodeLlvmRepr(expr,value);
         }
         return value;
@@ -490,7 +490,7 @@ LLVMValueRef helpEmitExpr(Emitter* emitter, AstNode* expr) {
             AstNode* exprResult = GetAstChainResult(expr);
             return emitExpr(emitter,exprResult);
         }
-        case AST_LAMBDA:
+        case AST_VLAMBDA:
         {
             // set by `emitLlvmModulePrefix_preVisitor`
             // we should not reach this point
@@ -613,12 +613,12 @@ int forwardDeclarationPass_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     AstKind nodeKind = GetAstNodeKind(node);
     switch (nodeKind) {
-        case AST_LAMBDA:
+        case AST_VLAMBDA:
         {
             // todo: add captured arguments while emitting AST lambda
 
-            AstNode* pattern = GetAstLambdaPattern(node);
-            AstNode* body = GetAstLambdaBody(node);
+            AstNode* pattern = GetAstVLambdaPattern(node);
+            AstNode* body = GetAstVLambdaBody(node);
 
             int patternLength = GetAstPatternLength(pattern);
 
@@ -703,10 +703,10 @@ int definitionPass_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     AstKind nodeKind = GetAstNodeKind(node);
     switch (nodeKind) {
-        case AST_LAMBDA:
+        case AST_VLAMBDA:
         {
-            AstNode* pattern = GetAstLambdaPattern(node);
-            AstNode* body = GetAstLambdaBody(node);
+            AstNode* pattern = GetAstVLambdaPattern(node);
+            AstNode* body = GetAstVLambdaBody(node);
 
             // int patternLength = GetAstPatternLength(pattern);
 
@@ -753,9 +753,9 @@ int definitionPass_post(void* rawEmitter, AstNode* node) {
             SetAstNodeLlvmRepr(node,value);
             break;
         }
-        case AST_LAMBDA:
+        case AST_VLAMBDA:
         {
-            AstNode* body = GetAstLambdaBody(node);
+            AstNode* body = GetAstVLambdaBody(node);
             LLVMValueRef bodyLlvmExpr = NULL;
             if (body) {
                 bodyLlvmExpr = emitExpr(emitter,body);

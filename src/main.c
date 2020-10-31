@@ -17,6 +17,7 @@ int main(int argc, char* argv[]) {
             argc - 1, defaultSourcePath
         );
     }
+
     Interp* interp = CreateInterp();
     Source* scriptSource = CreateSource(sourcePath);
     if (!scriptSource) {

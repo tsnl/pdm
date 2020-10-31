@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "useful.h"
+
 #define FEEDBACK_BUF_SIZE (1024)
 
 int errorPosted = 0;
@@ -57,6 +59,30 @@ int GetErrorPosted(void) {
 
 Loc NullLoc(void) {
     return (Loc) {-1,-1,-1,NULL};
+}
+
+Span NewSpan(Loc first, Loc last) {
+    if (first.source && last.source) {
+        COMPILER_ASSERT(first.source == last.source, "Cannot make Span across two Locs of different 'source'.");
+    } else {
+        COMPILER_ASSERT(first.source || last.source, "Cannot make Span across two Locs without 'source'.");
+    }
+    Span span;
+    span.source = first.source;
+    span.first_offset = first.offset;
+    span.first_line = first.lineIndex+1;
+    span.first_column = first.colIndex+1;
+    span.last_line = last.lineIndex+1;
+    span.last_column = last.colIndex+1;
+    return span;
+}
+Loc Span2Loc(Span span) {
+    Loc loc;
+    loc.source = span.source;
+    loc.offset = span.first_offset;
+    loc.lineIndex = span.first_line-1;
+    loc.colIndex = span.first_column-1;
+    return loc;
 }
 
 Source* CreateSource(char const* path) {
@@ -128,7 +154,7 @@ int AdvanceSourceReaderHead(Source* source) {
         // reading a fresh char
         readChar = fgetc(source->fp);
         if (readChar < 0) {
-            // found EOF, but read a char
+            // found EOF, but read a char (moved into post-tape)
             source->peekChar = EOF;
             source->atEof = 1;
             return 1;
@@ -171,10 +197,17 @@ int SourceReaderAtSof(Source* sourceP) {
 }
 
 int GetSourceReaderHeadLoc(Source* source, Loc* locP) {
-    if (SourceReaderAtSof(source)) { return -1; }
-    if (SourceReaderAtEof(source)) { return +1; }
+    if (SourceReaderAtSof(source)) { 
+        // at SOF, no peekLoc is available.
+        return -1; 
+    }
     else {
         *locP = source->peekLoc;
-        return 0;
+        if (SourceReaderAtEof(source)) { 
+            return +1; 
+        }
+        else {
+            return 0;
+        }
     }
 }

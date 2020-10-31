@@ -63,9 +63,11 @@ int InterpLoadModuleSource(Interp* interp, Source* scriptSource) {
         // Already loaded, returning OK.
         return 1;
     } else {
-        // DEBUG: lex and exit
-        // DebugLexer(scriptSource);
-        // return 0;
+        {   // DEBUG: lex and exit
+            // !!- Do not try to parse after debug lex, since the stream is single-use.
+            // DebugLexer(scriptSource);
+            // return 0;
+        }
 
         LoadedSource loadedSource;
         

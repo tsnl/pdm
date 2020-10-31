@@ -9,6 +9,7 @@
 // - PostFeedback: writes a feedback message about a Source.
 
 typedef struct Loc          Loc;
+typedef struct Span         Span;
 typedef enum   FeedbackKind FeedbackKind;
 typedef struct FeedbackNote FeedbackNote;
 typedef struct Source       Source;
@@ -22,9 +23,24 @@ enum FeedbackKind {
 };
 struct Loc {
     ssize_t offset;
+    int first_line;
+    int first_column;
+    int last_line;
+    int last_column;
+    Source* source;
+
+    // fixme: deprecated! should be replaced with first_{line|column} and last_{line|column}
     int lineIndex;
     int colIndex;
+};
+struct Span {
     Source* source;
+    ssize_t first_offset;
+    ssize_t last_offset;
+    int first_line;
+    int first_column;
+    int last_line;
+    int last_column;
 };
 struct FeedbackNote {
     char const* message;
@@ -50,6 +66,8 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
 int GetErrorPosted(void);
 
 Loc NullLoc(void);
+Span NewSpan(Loc first, Loc last);
+Loc Span2Loc(Span span);
 
 // The SourceReader API models strings as a finite tape with a traversing head capable of reading 1 char.
 // - AdvanceSourceReaderHead: advance head by (+1) bytes.

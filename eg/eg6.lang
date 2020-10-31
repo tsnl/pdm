@@ -1,0 +1,13 @@
+# Values as template parameters:
+
+type Array [T] (n:Int) = {
+    # ...
+};
+
+def map [T,U, n:Int] (f: Fn[T,U], a: Array[T,n]) = Array[U,n] {
+    # ...
+};
+
+def nmap [T,U, n:Int] (f: Fn[T,U], a: Array[T,n]) = Array[U,n] {
+    # ...
+};

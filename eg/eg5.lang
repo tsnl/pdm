@@ -1,6 +1,6 @@
 # Enums: simple enough.
 
-enum Opt (T:Any) {
+enum Opt [T] = {
     some: T,
     none
 };

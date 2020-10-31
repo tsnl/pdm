@@ -46,8 +46,9 @@ add_executable(pc
     src/lexer.c
     src/lexer.h
     src/main.c
-    src/parser.c
     src/parser.h
+    src/parser.tab.c
+    src/parser.tab.h
     src/primer.c
     src/primer.h
     src/source.c

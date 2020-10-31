@@ -346,7 +346,7 @@ AstBuiltinVDefKind selectBuiltinBinaryVDefKind(Emitter* emitter, AstNode* expr) 
     // ...
 
     // if we arrive at this point in control flow without returning, it means we've failed.
-    failure: {
+    {
         COMPILER_ERROR_VA("NotImplemented: selectBuiltinBinaryVDefKind for %s (%s,%s)", AstBinaryOperatorAsText(op), TypeKindAsText(ltArgTypeKind),TypeKindAsText(rtArgTypeKind));
         return AST_BUILTIN_NULL;
     }
@@ -436,7 +436,7 @@ int exportModuleHeaderVisitor_post(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     
     AstKind nodeKind = GetAstNodeKind(node);
-    if (nodeKind == AST_LAMBDA) {
+    if (nodeKind == AST_VLAMBDA) {
         Type* funcType = GetAstNodeTypingExt_Value(node);
         ExportedType exportedFuncType = exportType(emitter->typer,funcType);
         ExportedValue* funcValue = malloc(sizeof(ExportedValue));
@@ -445,7 +445,7 @@ int exportModuleHeaderVisitor_post(void* rawEmitter, AstNode* node) {
         funcValue->llvm = LLVMAddFunction(emitter->module,"synthetic-function",exportedFuncType.llvm);
         LLVMSetFunctionCallConv(funcValue->llvm,LLVMCCallConv);
         SetAstNodeLlvmRepr(node,funcValue);
-    } else if (nodeKind == AST_VDEF) {
+    } else if (nodeKind == AST_STMT_VDEF) {
         AstNode* vdef = node;
 
         SymbolID lhs = GetAstDefValueStmtLhs(vdef);
@@ -466,65 +466,62 @@ int exportModuleVisitor_pre(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     AstKind nodeKind = GetAstNodeKind(node);
     switch (nodeKind) {
-        case AST_LAMBDA:
+        case AST_VLAMBDA:
         {
-            ExportedValue* syntheticFunctionExportedValue = GetAstNodeLlvmRepr(node);
-            LLVMValueRef syntheticFunction = syntheticFunctionExportedValue->llvm;
+            COMPILER_ERROR("NotImplemented: exportModuleVisitor for AST_LAMBDA");
+            // ExportedValue* syntheticFunctionExportedValue = GetAstNodeLlvmRepr(node);
+            // LLVMValueRef syntheticFunction = syntheticFunctionExportedValue->llvm;
 
-            LLVMBasicBlockRef entryBlock = LLVMAppendBasicBlock(syntheticFunction,"entry");
+            // LLVMBasicBlockRef entryBlock = LLVMAppendBasicBlock(syntheticFunction,"entry");
 
-            LLVMPositionBuilderAtEnd(emitter->builder,entryBlock);
+            // LLVMPositionBuilderAtEnd(emitter->builder,entryBlock);
             
-            AstNode* lambda = syntheticFunctionExportedValue->native;
-            int argCount = CountAstLambdaPatterns(lambda);
-            int postElisionArgCount = 0;
-            for (int argIndex = 0; argIndex < argCount; argIndex++) {
-                AstNode* argPattern = GetAstLambdaPatternAt(lambda,argIndex);
-                AstKind patternKind = GetAstNodeKind(argPattern);
+            // AstNode* lambda = syntheticFunctionExportedValue->native;
+            // AstNode* argPattern = GetAstLambdaPattern(lambda);
+            // AstKind patternKind = GetAstNodeKind(argPattern);
 
-                ExportedValue* exportedPatternValue = malloc(sizeof(ExportedValue));
-                exportedPatternValue->native = argPattern;
-                exportedPatternValue->type = exportType(emitter->typer,GetAstNodeTypingExt_Value(argPattern));
-                exportedPatternValue->llvm = NULL;
-                SetAstNodeLlvmRepr(argPattern,exportedPatternValue);
+            // ExportedValue* exportedPatternValue = malloc(sizeof(ExportedValue));
+            // exportedPatternValue->native = argPattern;
+            // exportedPatternValue->type = exportType(emitter->typer,GetAstNodeTypingExt_Value(argPattern));
+            // exportedPatternValue->llvm = NULL;
+            // SetAstNodeLlvmRepr(argPattern,exportedPatternValue);
 
-                if (GetTypeKind(exportedPatternValue->type.native) != T_UNIT) {
-                    LLVMValueRef llvmParam = LLVMGetParam(syntheticFunctionExportedValue->llvm,postElisionArgCount++);
-                    
-                    char* fmtArgName = fmt("arg:%d-%s",argIndex,GetSymbolText(GetAstSingletonPatternName(argPattern)));
-                    LLVMValueRef llvmParamMem = LLVMBuildAlloca(emitter->builder,exportedPatternValue->type.llvm,fmtArgName);
-                    free(fmtArgName);
+            // if (GetTypeKind(exportedPatternValue->type.native) != T_UNIT) {
+            //     LLVMValueRef llvmParam = LLVMGetParam(syntheticFunctionExportedValue->llvm,postElisionArgCount++);
+                
+            //     char* fmtArgName = fmt("arg:%d-%s",argIndex,GetSymbolText(GetAstSingletonPatternName(argPattern)));
+            //     LLVMValueRef llvmParamMem = LLVMBuildAlloca(emitter->builder,exportedPatternValue->type.llvm,fmtArgName);
+            //     free(fmtArgName);
 
-                    if (patternKind == AST_VPATTERN_SINGLETON) {
-                        exportedPatternValue->llvm = llvmParamMem;
-                        LLVMBuildStore(emitter->builder,llvmParam,llvmParamMem);
-                    } else {
-                        COMPILER_ERROR_VA(
-                            "NotImplemented: argument definition for pattern %d/%d of kind %s",
-                            1+argIndex,argCount,TypeKindAsText(patternKind)
-                        );
-                    }
-                }
-            }
+            //     if (patternKind == AST_VPATTERN_SINGLETON) {
+            //         exportedPatternValue->llvm = llvmParamMem;
+            //         LLVMBuildStore(emitter->builder,llvmParam,llvmParamMem);
+            //     } else {
+            //         COMPILER_ERROR_VA(
+            //             "NotImplemented: argument definition for pattern %d/%d of kind %s",
+            //             1+argIndex,argCount,TypeKindAsText(patternKind)
+            //         );
+            //     }
+            // }
 
-            ExportedValue returnValue = exportValue(emitter,GetAstLambdaBody(node));
-            LLVMValueRef returnValueLlvm = returnValue.llvm;
-            switch (GetTypeKind(returnValue.type.native)) {
-                case T_INT:
-                case T_FLOAT:
-                {
-                    returnValueLlvm = LLVMBuildLoad(emitter->builder,returnValueLlvm,"loaded_for_return");
-                    break;
-                }
-                default:
-                {
-                    TypeKind typeKind = GetTypeKind(returnValue.type.native);
-                    COMPILER_ERROR_VA("NotImplemented: return for typekind %s", TypeKindAsText(typeKind));
-                    break;
-                }
-            }
-            LLVMBuildRet(emitter->builder,returnValueLlvm);
-            break;
+            // ExportedValue returnValue = exportValue(emitter,GetAstVLambdaBody(node));
+            // LLVMValueRef returnValueLlvm = returnValue.llvm;
+            // switch (GetTypeKind(returnValue.type.native)) {
+            //     case T_INT:
+            //     case T_FLOAT:
+            //     {
+            //         returnValueLlvm = LLVMBuildLoad(emitter->builder,returnValueLlvm,"loaded_for_return");
+            //         break;
+            //     }
+            //     default:
+            //     {
+            //         TypeKind typeKind = GetTypeKind(returnValue.type.native);
+            //         COMPILER_ERROR_VA("NotImplemented: return for typekind %s", TypeKindAsText(typeKind));
+            //         break;
+            //     }
+            // }
+            // LLVMBuildRet(emitter->builder,returnValueLlvm);
+            // break;
         }
         case AST_EXTERN:
         {
@@ -709,7 +706,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 exportedValue = *defnPtrExportedValue;
                 break;
             }
-            case AST_LAMBDA:
+            case AST_VLAMBDA:
             {
                 ExportedValue* lambdaSynthetic = GetAstNodeLlvmRepr(exportedValue.native);
                 exportedValue.llvm = lambdaSynthetic->llvm;
@@ -817,14 +814,14 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
             // Let statements:
             //
 
-            case AST_VLET:
+            case AST_STMT_VLET:
             {
                 AstNode* lhsNode = GetAstLetStmtLhs(exportedValue.native);
-                if (GetAstNodeKind(lhsNode) == AST_VPATTERN_SINGLETON) {
+                if (GetAstNodeKind(lhsNode) == AST_ORPHANED_FIELD) {
                     AstNode* rhsNode = GetAstLetStmtRhs(exportedValue.native);
                     ExportedValue* exportedRhs = malloc(sizeof(ExportedValue));
                     *exportedRhs = exportValue(emitter,rhsNode);
-                    SymbolID symbolID = GetAstSingletonPatternName(lhsNode);
+                    SymbolID symbolID = GetAstFieldName(lhsNode);
                     
                     char* fmtname = fmt("let:%s",GetSymbolText(symbolID));
                     LLVMSetValueName(exportedRhs->llvm,fmtname);

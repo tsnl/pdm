@@ -1275,13 +1275,40 @@ int typer_post(void* rawTyper, AstNode* node) {
             // TODO: type a module
             break;
         }
-        case AST_VLET:
+        case AST_STMT_VLET:
         {
             Loc loc = GetAstNodeLoc(node);
             
             // symbols defined while visiting lhs pattern, we just need to get the pattern type:
             AstNode* lhs = GetAstLetStmtLhs(node);
-            Type* lhsType = GetAstNodeTypingExt_Value(lhs);
+            Type* lhsType = NULL; {
+                AstKind lhsKind = GetAstNodeKind(lhs);
+                if (lhsKind == AST_VPATTERN_SINGLETON) {
+                    AstNode* lhsSingletonField = GetAstSingletonPatternField(lhs);
+                    AstNode* lhsSingletonRhs = GetAstFieldRhs(lhsSingletonField);
+                    lhsType = GetAstNodeTypingExt_Type(lhsSingletonRhs);
+                } else if (lhsKind == AST_VPATTERN) {
+                    int patternCount = GetAstPatternLength(lhs);
+                    if (patternCount == 0) {
+                        // unit pattern
+                        lhsType = GetUnitType(typer);
+                    } else {
+                        // tuple pattern
+                        Type** typefieldsSb = NULL;
+                        for (int index = 0; index < patternCount; index++) {
+                            AstNode* field = GetAstPatternFieldAt(node,index);
+                            TypeField typefield = {
+                                GetAstFieldName(field), 
+                                GetAstNodeTypingExt_Value(GetAstFieldRhs(field))
+                            };
+                        }
+                        lhsType = NewOrGetTupleType(typer,typefieldsSb,sb_count(typefieldsSb));
+                        sb_free(typefieldsSb);
+                    }
+                } else {
+                    COMPILER_ERROR("Expected VPATTERN or VPATTERN_SINGLETON as lpattern for AST_STMT_VLET");
+                }
+            }
             
             AstNode* rhs = GetAstLetStmtRhs(node);
             Type* rhsType = GetAstNodeTypingExt_Value(rhs);
@@ -1289,20 +1316,29 @@ int typer_post(void* rawTyper, AstNode* node) {
             if (lhsType && rhsType) {
                 requireSubtyping(typer, "<lhs> = <rhs>",loc, lhsType,rhsType);
             } else {
-                COMPILER_ERROR("typer: lhsValueType or rhsType is NULL (or both) in AST_VLET");
+                COMPILER_ERROR("typer: lhsType or rhsType is NULL (or both) in AST_STMT_VLET");
             }
             break;
         }
-        case AST_LAMBDA:
+        case AST_VLAMBDA:
         {
-            int argsCount = CountAstLambdaPatterns(node);
-            Type** argsTypes = malloc(argsCount*sizeof(Type*));
+            AstNode* lambda = node;
+
+            AstNode* pattern = GetAstVLambdaPattern(lambda);
+            int argsCount = GetAstPatternLength(pattern);
+            Type** argsTypes = NULL;
+            if (argsCount) {
+                argsTypes = malloc(sizeof(Type*) * argsCount);
+            } else {
+                argsTypes = malloc(sizeof(Type*));
+                argsTypes[0] = GetUnitType(typer);
+            }
             for (int argIndex = 0; argIndex < argsCount; argIndex++) {
-                AstNode* argNode = GetAstLambdaPatternAt(node,argIndex);
+                AstNode* argNode = GetAstPatternFieldAt(pattern,argIndex);
                 argsTypes[argIndex] = GetAstNodeTypingExt_Value(argNode);
             }
             
-            AstNode* rhsNode = GetAstLambdaBody(node);
+            AstNode* rhsNode = GetAstVLambdaBody(node);
             Type* rhsType = GetAstNodeTypingExt_Value(rhsNode);
             if (rhsType) {
                 SetAstNodeTypingExt_Value(node, NewOrGetFuncType(typer, argsCount, argsTypes, rhsType));
@@ -1311,13 +1347,16 @@ int typer_post(void* rawTyper, AstNode* node) {
             }
 
             Type* funcType = NewOrGetFuncType(typer,argsCount,argsTypes,rhsType);
-            free(argsTypes); argsTypes = NULL;
+            if (argsTypes) {
+                free(argsTypes); 
+                argsTypes = NULL;
+            }
 
             SetAstNodeTypingExt_Value(node,funcType);
 
             break;
         }
-        case AST_VDEF:
+        case AST_STMT_VDEF:
         {
             // module items can be used in value and typing contexts
             Loc loc = GetAstNodeLoc(node);
@@ -1331,8 +1370,8 @@ int typer_post(void* rawTyper, AstNode* node) {
             Type* lhsType = GetAstNodeTypingExt_Value(node);
 
             int ok = (
-                COMPILER_ASSERT(lhsType, "typer: Invalid lhsType in AST_VDEF") && 
-                COMPILER_ASSERT(rhsType, "typer: Invalid rhsType in AST_VDEF")
+                COMPILER_ASSERT(lhsType, "typer: Invalid lhsType in AST_STMT_VDEF") && 
+                COMPILER_ASSERT(rhsType, "typer: Invalid rhsType in AST_STMT_VDEF")
             );
             if (ok) {
                 requireSubtyping(typer,"def <lhs> = <rhs>",loc, rhsType,lhsType);
@@ -1340,44 +1379,33 @@ int typer_post(void* rawTyper, AstNode* node) {
             break;
         }
         case AST_TPATTERN_FIELD:
-        case AST_TPATTERN_SINGLETON:
         case AST_VPATTERN_FIELD:
-        case AST_VPATTERN_SINGLETON:
+        case AST_TPATTERN_SINGLETON_FIELD:
+        case AST_VPATTERN_SINGLETON_FIELD:
         {
             // metatypes created by scoper (since lexically scoped), so TypingExt_V/T already set.
-            
-            int isField = ((nodeKind == AST_TPATTERN_FIELD) || (nodeKind == AST_VPATTERN_FIELD));
-            int isPatternSingleton = ((nodeKind == AST_TPATTERN_SINGLETON) || (nodeKind == AST_VPATTERN_SINGLETON));
-            COMPILER_ASSERT(isField ^ isPatternSingleton, "Bad field/singleton context setup.");
-            
-            int typingContext = ((nodeKind == AST_TPATTERN_FIELD) || (nodeKind == AST_TPATTERN_SINGLETON));
-            int valueContext = ((nodeKind == AST_VPATTERN_FIELD) || (nodeKind == AST_VPATTERN_SINGLETON));
+            int typingContext = (nodeKind == AST_TPATTERN_FIELD) || (nodeKind == AST_TPATTERN_SINGLETON_FIELD);
+            int valueContext = (nodeKind == AST_VPATTERN_FIELD) || (nodeKind == AST_VPATTERN_SINGLETON_FIELD);
             COMPILER_ASSERT(typingContext ^ valueContext, "Bad typing/value context setup.");
 
             // getting the RHS:
-            AstNode* rhs = NULL;
-            if (isField) {
-                rhs = GetAstFieldRhs(node);
-            } else {
-                rhs = GetAstSingletonPatternRhs(node);
-            }
+            AstNode* rhs = GetAstFieldRhs(node);
             
             // getting the RHS type:
             Type* fieldType = NULL;
             if (typingContext) {
                 fieldType = GetAstNodeTypingExt_Type(node);
-            } else {
+            } else if (valueContext) {
                 fieldType = GetAstNodeTypingExt_Value(node);
             }
 
-            // subtyping from RHS if present:
+            // subtyping fieldType from RHS:
             if (rhs) {
                 COMPILER_ASSERT(fieldType, "Non-null RHS but null field type in Typer.");
-
                 Loc loc = GetAstNodeLoc(node);
                 Type* rhsTypingType = GetAstNodeTypingExt_Type(rhs);
                 if (rhsTypingType) {
-                    requireSubtyping(typer,"type-field-rhs",loc, rhsTypingType,fieldType);
+                    requireSubtyping(typer,"pattern-field-rhs",loc, rhsTypingType,fieldType);
                 } else {
                     COMPILER_ERROR("RHS type is NULL.");
                 }
@@ -1404,33 +1432,9 @@ int typer_post(void* rawTyper, AstNode* node) {
         }
         case AST_VPATTERN:
         case AST_TPATTERN:
+        case AST_VPATTERN_SINGLETON:
+        case AST_TPATTERN_SINGLETON:
         {
-            int isValuePattern = (nodeKind == AST_VPATTERN);
-            int isTypePattern = (nodeKind == AST_TPATTERN);
-            COMPILER_ASSERT(isValuePattern ^ isTypePattern, "Invalid input state in typer: expected nodeKind to be AST_VPATTERN or AST_TPATTERN.");
-
-            int patternCount = GetAstPatternLength(node);
-            Type* patternType = NULL;
-            if (patternCount == 0) {
-                // unit
-                patternType = GetUnitType(typer);
-            } else {
-                // tuple
-                TypeField* typefieldSB = NULL;
-                for (int index = 0; index < patternCount; index++) {
-                    AstNode* field = GetAstPatternFieldAt(node,index);
-                    TypeField typefield = {
-                        GetAstFieldName(field),
-                        (isValuePattern ? GetAstNodeTypingExt_Value:GetAstNodeTypingExt_Type)(GetAstFieldRhs(field))
-                    };
-                    sb_push(typefieldSB,typefield);
-                }
-                patternType = NewOrGetTupleType(typer,typefieldSB,sb_count(typefieldSB));
-                sb_free(typefieldSB);
-            }
-            
-            (isValuePattern ? SetAstNodeTypingExt_Value:SetAstNodeTypingExt_Type)(node,patternType);
-
             break;
         }
         case AST_VSTRUCT:
@@ -1532,7 +1536,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             SetAstNodeTypingExt_Value(node,itType);
             break;
         }
-        case AST_TDEF:
+        case AST_STMT_TDEF:
         {
             Loc loc = GetAstNodeLoc(node);
             AstNode* optRhs = GetAstTypedefStmtOptRhs(node);
@@ -1571,7 +1575,7 @@ int typer_post(void* rawTyper, AstNode* node) {
         case AST_VCAST:
         {
             AstNode* vcast = node;
-            AstNode* type2val = GetAstVCastToTypespecType2Val(vcast);
+            AstNode* type2val = GetAstVCastTypespec(vcast);
             AstNode* rhs = GetAstVCastRhs(vcast);
             Type* toType = GetAstNodeTypingExt_Value(type2val);
             Type* fromType = GetAstNodeTypingExt_Value(rhs);
@@ -1585,6 +1589,14 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* typespec = GetAstType2ValTypespec(type2val);
             Type* type = GetAstNodeTypingExt_Type(typespec);
             SetAstNodeTypingExt_Value(type2val,type);
+            break;
+        }
+        case AST_VAL2TYPE:
+        {
+            AstNode* val2type = node;
+            AstNode* expr = GetAstVal2TypeExpr(val2type);
+            Type* type = GetAstNodeTypingExt_Value(expr);
+            SetAstNodeTypingExt_Type(val2type,type);
             break;
         }
         default:
@@ -1838,7 +1850,7 @@ Type* NewOrGetFuncType(Typer* typer, int argsCount, Type* args[], Type* image) {
     Type* funcType = pushToTypeBuf(&typer->funcTypeBuf,T_FUNC);
     funcType->as.Func.domainCount = argsCount;
     funcType->as.Func.domainArray = malloc(argsCount*sizeof(Type*));
-    memcpy(funcType->as.Func.domainArray,args,argsCount*sizeof(Type*));
+    memcpy(funcType->as.Func.domainArray, args, argsCount*sizeof(Type*));
     funcType->as.Func.image = image;
     return funcType;
 }

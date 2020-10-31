@@ -26,17 +26,24 @@ enum AstKind {
     AST_VCAST,
     AST_VPAREN, AST_VTUPLE, 
     AST_TPAREN, AST_TTUPLE,
-    AST_VSTRUCT, AST_CHAIN,
-    AST_LAMBDA,
+    AST_VSTRUCT, AST_TSTRUCT, AST_CHAIN,
+    AST_VPTR,
+    AST_VLAMBDA,AST_TLAMBDA,
     AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME,
-    AST_VLET, AST_VDEF, AST_TDEF, AST_EXTERN, AST_STMT_WITH, AST_STMT_RETURN,
+    AST_STMT_VLET, AST_STMT_VDEF, AST_STMT_TDEF, AST_TDEF_ENUM, AST_EXTERN, AST_STMT_ASSERT, AST_STMT_RETURN,
     AST_TCALL, AST_VCALL,
     AST_UNARY, AST_BINARY,
     AST_TPATTERN, AST_VPATTERN, AST_TPATTERN_SINGLETON, AST_VPATTERN_SINGLETON,
-    AST_TPATTERN_FIELD,AST_VTUPLE_FIELD,AST_VSTRUCT_FIELD,AST_VPATTERN_FIELD,
+    AST_ORPHANED_FIELD,AST_VTUPLE_FIELD,AST_VSTRUCT_FIELD,
+    AST_VPATTERN_FIELD,AST_TPATTERN_FIELD,AST_VPATTERN_SINGLETON_FIELD,AST_TPATTERN_SINGLETON_FIELD,
+    AST_TSTRUCT_FIELD,AST_TTUPLE_FIELD,
+    AST_TPTR,
     AST_TYPE2VAL,
-    AST_VDEF_BUILTIN
+    AST_VAL2TYPE,
+    AST_VDEF_BUILTIN,
+    AST_STMT_MODULE, AST_STMT_IMPORT,
+    AST_STMT_SET, AST_STMT_DISCARD,
 };
 
 enum AstUnaryOperator {
@@ -145,8 +152,7 @@ enum AstBuiltinVDefKind {
 //
 
 AstNode* NewAstModule(Loc loc, SymbolID moduleID);
-void AttachImportHeaderToAstModule(AstNode* module, AstNode* mapping);
-void AttachExportHeaderToAstModule(AstNode* module, AstNode* mapping);
+AstNode* NewAstModuleWithStmtSb(Loc loc, SymbolID moduleID, AstNode** mov_contentSb);
 void PushStmtToAstModule(AstNode* module, AstNode* def);
 
 AstNode* NewAstVID(Loc loc, SymbolID symbolID);
@@ -156,17 +162,36 @@ AstNode* NewAstStringLiteral(Loc loc, int* valueSb);
 AstNode* NewAstVParen(Loc loc, AstNode* it);
 AstNode* NewAstUnit(Loc loc);
 
+AstNode* NewAstField(Loc loc, SymbolID lhs, AstNode* rhs);
 AstNode* NewAstVTuple(Loc loc);
-AstNode* NewAstVStruct(Loc loGetc);
+AstNode* NewAstVTupleWithFieldsSb(Loc loc, AstNode** mov_fieldsSb);
+AstNode* NewAstVStruct(Loc loc);
+AstNode* NewAstVStructWithFieldsSb(Loc loc, AstNode** mov_fieldsSb);
 AstNode* NewAstChain(Loc loc);
-AstNode* NewAstTPatternSingleton(Loc loc, SymbolID name, AstNode* rhs);
-AstNode* NewAstVPatternSingleton(Loc loc, SymbolID name, AstNode* rhs);
+AstNode* NewAstChainWith(Loc loc, AstNode** mov_prefixSb, AstNode* result);
+
+AstNode* NewAstTStruct(Loc loc);
+AstNode* NewAstTStructWithFieldsSb(Loc loc, AstNode** mov_fieldsSb);
 AstNode* NewAstTPattern(Loc loc);
 AstNode* NewAstVPattern(Loc loc);
+AstNode* NewAstVPatternWithFieldsSb(Loc loc, AstNode** mov_fieldsSb);
+AstNode* NewAstTPatternWithFieldsSb(Loc loc, AstNode** mov_fieldsSb);
+AstNode* NewAstVPatternSingleton(Loc loc, AstNode* field);
+AstNode* NewAstTPatternSingleton(Loc loc, AstNode* field);
 
-void PushFieldToAstTuple(Loc loc, AstNode* tuple, AstNode* value);
-void PushFieldToAstStruct(Loc loc, AstNode* struct_, SymbolID name, AstNode* value);
-void PushFieldToAstPattern(Loc loc, AstNode* pattern, SymbolID name, AstNode* typespec);
+AstNode* NewAstVPtr(Loc loc, AstNode* arg);
+
+void PushFieldToAstTTuple(AstNode* ttuple, AstNode* field);
+void PushFieldToAstTStruct(AstNode* tstruct, AstNode* field);
+void PushFieldToAstTPattern(AstNode* tpattern, AstNode* field);
+
+void PushFieldToAstVTuple(AstNode* vstruct, AstNode* field);
+void PushFieldToAstVStruct(AstNode* vstruct, AstNode* field);
+void PushFieldToAstVPattern(AstNode* vpattern, AstNode* field);
+
+void PushFieldToAstVTupleFromRaw(Loc loc, AstNode* tuple, AstNode* value);
+void PushFieldToAstVStructFromRaw(Loc loc, AstNode* struct_, SymbolID name, AstNode* value);
+void PushFieldToAstVPatternFromRaw(Loc loc, AstNode* pattern, AstKind fieldKind, SymbolID name, AstNode* typespec);
 
 void PushStmtToAstChain(AstNode* chain, AstNode* statement);
 void SetAstChainResult(AstNode* chain, AstNode* result);
@@ -175,24 +200,39 @@ AstNode* NewAstIte(Loc loc, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse);
 AstNode* NewAstDotIndex(Loc loc, AstNode* lhs, size_t index);
 AstNode* NewAstDotName(Loc loc, AstNode* lhs, SymbolID rhs);
 
-AstNode* NewAstLambda(Loc loc, AstNode** patterns, int patternCount, AstNode* body);
+AstNode* NewAstVLambda(Loc loc, AstNode* pattern, AstNode* body);
+AstNode* NewAstTLambda(Loc loc, AstNode* pattern, AstNode* body);
+
+AstNode* NewAstModuleStmt(Loc loc, SymbolID boundName, int* fromStr, int* asStr);
+AstNode* NewAstImportStmt(Loc loc, SymbolID module, SymbolID suffix, int glob);
 
 AstNode* NewAstLetStmt(Loc loc, AstNode* lhsPattern, AstNode* rhs);
-AstNode* NewAstVDefStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* patterns[], int patternsCount, AstNode* rhs);
-AstNode* NewAstTDefStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* optRhs);
+AstNode* NewAstDefStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* pattern, AstNode* rhs);
+AstNode* NewAstTypedefStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* rhs);
+AstNode* NewAstTypedefEnumStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* rhs);
+AstNode* NewAstSetStmt(Loc loc, AstNode* lhs, AstNode* rhs);
+AstNode* NewAstAssertStmt(Loc loc, AstNode* checked);
+AstNode* NewAstDiscardStmt(Loc loc, AstNode* discarded);
 AstNode* NewAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec);
-AstNode* NewAstWithStmt(Loc loc, AstNode* checked);
 
 AstNode* NewAstVCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
+AstNode* NewAstVCallWithArgsSb(Loc loc, AstNode* lhs, AstNode** mov_argsSb);
+
 AstNode* NewAstTCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
+AstNode* NewAstTCallWithArgsSb(Loc loc, AstNode* lhs, AstNode** mov_argsSb);
+
 AstNode* NewAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
 AstNode* NewAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg);
 
 AstNode* NewAstTID(Loc loc, SymbolID symbolID);
 AstNode* NewAstTTuple(Loc loc);
+AstNode* NewAstTTupleWithFieldsSb(Loc loc, AstNode** mov_fieldsSb);
 AstNode* NewAstTParen(Loc loc, AstNode* it);
+AstNode* NewAstTPtr(Loc loc, AstNode* pointee);
 
 AstNode* NewAstVCast(Loc loc,AstNode* toTypespec,AstNode* fromExpr);
+AstNode* NewAstType2Val(Loc loc, AstNode* typespec);
+AstNode* NewAstVal2Type(Loc loc, AstNode* valueExpr);
 
 AstNode* NewAstBuiltinVDefStmt(SymbolID lhs, AstBuiltinVDefKind builtinVDefKind);
 
@@ -224,8 +264,8 @@ AstNode* GetAstParenItem(AstNode* node);
 
 int GetAstPatternLength(AstNode* node);
 AstNode* GetAstPatternFieldAt(AstNode* node, int index);
-SymbolID GetAstSingletonPatternName(AstNode* node);
-AstNode* GetAstSingletonPatternRhs(AstNode* node);
+
+AstNode* GetAstSingletonPatternField(AstNode* node);
 
 int GetAstTupleLength(AstNode* node);
 int CountAstStructFields(AstNode* node);
@@ -245,12 +285,12 @@ AstNode* GetAstDotNameLhs(AstNode* dot);
 SymbolID GetAstDotNameRhs(AstNode* dot);
 
 int CountAstLambdaCaptures(AstNode* lambda);
-int CountAstLambdaPatterns(AstNode* lambda);
-void* GetAstLambdaCaptureAt(AstNode* lambda, int index);
-AstNode* GetAstLambdaPatternAt(AstNode* lambda, int index);
-AstNode* GetAstLambdaBody(AstNode* lambda);
+void* GetAstVLambdaCaptureAt(AstNode* lambda, int index);
+AstNode* GetAstVLambdaPattern(AstNode* lambda);
+AstNode* GetAstVLambdaBody(AstNode* lambda);
 
-AstNode* GetAstWithStmtChecked(AstNode* checkStmt);
+AstNode* GetAstAssertStmtChecked(AstNode* checkStmt);
+AstNode* GetAstDiscardStmtDiscarded(AstNode* discardStmt);
 
 int IsAstCallTemplate(AstNode* call);
 AstNode* GetAstCallLhs(AstNode* call);
@@ -286,10 +326,14 @@ SymbolID GetAstTypedefStmtName(AstNode* td);
 AstNode* GetAstTypedefStmtOptPattern(AstNode* td);
 AstNode* GetAstTypedefStmtOptRhs(AstNode* td);
 
-AstNode* GetAstVCastToTypespecType2Val(AstNode* vcast);
+AstNode* GetAstVCastTypespec(AstNode* vcast);
 AstNode* GetAstVCastRhs(AstNode* vcast);
 
+AstNode* GetAstVPtrPointee(AstNode* vptr);
+AstNode* GetAstTPtrPointee(AstNode* tptr);
+
 AstNode* GetAstType2ValTypespec(AstNode* type2Val);
+AstNode* GetAstVal2TypeExpr(AstNode* val2type);
 
 AstBuiltinVDefKind GetAstBuiltinVDefKind(AstNode* builtinVDef);
 
