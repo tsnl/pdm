@@ -144,13 +144,16 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             }
             break;
         }
-        case AST_EXTERN:
+        case AST_STMT_EXTERN:
         {
             SymbolID name = GetAstExternStmtName(node);
+            AstNode* pattern = GetAstExternPattern(node);
             AstNode* typespec = GetAstExternTypespec(node);
             PrintText(cp, "extern ");
             PrintText(cp, GetSymbolText(name));
-            PrintText(cp, ": ");
+            PrintChar(cp, ' ');
+            PrintNode(cp, pattern);
+            PrintText(cp, " -> ");
             PrintNode(cp, typespec);
             break;
         }
@@ -378,6 +381,18 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                 PrintText(cp, " else ");
                 PrintNode(cp, ifFalse);
             }
+            break;
+        }
+        case AST_VPTR:
+        {
+            PrintText(cp, "^");
+            PrintNode(cp, GetAstVPtrPointee(node));
+            break;
+        }
+        case AST_TPTR:
+        {
+            PrintNode(cp, GetAstTPtrPointee(node));
+            PrintText(cp, "^");
             break;
         }
         default:

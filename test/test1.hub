@@ -1,8 +1,17 @@
-def hello (omega:S32) = S64 {
-    let x:S32 = omega;
-    x
+extern def malloc (size:U64) -> U8^;
+
+def double (x:S32) = S32 {
+    2 * x
+};
+def triple (x:S32) = S32 {
+    3 * x
+};
+def dot (x:S32, y:S32) = S32 {
+    x*x + y*y
 };
 
-def fibonacci (n:S32) = S32 {
-    n+1
+def main () = S32 {
+    let bufsize:U64 = U64(1024);
+    let buffer:U8^ = malloc(bufsize);
+    dot(3,2)
 };

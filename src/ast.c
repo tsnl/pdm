@@ -97,6 +97,7 @@ struct AstVal {
 };
 struct AstExtern {
     SymbolID name;
+    AstNode* pattern;
     AstNode* typespec;
 };
 struct AstTypedef {
@@ -180,7 +181,6 @@ union AstInfo {
     AstVCast            VCast;
     AstNode*            T2V_typespec;
     AstNode*            V2T_expr;
-    AstBuiltinVDefKind  BuiltinVDef_kind;
     AstNode*            Ptr_pointee;
     AstModuleStmt       ModuleStmt;
     AstImportStmt       ImportStmt;
@@ -191,7 +191,7 @@ union AstInfo {
 };
 
 struct AstNode {
-    Loc loc;
+    Span span;
     AstKind kind;
     AstInfo as;
     void* typingExt_value;
@@ -211,15 +211,15 @@ static AstNode allocatedNodes[MAX_AST_LIST_COUNT];
 static size_t allocatedListCount = 0;
 static AstNodeList allocatedLists[MAX_AST_LIST_COUNT];
 
-static AstNode* newNode(Loc loc, AstKind kind);
+static AstNode* newNode(Span span, AstKind kind);
 static AstNodeList* newNodeList(void);
 static void pushListElement(AstNodeList* list, AstNode* node);
 static int countList(AstNodeList* list);
 static AstNode* listItemAt(AstNodeList* list, int index);
 
-AstNode* newNode(Loc loc, AstKind kind) {
+AstNode* newNode(Span span, AstKind kind) {
     AstNode* node = &allocatedNodes[allocatedNodeCount++];
-    node->loc = loc;
+    node->span = span;
     node->kind = kind;
     node->typingExt_value = NULL;
     node->typingExt_type = NULL;
@@ -274,13 +274,13 @@ AstNode* listItemAt(AstNodeList* list, int index) {
 static int isStmtKindModuleLevel(AstKind kind);
 static int isIdKind(AstKind kind);
 static int isCallKind(AstKind kind);
-static AstNode* helpNewAstCall(Loc loc, AstKind kind, AstNode* lhs, AstNode* args[], int argsCount);
+static AstNode* helpNewAstCall(Span span, AstKind kind, AstNode* lhs, AstNode* args[], int argsCount);
 
 int isStmtKindModuleLevel(AstKind kind) {
     return (
         kind == AST_STMT_VDEF ||
         kind == AST_STMT_TDEF ||
-        kind == AST_EXTERN ||
+        kind == AST_STMT_EXTERN ||
         0
     );
 }
@@ -298,8 +298,8 @@ int isCallKind(AstKind kind) {
         0
     );
 }
-AstNode* helpNewAstCall(Loc loc, AstKind kind, AstNode* lhs, AstNode* args[], int argsCount) {
-    AstNode* callNode = newNode(loc,kind);
+AstNode* helpNewAstCall(Span span, AstKind kind, AstNode* lhs, AstNode* args[], int argsCount) {
+    AstNode* callNode = newNode(span,kind);
     callNode->as.Call.lhs = lhs;
     callNode->as.Call.args = newNodeList();
     for (int index = 0; index < argsCount; index++) {
@@ -309,14 +309,14 @@ AstNode* helpNewAstCall(Loc loc, AstKind kind, AstNode* lhs, AstNode* args[], in
     return callNode;
 }
 
-AstNode* NewAstModule(Loc loc, SymbolID moduleID) {
-    AstNode* node = newNode(loc, AST_MODULE);
+AstNode* NewAstModule(Span span, SymbolID moduleID) {
+    AstNode* node = newNode(span, AST_MODULE);
     node->as.Module.name = moduleID;
     node->as.Module.items = newNodeList();
     return node;
 }
-AstNode* NewAstModuleWithStmtSb(Loc loc, SymbolID moduleID, AstNode** mov_contentSb) {
-    AstNode* node = NewAstModule(loc, moduleID);
+AstNode* NewAstModuleWithStmtSb(Span span, SymbolID moduleID, AstNode** mov_contentSb) {
+    AstNode* node = NewAstModule(span, moduleID);
 
     int count = sb_count(mov_contentSb);
     for (int index = 0; index < count; index++) {
@@ -338,49 +338,49 @@ void PushStmtToAstModule(AstNode* module, AstNode* def) {
     pushListElement(module->as.Module.items, def);
 }
 
-AstNode* NewAstVID(Loc loc, SymbolID symbolID) {
-    AstNode* idNode = newNode(loc, AST_VID);
+AstNode* NewAstVID(Span span, SymbolID symbolID) {
+    AstNode* idNode = newNode(span, AST_VID);
     idNode->as.ID.name = symbolID;
     idNode->as.ID.lookupScope = NULL;
     idNode->as.ID.defn = NULL;
     return idNode;
 }
-AstNode* NewAstIntLiteral(Loc loc, size_t value, int base) {
-    AstNode* intNode = newNode(loc, AST_LITERAL_INT);
+AstNode* NewAstIntLiteral(Span span, size_t value, int base) {
+    AstNode* intNode = newNode(span, AST_LITERAL_INT);
     intNode->as.Int.value = value;
     intNode->as.Int.base = base;
     return intNode;
 }
-AstNode* NewAstFloatLiteral(Loc loc, long double value) {
-    AstNode* floatNode = newNode(loc, AST_LITERAL_FLOAT);
+AstNode* NewAstFloatLiteral(Span span, long double value) {
+    AstNode* floatNode = newNode(span, AST_LITERAL_FLOAT);
     floatNode->as.Float = value;
     return floatNode;
 }
-AstNode* NewAstStringLiteral(Loc loc, int* valueSb) {
-    AstNode* stringNode = newNode(loc, AST_LITERAL_STRING);
+AstNode* NewAstStringLiteral(Span span, int* valueSb) {
+    AstNode* stringNode = newNode(span, AST_LITERAL_STRING);
     stringNode->as.UnicodeStringSb = valueSb;
     return stringNode;
 }
-AstNode* NewAstVParen(Loc loc, AstNode* it) {
-    AstNode* parenNode = newNode(loc, AST_VPAREN);
+AstNode* NewAstVParen(Span span, AstNode* it) {
+    AstNode* parenNode = newNode(span, AST_VPAREN);
     parenNode->as.Paren_item = it;
     return parenNode;
 }
-AstNode* NewAstVPtr(Loc loc, AstNode* pointee) {
-    AstNode* ptrNode = newNode(loc,AST_VPTR);
+AstNode* NewAstVPtr(Span span, AstNode* pointee) {
+    AstNode* ptrNode = newNode(span,AST_VPTR);
     ptrNode->as.Ptr_pointee = pointee;
     return ptrNode;
 }
-AstNode* NewAstUnit(Loc loc) {
-    return newNode(loc, AST_UNIT);
+AstNode* NewAstUnit(Span span) {
+    return newNode(span, AST_UNIT);
 }
 
-AstNode* NewAstField(Loc loc, SymbolID lhs, AstNode* rhs) {
+AstNode* NewAstField(Span span, SymbolID lhs, AstNode* rhs) {
     // new fields begin as ORPHANED.
     // this kind should be changed when parent and index are set according to the container.
     // see: PushFieldTo____
 
-    AstNode* field = newNode(loc, AST_ORPHANED_FIELD);
+    AstNode* field = newNode(span, AST_ORPHANED_FIELD);
     field->as.Field.name = lhs;
     field->as.Field.rhs = rhs;
     
@@ -390,13 +390,13 @@ AstNode* NewAstField(Loc loc, SymbolID lhs, AstNode* rhs) {
     
     return field;
 }
-AstNode* NewAstVTuple(Loc loc) {
-    AstNode* tupleNode = newNode(loc, AST_VTUPLE);
+AstNode* NewAstVTuple(Span span) {
+    AstNode* tupleNode = newNode(span, AST_VTUPLE);
     tupleNode->as.GenericList_items = newNodeList();
     return tupleNode;
 }
-AstNode* NewAstVTupleWithFieldsSb(Loc loc, AstNode** mov_fieldsSb) {
-    AstNode* vtuple = NewAstVTuple(loc);
+AstNode* NewAstVTupleWithFieldsSb(Span span, AstNode** mov_fieldsSb) {
+    AstNode* vtuple = NewAstVTuple(span);
     int fieldCount = sb_count(mov_fieldsSb);
     for (int index = 0; index < fieldCount; index++) {
         AstNode* field = mov_fieldsSb[index];
@@ -405,13 +405,13 @@ AstNode* NewAstVTupleWithFieldsSb(Loc loc, AstNode** mov_fieldsSb) {
     sb_free(mov_fieldsSb);
     return vtuple;
 }
-AstNode* NewAstVStruct(Loc loc) {
-    AstNode* structNode = newNode(loc, AST_VSTRUCT);
+AstNode* NewAstVStruct(Span span) {
+    AstNode* structNode = newNode(span, AST_VSTRUCT);
     structNode->as.GenericList_items = newNodeList();
     return structNode;
 }
-AstNode* NewAstVStructWithFieldsSb(Loc loc, AstNode** mov_fieldsSb) {
-    AstNode* vstruct = NewAstVStruct(loc);
+AstNode* NewAstVStructWithFieldsSb(Span span, AstNode** mov_fieldsSb) {
+    AstNode* vstruct = NewAstVStruct(span);
     int fieldCount = sb_count(mov_fieldsSb);
     for (int index = 0; index < fieldCount; index++) {
         AstNode* field = mov_fieldsSb[index];
@@ -420,13 +420,13 @@ AstNode* NewAstVStructWithFieldsSb(Loc loc, AstNode** mov_fieldsSb) {
     sb_free(mov_fieldsSb);
     return vstruct;
 }
-AstNode* NewAstTStruct(Loc loc) {
-    AstNode* tstruct = newNode(loc, AST_TSTRUCT);
+AstNode* NewAstTStruct(Span span) {
+    AstNode* tstruct = newNode(span, AST_TSTRUCT);
     tstruct->as.GenericList_items = newNodeList();
     return tstruct;
 }
-AstNode* NewAstTStructWithFieldsSb(Loc loc, AstNode** mov_fieldsSb) {
-    AstNode* tstruct = NewAstTStruct(loc);
+AstNode* NewAstTStructWithFieldsSb(Span span, AstNode** mov_fieldsSb) {
+    AstNode* tstruct = NewAstTStruct(span);
     int fieldCount = 0;
     for (int index = 0; index < fieldCount; index++) {
         AstNode* field = mov_fieldsSb[index];
@@ -436,14 +436,14 @@ AstNode* NewAstTStructWithFieldsSb(Loc loc, AstNode** mov_fieldsSb) {
     return tstruct;
 }
 
-AstNode* NewAstChain(Loc loc) {
-    AstNode* chainNode = newNode(loc, AST_CHAIN);
+AstNode* NewAstChain(Span span) {
+    AstNode* chainNode = newNode(span, AST_CHAIN);
     chainNode->as.Chain.prefix = newNodeList();
     chainNode->as.Chain.result = NULL;
     return chainNode;
 }
-AstNode* NewAstChainWith(Loc loc, AstNode** mov_prefixSb, AstNode* result) {
-    AstNode* chainNode = NewAstChain(loc);
+AstNode* NewAstChainWith(Span span, AstNode** mov_prefixSb, AstNode* result) {
+    AstNode* chainNode = NewAstChain(span);
     
     int prefixCount = sb_count(mov_prefixSb);
     for (int index = 0; index < prefixCount; index++) {
@@ -457,46 +457,40 @@ AstNode* NewAstChainWith(Loc loc, AstNode** mov_prefixSb, AstNode* result) {
     return chainNode;
 }
 
-// inline static AstNode* newAstPatternSingleton(Loc loc, AstKind kind, SymbolID name, AstNode* rhs) {
-//     AstNode* patternNode = newNode(loc,kind);
-//     patternNode->as.Pattern_Singleton.name = name;
-//     patternNode->as.Pattern_Singleton.rhs = rhs;
-//     return patternNode;
-// }
-inline static AstNode* newAstPattern(Loc loc, AstKind kind) {
-    AstNode* patternNode = newNode(loc, kind);
+inline static AstNode* newAstPattern(Span span, AstKind kind) {
+    AstNode* patternNode = newNode(span, kind);
     patternNode->as.GenericList_items = newNodeList();
     patternNode->as.GenericList_items->count = 0;
     return patternNode;
 }
-inline static AstNode* newAstPatternSingleton(Loc loc, AstKind singletonKind, AstNode* field) {
-    AstNode* singletonPatternNode = newNode(loc,singletonKind);
+inline static AstNode* newAstPatternSingleton(Span span, AstKind singletonKind, AstNode* field) {
+    AstNode* singletonPatternNode = newNode(span,singletonKind);
     singletonPatternNode->as.SingletonPattern_field = field;
     return singletonPatternNode;
 }
-AstNode* NewAstVPattern(Loc loc) { 
-    return newAstPattern(loc,AST_VPATTERN);
+AstNode* NewAstVPattern(Span span) { 
+    return newAstPattern(span,AST_VPATTERN);
 }
-AstNode* NewAstVPatternSingleton(Loc loc, AstNode* field) {
+AstNode* NewAstVPatternSingleton(Span span, AstNode* field) {
     COMPILER_ASSERT(field->kind == AST_ORPHANED_FIELD, "vpattern cannot adopt non-orphan field.");
-    AstNode* singleton = newAstPatternSingleton(loc,AST_VPATTERN_SINGLETON,field);
+    AstNode* singleton = newAstPatternSingleton(span,AST_VPATTERN_SINGLETON,field);
     field->kind = AST_VPATTERN_SINGLETON_FIELD;
     field->as.Field.parent = singleton;
     field->as.Field.index = -1;
     return singleton;
 }
-AstNode* NewAstTPattern(Loc loc) { 
-    return newAstPattern(loc,AST_TPATTERN);
+AstNode* NewAstTPattern(Span span) { 
+    return newAstPattern(span,AST_TPATTERN);
 }
-AstNode* NewAstTPatternSingleton(Loc loc, AstNode* field) {
-    AstNode* singleton = newAstPatternSingleton(loc,AST_TPATTERN_SINGLETON,field);
+AstNode* NewAstTPatternSingleton(Span span, AstNode* field) {
+    AstNode* singleton = newAstPatternSingleton(span,AST_TPATTERN_SINGLETON,field);
     field->kind = AST_TPATTERN_SINGLETON_FIELD;
     field->as.Field.parent = singleton;
     field->as.Field.index = -1;
     return singleton;
 }
-AstNode* NewAstVPatternWithFieldsSb(Loc loc, AstNode** mov_fieldsSb) {
-    AstNode* pattern = NewAstVPattern(loc);
+AstNode* NewAstVPatternWithFieldsSb(Span span, AstNode** mov_fieldsSb) {
+    AstNode* pattern = NewAstVPattern(span);
     int fieldsCount = sb_count(mov_fieldsSb);
     for (int index = 0; index < fieldsCount; index++) {
         AstNode* field = mov_fieldsSb[index];
@@ -505,8 +499,8 @@ AstNode* NewAstVPatternWithFieldsSb(Loc loc, AstNode** mov_fieldsSb) {
     sb_free(mov_fieldsSb);
     return pattern;
 }
-AstNode* NewAstTPatternWithFieldsSb(Loc loc, AstNode** mov_fieldsSb) {
-    AstNode* pattern = NewAstTPattern(loc);
+AstNode* NewAstTPatternWithFieldsSb(Span span, AstNode** mov_fieldsSb) {
+    AstNode* pattern = NewAstTPattern(span);
     int fieldsCount = sb_count(mov_fieldsSb);
     for (int index = 0; index < fieldsCount; index++) {
         AstNode* field = mov_fieldsSb[index];
@@ -574,21 +568,21 @@ void PushFieldToAstVPattern(AstNode* pattern, AstNode* field) {
     field->as.Field.index = countList(pattern->as.GenericList_items);
 }
 
-void PushFieldToAstVTupleFromRaw(Loc loc, AstNode* tuple, AstNode* value) {
-    AstNode* field = newNode(loc, AST_VTUPLE_FIELD);
+void PushFieldToAstVTupleFromRaw(Span span, AstNode* tuple, AstNode* value) {
+    AstNode* field = newNode(span, AST_VTUPLE_FIELD);
     field->as.Field.name = SYM_NULL;
     field->as.Field.rhs = value;
     PushFieldToAstVTuple(tuple,field);
 }
-void PushFieldToAstVStructFromRaw(Loc loc, AstNode* vstruct, SymbolID name, AstNode* value) {
-    AstNode* field = newNode(loc, AST_VSTRUCT_FIELD);
+void PushFieldToAstVStructFromRaw(Span span, AstNode* vstruct, SymbolID name, AstNode* value) {
+    AstNode* field = newNode(span, AST_VSTRUCT_FIELD);
     field->as.Field.name = name;
     field->as.Field.rhs = value;
     field->as.Field.parent = vstruct;
     field->as.Field.index = countList(vstruct->as.GenericList_items);
     PushFieldToAstVStruct(vstruct,field);
 }
-void PushFieldToAstVPatternFromRaw(Loc loc, AstNode* pattern, AstKind fieldKind, SymbolID name, AstNode* typespec) {
+void PushFieldToAstVPatternFromRaw(Span span, AstNode* pattern, AstKind fieldKind, SymbolID name, AstNode* typespec) {
     COMPILER_ASSERT(
         (fieldKind == AST_TPATTERN_FIELD) || (fieldKind == AST_VPATTERN_FIELD), 
         "Cannot push non-field into a pattern"
@@ -597,7 +591,7 @@ void PushFieldToAstVPatternFromRaw(Loc loc, AstNode* pattern, AstKind fieldKind,
         (pattern->kind == AST_VPATTERN) || (pattern->kind == AST_TPATTERN),
         "Cannot push pattern field to non-pattern with 'PushFieldToAstPattern'"
     );
-    AstNode* field = newNode(loc, fieldKind);
+    AstNode* field = newNode(span, fieldKind);
     field->as.Field.name = name;
     field->as.Field.rhs = typespec;
     field->as.Field.index = countList(pattern->as.GenericList_items);
@@ -611,8 +605,8 @@ void SetAstChainResult(AstNode* chain, AstNode* result) {
     chain->as.Chain.result = result;
 }
 
-AstNode* NewAstIte(Loc loc, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse) {
-    AstNode* iteNode = newNode(loc, AST_ITE);
+AstNode* NewAstIte(Span span, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse) {
+    AstNode* iteNode = newNode(span, AST_ITE);
     iteNode->as.GenericList_items = newNodeList();
     pushListElement(iteNode->as.GenericList_items, cond);
     pushListElement(iteNode->as.GenericList_items, ifTrue);
@@ -620,30 +614,30 @@ AstNode* NewAstIte(Loc loc, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse) {
     return iteNode;
 }
 
-AstNode* NewAstDotIndex(Loc loc, AstNode* lhs, size_t index) {
-    AstNode* dotNode = newNode(loc, AST_DOT_INDEX);
+AstNode* NewAstDotIndex(Span span, AstNode* lhs, size_t index) {
+    AstNode* dotNode = newNode(span, AST_DOT_INDEX);
     dotNode->as.DotIx.lhs = lhs;
     dotNode->as.DotIx.index = index;
     return dotNode;
 }
 
-AstNode* NewAstDotName(Loc loc, AstNode* lhs, SymbolID rhs) {
-    AstNode* dotNode = newNode(loc, AST_DOT_NAME);
+AstNode* NewAstDotName(Span span, AstNode* lhs, SymbolID rhs) {
+    AstNode* dotNode = newNode(span, AST_DOT_NAME);
     dotNode->as.DotNm.lhs = lhs;
     dotNode->as.DotNm.symbol = rhs;
     return dotNode;
 }
 
-AstNode* NewAstVLambda(Loc loc, AstNode* pattern, AstNode* body) {
-    AstNode* lambdaNode = newNode(loc, AST_VLAMBDA);
+AstNode* NewAstVLambda(Span span, AstNode* pattern, AstNode* body) {
+    AstNode* lambdaNode = newNode(span, AST_VLAMBDA);
     lambdaNode->as.VLambda.pattern = pattern;
     lambdaNode->as.VLambda.body = body;
     lambdaNode->as.VLambda.capturesSB = NULL;
     lambdaNode->as.VLambda.localsSB = NULL;
     return lambdaNode;
 }
-AstNode* NewAstTLambda(Loc loc, AstNode* pattern, AstNode* body) {
-    AstNode* lambdaNode = newNode(loc, AST_TLAMBDA);
+AstNode* NewAstTLambda(Span span, AstNode* pattern, AstNode* body) {
+    AstNode* lambdaNode = newNode(span, AST_TLAMBDA);
     lambdaNode->as.TLambda.pattern = pattern;
     lambdaNode->as.TLambda.body = body;
     lambdaNode->as.TLambda.callers = newNodeList();
@@ -651,117 +645,118 @@ AstNode* NewAstTLambda(Loc loc, AstNode* pattern, AstNode* body) {
     return lambdaNode;
 }
 
-AstNode* NewAstModuleStmt(Loc loc, SymbolID boundName, int* fromStr, int* asStr) {
-    AstNode* stmt = newNode(loc, AST_STMT_MODULE);
+AstNode* NewAstModuleStmt(Span span, SymbolID boundName, int* fromStr, int* asStr) {
+    AstNode* stmt = newNode(span, AST_STMT_MODULE);
     stmt->as.ModuleStmt.boundName = boundName;
     stmt->as.ModuleStmt.from = fromStr;
     stmt->as.ModuleStmt.as = asStr;
     return stmt;
 }
-AstNode* NewAstImportStmt(Loc loc, SymbolID module, SymbolID suffix, int glob) {
-    AstNode* stmt = newNode(loc, AST_STMT_IMPORT);
+AstNode* NewAstImportStmt(Span span, SymbolID module, SymbolID suffix, int glob) {
+    AstNode* stmt = newNode(span, AST_STMT_IMPORT);
     stmt->as.ImportStmt.modName = module;
     stmt->as.ImportStmt.suffix = suffix;
     stmt->as.ImportStmt.glob = glob;
     return stmt;
 }
 
-AstNode* NewAstLetStmt(Loc loc, AstNode* lhs, AstNode* rhs) {
-    AstNode* letNode = newNode(loc, AST_STMT_VLET);
+AstNode* NewAstLetStmt(Span span, AstNode* lhs, AstNode* rhs) {
+    AstNode* letNode = newNode(span, AST_STMT_VLET);
     letNode->as.Let.lhs = lhs;
     letNode->as.Let.rhs = rhs;
     return letNode;
 }
-AstNode* NewAstDefStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* pattern, AstNode* rhs) {
-    AstNode* defNode = newNode(loc, AST_STMT_VDEF);
+AstNode* NewAstDefStmt(Span span, SymbolID lhs, AstNode* optTemplatePattern, AstNode* pattern, AstNode* rhs) {
+    AstNode* defNode = newNode(span, AST_STMT_VDEF);
     defNode->as.Def.lhs = lhs;
     defNode->as.Def.optTemplatePattern = optTemplatePattern;
-    defNode->as.Def.rhs = NewAstVLambda(loc,pattern,rhs);
+    defNode->as.Def.rhs = NewAstVLambda(span,pattern,rhs);
     return defNode;
 }
-AstNode* NewAstTypedefStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* rhs) {
-    AstNode* td = newNode(loc, AST_STMT_TDEF);
+AstNode* NewAstTypedefStmt(Span span, SymbolID lhs, AstNode* optPattern, AstNode* rhs) {
+    AstNode* td = newNode(span, AST_STMT_TDEF);
     td->as.Typedef.name = lhs;
     td->as.Typedef.optPattern = optPattern;
     td->as.Typedef.rhs = rhs;
     return td;
 }
-AstNode* NewAstTypedefEnumStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* rhs) {
-    AstNode* ed = newNode(loc, AST_TDEF_ENUM);
+AstNode* NewAstTypedefEnumStmt(Span span, SymbolID lhs, AstNode* optPattern, AstNode* rhs) {
+    AstNode* ed = newNode(span, AST_TDEF_ENUM);
     ed->as.Typedef.name = lhs;
     ed->as.Typedef.optPattern = optPattern;
     ed->as.Typedef.rhs = rhs;
     return ed;
 }
 
-AstNode* NewAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec) {
-    AstNode* defNode = newNode(loc, AST_EXTERN);
+AstNode* NewAstExternStmt(Span span, SymbolID lhs, AstNode* pattern, AstNode* typespec) {
+    AstNode* defNode = newNode(span, AST_STMT_EXTERN);
     defNode->as.Extern.name = lhs;
+    defNode->as.Extern.pattern = pattern;
     defNode->as.Extern.typespec = typespec;
     return defNode;
 }
 
-AstNode* NewAstDiscardStmt(Loc loc, AstNode* discarded) {
-    AstNode* discard = newNode(loc, AST_STMT_DISCARD);
+AstNode* NewAstDiscardStmt(Span span, AstNode* discarded) {
+    AstNode* discard = newNode(span, AST_STMT_DISCARD);
     discard->as.DiscardStmt_discarded = discarded;
     return discard;
 }
-AstNode* NewAstAssertStmt(Loc loc, AstNode* checked) {
-    AstNode* checkNode = newNode(loc, AST_STMT_ASSERT);
+AstNode* NewAstAssertStmt(Span span, AstNode* checked) {
+    AstNode* checkNode = newNode(span, AST_STMT_ASSERT);
     checkNode->as.Check.checked = checked;
     return checkNode;
 }
-AstNode* NewAstSetStmt(Loc loc, AstNode* lhs, AstNode* rhs) {
-    AstNode* set = newNode(loc, AST_STMT_SET);
+AstNode* NewAstSetStmt(Span span, AstNode* lhs, AstNode* rhs) {
+    AstNode* set = newNode(span, AST_STMT_SET);
     set->as.SetStmt.lhs = lhs;
     set->as.SetStmt.rhs = rhs;
     return set;
 }
 
-AstNode* NewAstVCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount) {
-    return helpNewAstCall(loc,AST_VCALL,lhs,args,argsCount);
+AstNode* NewAstVCall(Span span, AstNode* lhs, AstNode* args[], int argsCount) {
+    return helpNewAstCall(span,AST_VCALL,lhs,args,argsCount);
 }
-AstNode* NewAstVCallWithArgsSb(Loc loc, AstNode* lhs, AstNode** mov_argsSb) {
-    AstNode* vcall = NewAstVCall(loc,lhs,mov_argsSb,sb_count(mov_argsSb));
+AstNode* NewAstVCallWithArgsSb(Span span, AstNode* lhs, AstNode** mov_argsSb) {
+    AstNode* vcall = NewAstVCall(span,lhs,mov_argsSb,sb_count(mov_argsSb));
     sb_free(mov_argsSb);
     return vcall;
 }
-AstNode* NewAstTCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount) {
-    return helpNewAstCall(loc,AST_TCALL,lhs,args,argsCount);
+AstNode* NewAstTCall(Span span, AstNode* lhs, AstNode* args[], int argsCount) {
+    return helpNewAstCall(span,AST_TCALL,lhs,args,argsCount);
 }
-AstNode* NewAstTCallWithArgsSb(Loc loc, AstNode* lhs, AstNode** mov_argsSb) {
-    AstNode* tcall = NewAstTCall(loc,lhs,mov_argsSb,sb_count(mov_argsSb));
+AstNode* NewAstTCallWithArgsSb(Span span, AstNode* lhs, AstNode** mov_argsSb) {
+    AstNode* tcall = NewAstTCall(span,lhs,mov_argsSb,sb_count(mov_argsSb));
     sb_free(mov_argsSb);
     return tcall;
 }
-AstNode* NewAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg) {
-    AstNode* unaryNode = newNode(loc, AST_UNARY);
+AstNode* NewAstUnary(Span span, AstUnaryOperator op, AstNode* arg) {
+    AstNode* unaryNode = newNode(span, AST_UNARY);
     unaryNode->as.Unary.operator = op;
     unaryNode->as.Unary.operand = arg;
     return unaryNode;
 }
-AstNode* NewAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg) {
-    AstNode* binaryNode = newNode(loc, AST_BINARY);
+AstNode* NewAstBinary(Span span, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg) {
+    AstNode* binaryNode = newNode(span, AST_BINARY);
     binaryNode->as.Binary.operator = op;
     binaryNode->as.Binary.ltOperand = ltArg;
     binaryNode->as.Binary.rtOperand = rtArg;
     return binaryNode;
 }
 
-AstNode* NewAstTID(Loc loc, SymbolID symbolID) {
-    AstNode* idNode = newNode(loc, AST_TID);
+AstNode* NewAstTID(Span span, SymbolID symbolID) {
+    AstNode* idNode = newNode(span, AST_TID);
     idNode->as.ID.name = symbolID;
     idNode->as.ID.lookupScope = NULL;
     idNode->as.ID.defn = NULL;
     return idNode;
 }
-AstNode* NewAstTTuple(Loc loc) {
-    AstNode* tupleNode = newNode(loc,AST_TTUPLE);
+AstNode* NewAstTTuple(Span span) {
+    AstNode* tupleNode = newNode(span,AST_TTUPLE);
     tupleNode->as.GenericList_items = newNodeList();
     return tupleNode;
 }
-AstNode* NewAstTTupleWithFieldsSb(Loc loc, AstNode** mov_fieldsSb) {
-    AstNode* ttuple = NewAstTTuple(loc);
+AstNode* NewAstTTupleWithFieldsSb(Span span, AstNode** mov_fieldsSb) {
+    AstNode* ttuple = NewAstTTuple(span);
     int fieldsCount = sb_count(mov_fieldsSb);
     for (int index = 0; index < fieldsCount; index++) {
         AstNode* field = mov_fieldsSb[index];
@@ -770,39 +765,33 @@ AstNode* NewAstTTupleWithFieldsSb(Loc loc, AstNode** mov_fieldsSb) {
     sb_free(mov_fieldsSb);
     return ttuple;
 }
-AstNode* NewAstTParen(Loc loc, AstNode* it) {
-    AstNode* parenNode = newNode(loc,AST_TPAREN);
+AstNode* NewAstTParen(Span span, AstNode* it) {
+    AstNode* parenNode = newNode(span,AST_TPAREN);
     parenNode->as.Paren_item = it;
     return parenNode;
 }
-AstNode* NewAstTPtr(Loc loc, AstNode* pointee) {
-    AstNode* ptrNode = newNode(loc,AST_TPTR);
+AstNode* NewAstTPtr(Span span, AstNode* pointee) {
+    AstNode* ptrNode = newNode(span,AST_TPTR);
     ptrNode->as.Ptr_pointee = pointee;
     return ptrNode;
 }
 
-AstNode* NewAstVCast(Loc loc, AstNode* toTypespecT2V, AstNode* fromExpr) {
+AstNode* NewAstVCast(Span span, AstNode* toTypespecT2V, AstNode* fromExpr) {
     COMPILER_ASSERT(toTypespecT2V->kind == AST_TYPE2VAL, "VCast expects a T2V typespec.");
-    AstNode* vcastNode = newNode(loc,AST_VCAST);
+    AstNode* vcastNode = newNode(span,AST_VCAST);
     vcastNode->as.VCast.toTypespecT2V = toTypespecT2V;
     vcastNode->as.VCast.fromExpr = fromExpr;
     return vcastNode;
 }
-AstNode* NewAstType2Val(Loc loc, AstNode* toTypespec) {
-    AstNode* t2v = newNode(loc,AST_TYPE2VAL);
+AstNode* NewAstType2Val(Span span, AstNode* toTypespec) {
+    AstNode* t2v = newNode(span,AST_TYPE2VAL);
     t2v->as.T2V_typespec = toTypespec;
     return t2v;
 }
-AstNode* NewAstVal2Type(Loc loc, AstNode* valueExpr) {
-    AstNode* v2t = newNode(loc,AST_VAL2TYPE);
+AstNode* NewAstVal2Type(Span span, AstNode* valueExpr) {
+    AstNode* v2t = newNode(span,AST_VAL2TYPE);
     v2t->as.V2T_expr = valueExpr;
     return v2t;
-}
-
-AstNode* NewAstBuiltinVDefStmt(SymbolID lhs, AstBuiltinVDefKind builtinVDefKind) {
-    AstNode* builtinVDefNode = newNode(NullLoc(),AST_VDEF_BUILTIN);
-    builtinVDefNode->as.BuiltinVDef_kind = builtinVDefKind;
-    return builtinVDefNode;
 }
 
 //
@@ -862,7 +851,10 @@ size_t GetAstNodeKey(AstNode* node) {
 }
 
 Loc GetAstNodeLoc(AstNode* node) {
-    return node->loc;
+    return FirstLocOfSpan(node->span);
+}
+Span GetAstNodeSpan(AstNode* node) {
+    return node->span;
 }
 
 AstKind GetAstNodeKind(AstNode* node) {
@@ -1139,6 +1131,9 @@ AstNode* GetAstValStmtPattern(AstNode* valStmt) {
 SymbolID GetAstExternStmtName(AstNode* externDef) {
     return externDef->as.Extern.name;
 }
+AstNode* GetAstExternPattern(AstNode* externDef) {
+    return externDef->as.Extern.pattern;
+}
 AstNode* GetAstExternTypespec(AstNode* externDef) {
     return externDef->as.Extern.typespec;
 }
@@ -1172,10 +1167,6 @@ AstNode* GetAstType2ValTypespec(AstNode* type2Val) {
 }
 AstNode* GetAstVal2TypeExpr(AstNode* val2type) {
     return val2type->as.V2T_expr;
-}
-
-AstBuiltinVDefKind GetAstBuiltinVDefKind(AstNode* builtinVDef) {
-    return builtinVDef->as.BuiltinVDef_kind;
 }
 
 //
@@ -1446,10 +1437,14 @@ inline static int recursivelyVisitChildren(void* context, AstNode* node, Visitor
             }
             return 1;
         }
-        case AST_EXTERN:
+        case AST_STMT_EXTERN:
         {
+            AstNode* pattern = GetAstExternPattern(node);
             AstNode* typespec = GetAstExternTypespec(node);
-            return RecursivelyVisitAstNode(context, typespec, preVisitorCb, postVisitorCb);
+            return (
+                RecursivelyVisitAstNode(context, pattern, preVisitorCb, postVisitorCb) &&
+                RecursivelyVisitAstNode(context, typespec, preVisitorCb, postVisitorCb)
+            );
         }
         case AST_STMT_TDEF:
         {
@@ -1598,7 +1593,7 @@ char const* AstKindAsText(AstKind kind) {
         case AST_STMT_TDEF: return "AST_STMT_TDEF";
         case AST_STMT_ASSERT: return "AST_STMT_ASSERT"; 
         case AST_STMT_RETURN: return "AST_STMT_RETURN";
-        case AST_EXTERN: return "AST_EXTERN"; 
+        case AST_STMT_EXTERN: return "AST_STMT_EXTERN"; 
         case AST_VCALL: return "AST_VCALL";
         case AST_TCALL: return "AST_TCALL";
         case AST_UNARY: return "AST_UNARY"; 

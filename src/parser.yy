@@ -12,6 +12,7 @@
 
 // %glr-parser
 
+%define lr.type lalr
 // %define lr.type ielr
 // %define lr.type canonical-lr
 %define api.pure true
@@ -56,6 +57,7 @@
 %type <nt> moduleContentStmt
 %type <nt> chainPrefixStmt letStmt setStmt discardStmt
 %type <nt> importStmt moduleStmt
+%type <nt> externStmt
 %type <nt> typedefStmt_enum typedefStmt defStmt
 
 //
@@ -116,10 +118,7 @@
     #include "lexer.h"
     #include "extra-tokens.h"
 
-    // "If the grammar file does not use the ‘@’ constructs to refer to textual locations, 
-    //  then the type YYLTYPE will not be defined. In this case, omit the second argument;
-    //  yylex will be called with only one argument."
-    #define YYLTYPE Loc
+    #define YYLTYPE Span
     
     #include "stb/stretchy_buffer.h"
 }
@@ -146,7 +145,7 @@
 %token TK_KW_MODULE "'module'"
 %token TK_KW_IMPORT "'import'"
 %token TK_KW_EXPORT "'export'"      // deprecated? 
-%token TK_KW_EXTERN "'extern'"      // NotImplemented!
+%token TK_KW_EXTERN "'extern'"
 %token TK_KW_FROM "'from'" 
 %token TK_KW_AS "'as'"
 %token TK_KW_FUN "'fun'"
@@ -246,6 +245,7 @@ moduleContentStmt
     | typedefStmt_enum      { $$ = $1; }
     | moduleStmt            { $$ = $1; }
     | importStmt            { $$ = $1; }
+    | externStmt            { $$ = $1; }
     ;
 defStmt
     : TK_KW_DEF vid          vpattern TK_BIND castExpr   { $$ = NewAstDefStmt(@$, $2.ID_symbolID, NULL, $3, $5); }
@@ -264,6 +264,10 @@ moduleStmt
 importStmt
     : TK_KW_IMPORT vid TK_DOT vid               { $$ = NewAstImportStmt(@$, $2.ID_symbolID, $4.ID_symbolID, 0); }
     | TK_KW_IMPORT vid TK_DOT vid TK_ASTERISK   { $$ = NewAstImportStmt(@$, $2.ID_symbolID, $4.ID_symbolID, 1); }
+    ;
+
+externStmt
+    : TK_KW_EXTERN TK_KW_DEF vid vpattern TK_ARROW typespec   { $$ = NewAstExternStmt(@$, $3.ID_symbolID, $4, NewAstType2Val(@6,$6)); }
     ;
 
 /*
@@ -432,6 +436,7 @@ primaryTypespec
 postfixTypespec
     : primaryTypespec                               { $$ = $1; }
     | postfixTypespec TK_LSQBRK ttarg_cl TK_RSQBRK  { $$ = NewAstTCallWithArgsSb(@$, $1, $3); }
+    | postfixTypespec TK_CARET                      { $$ = NewAstTPtr(@$, $1); }
     ;
 
 /* type contexts' targs (template args): values have Val2Type wrappers */
@@ -466,7 +471,7 @@ vstructField_cl
     | vstructField_cl TK_COMMA vstructField { $$ = $1; sb_push($$,$3); }
     ;
 vpatternField
-    : vid TK_COLON typespec { $$ = NewAstField(@$, $1.ID_symbolID, $3); }
+    : vid TK_COLON typespec { $$ = NewAstField(@$, $1.ID_symbolID, NewAstType2Val(@3,$3)); }
     ;
 tpatternField
     : tid           { $$ = NewAstField(@$, $1.ID_symbolID, NULL); }
@@ -525,11 +530,9 @@ int yylex(YYSTYPE* lvalp, YYLTYPE* llocp, Source* source) {
 
     TokenInfo* info = &lvalp->token;
 
-    // todo: store collected Span rather than converted Loc:
-    Span span;
-    int tk = LexOneToken(source,info,&span);
-    DebugPrintToken("YYLEX:", tk, info, &span);
-    *llocp = Span2Loc(span);
+    int tk = LexOneToken(source,info,llocp);
+    DebugPrintToken("YYLEX:", tk, info, llocp);
+    
     if (tk == TK_EOS) {
         return YYEOF;
     } else {
@@ -538,7 +541,7 @@ int yylex(YYSTYPE* lvalp, YYLTYPE* llocp, Source* source) {
 }
 
 void yyerror(YYLTYPE* llocp, Source* source, AstNode** outp, char const* message) {
-    Loc loc = *llocp;
+    Loc loc = FirstLocOfSpan(*llocp);
     FeedbackNote* note = CreateFeedbackNote("here...", loc, NULL);
     PostFeedback(
         FBK_ERROR, note,

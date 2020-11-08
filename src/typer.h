@@ -29,6 +29,7 @@ enum TypeKind {
     // abstract:
     T_META,
     
+    // internal:
     __T_COUNT,
     __T_NONE
 };
@@ -103,14 +104,12 @@ Type* NewOrGetTypefuncType(Typer* typer, Type* arg, Type* body);
 Type* NewOrGetTupleType(Typer* typer, TypeField* typefields, int typefieldCount);
 Type* NewOrGetUnionType(Typer* typer, TypeField* typefields, int typefieldCount);
 
-Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* arg);
-Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* ltArg, Type* rtArg);
+Type* NewOrGetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* arg);
+Type* NewOrGetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* ltArg, Type* rtArg);
 Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse);
 
 Type* NewCastHelperType(Typer* typer, Type* to, Type* from);
 Type* NewMetavarType(Loc loc, Typer* typer, char const* format, ...);
-
-Type* GetAstBuiltinVDefType(Typer* typer, AstBuiltinVDefKind builtinVDefKind);
 
 //
 // Getter methods for type info:

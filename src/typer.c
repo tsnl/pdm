@@ -42,6 +42,11 @@
 // - each metavar is lazily checked
 //   - each metavar soln starts as NULL.
 //   - if sup/sub checks are OK, 'soln' is stored and the metavar 'becomes' concrete
+// - metavar may have 'numericOnly'
+//   - means metavar soln must further be int or float
+//   - primitive polymorphism for few supported datatypes
+//   - can later be expanded to include structs of ints/floats
+//   * each unary/binary intrinsic can use ONE metavar to perform typing.
 
 // the 'typer' function applies all program typing constraints in one pass.
 
@@ -62,13 +67,15 @@ typedef struct FuncInfo FuncInfo;
 typedef struct CastInfo CastInfo;
 typedef struct TypefuncInfo TypefuncInfo;
 typedef struct ModuleInfo ModuleInfo;
+typedef struct UnaryInfo UnaryInfo;
+typedef struct BinaryInfo BinaryInfo;
 // typedef struct IntrinsicInfo IntrinsicInfo;
 // typedef struct PhiInfo PhiInfo;
 
 typedef struct SubOrSuperTypeRec SubOrSuperTypeRec;
 typedef SubOrSuperTypeRec SubtypeRec;
 typedef SubOrSuperTypeRec SupertypeRec;
-typedef enum SubtypingResult SubtypingResult;
+typedef enum TypingResult TypingResult;
 
 enum AdtOperator {
     ADT_MUL,
@@ -101,7 +108,7 @@ struct IntInfo {
     int isSigned;
 };
 struct MetaInfo {
-    void* soln;
+    Type* soln;
     char* name;
     MetaInfoExt* ext;
     int poisoned;
@@ -111,11 +118,7 @@ struct MetaInfoExt {
     SubtypeRec* deferredSubSB;
     SupertypeRec* deferredSuperSB;
     int solnUpdatedThisPass;
-
-    // todo: add multiple 'meta solvers' for different cases:
-    // - unary intrinsic
-    // - binary intrinsic
-    // - toggle use 'test' (subtypes) as soln (only in phi, ...)
+    int numericOnly;
 };
 struct FuncInfo {
     Type** domainArray;
@@ -134,6 +137,17 @@ struct TypefuncInfo {
 struct ModuleInfo {
     // todo: implement type ModuleInfo
 };
+struct UnaryInfo {
+    Type* soln;
+    AstUnaryOperator op;
+    Type* argType;
+};
+struct BinaryInfo {
+    Type* soln;
+    AstBinaryOperator op;
+    Type* lhsType;
+    Type* rhsType;
+};
 union GenericTypeInfo {
     IntInfo Int;
     FloatWidth Float_width;
@@ -144,6 +158,8 @@ union GenericTypeInfo {
     ModuleInfo Module;
     AdtTrieNode* Compound_atn;
     CastInfo Cast;
+    UnaryInfo Unary;
+    BinaryInfo Binary;
 };
 struct Type {
     TypeKind kind;
@@ -168,6 +184,8 @@ struct Typer {
     TypeBuf moduleTypeBuf;
     TypeBuf tupleTypeBuf;
     TypeBuf unionTypeBuf;
+    TypeBuf unaryTypeBuf;
+    TypeBuf binaryTypeBuf;
     TypeBuf miscTypeBuf;
 
     AdtTrieNode anyATN;
@@ -180,11 +198,11 @@ struct SubOrSuperTypeRec {
     Loc loc;
     Type* ptr;
 };
-enum SubtypingResult {
+enum TypingResult {
     // note: while merging results, we select the min. See `mergeSubtypingResults`.
-    SUBTYPING_FAILURE = 0,
-    SUBTYPING_DEFERRED,
-    SUBTYPING_CONFIRM,
+    TYPING_FAILURE = 0,
+    TYPING_DEFERRED,
+    TYPING_CONFIRM,
 };
 
 //
@@ -213,23 +231,25 @@ static int isAncestorATN(AdtTrieNode* parent, AdtTrieNode* child);
 // 2. if the result depends on a metavar, we return FAILURE unless matches hypothesis so far, then DEFERRED
 // 3. after typing (no more solution possible), call 'solveDeferredMetavars' 
 // usage:
+// - call 'requireMetavarIsNumericOnly' to assert T is an int or float ONLY
 // - call 'requireSubtyping' to assert that A sup B, thereby modifying the system.
-static SubtypingResult checkSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub);
-static SubtypingResult requireSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub);
+static void requireMetavarIsNumericOnly(Type* type);
+static TypingResult checkSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub);
+static TypingResult requireSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub);
 static int solveAndCheckAllMetavars(Typer* typer);
 // helpers (1)...
-static SubtypingResult helpSubtypeOp(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub, int noDeferral);
-static SubtypingResult helpSubtypeOp_unitSuper(Typer* typer,char const* why,Loc loc, Type* super, Type* sub, int noDeferral);
-static SubtypingResult helpSubtypeOp_intSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
-static SubtypingResult helpSubtypeOp_floatSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
-static SubtypingResult helpSubtypeOp_ptrSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
-static SubtypingResult helpSubtypeOp_funcSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
-static SubtypingResult helpSubtypeOp_tupleSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
-static SubtypingResult helpSubtypeOp_unionSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
-static SubtypingResult helpSubtypeOp_castSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
-static SubtypingResult helpSubtypeOp_metaSuper(Typer* typer, char const* why, Loc loc, Type* meta, Type* sub, int noDeferral);
-static SubtypingResult helpRequestSubtyping_genericMetaSub(Typer* typer, char const* why, Loc loc, Type* super, Type* metaSub, int noDeferral);
-static SubtypingResult mergeSubtypingResults(SubtypingResult fst, SubtypingResult snd);
+static TypingResult helpSubtypeOp(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub, int noDeferral);
+static TypingResult helpSubtypeOp_unitSuper(Typer* typer,char const* why,Loc loc, Type* super, Type* sub, int noDeferral);
+static TypingResult helpSubtypeOp_intSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static TypingResult helpSubtypeOp_floatSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static TypingResult helpSubtypeOp_ptrSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static TypingResult helpSubtypeOp_funcSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static TypingResult helpSubtypeOp_tupleSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static TypingResult helpSubtypeOp_unionSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static TypingResult helpSubtypeOp_castSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
+static TypingResult helpSubtypeOp_metaSuper(Typer* typer, char const* why, Loc loc, Type* meta, Type* sub, int noDeferral);
+static TypingResult helpRequestSubtyping_genericMetaSub(Typer* typer, char const* why, Loc loc, Type* super, Type* metaSub, int noDeferral);
+static TypingResult mergeSubtypingResults(TypingResult fst, TypingResult snd);
 // helpers (2)...
 static Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP);
 // helpers (3)...
@@ -452,23 +472,27 @@ int isAncestorATN(AdtTrieNode* parent, AdtTrieNode* child) {
 //
 //
 
-SubtypingResult checkSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub) {
+void requireMetavarIsNumericOnly(Type* type) {
+    COMPILER_ASSERT(type->kind == T_META, "requireMetavarIsNumericOnly invalid for non-metavar");
+    type->as.Meta.ext->numericOnly = 1;
+}
+TypingResult checkSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub) {
     // leaving the subtyping error as is; attempts to overwrite fail
 
     // performing the operation with noDefer=1 => don't add sup/sub, just return FAIL since it should be concretized.
-    SubtypingResult result = helpSubtypeOp(typer,why,locWhere,super,sub,1);
+    TypingResult result = helpSubtypeOp(typer,why,locWhere,super,sub,1);
     return result;
 }
-SubtypingResult requireSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub) {
+TypingResult requireSubtyping(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub) {
     // clearing the subtyping error:
     resetSubtypingError(typer);
 
     // attempting to perform the operation:
-    SubtypingResult result = helpSubtypeOp(typer,why,locWhere,super,sub,0);
+    TypingResult result = helpSubtypeOp(typer,why,locWhere,super,sub,0);
     
     // if the operation failed, and we were supposed to write, generating feedback from the subtyping error (must be present).
     char* subtypingError = getAndResetSubtypingError(typer);
-    if (result == SUBTYPING_FAILURE) {
+    if (result == TYPING_FAILURE) {
         if (subtypingError) {
             FeedbackNote* note = CreateFeedbackNote("caused here...",locWhere,NULL);
             PostFeedback(
@@ -477,7 +501,7 @@ SubtypingResult requireSubtyping(Typer* typer, char const* why, Loc locWhere, Ty
             );
             free(subtypingError);
         } else {
-            COMPILER_ERROR("helper returned SUBTYPING_FAILURE but subtypingError (string) is unset/NULL.");
+            COMPILER_ERROR("helper returned TYPING_FAILURE but subtypingError (string) is unset/NULL.");
         }
     }
 
@@ -574,7 +598,7 @@ int solveAndCheckAllMetavars(Typer* typer) {
 // typing constraint helpers (1)
 //
 
-SubtypingResult helpSubtypeOp(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub, int noDeferral) {
+TypingResult helpSubtypeOp(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub, int noDeferral) {
     switch (super->kind)
     {
         case T_UNIT: { return helpSubtypeOp_unitSuper(typer,why,locWhere,super,sub,noDeferral); }
@@ -589,16 +613,16 @@ SubtypingResult helpSubtypeOp(Typer* typer, char const* why, Loc locWhere, Type*
         default:
         {
             COMPILER_ERROR_VA("NotImplemented: helpRequestSubtyping for super of unknown type kind %s.", TypeKindAsText(super->kind));
-            return SUBTYPING_FAILURE;
+            return TYPING_FAILURE;
         }
     }
 }
-SubtypingResult helpSubtypeOp_unitSuper(Typer* typer,char const* why,Loc loc, Type* super, Type* sub, int noDeferral) {
+TypingResult helpSubtypeOp_unitSuper(Typer* typer,char const* why,Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind)
     {
         case T_UNIT:
         {
-            return SUBTYPING_CONFIRM;
+            return TYPING_CONFIRM;
         }
         case T_META:
         {
@@ -611,11 +635,11 @@ SubtypingResult helpSubtypeOp_unitSuper(Typer* typer,char const* why,Loc loc, Ty
         default:
         {
             setMismatchedKindsSubtypingError(typer,super,sub);
-            return SUBTYPING_FAILURE;
+            return TYPING_FAILURE;
         }
     }
 }
-SubtypingResult helpSubtypeOp_intSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
+TypingResult helpSubtypeOp_intSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind)
     {
         case T_INT:
@@ -623,17 +647,17 @@ SubtypingResult helpSubtypeOp_intSuper(Typer* typer, char const* why, Loc loc, T
             // A subtypes B <=> width(A) >= width(B)
             if (sub->as.Int.isSigned != super->as.Int.isSigned) {
                 setGenericSubtypingError(typer,"subtyping mismatch: signed and unsigned");
-                return SUBTYPING_FAILURE;
+                return TYPING_FAILURE;
             }
             // we encode integer promotion as subtyping rather than implement a separate checker.
             // error messages MUST EXPLICITLY CALL THIS 'promotion/truncation' rather than 'subtyping/supertyping'.
             if (sub->as.Int.width <= super->as.Int.width) {
-                return SUBTYPING_CONFIRM;
+                return TYPING_CONFIRM;
             } else {
                 int subWidthInBits = GetIntTypeWidthInBits(sub);
                 int superWidthInBits = GetIntTypeWidthInBits(super);
                 setGenericSubtypingError(typer,"cannot truncate Int[%d] to Int[%d]",subWidthInBits,superWidthInBits);
-                return SUBTYPING_FAILURE;
+                return TYPING_FAILURE;
             }
         }
         case T_META:
@@ -647,23 +671,23 @@ SubtypingResult helpSubtypeOp_intSuper(Typer* typer, char const* why, Loc loc, T
         default:
         {
             setMismatchedKindsSubtypingError(typer,super,sub);
-            return SUBTYPING_FAILURE;
+            return TYPING_FAILURE;
         }
     }
 }
-SubtypingResult helpSubtypeOp_floatSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
+TypingResult helpSubtypeOp_floatSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind)
     {
         case T_FLOAT:
         {
             // A subtypes B <=> width(A) >= width(B)
             if (sub->as.Int.width >= super->as.Int.width) {
-                return SUBTYPING_CONFIRM;
+                return TYPING_CONFIRM;
             } else {
                 int subWidthInBits = GetFloatTypeWidthInBits(sub);
                 int superWidthInBits = GetFloatTypeWidthInBits(super);
                 setGenericSubtypingError(typer,"cannot promote subtype Float[%d] to supertype Float[%d]",subWidthInBits,superWidthInBits);
-                return SUBTYPING_FAILURE;
+                return TYPING_FAILURE;
             }
         }
         case T_META:
@@ -677,11 +701,11 @@ SubtypingResult helpSubtypeOp_floatSuper(Typer* typer, char const* why, Loc loc,
         default:
         {
             setMismatchedKindsSubtypingError(typer,super,sub);
-            return SUBTYPING_FAILURE;
+            return TYPING_FAILURE;
         }
     }
 }
-SubtypingResult helpSubtypeOp_ptrSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
+TypingResult helpSubtypeOp_ptrSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind)
     {
         case T_PTR:
@@ -699,11 +723,11 @@ SubtypingResult helpSubtypeOp_ptrSuper(Typer* typer, char const* why, Loc loc, T
         default:
         {
             setMismatchedKindsSubtypingError(typer,super,sub);
-            return SUBTYPING_FAILURE;
+            return TYPING_FAILURE;
         }
     }
 }
-SubtypingResult helpSubtypeOp_funcSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
+TypingResult helpSubtypeOp_funcSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind)
     {
         case T_FUNC:
@@ -716,36 +740,36 @@ SubtypingResult helpSubtypeOp_funcSuper(Typer* typer, char const* why, Loc loc, 
                     "function argument counts mismatched, got %d for supertype, %d for subtype",
                     superArgCount,subArgCount
                 );
-                return SUBTYPING_FAILURE;
+                return TYPING_FAILURE;
             }
 
             // check 2: is the image (return type) subtyping in error?
-            SubtypingResult imageResult = helpSubtypeOp(
+            TypingResult imageResult = helpSubtypeOp(
                 typer,
                 why,loc,
                 GetFuncTypeImage(super),GetFuncTypeImage(sub),
                 noDeferral
             );
-            if (imageResult == SUBTYPING_FAILURE) {
+            if (imageResult == TYPING_FAILURE) {
                 setGenericSubtypingError(typer,"function return type subtyping failed");
-                return SUBTYPING_FAILURE;
+                return TYPING_FAILURE;
             }
 
             // check 3: are any arg subtypings in error?
-            SubtypingResult mergedArgsResult = SUBTYPING_CONFIRM;
+            TypingResult mergedArgsResult = TYPING_CONFIRM;
             int argCount = superArgCount;
             for (int argIndex = 0; argIndex < argCount; argIndex++) {
                 Type* superArg = GetFuncTypeArgAt(super,argIndex);
                 Type* subArg = GetFuncTypeArgAt(sub,argIndex);
                 
-                SubtypingResult result = helpSubtypeOp(typer,why,loc,superArg,subArg,noDeferral);
-                if (result == SUBTYPING_FAILURE) {
+                TypingResult result = helpSubtypeOp(typer,why,loc,superArg,subArg,noDeferral);
+                if (result == TYPING_FAILURE) {
                     setGenericSubtypingError(typer,"function arg %d subtyping failed",argIndex);
                 }
                 mergedArgsResult = mergeSubtypingResults(mergedArgsResult,result);
             }
-            if (mergedArgsResult == SUBTYPING_FAILURE) {
-                return SUBTYPING_FAILURE;
+            if (mergedArgsResult == TYPING_FAILURE) {
+                return TYPING_FAILURE;
             }
 
             // all checks passed? return result so far, i.e. DEFERRED or CONFIRM:
@@ -762,16 +786,16 @@ SubtypingResult helpSubtypeOp_funcSuper(Typer* typer, char const* why, Loc loc, 
         default:
         {
             setMismatchedKindsSubtypingError(typer,super,sub);
-            return SUBTYPING_FAILURE;
+            return TYPING_FAILURE;
         }
     }
 }
-SubtypingResult helpSubtypeOp_tupleSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
+TypingResult helpSubtypeOp_tupleSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind) {
         case T_TUPLE:
         {
             if (super->as.Compound_atn == sub->as.Compound_atn) {
-                return SUBTYPING_CONFIRM;
+                return TYPING_CONFIRM;
             } else {
                 AdtTrieNode* superATN = super->as.Compound_atn;
                 AdtTrieNode* subATN = sub->as.Compound_atn;
@@ -779,11 +803,11 @@ SubtypingResult helpSubtypeOp_tupleSuper(Typer* typer, char const* why, Loc loc,
                 // check 1: are the tuples of the same length?
                 if (superATN->depth != subATN->depth) {
                     setGenericSubtypingError(typer,"supertype %d-tuple and subtype %d-tuple do not have the same field count.",superATN->depth,subATN->depth);
-                    return SUBTYPING_FAILURE;
+                    return TYPING_FAILURE;
                 }
 
                 // check 2: merge helpReadOrWriteSubtyping on each corresponding field type:
-                SubtypingResult mergedFieldResults = SUBTYPING_CONFIRM;
+                TypingResult mergedFieldResults = TYPING_CONFIRM;
                 while (superATN->parent && subATN->parent && superATN != subATN) {
                     AdtTrieEdge superEdge = superATN->parent->edgesSb[superATN->parentEdgeIndex];
                     AdtTrieEdge subEdge = subATN->parent->edgesSb[subATN->parentEdgeIndex];
@@ -809,16 +833,16 @@ SubtypingResult helpSubtypeOp_tupleSuper(Typer* typer, char const* why, Loc loc,
         default:
         {
             setMismatchedKindsSubtypingError(typer,super,sub);
-            return SUBTYPING_FAILURE;
+            return TYPING_FAILURE;
         }
     }
 }
-SubtypingResult helpSubtypeOp_unionSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
+TypingResult helpSubtypeOp_unionSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     switch (sub->kind) {
         case T_UNION:
         {
             if (super->as.Compound_atn == sub->as.Compound_atn) {
-                return SUBTYPING_CONFIRM;
+                return TYPING_CONFIRM;
             } else {
                 AdtTrieNode* superATN = super->as.Compound_atn;
                 AdtTrieNode* subATN = sub->as.Compound_atn;
@@ -829,10 +853,10 @@ SubtypingResult helpSubtypeOp_unionSuper(Typer* typer, char const* why, Loc loc,
                         "supertype %d-union and subtype %d-union do not have the same field count.",
                         superATN->depth,subATN->depth
                     );
-                    return SUBTYPING_FAILURE;
+                    return TYPING_FAILURE;
                 }
                 // check 2: merge helpReadOrWriteSubtyping on each corresponding field type:
-                SubtypingResult mergedFieldResults = SUBTYPING_CONFIRM;
+                TypingResult mergedFieldResults = TYPING_CONFIRM;
                 while (superATN->parent && subATN->parent && superATN != subATN) {
                     AdtTrieEdge superEdge = superATN->parent->edgesSb[superATN->parentEdgeIndex];
                     AdtTrieEdge subEdge = subATN->parent->edgesSb[subATN->parentEdgeIndex];
@@ -857,33 +881,33 @@ SubtypingResult helpSubtypeOp_unionSuper(Typer* typer, char const* why, Loc loc,
         default:
         {
             setMismatchedKindsSubtypingError(typer,super,sub);
-            return SUBTYPING_FAILURE;
+            return TYPING_FAILURE;
         }
     }
 }
-SubtypingResult helpSubtypeOp_castSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
+TypingResult helpSubtypeOp_castSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral) {
     // todo: check the cast at some point after solving metavars.
     return helpSubtypeOp(typer,why,loc,super->as.Cast.to,sub,noDeferral);
 }
-SubtypingResult helpSubtypeOp_metaSuper(Typer* typer, char const* why, Loc loc, Type* meta, Type* sub, int noDeferral) {
+TypingResult helpSubtypeOp_metaSuper(Typer* typer, char const* why, Loc loc, Type* meta, Type* sub, int noDeferral) {
     if (noDeferral) {
-        return SUBTYPING_FAILURE;
+        return TYPING_FAILURE;
     } else {
         SubtypeRec subtypingRec = {why,loc,sub};
         sb_push(meta->as.Meta.ext->deferredSubSB, subtypingRec);
-        return SUBTYPING_DEFERRED;
+        return TYPING_DEFERRED;
     }
 }
-SubtypingResult helpRequestSubtyping_genericMetaSub(Typer* typer, char const* why, Loc loc, Type* super, Type* meta, int noDeferral) {
+TypingResult helpRequestSubtyping_genericMetaSub(Typer* typer, char const* why, Loc loc, Type* super, Type* meta, int noDeferral) {
     if (noDeferral) {
-        return SUBTYPING_FAILURE;
+        return TYPING_FAILURE;
     } else {
         SupertypeRec supertypingRec = {why,loc,super};
         sb_push(meta->as.Meta.ext->deferredSuperSB, supertypingRec);
-        return SUBTYPING_DEFERRED;
+        return TYPING_DEFERRED;
     }
 }
-SubtypingResult mergeSubtypingResults(SubtypingResult fst, SubtypingResult snd) {
+TypingResult mergeSubtypingResults(TypingResult fst, TypingResult snd) {
     return (fst < snd ? fst : snd);
 }
 
@@ -920,14 +944,17 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
 
             int failed = 0;
             int argsCount = type->as.Func.domainCount;
-            Type** concreteArgsBuf = malloc(sizeof(Type) * argsCount);
-            for (int domainIndex = 0; domainIndex < argsCount; domainIndex++) {
-                Type* concreteArg = getConcreteSoln(typer,type->as.Func.domainArray[domainIndex],visitedMetavarSBP);
-                if (concreteArg == NULL) {
-                    failed = 1;
-                    break;
+            Type** concreteArgsBuf = NULL;
+            if (argsCount > 0) {
+                concreteArgsBuf = malloc(sizeof(Type) * argsCount);
+                for (int domainIndex = 0; domainIndex < argsCount; domainIndex++) {
+                    Type* concreteArg = getConcreteSoln(typer,type->as.Func.domainArray[domainIndex],visitedMetavarSBP);
+                    if (concreteArg == NULL) {
+                        failed = 1;
+                        break;
+                    }
+                    concreteArgsBuf[domainIndex] = concreteArg;
                 }
-                concreteArgsBuf[domainIndex] = concreteArg;
             }
             if (!failed) {
                 concreteResult = NewOrGetFuncType(typer,argsCount,concreteArgsBuf,concreteImage);
@@ -1005,12 +1032,12 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
                             if (hypothesis == NULL) {
                                 hypothesis = concreteSupertype;
                             } else {
-                                SubtypingResult comparison = checkSubtyping(
+                                TypingResult comparison = checkSubtyping(
                                     typer,"get-hypothesis",metavar->as.Meta.ext->createdLoc,
                                     concreteSupertype,hypothesis
                                 );
-                                COMPILER_ASSERT(comparison != SUBTYPING_DEFERRED, "expected 'getConcreteSoln' to return concrete types; no deferral allowed.");
-                                if (comparison == SUBTYPING_CONFIRM) {
+                                COMPILER_ASSERT(comparison != TYPING_DEFERRED, "expected 'getConcreteSoln' to return concrete types; no deferral allowed.");
+                                if (comparison == TYPING_CONFIRM) {
                                     // new concreteSupertype is a supertype of the existing hypothesis. Updating...
                                     hypothesis = concreteSupertype;
                                 }
@@ -1029,12 +1056,12 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
                             if (test == NULL) {
                                 test = concreteSubtype;
                             } else {
-                                SubtypingResult comparison = requireSubtyping(
+                                TypingResult comparison = requireSubtyping(
                                     typer,"get-test",metavar->as.Meta.ext->createdLoc,
                                     test,concreteSubtype
                                 );
-                                COMPILER_ASSERT(comparison != SUBTYPING_DEFERRED, "expected 'getConcreteSoln' to return concrete types; no deferral allowed.");
-                                if (comparison == SUBTYPING_CONFIRM) {
+                                COMPILER_ASSERT(comparison != TYPING_DEFERRED, "expected 'getConcreteSoln' to return concrete types; no deferral allowed.");
+                                if (comparison == TYPING_CONFIRM) {
                                     // new concreteSubtype is a subtype of the existing test. Updating...
                                     test = concreteSubtype;
                                 }
@@ -1043,6 +1070,7 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
                     }
                 }
                 
+                // solving from hypothesis and test types:
                 if (hypothesis == NULL && test == NULL) {
                     // metavar solution failed, incomplete information.
                     metavar->as.Meta.soln = NULL;
@@ -1054,37 +1082,59 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
                     metavar->as.Meta.soln = hypothesis;
                 } else {
                     // subtype and supertype info => compare and return if OK.
-                    SubtypingResult result = requireSubtyping(typer,"new-soln-update",metavar->as.Meta.ext->createdLoc,hypothesis,test);
-                    COMPILER_ASSERT(result != SUBTYPING_DEFERRED, "expected 'requireSubtyping' to operate on purely concrete args; no deferral allowed.");
-                    if (result == SUBTYPING_CONFIRM) {
+                    TypingResult result = requireSubtyping(typer,"new-soln-update",metavar->as.Meta.ext->createdLoc,hypothesis,test);
+                    COMPILER_ASSERT(result != TYPING_DEFERRED, "expected 'requireSubtyping' to operate on purely concrete args; no deferral allowed.");
+                    if (result == TYPING_CONFIRM) {
                         // hypothesis works!
                         metavar->as.Meta.soln = hypothesis;
                     } else {
-                        // bad constraints, no solution exists. poison and return NULL
+                        // conflicting constraints, no solution exists. poison and return NULL
                         metavar->as.Meta.poisoned = 1;
                         metavar->as.Meta.soln = NULL;
                     }
                 }
 
+                // checking numericOnly constraint:
+                if (metavar->as.Meta.soln && metavar->as.Meta.ext->numericOnly) {
+                    Type* soln = metavar->as.Meta.soln;
+                    int isNumeric = (
+                        (soln->kind == T_INT) ||
+                        (soln->kind == T_FLOAT)
+                    );
+                    if (!isNumeric) {
+                        // not numeric.
+                        FeedbackNote* note = CreateFeedbackNote("for type here...", metavar->as.Meta.ext->createdLoc, NULL);
+                        PostFeedback(
+                            FBK_ERROR,note,
+                            "Expected a numeric (int,float) type, instead received type of kind %s", TypeKindAsText(soln->kind)
+                        );
+                        metavar->as.Meta.soln = NULL;
+                        metavar->as.Meta.poisoned = 1;
+                    }
+                }
+
+                // if solved, propagating soln to related types:
                 if (metavar->as.Meta.soln) {
                     // since we have found a solution, we can propagate this info to all super and subtypes.
                     // this should be requested by super and subtypes later, but this may be required since we get only concrete types earlier.
                     int subtypeCount = sb_count(metavar->as.Meta.ext->deferredSubSB);
-                    SubtypingResult result = SUBTYPING_CONFIRM;
+                    TypingResult result = TYPING_CONFIRM;
                     for (int subtypeIndex = 0; subtypeIndex < subtypeCount; subtypeIndex++) {
                         SubtypeRec subtypeRec = metavar->as.Meta.ext->deferredSubSB[subtypeIndex];
                         
-                        SubtypingResult subtypeResult = requireSubtyping(typer,subtypeRec.why,subtypeRec.loc,metavar->as.Meta.soln,subtypeRec.ptr);
+                        TypingResult subtypeResult = requireSubtyping(typer,subtypeRec.why,subtypeRec.loc,metavar->as.Meta.soln,subtypeRec.ptr);
                         result = mergeSubtypingResults(result,subtypeResult);
                     }
-                    if (result == SUBTYPING_FAILURE) {
-                        COMPILER_ERROR("Invalid metavar solution; returned SUBTYPING_FAILURE when applied to subtypes.");
+                    if (result == TYPING_FAILURE) {
+                        COMPILER_ERROR("Invalid metavar solution; returned TYPING_FAILURE when applied to subtypes.");
                         return NULL;
                     }
 
                     // updating the 'solution found' flag:
                     metavar->as.Meta.ext->solnUpdatedThisPass = 1;
                 }
+
+                // returning soln:
                 return metavar->as.Meta.soln;
             }
         }
@@ -1108,13 +1158,13 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
                         cast->as.Cast.checkStatus = 1;
                     } else {
                         // ensuring subtyping
-                        SubtypingResult subtypingResult = requireSubtyping(typer,"vcast",NullLoc(),concreteTo,concreteFrom);
-                        if (subtypingResult == SUBTYPING_CONFIRM) {
+                        TypingResult subtypingResult = requireSubtyping(typer,"vcast",NullLoc(),concreteTo,concreteFrom);
+                        if (subtypingResult == TYPING_CONFIRM) {
                             cast->as.Cast.checkStatus = 1;
-                        } else if (subtypingResult == SUBTYPING_FAILURE) {
+                        } else if (subtypingResult == TYPING_FAILURE) {
                             cast->as.Cast.checkStatus = -1;
                         } else {
-                            COMPILER_ASSERT(subtypingResult == SUBTYPING_DEFERRED,"Unexpected subtypingResult == SUBTYPING_DEFERRED when operating on concrete types.");
+                            COMPILER_ASSERT(subtypingResult == TYPING_DEFERRED,"Unexpected subtypingResult == TYPING_DEFERRED when operating on concrete types.");
                         }
                     }
                 }
@@ -1217,15 +1267,17 @@ int typer_post(void* rawTyper, AstNode* node) {
         {
             size_t value = GetAstIntLiteralValue(node);
             Type* type;
-            if (value < (1ULL << 8)) {
-                type = GetIntType(typer,INT_8,1);
-            } else if (value < (1ULL << 16)) {
-                type = GetIntType(typer,INT_16,1);
-            } else if (value < (1ULL << 32)) {
-                type = GetIntType(typer,INT_32,1);
-            } else {
-                type = GetIntType(typer,INT_64,1);
-            }
+            // just default to S32
+            type = GetIntType(typer,INT_32,1);
+            // if (value < (1ULL << 8)) {
+            //     type = GetIntType(typer,INT_8,1);
+            // } else if (value < (1ULL << 16)) {
+            //     type = GetIntType(typer,INT_16,1);
+            // } else if (value < (1ULL << 32)) {
+            //     type = GetIntType(typer,INT_32,1);
+            // } else {
+            //     type = GetIntType(typer,INT_64,1);
+            // }
             SetAstNodeTypingExt_Value(node,type);
             break;
         }
@@ -1254,8 +1306,10 @@ int typer_post(void* rawTyper, AstNode* node) {
             Type* foundType = GetDefnType(foundDefn);
             SetAstIdDefn(node,foundDefn);
             if (lookupContext == ASTCTX_TYPING) {
+                COMPILER_ASSERT(nodeKind == AST_TID, "Cannot lookup non-TID in ASTCTX_TYPING context.");
                 SetAstNodeTypingExt_Type(node,foundType);
             } else if (lookupContext == ASTCTX_VALUE) {
+                COMPILER_ASSERT(nodeKind == AST_VID, "Cannot lookup non-VID in ASTCTX_VALUE context.");
                 SetAstNodeTypingExt_Value(node,foundType);
             } else {
                 if (DEBUG) {
@@ -1294,13 +1348,14 @@ int typer_post(void* rawTyper, AstNode* node) {
                         lhsType = GetUnitType(typer);
                     } else {
                         // tuple pattern
-                        Type** typefieldsSb = NULL;
+                        TypeField* typefieldsSb = NULL;
                         for (int index = 0; index < patternCount; index++) {
                             AstNode* field = GetAstPatternFieldAt(node,index);
                             TypeField typefield = {
                                 GetAstFieldName(field), 
                                 GetAstNodeTypingExt_Value(GetAstFieldRhs(field))
                             };
+                            sb_push(typefieldsSb,typefield);
                         }
                         lhsType = NewOrGetTupleType(typer,typefieldsSb,sb_count(typefieldsSb));
                         sb_free(typefieldsSb);
@@ -1391,19 +1446,20 @@ int typer_post(void* rawTyper, AstNode* node) {
             // getting the RHS:
             AstNode* rhs = GetAstFieldRhs(node);
             
-            // getting the RHS type:
+            // getting the field type as set in the primer, and the rhs typespec:
             Type* fieldType = NULL;
-            if (typingContext) {
-                fieldType = GetAstNodeTypingExt_Type(node);
-            } else if (valueContext) {
-                fieldType = GetAstNodeTypingExt_Value(node);
-            }
-
-            // subtyping fieldType from RHS:
+            Type* rhsTypingType = NULL;
             if (rhs) {
+                if (typingContext) {
+                    fieldType = GetAstNodeTypingExt_Type(node);
+                    rhsTypingType = GetAstNodeTypingExt_Type(rhs);
+                } else if (valueContext) {
+                    fieldType = GetAstNodeTypingExt_Value(node);
+                    rhsTypingType = GetAstNodeTypingExt_Value(rhs);
+                }
+
                 COMPILER_ASSERT(fieldType, "Non-null RHS but null field type in Typer.");
                 Loc loc = GetAstNodeLoc(node);
-                Type* rhsTypingType = GetAstNodeTypingExt_Type(rhs);
                 if (rhsTypingType) {
                     requireSubtyping(typer,"pattern-field-rhs",loc, rhsTypingType,fieldType);
                 } else {
@@ -1469,7 +1525,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstUnaryOperator operator = GetAstUnaryOperator(node);
             AstNode* arg = GetAstUnaryOperand(node);
             Type* argType = GetAstNodeTypingExt_Value(arg);
-            Type* type = GetUnaryIntrinsicType(typer,nodeLoc,operator,argType);
+            Type* type = NewOrGetUnaryIntrinsicType(typer,nodeLoc,operator,argType);
             SetAstNodeTypingExt_Value(node,type);
             break;
         }
@@ -1480,22 +1536,21 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* rtArg = GetAstBinaryRtOperand(node);
             Type* ltArgType = GetAstNodeTypingExt_Value(ltArg);
             Type* rtArgType = GetAstNodeTypingExt_Value(rtArg);
-            Type* type = GetBinaryIntrinsicType(typer,nodeLoc,binop,ltArgType,rtArgType);
+            Type* type = NewOrGetBinaryIntrinsicType(typer,nodeLoc,binop,ltArgType,rtArgType);
             SetAstNodeTypingExt_Value(node,type);
             break;
         }
         case AST_ITE:
         {
-            COMPILER_ERROR("DISABLED: GetPhiType in typer for AST_ITE.");
-
+            // COMPILER_ERROR("DISABLED: GetPhiType in typer for AST_ITE.");
             AstNode* cond = GetAstIteCond(node);
             AstNode* ifTrue = GetAstIteIfTrue(node);
             AstNode* ifFalse = GetAstIteIfFalse(node);
             Type* condType = GetAstNodeTypingExt_Value(cond);
             Type* ifTrueType = GetAstNodeTypingExt_Value(ifTrue);
             Type* ifFalseType = ifFalse ? GetAstNodeTypingExt_Value(ifFalse) : GetUnitType(typer);
-            // Type* type = GetPhiType(typer,nodeLoc,condType,ifTrueType,ifFalseType);
-            Type* type = NULL;
+            Type* type = GetPhiType(typer,nodeLoc,condType,ifTrueType,ifFalseType);
+            // Type* type = NULL;
             SetAstNodeTypingExt_Value(node,type);
             break;
         }
@@ -1556,18 +1611,33 @@ int typer_post(void* rawTyper, AstNode* node) {
             }
             break;
         }
-        case AST_EXTERN:
+        case AST_STMT_EXTERN:
         {
             Loc loc = GetAstNodeLoc(node);
 
-            AstNode* typespec = GetAstExternTypespec(node);
-            Type* typespecType = GetAstNodeTypingExt_Type(typespec);
+            AstNode* lhsPattern = GetAstExternPattern(node);
+            int patternCount = GetAstPatternLength(lhsPattern);
+            Type** argTypeBuf = NULL;
+            if (patternCount > 0) {
+                argTypeBuf = malloc(sizeof(Type*) * patternCount);
+                for (int index = 0; index < patternCount; index++) {
+                    AstNode* argNode = GetAstPatternFieldAt(lhsPattern,index);
+                    COMPILER_ASSERT(GetAstNodeKind(argNode) == AST_VPATTERN_FIELD, "Invalid pattern field kind.");
+                    Type* argType = GetAstNodeTypingExt_Value(argNode);
+                    COMPILER_ASSERT(argType, "NULL argtype for extern arg field.");
+                    argTypeBuf[index] = argType;
+                }
+            }
+
+            AstNode* rhsTypespec = GetAstExternTypespec(node);
+            Type* rhsTypespecType = GetAstNodeTypingExt_Value(rhsTypespec);
             
             Type* defType = GetAstNodeTypingExt_Value(node);
 
-            if (defType && typespecType) {
-                // filling typespecType as a solution (supertype) for defType
-                requireSubtyping(typer,"extern",loc,typespecType,defType);
+            if (defType && rhsTypespecType) {
+                // filling func as a solution (supertype) for defType
+                Type* solnType = NewOrGetFuncType(typer,patternCount,argTypeBuf,rhsTypespecType);
+                TypingResult result = requireSubtyping(typer,"extern",loc,solnType,defType);
             }
 
             break;
@@ -1597,6 +1667,24 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* expr = GetAstVal2TypeExpr(val2type);
             Type* type = GetAstNodeTypingExt_Value(expr);
             SetAstNodeTypingExt_Type(val2type,type);
+            break;
+        }
+        case AST_VPTR:
+        {
+            AstNode* pointerNode = node;
+            AstNode* pointeeNode = GetAstVPtrPointee(pointerNode);
+            Type* pointeeType = GetAstNodeTypingExt_Value(pointeeNode);
+            Type* pointerType = NewOrGetPtrType(typer,pointeeType);
+            SetAstNodeTypingExt_Value(pointerNode,pointerType);
+            break;
+        }
+        case AST_TPTR:
+        {
+            AstNode* pointerNode = node;
+            AstNode* pointeeNode = GetAstTPtrPointee(pointerNode);
+            Type* pointeeType = GetAstNodeTypingExt_Type(pointeeNode);
+            Type* pointerType = NewOrGetPtrType(typer,pointeeType);
+            SetAstNodeTypingExt_Type(pointerNode,pointerType);
             break;
         }
         default:
@@ -1707,7 +1795,8 @@ void printType(Typer* typer, Type* type) {
             int printSupAndSubTypeCount = 1;
             if (printSupAndSubTypeCount) {
                 printf(
-                    "meta%s %s (%d supers, %d subs)",
+                    "%smeta%s %s (%d supers, %d subs)",
+                    (type->as.Meta.poisoned ? "poisoned-" : ""),
                     (type->as.Meta.ext->solnUpdatedThisPass ? "*" : ""),
                     type->as.Meta.name, sb_count(type->as.Meta.ext->deferredSuperSB), sb_count(type->as.Meta.ext->deferredSubSB)
                 );
@@ -1813,6 +1902,8 @@ Type* GetFloatType(Typer* typer, FloatWidth width) {
     return &typer->floatType[width];
 }
 Type* NewOrGetPtrType(Typer* typer, Type* pointee) {
+    // todo: disable pointers to T_FUNC.
+
     // searching for an existing, structurally equivalent type:
     for (size_t index = 0; index < typer->ptrTypeBuf.count; index++) {
         Type* cmpType = &typer->ptrTypeBuf.ptr[index];
@@ -1826,6 +1917,12 @@ Type* NewOrGetPtrType(Typer* typer, Type* pointee) {
     return ptrType;
 }
 Type* NewOrGetFuncType(Typer* typer, int argsCount, Type* args[], Type* image) {
+    // normalizing NULL args for 0-args: 
+    if (argsCount == 0) {
+        args = NULL;
+        // printf("!!- INFO: Func with NULL args created.\n");
+    }
+    
     // searching for an existing, structurally equivalent type:
     for (size_t index = 0; index < typer->funcTypeBuf.count; index++) {
         FuncInfo existingFuncInfo = typer->funcTypeBuf.ptr[index].as.Func;
@@ -1849,8 +1946,12 @@ Type* NewOrGetFuncType(Typer* typer, int argsCount, Type* args[], Type* image) {
     // match not found, so allocating a new type:
     Type* funcType = pushToTypeBuf(&typer->funcTypeBuf,T_FUNC);
     funcType->as.Func.domainCount = argsCount;
-    funcType->as.Func.domainArray = malloc(argsCount*sizeof(Type*));
-    memcpy(funcType->as.Func.domainArray, args, argsCount*sizeof(Type*));
+    if (funcType->as.Func.domainCount > 0) {
+        funcType->as.Func.domainArray = malloc(argsCount*sizeof(Type*));
+        memcpy(funcType->as.Func.domainArray, args, argsCount*sizeof(Type*));
+    } else {
+        funcType->as.Func.domainArray = NULL;
+    }
     funcType->as.Func.image = image;
     return funcType;
 }
@@ -1873,7 +1974,7 @@ Type* NewOrGetUnionType(Typer* typer, TypeField* typefields, int typefieldCount)
     unionType->as.Compound_atn->owner = unionType;
     return unionType;
 }
-Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* arg) {
+Type* NewOrGetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* arg) {
     switch (op)
     {
         case UOP_GETREF:
@@ -1882,6 +1983,7 @@ Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* ar
         }
         case UOP_DEREF:
         {
+            // deref can be obtained through pattern-matching with a pointer
             Type* pointee = NewMetavarType(loc,typer, "deref-pointee");
             Type* derefedType = NewOrGetPtrType(typer,pointee);
             if (requireSubtyping(typer,"unary '*' (deref) operator",loc,arg,derefedType)) {
@@ -1893,19 +1995,22 @@ Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* ar
         case UOP_PLUS:
         case UOP_MINUS:
         {
-            // todo: check if signed int **or float**, else defer
-            // for now, just assuming signed int
-            if (requireSubtyping(typer,"unary +/- operator",loc,arg,GetIntType(typer,INT_8,1))) {
-                return arg;
-            } else {
-                PostFeedback(FBK_ERROR, NULL, "Unary operator '+' invalid with non-int type.");
-                return NULL;
-            }
+            // T -> T, where T in {signed-int,float}
+            Type* t = NewMetavarType(loc,typer, "unary-intrinsic-t");
+            char const* why = (op == UOP_PLUS ? "unary-plus" : "unary-minus");
+            requireSubtyping(typer,why,loc,arg,t);
+            requireMetavarIsNumericOnly(t);
+            // todo: add constraint requiring metavar be signed only.
+            return t;
         }
         case UOP_NOT:
         {
-            if (requireSubtyping(typer,"unary 'not' operator",loc,arg,GetIntType(typer,INT_1,0))) {
-                return arg;
+            // always bool -> bool
+            // recall s32 sub s64 (since we convert s32 to s64)
+            // so t sub u1 <=> t = bool
+            Type* boolType = GetIntType(typer,INT_1,0);
+            if (requireSubtyping(typer,"unary 'not' operator",loc,boolType,arg)) {
+                return boolType;
             } else {
                 PostFeedback(FBK_ERROR, NULL, "Unary operator 'not' invalid with non-boolean type.");
                 return NULL;
@@ -1913,12 +2018,12 @@ Type* GetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* ar
         }
         default:
         {
-            COMPILER_ERROR_VA("NotImplemented: GetUnaryIntrinsicType for AstUnaryOperator %s.", AstUnaryOperatorAsText(op));
+            COMPILER_ERROR_VA("NotImplemented: NewOrGetUnaryIntrinsicType for AstUnaryOperator %s.", AstUnaryOperatorAsText(op));
             return NULL;
         }
     }
 }
-Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* ltArg, Type* rtArg) {
+Type* NewOrGetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* ltArg, Type* rtArg) {
     switch (op)
     {
         case BOP_LTHAN:
@@ -1928,11 +2033,14 @@ Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* 
         case BOP_EQUALS:
         case BOP_NEQUALS:
         {
-            // expect args to be of the same type:
+            // (t,t) -> bool such that t is numeric
+            // expect args to be of the same type.
             Type* boolType = GetIntType(typer,INT_1,0);
-            SubtypingResult lhsResult = requireSubtyping(typer,"binary-cmp-lhs",loc,ltArg,rtArg);
-            SubtypingResult rhsResult = requireSubtyping(typer,"binary-cmp-rhs",loc,rtArg,ltArg);
-            if ((lhsResult != SUBTYPING_FAILURE) && (rhsResult != SUBTYPING_FAILURE)) {
+            Type* t = NewMetavarType(loc,typer,"binary-cmpeq-intrinsic-t");
+            requireMetavarIsNumericOnly(t);
+            TypingResult lhsResult = requireSubtyping(typer,"binary-cmp-lhs",loc,t,ltArg);
+            TypingResult rhsResult = requireSubtyping(typer,"binary-cmp-rhs",loc,t,rtArg);
+            if ((lhsResult != TYPING_FAILURE) && (rhsResult != TYPING_FAILURE)) {
                 return boolType;
             } else {
                 return NULL;
@@ -1944,9 +2052,9 @@ Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* 
         {
             // expect args to both be bool:
             Type* boolType = GetIntType(typer,INT_1,0);
-            SubtypingResult lhsResult = requireSubtyping(typer,"binary-bool-lhs",loc,boolType,ltArg);
-            SubtypingResult rhsResult = requireSubtyping(typer,"binary-bool-rhs",loc,boolType,rtArg);
-            if ((lhsResult != SUBTYPING_FAILURE) && (rhsResult != SUBTYPING_FAILURE)) {
+            TypingResult lhsResult = requireSubtyping(typer,"binary-bool-lhs",loc,boolType,ltArg);
+            TypingResult rhsResult = requireSubtyping(typer,"binary-bool-rhs",loc,boolType,rtArg);
+            if ((lhsResult != TYPING_FAILURE) && (rhsResult != TYPING_FAILURE)) {
                 return boolType;
             } else {
                 return NULL;
@@ -1958,31 +2066,31 @@ Type* GetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* 
         case BOP_ADD:
         case BOP_SUBTRACT:
         {
-            // todo: implement arithmetic operations for floats as well as ints
-            // for now, expect args and result to be signed ints.
-            Type* intType = GetIntType(typer,INT_64,1);
-            SubtypingResult lhsResult = requireSubtyping(typer,"binary-arithmetic-lhs",loc,intType,ltArg);
-            SubtypingResult rhsResult = requireSubtyping(typer,"binary-arithmetic-rhs",loc,intType,rtArg);
-            if ((lhsResult != SUBTYPING_FAILURE) && (rhsResult != SUBTYPING_FAILURE)) {
-                return intType;
+            // (t,t) -> t where t is numeric
+            Type* t = NewMetavarType(loc,typer,"binary-addmul-intrinsic-t");
+            requireMetavarIsNumericOnly(t);
+            TypingResult lhsResult = requireSubtyping(typer,"binary-arithmetic-lhs",loc,t,ltArg);
+            TypingResult rhsResult = requireSubtyping(typer,"binary-arithmetic-rhs",loc,t,rtArg);
+            if ((lhsResult != TYPING_FAILURE) && (rhsResult != TYPING_FAILURE)) {
+                return t;
             } else {
                 return NULL;
             }
         }
         default:
         {
-            COMPILER_ERROR_VA("NotImplemented: GetBinaryIntrinsicType for AstBinaryOperator %s.", AstBinaryOperatorAsText(op));
+            COMPILER_ERROR_VA("NotImplemented: NewOrGetBinaryIntrinsicType for AstBinaryOperator %s.", AstBinaryOperatorAsText(op));
             return NULL;
         }
     }
 }
 Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse) {
     Type* boolType = GetIntType(typer,INT_1,0);
-    if (requireSubtyping(typer,"if-bool",loc,boolType,cond) != SUBTYPING_FAILURE) {
+    if (requireSubtyping(typer,"if-bool",loc,boolType,cond) != TYPING_FAILURE) {
         Type* outType = NewMetavarType(loc,typer,"ite-result");
-        SubtypingResult thenResult = requireSubtyping(typer,"if-then-equality",loc,ifTrue,outType);
-        SubtypingResult elseResult = requireSubtyping(typer,"if-else-equality",loc,ifFalse,outType);
-        if ((thenResult != SUBTYPING_FAILURE) && (elseResult != SUBTYPING_FAILURE)) {
+        TypingResult thenResult = requireSubtyping(typer,"if-then-equality",loc,ifTrue,outType);
+        TypingResult elseResult = requireSubtyping(typer,"if-else-equality",loc,ifFalse,outType);
+        if ((thenResult != TYPING_FAILURE) && (elseResult != TYPING_FAILURE)) {
             return outType;
         }
     }
@@ -2016,305 +2124,15 @@ Type* NewMetavarType(Loc loc, Typer* typer, char const* format, ...) {
         va_end(args);
         metatype->as.Meta.name = strdup(nameBuffer);
     }
+    metatype->as.Meta.poisoned = 0;
 
     metatype->as.Meta.ext = &typer->metatypeExtBuf[metatypeIndexInBuf];
     metatype->as.Meta.ext->createdLoc = loc;
     metatype->as.Meta.ext->deferredSuperSB = NULL;
     metatype->as.Meta.ext->deferredSubSB = NULL;
     metatype->as.Meta.ext->solnUpdatedThisPass = 0;
-    metatype->as.Meta.poisoned = 0;
+    metatype->as.Meta.ext->numericOnly = 0;
     return metatype;
-}
-
-Type* GetAstBuiltinVDefType(Typer* typer, AstBuiltinVDefKind builtinVDefKind) {
-    Type* signed128 = GetIntType(typer,INT_128,1);
-    Type* signed64 = GetIntType(typer,INT_64,1);
-    Type* signed32 = GetIntType(typer,INT_32,1);
-    Type* signed16 = GetIntType(typer,INT_16,1);
-    Type* signed8 = GetIntType(typer,INT_8,1);
-    
-    Type* unsigned128 = GetIntType(typer,INT_128,0);
-    Type* unsigned64 = GetIntType(typer,INT_64,0);
-    Type* unsigned32 = GetIntType(typer,INT_32,0);
-    Type* unsigned16 = GetIntType(typer,INT_16,0);
-    Type* unsigned8 = GetIntType(typer,INT_8,0);
-    Type* unsigned1 = GetIntType(typer,INT_1,0);
-
-    Type* float64 = GetFloatType(typer,FLOAT_64);
-    Type* float32 = GetFloatType(typer,FLOAT_32);
-
-    Type* boolean = GetIntType(typer,INT_1,0);
-
-    switch (builtinVDefKind)
-    {
-        // for f64:
-        case AST_BUILTIN_MUL_F64:
-        case AST_BUILTIN_DIV_F64:
-        case AST_BUILTIN_ADD_F64:
-        case AST_BUILTIN_SUBTRACT_F64:
-        {
-            Type* args[] = {float64,float64};
-            return NewOrGetFuncType(typer,2,args,float64);
-        }
-        case AST_BUILTIN_LTHAN_F64:
-        case AST_BUILTIN_LETHAN_F64:
-        case AST_BUILTIN_GTHAN_F64:
-        case AST_BUILTIN_GETHAN_F64:
-        case AST_BUILTIN_EQUALS_F64:
-        case AST_BUILTIN_NOTEQUALS_F64:
-        {
-            Type* args[] = {float64,float64};
-            return NewOrGetFuncType(typer,2,args,boolean);
-        }
-
-        // for f32:
-        case AST_BUILTIN_MUL_F32:
-        case AST_BUILTIN_DIV_F32:
-        case AST_BUILTIN_ADD_F32:
-        case AST_BUILTIN_SUBTRACT_F32:
-        {
-            Type* args[] = {float32,float32};
-            return NewOrGetFuncType(typer,2,args,float32);
-        }
-        case AST_BUILTIN_LTHAN_F32:
-        case AST_BUILTIN_LETHAN_F32:
-        case AST_BUILTIN_GTHAN_F32:
-        case AST_BUILTIN_GETHAN_F32:
-        case AST_BUILTIN_EQUALS_F32:
-        case AST_BUILTIN_NOTEQUALS_F32:
-        {
-            Type* args[] = {float32,float32};
-            return NewOrGetFuncType(typer,2,args,boolean);
-        }
-
-        // for s128:
-        case AST_BUILTIN_MUL_S128:
-        case AST_BUILTIN_QUO_S128:
-        case AST_BUILTIN_REM_S128:
-        case AST_BUILTIN_ADD_S128:
-        case AST_BUILTIN_SUBTRACT_S128:
-        {
-            Type* args[] = {signed128,signed128};
-            return NewOrGetFuncType(typer,2,args,signed128);
-        }
-        case AST_BUILTIN_LTHAN_S128:
-        case AST_BUILTIN_LETHAN_S128:
-        case AST_BUILTIN_GTHAN_S128:
-        case AST_BUILTIN_GETHAN_S128:
-        case AST_BUILTIN_EQUALS_S128:
-        case AST_BUILTIN_NOTEQUALS_S128:
-        {
-            Type* args[] = {signed128,signed128};
-            return NewOrGetFuncType(typer,2,args,boolean);
-        }
-        // for s64:
-        case AST_BUILTIN_MUL_S64:
-        case AST_BUILTIN_QUO_S64:
-        case AST_BUILTIN_REM_S64:
-        case AST_BUILTIN_ADD_S64:
-        case AST_BUILTIN_SUBTRACT_S64:
-        {
-            Type* args[] = {signed64,signed64};
-            return NewOrGetFuncType(typer,2,args,signed64);
-        }
-        case AST_BUILTIN_LTHAN_S64:
-        case AST_BUILTIN_LETHAN_S64:
-        case AST_BUILTIN_GTHAN_S64:
-        case AST_BUILTIN_GETHAN_S64:
-        case AST_BUILTIN_EQUALS_S64:
-        case AST_BUILTIN_NOTEQUALS_S64:
-        {
-            Type* args[] = {signed64,signed64};
-            return NewOrGetFuncType(typer,2,args,boolean);
-        }
-        // for s32:
-        case AST_BUILTIN_MUL_S32:
-        case AST_BUILTIN_QUO_S32:
-        case AST_BUILTIN_REM_S32:
-        case AST_BUILTIN_ADD_S32:
-        case AST_BUILTIN_SUBTRACT_S32:
-        {
-            Type* args[] = {signed32,signed32};
-            return NewOrGetFuncType(typer,2,args,signed32);
-        }
-        case AST_BUILTIN_LTHAN_S32:
-        case AST_BUILTIN_LETHAN_S32:
-        case AST_BUILTIN_GTHAN_S32:
-        case AST_BUILTIN_GETHAN_S32:
-        case AST_BUILTIN_EQUALS_S32:
-        case AST_BUILTIN_NOTEQUALS_S32:
-        {
-            Type* args[] = {signed32,signed32};
-            return NewOrGetFuncType(typer,2,args,boolean);
-        }
-        // for s16:
-        case AST_BUILTIN_MUL_S16:
-        case AST_BUILTIN_QUO_S16:
-        case AST_BUILTIN_REM_S16:
-        case AST_BUILTIN_ADD_S16:
-        case AST_BUILTIN_SUBTRACT_S16:
-        {
-            Type* args[] = {signed16,signed16};
-            return NewOrGetFuncType(typer,2,args,signed16);
-        }
-        case AST_BUILTIN_LTHAN_S16:
-        case AST_BUILTIN_LETHAN_S16:
-        case AST_BUILTIN_GTHAN_S16:
-        case AST_BUILTIN_GETHAN_S16:
-        case AST_BUILTIN_EQUALS_S16:
-        case AST_BUILTIN_NOTEQUALS_S16:
-        {
-            Type* args[] = {signed16,signed16};
-            return NewOrGetFuncType(typer,2,args,boolean);
-        }
-        // for s8:
-        case AST_BUILTIN_MUL_S8:
-        case AST_BUILTIN_QUO_S8:
-        case AST_BUILTIN_REM_S8:
-        case AST_BUILTIN_ADD_S8:
-        case AST_BUILTIN_SUBTRACT_S8:
-        {
-            Type* args[] = {signed8,signed8};
-            return NewOrGetFuncType(typer,2,args,signed8);
-        }
-        case AST_BUILTIN_LTHAN_S8:
-        case AST_BUILTIN_LETHAN_S8:
-        case AST_BUILTIN_GTHAN_S8:
-        case AST_BUILTIN_GETHAN_S8:
-        case AST_BUILTIN_EQUALS_S8:
-        case AST_BUILTIN_NOTEQUALS_S8:
-        {
-            Type* args[] = {signed8,signed8};
-            return NewOrGetFuncType(typer,2,args,boolean);
-        }
-
-        // for u128:
-        case AST_BUILTIN_MUL_U128:
-        case AST_BUILTIN_QUO_U128:
-        case AST_BUILTIN_REM_U128:
-        case AST_BUILTIN_ADD_U128:
-        case AST_BUILTIN_SUBTRACT_U128:
-        {
-            Type* args[] = {unsigned128,unsigned128};
-            return NewOrGetFuncType(typer,2,args,unsigned128);
-        }
-        case AST_BUILTIN_LTHAN_U128:
-        case AST_BUILTIN_LETHAN_U128:
-        case AST_BUILTIN_GTHAN_U128:
-        case AST_BUILTIN_GETHAN_U128:
-        case AST_BUILTIN_EQUALS_U128:
-        case AST_BUILTIN_NOTEQUALS_U128:
-        {
-            Type* args[] = {unsigned128,unsigned128};
-            return NewOrGetFuncType(typer,2,args,boolean);
-        }
-        // for u64:
-        case AST_BUILTIN_MUL_U64:
-        case AST_BUILTIN_QUO_U64:
-        case AST_BUILTIN_REM_U64:
-        case AST_BUILTIN_ADD_U64:
-        case AST_BUILTIN_SUBTRACT_U64:
-        {
-            Type* args[] = {unsigned64,unsigned64};
-            return NewOrGetFuncType(typer,2,args,unsigned64);
-        }
-        case AST_BUILTIN_LTHAN_U64:
-        case AST_BUILTIN_LETHAN_U64:
-        case AST_BUILTIN_GTHAN_U64:
-        case AST_BUILTIN_GETHAN_U64:
-        case AST_BUILTIN_EQUALS_U64:
-        case AST_BUILTIN_NOTEQUALS_U64:
-        {
-            Type* args[] = {unsigned64,unsigned64};
-            return NewOrGetFuncType(typer,2,args,boolean);
-        }
-        // for u32:
-        case AST_BUILTIN_MUL_U32:
-        case AST_BUILTIN_QUO_U32:
-        case AST_BUILTIN_REM_U32:
-        case AST_BUILTIN_ADD_U32:
-        case AST_BUILTIN_SUBTRACT_U32:
-        {
-            Type* args[] = {unsigned32,unsigned32};
-            return NewOrGetFuncType(typer,2,args,unsigned32);
-        }
-        case AST_BUILTIN_LTHAN_U32:
-        case AST_BUILTIN_LETHAN_U32:
-        case AST_BUILTIN_GTHAN_U32:
-        case AST_BUILTIN_GETHAN_U32:
-        case AST_BUILTIN_EQUALS_U32:
-        case AST_BUILTIN_NOTEQUALS_U32:
-        {
-            Type* args[] = {unsigned32,unsigned32};
-            return NewOrGetFuncType(typer,2,args,boolean);
-        }
-        // for u16:
-        case AST_BUILTIN_MUL_U16:
-        case AST_BUILTIN_QUO_U16:
-        case AST_BUILTIN_REM_U16:
-        case AST_BUILTIN_ADD_U16:
-        case AST_BUILTIN_SUBTRACT_U16:
-        {
-            Type* args[] = {unsigned16,unsigned16};
-            return NewOrGetFuncType(typer,2,args,unsigned16);
-        }
-        case AST_BUILTIN_LTHAN_U16:
-        case AST_BUILTIN_LETHAN_U16:
-        case AST_BUILTIN_GTHAN_U16:
-        case AST_BUILTIN_GETHAN_U16:
-        case AST_BUILTIN_EQUALS_U16:
-        case AST_BUILTIN_NOTEQUALS_U16:
-        {
-            Type* args[] = {unsigned16,unsigned16};
-            return NewOrGetFuncType(typer,2,args,boolean);
-        }
-        // for u8:
-        case AST_BUILTIN_MUL_U8:
-        case AST_BUILTIN_QUO_U8:
-        case AST_BUILTIN_REM_U8:
-        case AST_BUILTIN_ADD_U8:
-        case AST_BUILTIN_SUBTRACT_U8:
-        {
-            Type* args[] = {unsigned8,unsigned8};
-            return NewOrGetFuncType(typer,2,args,unsigned8);
-        }
-        case AST_BUILTIN_LTHAN_U8:
-        case AST_BUILTIN_LETHAN_U8:
-        case AST_BUILTIN_GTHAN_U8:
-        case AST_BUILTIN_GETHAN_U8:
-        case AST_BUILTIN_EQUALS_U8:
-        case AST_BUILTIN_NOTEQUALS_U8:
-        {
-            Type* args[] = {unsigned8,unsigned8};
-            return NewOrGetFuncType(typer,2,args,boolean);
-        }
-        // for u1:
-        case AST_BUILTIN_MUL_U1:
-        case AST_BUILTIN_QUO_U1:
-        case AST_BUILTIN_REM_U1:
-        case AST_BUILTIN_ADD_U1:
-        case AST_BUILTIN_SUBTRACT_U1:
-        {
-            Type* args[] = {unsigned1,unsigned1};
-            return NewOrGetFuncType(typer,2,args,unsigned1);
-        }
-        case AST_BUILTIN_LTHAN_U1:
-        case AST_BUILTIN_LETHAN_U1:
-        case AST_BUILTIN_GTHAN_U1:
-        case AST_BUILTIN_GETHAN_U1:
-        case AST_BUILTIN_EQUALS_U1:
-        case AST_BUILTIN_NOTEQUALS_U1:
-        {
-            Type* args[] = {boolean,boolean};
-            return NewOrGetFuncType(typer,2,args,boolean);
-        }
-
-        default:
-        {
-            COMPILER_ERROR("NotImplemented: GetAstBuiltinVDefType for AST_BUILTIN_?");
-            return NULL;
-        }
-    }
 }
 
 //
@@ -2465,15 +2283,14 @@ size_t GetTypeSizeInBytes(Typer* typer, Type* type) {
                 case INT_32: return 4;
                 case INT_64: return 8;
                 case INT_128: return 16;
-                default:
-                {
-                    if (DEBUG) {
-                        printf("!!- Unknown int width in GetTypeSizeInBytes.\n");
-                    } else {
-                        assert(0 && "Unknown int width in GetTypeSizeInBytes.");
-                    }
-                    break;
-                }
+            }
+        }
+        case T_FLOAT:
+        {
+            switch (type->as.Float_width) {
+                case FLOAT_16: return 2;
+                case FLOAT_32: return 4;
+                case FLOAT_64: return 8;
             }
         }
         case T_TUPLE:

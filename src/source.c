@@ -47,7 +47,7 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
         Loc loc = noteP->loc;
         // if (loc.lineIndex > 0 && loc.colIndex > 0) {
         fprintf(stderr, "- %s", noteP->message);
-        if (loc.offset >= 0) {
+        if (loc.lineIndex >= 0) {
             fprintf(stderr, " [%s:%d:%d]", noteP->loc.source->path, 1+loc.lineIndex, 1+loc.colIndex);
         }
         fprintf(stderr, "\n\n");
@@ -58,7 +58,10 @@ int GetErrorPosted(void) {
 }
 
 Loc NullLoc(void) {
-    return (Loc) {-1,-1,-1,NULL};
+    return (Loc) {NULL,-1,-1};
+}
+Span NullSpan(void) {
+    return (Span) {NULL,-1,-1,-1,-1};
 }
 
 Span NewSpan(Loc first, Loc last) {
@@ -69,7 +72,6 @@ Span NewSpan(Loc first, Loc last) {
     }
     Span span;
     span.source = first.source;
-    span.first_offset = first.offset;
     span.first_line = first.lineIndex+1;
     span.first_column = first.colIndex+1;
     span.last_line = last.lineIndex+1;
@@ -77,11 +79,20 @@ Span NewSpan(Loc first, Loc last) {
     return span;
 }
 Loc Span2Loc(Span span) {
+    return FirstLocOfSpan(span);
+}
+Loc FirstLocOfSpan(Span span) {
     Loc loc;
     loc.source = span.source;
-    loc.offset = span.first_offset;
     loc.lineIndex = span.first_line-1;
     loc.colIndex = span.first_column-1;
+    return loc;
+}
+Loc LastLocOfSpan(Span span) {
+    Loc loc;
+    loc.source = span.source;
+    loc.lineIndex = span.last_line-1;
+    loc.colIndex = span.last_column-1;
     return loc;
 }
 
@@ -105,9 +116,8 @@ Source* CreateSource(char const* path) {
         goto fail;
     }
 
-    sourceP->peekLoc.offset = -1;
     sourceP->peekLoc.lineIndex = 0;
-    sourceP->peekLoc.colIndex = -1;  // if LF is first char, line&col refreshed. else, colIndex++ => (0)
+    sourceP->peekLoc.colIndex = -1;  // if LF is first char, col refreshed, line++; else, colIndex++ => (0)
     sourceP->peekLoc.source = sourceP;
 
     sourceP->peekChar = EOF;
@@ -164,7 +174,6 @@ int AdvanceSourceReaderHead(Source* source) {
     // Updating the peekChar, loc, and other attributes:
     source->peekChar = readChar;
     source->atEof = 0;
-    source->peekLoc.offset += 1;
     if (readChar == '\n' || readChar == '\r') {
         source->peekLoc.lineIndex++;
         source->peekLoc.colIndex = 0;

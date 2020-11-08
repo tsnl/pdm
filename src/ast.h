@@ -14,7 +14,6 @@ typedef enum AstKind AstKind;
 typedef enum AstUnaryOperator AstUnaryOperator;
 typedef enum AstBinaryOperator AstBinaryOperator;
 typedef enum AstContext AstContext;
-typedef enum AstBuiltinVDefKind AstBuiltinVDefKind;
 
 enum AstKind {
     AST_ERROR = -1,
@@ -31,7 +30,7 @@ enum AstKind {
     AST_VLAMBDA,AST_TLAMBDA,
     AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME,
-    AST_STMT_VLET, AST_STMT_VDEF, AST_STMT_TDEF, AST_TDEF_ENUM, AST_EXTERN, AST_STMT_ASSERT, AST_STMT_RETURN,
+    AST_STMT_VLET, AST_STMT_VDEF, AST_STMT_TDEF, AST_TDEF_ENUM, AST_STMT_EXTERN, AST_STMT_ASSERT, AST_STMT_RETURN,
     AST_TCALL, AST_VCALL,
     AST_UNARY, AST_BINARY,
     AST_TPATTERN, AST_VPATTERN, AST_TPATTERN_SINGLETON, AST_VPATTERN_SINGLETON,
@@ -67,119 +66,39 @@ enum AstContext {
     __ASTCTX_NONE
 };
 
-enum AstBuiltinVDefKind {
-    AST_BUILTIN_NULL = 0,
-
-    //
-    // unary:
-    //
-    
-    AST_BUILTIN_POS_F64, AST_BUILTIN_POS_F32,
-    AST_BUILTIN_NEG_F64, AST_BUILTIN_NEG_F32,
-
-    AST_BUILTIN_POS_S128, AST_BUILTIN_POS_S64, AST_BUILTIN_POS_S32, AST_BUILTIN_POS_S16, AST_BUILTIN_POS_S8,
-    AST_BUILTIN_NEG_S128, AST_BUILTIN_NEG_S64, AST_BUILTIN_NEG_S32, AST_BUILTIN_NEG_S16, AST_BUILTIN_NEG_S8,
-
-    AST_BUILTIN_NOT_U128, AST_BUILTIN_NOT_U64, AST_BUILTIN_NOT_U32, AST_BUILTIN_NOT_U16, AST_BUILTIN_NOT_U8, AST_BUILTIN_NOT_U1,
-    AST_BUILTIN_POS_U128, AST_BUILTIN_POS_U64, AST_BUILTIN_POS_U32, AST_BUILTIN_POS_U16, AST_BUILTIN_POS_U8, AST_BUILTIN_POS_U1,
-
-    //
-    // binary:
-    //
-
-    // '*'
-    AST_BUILTIN_MUL_F64,AST_BUILTIN_MUL_F32, 
-    AST_BUILTIN_MUL_S128,AST_BUILTIN_MUL_S64,AST_BUILTIN_MUL_S32,AST_BUILTIN_MUL_S16,AST_BUILTIN_MUL_S8,
-    AST_BUILTIN_MUL_U128,AST_BUILTIN_MUL_U64,AST_BUILTIN_MUL_U32,AST_BUILTIN_MUL_U16,AST_BUILTIN_MUL_U8,AST_BUILTIN_MUL_U1,
-
-    // '/': fpdiv, quo
-    AST_BUILTIN_DIV_F64,AST_BUILTIN_DIV_F32, 
-    AST_BUILTIN_QUO_S128,AST_BUILTIN_QUO_S64,AST_BUILTIN_QUO_S32,AST_BUILTIN_QUO_S16,AST_BUILTIN_QUO_S8,
-    AST_BUILTIN_QUO_U128,AST_BUILTIN_QUO_U64,AST_BUILTIN_QUO_U32,AST_BUILTIN_QUO_U16,AST_BUILTIN_QUO_U8,AST_BUILTIN_QUO_U1,
-
-    // '%'
-    AST_BUILTIN_REM_S128,AST_BUILTIN_REM_S64,AST_BUILTIN_REM_S32,AST_BUILTIN_REM_S16,AST_BUILTIN_REM_S8,
-    AST_BUILTIN_REM_U128,AST_BUILTIN_REM_U64,AST_BUILTIN_REM_U32,AST_BUILTIN_REM_U16,AST_BUILTIN_REM_U8,AST_BUILTIN_REM_U1,
-
-    // '+'
-    AST_BUILTIN_ADD_F64,AST_BUILTIN_ADD_F32, 
-    AST_BUILTIN_ADD_S128,AST_BUILTIN_ADD_S64,AST_BUILTIN_ADD_S32,AST_BUILTIN_ADD_S16,AST_BUILTIN_ADD_S8,
-    AST_BUILTIN_ADD_U128,AST_BUILTIN_ADD_U64,AST_BUILTIN_ADD_U32,AST_BUILTIN_ADD_U16,AST_BUILTIN_ADD_U8,AST_BUILTIN_ADD_U1,
-
-    // '-'
-    AST_BUILTIN_SUBTRACT_F64,AST_BUILTIN_SUBTRACT_F32, 
-    AST_BUILTIN_SUBTRACT_S128,AST_BUILTIN_SUBTRACT_S64,AST_BUILTIN_SUBTRACT_S32,AST_BUILTIN_SUBTRACT_S16,AST_BUILTIN_SUBTRACT_S8,
-    AST_BUILTIN_SUBTRACT_U128,AST_BUILTIN_SUBTRACT_U64,AST_BUILTIN_SUBTRACT_U32,AST_BUILTIN_SUBTRACT_U16,AST_BUILTIN_SUBTRACT_U8,AST_BUILTIN_SUBTRACT_U1,
-
-    // '<'
-    AST_BUILTIN_LTHAN_F64,AST_BUILTIN_LTHAN_F32, 
-    AST_BUILTIN_LTHAN_S128,AST_BUILTIN_LTHAN_S64,AST_BUILTIN_LTHAN_S32,AST_BUILTIN_LTHAN_S16,AST_BUILTIN_LTHAN_S8,
-    AST_BUILTIN_LTHAN_U128,AST_BUILTIN_LTHAN_U64,AST_BUILTIN_LTHAN_U32,AST_BUILTIN_LTHAN_U16,AST_BUILTIN_LTHAN_U8,AST_BUILTIN_LTHAN_U1,
-
-    // '<='
-    AST_BUILTIN_LETHAN_F64,AST_BUILTIN_LETHAN_F32, 
-    AST_BUILTIN_LETHAN_S128,AST_BUILTIN_LETHAN_S64,AST_BUILTIN_LETHAN_S32,AST_BUILTIN_LETHAN_S16,AST_BUILTIN_LETHAN_S8,
-    AST_BUILTIN_LETHAN_U128,AST_BUILTIN_LETHAN_U64,AST_BUILTIN_LETHAN_U32,AST_BUILTIN_LETHAN_U16,AST_BUILTIN_LETHAN_U8,AST_BUILTIN_LETHAN_U1,
-
-    // '>'
-    AST_BUILTIN_GTHAN_F64,AST_BUILTIN_GTHAN_F32, 
-    AST_BUILTIN_GTHAN_S128,AST_BUILTIN_GTHAN_S64,AST_BUILTIN_GTHAN_S32,AST_BUILTIN_GTHAN_S16,AST_BUILTIN_GTHAN_S8,
-    AST_BUILTIN_GTHAN_U128,AST_BUILTIN_GTHAN_U64,AST_BUILTIN_GTHAN_U32,AST_BUILTIN_GTHAN_U16,AST_BUILTIN_GTHAN_U8,AST_BUILTIN_GTHAN_U1,
-
-    // '>='
-    AST_BUILTIN_GETHAN_F64,AST_BUILTIN_GETHAN_F32, 
-    AST_BUILTIN_GETHAN_S128,AST_BUILTIN_GETHAN_S64,AST_BUILTIN_GETHAN_S32,AST_BUILTIN_GETHAN_S16,AST_BUILTIN_GETHAN_S8,
-    AST_BUILTIN_GETHAN_U128,AST_BUILTIN_GETHAN_U64,AST_BUILTIN_GETHAN_U32,AST_BUILTIN_GETHAN_U16,AST_BUILTIN_GETHAN_U8,AST_BUILTIN_GETHAN_U1,
-
-    // '=='
-    AST_BUILTIN_EQUALS_F64,AST_BUILTIN_EQUALS_F32, 
-    AST_BUILTIN_EQUALS_S128,AST_BUILTIN_EQUALS_S64,AST_BUILTIN_EQUALS_S32,AST_BUILTIN_EQUALS_S16,AST_BUILTIN_EQUALS_S8,
-    AST_BUILTIN_EQUALS_U128,AST_BUILTIN_EQUALS_U64,AST_BUILTIN_EQUALS_U32,AST_BUILTIN_EQUALS_U16,AST_BUILTIN_EQUALS_U8,AST_BUILTIN_EQUALS_U1,
-
-    // '!='
-    AST_BUILTIN_NOTEQUALS_F64,AST_BUILTIN_NOTEQUALS_F32, 
-    AST_BUILTIN_NOTEQUALS_S128,AST_BUILTIN_NOTEQUALS_S64,AST_BUILTIN_NOTEQUALS_S32,AST_BUILTIN_NOTEQUALS_S16,AST_BUILTIN_NOTEQUALS_S8,
-    AST_BUILTIN_NOTEQUALS_U128,AST_BUILTIN_NOTEQUALS_U64,AST_BUILTIN_NOTEQUALS_U32,AST_BUILTIN_NOTEQUALS_U16,AST_BUILTIN_NOTEQUALS_U8,AST_BUILTIN_NOTEQUALS_U1,
-
-    // 'and','xor','or'
-    AST_BUILTIN_AND_U128,AST_BUILTIN_AND_U64,AST_BUILTIN_AND_U32,AST_BUILTIN_AND_U16,AST_BUILTIN_AND_U8,AST_BUILTIN_AND_U1,
-    AST_BUILTIN_XOR_U128,AST_BUILTIN_XOR_U64,AST_BUILTIN_XOR_U32,AST_BUILTIN_XOR_U16,AST_BUILTIN_XOR_U8,AST_BUILTIN_XOR_U1,
-    AST_BUILTIN_OR_U128,AST_BUILTIN_OR_U64,AST_BUILTIN_OR_U32,AST_BUILTIN_OR_U16,AST_BUILTIN_OR_U8,AST_BUILTIN_OR_U1
-};
-
 //
 // Constructors:
 //
 
-AstNode* NewAstModule(Loc loc, SymbolID moduleID);
-AstNode* NewAstModuleWithStmtSb(Loc loc, SymbolID moduleID, AstNode** mov_contentSb);
+AstNode* NewAstModule(Span span, SymbolID moduleID);
+AstNode* NewAstModuleWithStmtSb(Span span, SymbolID moduleID, AstNode** mov_contentSb);
 void PushStmtToAstModule(AstNode* module, AstNode* def);
 
-AstNode* NewAstVID(Loc loc, SymbolID symbolID);
-AstNode* NewAstIntLiteral(Loc loc, size_t value, int base);
-AstNode* NewAstFloatLiteral(Loc loc, long double value);
-AstNode* NewAstStringLiteral(Loc loc, int* valueSb);
-AstNode* NewAstVParen(Loc loc, AstNode* it);
-AstNode* NewAstUnit(Loc loc);
+AstNode* NewAstVID(Span span, SymbolID symbolID);
+AstNode* NewAstIntLiteral(Span span, size_t value, int base);
+AstNode* NewAstFloatLiteral(Span span, long double value);
+AstNode* NewAstStringLiteral(Span span, int* valueSb);
+AstNode* NewAstVParen(Span span, AstNode* it);
+AstNode* NewAstUnit(Span span);
 
-AstNode* NewAstField(Loc loc, SymbolID lhs, AstNode* rhs);
-AstNode* NewAstVTuple(Loc loc);
-AstNode* NewAstVTupleWithFieldsSb(Loc loc, AstNode** mov_fieldsSb);
-AstNode* NewAstVStruct(Loc loc);
-AstNode* NewAstVStructWithFieldsSb(Loc loc, AstNode** mov_fieldsSb);
-AstNode* NewAstChain(Loc loc);
-AstNode* NewAstChainWith(Loc loc, AstNode** mov_prefixSb, AstNode* result);
+AstNode* NewAstField(Span span, SymbolID lhs, AstNode* rhs);
+AstNode* NewAstVTuple(Span span);
+AstNode* NewAstVTupleWithFieldsSb(Span span, AstNode** mov_fieldsSb);
+AstNode* NewAstVStruct(Span span);
+AstNode* NewAstVStructWithFieldsSb(Span span, AstNode** mov_fieldsSb);
+AstNode* NewAstChain(Span span);
+AstNode* NewAstChainWith(Span span, AstNode** mov_prefixSb, AstNode* result);
 
-AstNode* NewAstTStruct(Loc loc);
-AstNode* NewAstTStructWithFieldsSb(Loc loc, AstNode** mov_fieldsSb);
-AstNode* NewAstTPattern(Loc loc);
-AstNode* NewAstVPattern(Loc loc);
-AstNode* NewAstVPatternWithFieldsSb(Loc loc, AstNode** mov_fieldsSb);
-AstNode* NewAstTPatternWithFieldsSb(Loc loc, AstNode** mov_fieldsSb);
-AstNode* NewAstVPatternSingleton(Loc loc, AstNode* field);
-AstNode* NewAstTPatternSingleton(Loc loc, AstNode* field);
+AstNode* NewAstTStruct(Span span);
+AstNode* NewAstTStructWithFieldsSb(Span span, AstNode** mov_fieldsSb);
+AstNode* NewAstTPattern(Span span);
+AstNode* NewAstVPattern(Span span);
+AstNode* NewAstVPatternWithFieldsSb(Span span, AstNode** mov_fieldsSb);
+AstNode* NewAstTPatternWithFieldsSb(Span span, AstNode** mov_fieldsSb);
+AstNode* NewAstVPatternSingleton(Span span, AstNode* field);
+AstNode* NewAstTPatternSingleton(Span span, AstNode* field);
 
-AstNode* NewAstVPtr(Loc loc, AstNode* arg);
+AstNode* NewAstVPtr(Span span, AstNode* arg);
 
 void PushFieldToAstTTuple(AstNode* ttuple, AstNode* field);
 void PushFieldToAstTStruct(AstNode* tstruct, AstNode* field);
@@ -189,52 +108,50 @@ void PushFieldToAstVTuple(AstNode* vstruct, AstNode* field);
 void PushFieldToAstVStruct(AstNode* vstruct, AstNode* field);
 void PushFieldToAstVPattern(AstNode* vpattern, AstNode* field);
 
-void PushFieldToAstVTupleFromRaw(Loc loc, AstNode* tuple, AstNode* value);
-void PushFieldToAstVStructFromRaw(Loc loc, AstNode* struct_, SymbolID name, AstNode* value);
-void PushFieldToAstVPatternFromRaw(Loc loc, AstNode* pattern, AstKind fieldKind, SymbolID name, AstNode* typespec);
+void PushFieldToAstVTupleFromRaw(Span span, AstNode* tuple, AstNode* value);
+void PushFieldToAstVStructFromRaw(Span span, AstNode* struct_, SymbolID name, AstNode* value);
+void PushFieldToAstVPatternFromRaw(Span span, AstNode* pattern, AstKind fieldKind, SymbolID name, AstNode* typespec);
 
 void PushStmtToAstChain(AstNode* chain, AstNode* statement);
 void SetAstChainResult(AstNode* chain, AstNode* result);
 
-AstNode* NewAstIte(Loc loc, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse);
-AstNode* NewAstDotIndex(Loc loc, AstNode* lhs, size_t index);
-AstNode* NewAstDotName(Loc loc, AstNode* lhs, SymbolID rhs);
+AstNode* NewAstIte(Span span, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse);
+AstNode* NewAstDotIndex(Span span, AstNode* lhs, size_t index);
+AstNode* NewAstDotName(Span span, AstNode* lhs, SymbolID rhs);
 
-AstNode* NewAstVLambda(Loc loc, AstNode* pattern, AstNode* body);
-AstNode* NewAstTLambda(Loc loc, AstNode* pattern, AstNode* body);
+AstNode* NewAstVLambda(Span span, AstNode* pattern, AstNode* body);
+AstNode* NewAstTLambda(Span span, AstNode* pattern, AstNode* body);
 
-AstNode* NewAstModuleStmt(Loc loc, SymbolID boundName, int* fromStr, int* asStr);
-AstNode* NewAstImportStmt(Loc loc, SymbolID module, SymbolID suffix, int glob);
+AstNode* NewAstModuleStmt(Span span, SymbolID boundName, int* fromStr, int* asStr);
+AstNode* NewAstImportStmt(Span span, SymbolID module, SymbolID suffix, int glob);
 
-AstNode* NewAstLetStmt(Loc loc, AstNode* lhsPattern, AstNode* rhs);
-AstNode* NewAstDefStmt(Loc loc, SymbolID lhs, AstNode* optTemplatePattern, AstNode* pattern, AstNode* rhs);
-AstNode* NewAstTypedefStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* rhs);
-AstNode* NewAstTypedefEnumStmt(Loc loc, SymbolID lhs, AstNode* optPattern, AstNode* rhs);
-AstNode* NewAstSetStmt(Loc loc, AstNode* lhs, AstNode* rhs);
-AstNode* NewAstAssertStmt(Loc loc, AstNode* checked);
-AstNode* NewAstDiscardStmt(Loc loc, AstNode* discarded);
-AstNode* NewAstExternStmt(Loc loc, SymbolID lhs, AstNode* typespec);
+AstNode* NewAstLetStmt(Span span, AstNode* lhsPattern, AstNode* rhs);
+AstNode* NewAstDefStmt(Span span, SymbolID lhs, AstNode* optTemplatePattern, AstNode* pattern, AstNode* rhs);
+AstNode* NewAstTypedefStmt(Span span, SymbolID lhs, AstNode* optPattern, AstNode* rhs);
+AstNode* NewAstTypedefEnumStmt(Span span, SymbolID lhs, AstNode* optPattern, AstNode* rhs);
+AstNode* NewAstSetStmt(Span span, AstNode* lhs, AstNode* rhs);
+AstNode* NewAstAssertStmt(Span span, AstNode* checked);
+AstNode* NewAstDiscardStmt(Span span, AstNode* discarded);
+AstNode* NewAstExternStmt(Span span, SymbolID lhs, AstNode* pattern, AstNode* typespec);
 
-AstNode* NewAstVCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
-AstNode* NewAstVCallWithArgsSb(Loc loc, AstNode* lhs, AstNode** mov_argsSb);
+AstNode* NewAstVCall(Span span, AstNode* lhs, AstNode* args[], int argsCount);
+AstNode* NewAstVCallWithArgsSb(Span span, AstNode* lhs, AstNode** mov_argsSb);
 
-AstNode* NewAstTCall(Loc loc, AstNode* lhs, AstNode* args[], int argsCount);
-AstNode* NewAstTCallWithArgsSb(Loc loc, AstNode* lhs, AstNode** mov_argsSb);
+AstNode* NewAstTCall(Span span, AstNode* lhs, AstNode* args[], int argsCount);
+AstNode* NewAstTCallWithArgsSb(Span span, AstNode* lhs, AstNode** mov_argsSb);
 
-AstNode* NewAstUnary(Loc loc, AstUnaryOperator op, AstNode* arg);
-AstNode* NewAstBinary(Loc loc, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg);
+AstNode* NewAstUnary(Span span, AstUnaryOperator op, AstNode* arg);
+AstNode* NewAstBinary(Span span, AstBinaryOperator op, AstNode* ltArg, AstNode* rtArg);
 
-AstNode* NewAstTID(Loc loc, SymbolID symbolID);
-AstNode* NewAstTTuple(Loc loc);
-AstNode* NewAstTTupleWithFieldsSb(Loc loc, AstNode** mov_fieldsSb);
-AstNode* NewAstTParen(Loc loc, AstNode* it);
-AstNode* NewAstTPtr(Loc loc, AstNode* pointee);
+AstNode* NewAstTID(Span span, SymbolID symbolID);
+AstNode* NewAstTTuple(Span span);
+AstNode* NewAstTTupleWithFieldsSb(Span span, AstNode** mov_fieldsSb);
+AstNode* NewAstTParen(Span span, AstNode* it);
+AstNode* NewAstTPtr(Span span, AstNode* pointee);
 
-AstNode* NewAstVCast(Loc loc,AstNode* toTypespec,AstNode* fromExpr);
-AstNode* NewAstType2Val(Loc loc, AstNode* typespec);
-AstNode* NewAstVal2Type(Loc loc, AstNode* valueExpr);
-
-AstNode* NewAstBuiltinVDefStmt(SymbolID lhs, AstBuiltinVDefKind builtinVDefKind);
+AstNode* NewAstVCast(Span span,AstNode* toTypespec,AstNode* fromExpr);
+AstNode* NewAstType2Val(Span span, AstNode* typespec);
+AstNode* NewAstVal2Type(Span span, AstNode* valueExpr);
 
 //
 // Lambda capture registration:
@@ -254,6 +171,7 @@ AstNode* GetAstModuleStmtAt(AstNode* module, int index);
 size_t GetAstNodeKey(AstNode* node);
 AstKind GetAstNodeKind(AstNode* node);
 Loc GetAstNodeLoc(AstNode* node);
+Span GetAstNodeSpan(AstNode* node);
 
 SymbolID GetAstIdName(AstNode* node);
 size_t GetAstIntLiteralValue(AstNode* node);
@@ -320,6 +238,7 @@ SymbolID GetAstValStmtLhs(AstNode* valStmt);
 AstNode* GetAstValStmtPattern(AstNode* valStmt);
 
 SymbolID GetAstExternStmtName(AstNode* externDef);
+AstNode* GetAstExternPattern(AstNode* externDef);
 AstNode* GetAstExternTypespec(AstNode* externDef);
 
 SymbolID GetAstTypedefStmtName(AstNode* td);
@@ -334,8 +253,6 @@ AstNode* GetAstTPtrPointee(AstNode* tptr);
 
 AstNode* GetAstType2ValTypespec(AstNode* type2Val);
 AstNode* GetAstVal2TypeExpr(AstNode* val2type);
-
-AstBuiltinVDefKind GetAstBuiltinVDefKind(AstNode* builtinVDef);
 
 //
 // Symbol and type storage:

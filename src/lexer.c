@@ -762,6 +762,11 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
             name = "def";
             break;
         }
+        case TK_KW_EXTERN:
+        {
+            name = "extern";
+            break;
+        }
         case TK_KW_IMPORT:
         {
             name = "import";
@@ -938,6 +943,7 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
         }
         default:
         {
+            name = "<?>";
             break;
         }
     }

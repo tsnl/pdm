@@ -22,21 +22,12 @@ enum FeedbackKind {
     FBK_DEBUG
 };
 struct Loc {
-    ssize_t offset;
-    int first_line;
-    int first_column;
-    int last_line;
-    int last_column;
     Source* source;
-
-    // fixme: deprecated! should be replaced with first_{line|column} and last_{line|column}
     int lineIndex;
     int colIndex;
 };
 struct Span {
     Source* source;
-    ssize_t first_offset;
-    ssize_t last_offset;
     int first_line;
     int first_column;
     int last_line;
@@ -66,8 +57,11 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
 int GetErrorPosted(void);
 
 Loc NullLoc(void);
+Span NullSpan(void);
 Span NewSpan(Loc first, Loc last);
 Loc Span2Loc(Span span);
+Loc FirstLocOfSpan(Span span);
+Loc LastLocOfSpan(Span span);
 
 // The SourceReader API models strings as a finite tape with a traversing head capable of reading 1 char.
 // - AdvanceSourceReaderHead: advance head by (+1) bytes.

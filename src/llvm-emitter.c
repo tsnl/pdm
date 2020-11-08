@@ -1,3 +1,36 @@
+// EMITTER: generates LLVM IR from a typed, solved AST.
+// - requires AST correctness
+// - requires each type to have a concrete soln
+
+// TWO PASSES: exportModuleHeaders & exportModule
+// * goal: export each 'def' statement.
+// - headers: forward declarations
+//   - each anonymous function has a 'synthetic' function definition inserted at module-level.
+//     - synthetic functions are defined in exportModuleHeaderVisitor
+//     - synthetic functions can be renamed by 'def' statements.
+//   - rename synthetic functions for 'def' statements
+//   - only declared, never defined
+// - module: writing synthetic functions' bodies
+//   - exportvalue & return each lambda body
+
+
+// Have you configured LLVM IR Autocompletion?
+// The CMake config should spit out LLVM header paths you can use.
+
+// See `github.com/f0rki`'s "Mapping High Level Constructs to LLVM IR"
+// - https://github.com/f0rki/mapping-high-level-constructs-to-llvm-ir
+// - https://mapping-high-level-constructs-to-llvm-ir.readthedocs.io/en/latest/README.html
+
+// See Paul Smith's "How to Get Started with LLVM C API"
+// - https://www.pauladamsmith.com/blog/2015/01/how-to-get-started-with-llvm-c-api.html
+
+// See Eli Bendersky's Python implementation of the LLVM Kaleidoscope demo:
+// - https://github.com/eliben/pykaleidoscope/blob/master/chapter3and4.py
+
+// See wickedchicken's GitHub examples:
+// - https://github.com/wickedchicken/llvm-c-example/blob/master/fac.c
+
+
 #include "llvm-emitter.h"
 
 #include <assert.h>
@@ -14,24 +47,6 @@
 
 #include "useful.h"
 #include "primer.h"
-
-// See Paul Smith's "How to Get Started with LLVM C API"
-// - https://www.pauladamsmith.com/blog/2015/01/how-to-get-started-with-llvm-c-api.html
-
-// See Eli Bendersky's Python implementation of the LLVM Kaleidoscope demo:
-// - https://github.com/eliben/pykaleidoscope/blob/master/chapter3and4.py
-
-// See wickedchicken's GitHub examples:
-// - https://github.com/wickedchicken/llvm-c-example/blob/master/fac.c
-
-// See Paul Smith's "How to Get Started with LLVM C API"
-// - https://www.pauladamsmith.com/blog/2015/01/how-to-get-started-with-llvm-c-api.html
-
-// See Eli Bendersky's Python implementation of the LLVM Kaleidoscope demo:
-// - https://github.com/eliben/pykaleidoscope/blob/master/chapter3and4.py
-
-// See wickedchicken's GitHub examples:
-// - https://github.com/wickedchicken/llvm-c-example/blob/master/fac.c
 
 typedef struct Emitter Emitter;
 struct Emitter {
@@ -62,364 +77,11 @@ struct ExportedValue {
     ExportedType type;
 };
 static int exportModuleHeaders(Emitter* emitter, AstNode* moduleNode);
-static int exportModuleHeaderVisitor_post(void* emitter, AstNode* node);
 static int exportModule(Emitter* emitter, AstNode* moduleNode);
-static int exportModuleVisitor_pre(void* emitter, AstNode* node);
+static int exportModuleHeaders_postVisitor(void* emitter, AstNode* node);
+static int exportModule_preVisitor(void* emitter, AstNode* node);
 static ExportedType exportType(Typer* typer, Type* type);
 static ExportedValue exportValue(Emitter* emitter, AstNode* exprNode);
-static AstBuiltinVDefKind selectBuiltinUnaryVDefKind(Emitter* emitter, AstNode* expr);
-static AstBuiltinVDefKind selectBuiltinBinaryVDefKind(Emitter* emitter, AstNode* expr);
-static ExportedValue helpExportUnaryBuiltinVDefCall(Emitter* emitter, AstBuiltinVDefKind builtinVDefKind, ExportedValue arg);
-static ExportedValue helpExportBinaryBuiltinVDefCall(Emitter* emitter, AstBuiltinVDefKind builtinVDefKind, ExportedValue ltArg, ExportedValue rtArg);
-
-//
-// WIP: copy to appropriate section later.
-//
-
-static AstBuiltinVDefKind selectBuiltinUnaryVDefKind(Emitter* emitter, AstNode* expr) {
-    AstUnaryOperator op = GetAstUnaryOperator(expr);
-    AstNode* argNode = GetAstUnaryOperand(expr);
-    ExportedValue arg = exportValue(emitter,argNode);
-
-    TypeKind argTypeKind = GetTypeKind(arg.type.native);
-    if (op == UOP_PLUS) {
-        switch (argTypeKind) {
-            case T_INT: 
-            {
-                if (GetIntTypeIsSigned(arg.type.native)) {
-                    // signed...
-                    switch (GetIntTypeWidth(arg.type.native)) {
-                        case INT_8:   return AST_BUILTIN_POS_S8;
-                        case INT_16:  return AST_BUILTIN_POS_S16;
-                        case INT_32:  return AST_BUILTIN_POS_S32;
-                        case INT_64:  return AST_BUILTIN_POS_S64;
-                        case INT_128: return AST_BUILTIN_POS_S128;
-                        default: goto failure;
-                    }
-                } else {
-                    // unsigned...
-                    switch (GetIntTypeWidth(arg.type.native)) {
-                        case INT_1:   return AST_BUILTIN_POS_U1;
-                        case INT_8:   return AST_BUILTIN_POS_U8;
-                        case INT_16:  return AST_BUILTIN_POS_U16;
-                        case INT_32:  return AST_BUILTIN_POS_U32;
-                        case INT_64:  return AST_BUILTIN_POS_U64;
-                        case INT_128: return AST_BUILTIN_POS_U128;
-                        default: goto failure;
-                    }
-                }
-            }
-            case T_FLOAT:
-            {
-                switch (GetFloatTypeWidth(arg.type.native)) {
-                    case FLOAT_32: return AST_BUILTIN_POS_F32;
-                    case FLOAT_64: return AST_BUILTIN_POS_F64;
-                    default: goto failure;
-                }
-            }
-            default:
-            {
-                goto failure;
-            }
-        }
-    }
-    if (op == UOP_MINUS) {
-        switch (argTypeKind) {
-            case T_INT: 
-            {
-                if (GetIntTypeIsSigned(arg.type.native)) {
-                    // signed...
-                    switch (GetIntTypeWidth(arg.type.native)) {
-                        case INT_8:   return AST_BUILTIN_NEG_S8;
-                        case INT_16:  return AST_BUILTIN_NEG_S16;
-                        case INT_32:  return AST_BUILTIN_NEG_S32;
-                        case INT_64:  return AST_BUILTIN_NEG_S64;
-                        case INT_128: return AST_BUILTIN_NEG_S128;
-                        default: goto failure;
-                    }
-                }
-            }
-            case T_FLOAT:
-            {
-                switch (GetFloatTypeWidth(arg.type.native)) {
-                    case FLOAT_32: return AST_BUILTIN_NEG_F32;
-                    case FLOAT_64: return AST_BUILTIN_NEG_F64;
-                    default: goto failure;
-                }
-            }
-            default:
-            {
-                goto failure;
-            }
-        }
-    }
-    if (op == UOP_NOT) {
-        switch (argTypeKind) {
-            case T_INT:
-            {
-                if (!GetIntTypeIsSigned(arg.type.native)) {
-                    // unsigned only
-                    switch (GetIntTypeWidth(arg.type.native)) {
-                        case INT_1:   return AST_BUILTIN_NOT_U1;
-                        case INT_8:   return AST_BUILTIN_NOT_U8;
-                        case INT_16:  return AST_BUILTIN_NOT_U16;
-                        case INT_32:  return AST_BUILTIN_NOT_U32;
-                        case INT_64:  return AST_BUILTIN_NOT_U64;
-                        case INT_128: return AST_BUILTIN_NOT_U128;
-                        default: goto failure;
-                    }
-                }
-                break;
-            }
-            default:
-            {
-                goto failure;
-            }
-        }
-    }
-    
-    // if we arrive at this point in control flow without returning, it means we've failed.
-    failure: {
-        COMPILER_ERROR_VA("NotImplemented: 'selectBuiltinUnaryVDefKind' for %s (%s)", AstUnaryOperatorAsText(op), TypeKindAsText(argTypeKind));
-        return AST_BUILTIN_NULL;
-    }
-}
-AstBuiltinVDefKind selectBuiltinBinaryVDefKind(Emitter* emitter, AstNode* expr) {
-    ExportedValue ltArg = exportValue(emitter,GetAstBinaryLtOperand(expr));
-    ExportedValue rtArg = exportValue(emitter,GetAstBinaryRtOperand(expr));
-    TypeKind ltArgTypeKind = GetTypeKind(ltArg.type.native);
-    TypeKind rtArgTypeKind = GetTypeKind(rtArg.type.native);
-
-    AstBinaryOperator op = GetAstBinaryOperator(expr);
-
-    if (op == BOP_MUL) {
-        if (ltArgTypeKind == rtArgTypeKind) {
-            if (ltArgTypeKind == T_INT) {
-                if (GetIntTypeIsSigned(ltArg.type.native)) {
-                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
-                        case 1:   return AST_BUILTIN_MUL_U1;
-                        case 8:   return AST_BUILTIN_MUL_U8;
-                        case 16:  return AST_BUILTIN_MUL_U16;
-                        case 32:  return AST_BUILTIN_MUL_U32;
-                        case 64:  return AST_BUILTIN_MUL_U64;
-                        case 128: return AST_BUILTIN_MUL_U128;
-                        default: break;
-                    }
-                } else {
-                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
-                        case 8:   return AST_BUILTIN_MUL_S8;
-                        case 16:  return AST_BUILTIN_MUL_S16;
-                        case 32:  return AST_BUILTIN_MUL_S32;
-                        case 64:  return AST_BUILTIN_MUL_S64;
-                        case 128: return AST_BUILTIN_MUL_S128;
-                        default: break;
-                    }
-                }
-            } else if (ltArgTypeKind == T_FLOAT) {
-                switch (GetFloatTypeWidthInBits(ltArg.type.native)) {
-                    case 32: return AST_BUILTIN_MUL_F32;
-                    case 64: return AST_BUILTIN_MUL_F64;
-                }
-            }
-        }
-    }
-    if (op == BOP_DIV) {
-        if (ltArgTypeKind == rtArgTypeKind) {
-            if (ltArgTypeKind == T_INT) {
-                if (GetIntTypeIsSigned(ltArg.type.native)) {
-                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
-                        case 1:   return AST_BUILTIN_QUO_U1;
-                        case 8:   return AST_BUILTIN_QUO_U8;
-                        case 16:  return AST_BUILTIN_QUO_U16;
-                        case 32:  return AST_BUILTIN_QUO_U32;
-                        case 64:  return AST_BUILTIN_QUO_U64;
-                        case 128: return AST_BUILTIN_QUO_U128;
-                        default: break;
-                    }
-                } else {
-                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
-                        case 8:   return AST_BUILTIN_QUO_S8;
-                        case 16:  return AST_BUILTIN_QUO_S16;
-                        case 32:  return AST_BUILTIN_QUO_S32;
-                        case 64:  return AST_BUILTIN_QUO_S64;
-                        case 128: return AST_BUILTIN_QUO_S128;
-                        default: break;
-                    }
-                }
-            } else if (ltArgTypeKind == T_FLOAT) {
-                switch (GetFloatTypeWidthInBits(ltArg.type.native)) {
-                    case 32: return AST_BUILTIN_DIV_F32;
-                    case 64: return AST_BUILTIN_DIV_F64;
-                }
-            }
-        }
-    }
-    if (op == BOP_REM) {
-        if (ltArgTypeKind == rtArgTypeKind) {
-            if (ltArgTypeKind == T_INT) {
-                if (GetIntTypeIsSigned(ltArg.type.native)) {
-                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
-                        case 1:   return AST_BUILTIN_REM_U1;
-                        case 8:   return AST_BUILTIN_REM_U8;
-                        case 16:  return AST_BUILTIN_REM_U16;
-                        case 32:  return AST_BUILTIN_REM_U32;
-                        case 64:  return AST_BUILTIN_REM_U64;
-                        case 128: return AST_BUILTIN_REM_U128;
-                        default: break;
-                    }
-                } else {
-                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
-                        case 8:   return AST_BUILTIN_REM_S8;
-                        case 16:  return AST_BUILTIN_REM_S16;
-                        case 32:  return AST_BUILTIN_REM_S32;
-                        case 64:  return AST_BUILTIN_REM_S64;
-                        case 128: return AST_BUILTIN_REM_S128;
-                        default: break;
-                    }
-                }
-            }
-        }
-    }
-
-    if (op == BOP_ADD) {
-        if (ltArgTypeKind == rtArgTypeKind) {
-            if (ltArgTypeKind == T_INT) {
-                if (GetIntTypeIsSigned(ltArg.type.native)) {
-                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
-                        case 1:   return AST_BUILTIN_ADD_U1;
-                        case 8:   return AST_BUILTIN_ADD_U8;
-                        case 16:  return AST_BUILTIN_ADD_U16;
-                        case 32:  return AST_BUILTIN_ADD_U32;
-                        case 64:  return AST_BUILTIN_ADD_U64;
-                        case 128: return AST_BUILTIN_ADD_U128;
-                        default: break;
-                    }
-                } else {
-                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
-                        case 8:   return AST_BUILTIN_ADD_S8;
-                        case 16:  return AST_BUILTIN_ADD_S16;
-                        case 32:  return AST_BUILTIN_ADD_S32;
-                        case 64:  return AST_BUILTIN_ADD_S64;
-                        case 128: return AST_BUILTIN_ADD_S128;
-                        default: break;
-                    }
-                }
-            } else if (ltArgTypeKind == T_FLOAT) {
-                switch (GetFloatTypeWidthInBits(ltArg.type.native)) {
-                    case 32: return AST_BUILTIN_ADD_F32;
-                    case 64: return AST_BUILTIN_ADD_F64;
-                }
-            }
-        }
-    }
-    if (op == BOP_SUBTRACT) {
-        if (ltArgTypeKind == rtArgTypeKind) {
-            if (ltArgTypeKind == T_INT) {
-                if (GetIntTypeIsSigned(ltArg.type.native)) {
-                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
-                        case 1:   return AST_BUILTIN_SUBTRACT_U1;
-                        case 8:   return AST_BUILTIN_SUBTRACT_U8;
-                        case 16:  return AST_BUILTIN_SUBTRACT_U16;
-                        case 32:  return AST_BUILTIN_SUBTRACT_U32;
-                        case 64:  return AST_BUILTIN_SUBTRACT_U64;
-                        case 128: return AST_BUILTIN_SUBTRACT_U128;
-                        default: break;
-                    }
-                } else {
-                    switch (GetIntTypeWidthInBits(ltArg.type.native)) {
-                        case 8:   return AST_BUILTIN_SUBTRACT_S8;
-                        case 16:  return AST_BUILTIN_SUBTRACT_S16;
-                        case 32:  return AST_BUILTIN_SUBTRACT_S32;
-                        case 64:  return AST_BUILTIN_SUBTRACT_S64;
-                        case 128: return AST_BUILTIN_SUBTRACT_S128;
-                        default: break;
-                    }
-                }
-            } else if (ltArgTypeKind == T_FLOAT) {
-                switch (GetFloatTypeWidthInBits(ltArg.type.native)) {
-                    case 32: return AST_BUILTIN_SUBTRACT_F32;
-                    case 64: return AST_BUILTIN_SUBTRACT_F64;
-                }
-            }
-        }
-    }
-    // ...
-
-    // if we arrive at this point in control flow without returning, it means we've failed.
-    {
-        COMPILER_ERROR_VA("NotImplemented: selectBuiltinBinaryVDefKind for %s (%s,%s)", AstBinaryOperatorAsText(op), TypeKindAsText(ltArgTypeKind),TypeKindAsText(rtArgTypeKind));
-        return AST_BUILTIN_NULL;
-    }
-}
-ExportedValue helpExportUnaryBuiltinVDefCall(Emitter* emitter, AstBuiltinVDefKind builtinVDefKind, ExportedValue arg) {
-    // ASSUMING the actual arg has already been converted to the expected type, and that 'arg.llvm' stores a ptr to that value, emits inline instructions to perform the specified op.
-    // this is okay for unary builtins, but binary builtins may require one arg to be converted before invocation. e.g., 2+3.0
-    // this should be done in AST_VCALL.
-
-    // todo: create an exported value
-    // todo: return the exported value
-
-    LLVMValueRef loadedArg = LLVMBuildLoad(emitter->builder,arg.llvm,"loaded_for_builtin_uop");
-    LLVMValueRef loadedResult = NULL;
-
-    switch (builtinVDefKind)
-    {
-        case AST_BUILTIN_POS_F64:
-        case AST_BUILTIN_POS_F32:
-        case AST_BUILTIN_POS_S128:
-        case AST_BUILTIN_POS_S64:
-        case AST_BUILTIN_POS_S32:
-        case AST_BUILTIN_POS_S16:
-        case AST_BUILTIN_POS_S8:
-        case AST_BUILTIN_POS_U128:
-        case AST_BUILTIN_POS_U64:
-        case AST_BUILTIN_POS_U32:
-        case AST_BUILTIN_POS_U16:
-        case AST_BUILTIN_POS_U8:
-        case AST_BUILTIN_POS_U1:
-        {
-            // identity
-            return arg;
-        }
-
-        case AST_BUILTIN_NEG_F64:
-        case AST_BUILTIN_NEG_F32:
-        {
-            loadedResult = LLVMBuildFNeg(emitter->builder,loadedArg,"loaded_fneg");
-            break;
-        }
-        case AST_BUILTIN_NEG_S128:
-        case AST_BUILTIN_NEG_S64:
-        case AST_BUILTIN_NEG_S32:
-        case AST_BUILTIN_NEG_S16:
-        case AST_BUILTIN_NEG_S8:
-        {
-            // -x = ~x + 1
-            loadedResult = LLVMBuildNeg(emitter->builder,loadedArg,"loaded_neg");
-            break;
-        }
-        
-
-        default:
-        {
-            COMPILER_ERROR("NotImplemented: helpExportUnaryBuiltinVDefCall for AST_BUILTIN_?");
-            break;
-        }
-    }
-
-    if (loadedResult) {
-        LLVMValueRef builtinUOpResult = LLVMBuildAlloca(emitter->builder,arg.type.llvm,"builtin_uop_out");
-        LLVMBuildStore(emitter->builder,loadedResult,builtinUOpResult);
-        // LLVMBuildStore(emitter->builder,llvmParam,llvmParamMem);
-    }
-
-    COMPILER_ERROR("NotImplemented: helpExportUnaryBuiltinVDefCall");
-    ExportedValue dummy;
-    return dummy;
-}
-ExportedValue helpExportBinaryBuiltinVDefCall(Emitter* emitter, AstBuiltinVDefKind builtinVDefKind, ExportedValue ltArg, ExportedValue rtArg) {
-    COMPILER_ERROR("NotImplemented: helpExportBinaryBuiltinVDefCall");
-}
 
 //
 //
@@ -430,13 +92,17 @@ ExportedValue helpExportBinaryBuiltinVDefCall(Emitter* emitter, AstBuiltinVDefKi
 static void buildLlvmField(Typer* typer, void* sb, SymbolID name, Type* type);
 
 int exportModuleHeaders(Emitter* emitter, AstNode* moduleNode) {
-    return RecursivelyVisitAstNode(emitter,moduleNode,NULL,exportModuleHeaderVisitor_post);
+    return RecursivelyVisitAstNode(emitter,moduleNode,NULL,exportModuleHeaders_postVisitor);
 }
-int exportModuleHeaderVisitor_post(void* rawEmitter, AstNode* node) {
+int exportModule(Emitter* emitter, AstNode* moduleNode) {
+    return RecursivelyVisitAstNode(emitter,moduleNode,exportModule_preVisitor,NULL);
+}
+int exportModuleHeaders_postVisitor(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     
     AstKind nodeKind = GetAstNodeKind(node);
     if (nodeKind == AST_VLAMBDA) {
+        // adding a synthetic function, setting as node's LlvmRepr
         Type* funcType = GetAstNodeTypingExt_Value(node);
         ExportedType exportedFuncType = exportType(emitter->typer,funcType);
         ExportedValue* funcValue = malloc(sizeof(ExportedValue));
@@ -445,9 +111,25 @@ int exportModuleHeaderVisitor_post(void* rawEmitter, AstNode* node) {
         funcValue->llvm = LLVMAddFunction(emitter->module,"synthetic-function",exportedFuncType.llvm);
         LLVMSetFunctionCallConv(funcValue->llvm,LLVMCCallConv);
         SetAstNodeLlvmRepr(node,funcValue);
-    } else if (nodeKind == AST_STMT_VDEF) {
+    } 
+    else if (nodeKind == AST_STMT_EXTERN) {
+        // similar to lambda:
+        AstNode* externNode = node;
+        char const* nameStr = GetSymbolText(GetAstExternStmtName(externNode));
+        Type* funcType = GetAstNodeTypingExt_Value(externNode);
+        ExportedType exportedFuncType = exportType(emitter->typer,funcType);
+        ExportedValue* externValue = malloc(sizeof(ExportedValue));
+        externValue->native = externNode;
+        externValue->type = exportedFuncType;
+        externValue->llvm = LLVMAddFunction(emitter->module,nameStr,exportedFuncType.llvm);
+        LLVMSetFunctionCallConv(externValue->llvm,LLVMCCallConv);
+        
+        SetAstNodeLlvmRepr(externNode,externValue);
+    }
+    else if (nodeKind == AST_STMT_VDEF) {
         AstNode* vdef = node;
 
+        // note: exportValue(RHS) = the synthetic for this function.
         SymbolID lhs = GetAstDefValueStmtLhs(vdef);
         AstNode* rhsNode = GetAstDefValueStmtRhs(vdef);
         ExportedValue exportedRhs = exportValue(emitter,rhsNode);
@@ -459,81 +141,66 @@ int exportModuleHeaderVisitor_post(void* rawEmitter, AstNode* node) {
     }
     return 1;
 }
-int exportModule(Emitter* emitter, AstNode* moduleNode) {
-    return RecursivelyVisitAstNode(emitter,moduleNode,exportModuleVisitor_pre,NULL);
-}
-int exportModuleVisitor_pre(void* rawEmitter, AstNode* node) {
+int exportModule_preVisitor(void* rawEmitter, AstNode* node) {
     Emitter* emitter = rawEmitter;
     AstKind nodeKind = GetAstNodeKind(node);
-    switch (nodeKind) {
-        case AST_VLAMBDA:
-        {
-            COMPILER_ERROR("NotImplemented: exportModuleVisitor for AST_LAMBDA");
-            // ExportedValue* syntheticFunctionExportedValue = GetAstNodeLlvmRepr(node);
-            // LLVMValueRef syntheticFunction = syntheticFunctionExportedValue->llvm;
+    
+    if (nodeKind == AST_VLAMBDA) {
+        // acquiring synthetic:
+        ExportedValue* syntheticFunctionExportedValue = GetAstNodeLlvmRepr(node);
+        LLVMValueRef syntheticFunction = syntheticFunctionExportedValue->llvm;
 
-            // LLVMBasicBlockRef entryBlock = LLVMAppendBasicBlock(syntheticFunction,"entry");
+        // adding an entry BB:
+        LLVMBasicBlockRef entryBlock = LLVMAppendBasicBlock(syntheticFunction,"entry");
+        LLVMPositionBuilderAtEnd(emitter->builder,entryBlock);
+        
+        // adding arguments to the entry BB:
+        AstNode* lambda = node;
+        AstNode* pattern = GetAstVLambdaPattern(lambda);
+        int argCount = GetAstPatternLength(pattern);
+        for (int index = 0; index < argCount; index++) {
+            AstNode* argField = GetAstPatternFieldAt(pattern,index);
+            LLVMValueRef llvmArg = LLVMGetParam(syntheticFunction,index);
 
-            // LLVMPositionBuilderAtEnd(emitter->builder,entryBlock);
+            ExportedType argExpType = exportType(emitter->typer,GetAstNodeTypingExt_Value(argField));
+
+            LLVMValueRef llvmArgMem; {
+                char* argExpName = fmt("arg:%d-%s",index,GetSymbolText(GetAstFieldName(argField)));
+                llvmArgMem = LLVMBuildAlloca(emitter->builder,argExpType.llvm,argExpName);
+                free(argExpName);
+            }
+
+            LLVMBuildStore(emitter->builder,llvmArg,llvmArgMem);
             
-            // AstNode* lambda = syntheticFunctionExportedValue->native;
-            // AstNode* argPattern = GetAstLambdaPattern(lambda);
-            // AstKind patternKind = GetAstNodeKind(argPattern);
-
-            // ExportedValue* exportedPatternValue = malloc(sizeof(ExportedValue));
-            // exportedPatternValue->native = argPattern;
-            // exportedPatternValue->type = exportType(emitter->typer,GetAstNodeTypingExt_Value(argPattern));
-            // exportedPatternValue->llvm = NULL;
-            // SetAstNodeLlvmRepr(argPattern,exportedPatternValue);
-
-            // if (GetTypeKind(exportedPatternValue->type.native) != T_UNIT) {
-            //     LLVMValueRef llvmParam = LLVMGetParam(syntheticFunctionExportedValue->llvm,postElisionArgCount++);
-                
-            //     char* fmtArgName = fmt("arg:%d-%s",argIndex,GetSymbolText(GetAstSingletonPatternName(argPattern)));
-            //     LLVMValueRef llvmParamMem = LLVMBuildAlloca(emitter->builder,exportedPatternValue->type.llvm,fmtArgName);
-            //     free(fmtArgName);
-
-            //     if (patternKind == AST_VPATTERN_SINGLETON) {
-            //         exportedPatternValue->llvm = llvmParamMem;
-            //         LLVMBuildStore(emitter->builder,llvmParam,llvmParamMem);
-            //     } else {
-            //         COMPILER_ERROR_VA(
-            //             "NotImplemented: argument definition for pattern %d/%d of kind %s",
-            //             1+argIndex,argCount,TypeKindAsText(patternKind)
-            //         );
-            //     }
-            // }
-
-            // ExportedValue returnValue = exportValue(emitter,GetAstVLambdaBody(node));
-            // LLVMValueRef returnValueLlvm = returnValue.llvm;
-            // switch (GetTypeKind(returnValue.type.native)) {
-            //     case T_INT:
-            //     case T_FLOAT:
-            //     {
-            //         returnValueLlvm = LLVMBuildLoad(emitter->builder,returnValueLlvm,"loaded_for_return");
-            //         break;
-            //     }
-            //     default:
-            //     {
-            //         TypeKind typeKind = GetTypeKind(returnValue.type.native);
-            //         COMPILER_ERROR_VA("NotImplemented: return for typekind %s", TypeKindAsText(typeKind));
-            //         break;
-            //     }
-            // }
-            // LLVMBuildRet(emitter->builder,returnValueLlvm);
-            // break;
+            ExportedValue* argExpVal = malloc(sizeof(ExportedValue));
+            argExpVal->native = argField;
+            argExpVal->type = argExpType;
+            argExpVal->llvm = llvmArgMem;
+            SetAstNodeLlvmRepr(argField,argExpVal);
         }
-        case AST_EXTERN:
-        {
-            // todo: add support for 'extern' value definitions; values with external linkage.
-            COMPILER_ERROR("NotImplemented: AST_EXTERN");
-            break;
+
+        // exporting the body:
+        ExportedValue returnValue = exportValue(emitter,GetAstVLambdaBody(node));
+        
+        // returning the body's value:
+        // - most datatypes store references to the stack. These references must be loaded before return.
+        // - sniff test: is it mutable? if so, it must be loaded from the stack!
+        LLVMValueRef returnValueLlvm = returnValue.llvm;
+        switch (GetTypeKind(returnValue.type.native)) {
+            case T_INT:
+            case T_FLOAT:
+            {
+                returnValueLlvm = LLVMBuildLoad(emitter->builder,returnValueLlvm,"loaded_for_return");
+                break;
+            }
+            default:
+            {
+                TypeKind typeKind = GetTypeKind(returnValue.type.native);
+                COMPILER_ERROR_VA("NotImplemented: return for typekind %s", TypeKindAsText(typeKind));
+                break;
+            }
         }
-        default:
-        {
-            // do nothing
-            break;
-        }
+        LLVMBuildRet(emitter->builder,returnValueLlvm);
     }
     return 1;
 }
@@ -551,15 +218,16 @@ ExportedType exportType(Typer* typer, Type* type) {
         switch (nodeKind) {
             case T_UNIT:
             {
-                // FIXME: void type elision
-                // exportedType.llvm = LLVMVoidType();
-                exportedType.llvm = LLVMInt32Type();
+                exportedType.llvm = LLVMVoidType();
                 break;
             }
             case T_INT:
             {
                 int numBits = GetIntTypeWidthInBits(exportedType.native);
-                // todo: subtract 1 bit, add a sign-extension bit for signed.
+                if (GetIntTypeIsSigned(exportedType.native)) {
+                    COMPILER_ASSERT(numBits >= 2, "Cannot make a signed int of length < 2; 1 for sign bit, N-1 for mantissa");
+                }
+                // llvm uses the same type for signed and unsigned integers.
                 exportedType.llvm = LLVMIntType(numBits);
                 break;
             }
@@ -731,14 +399,14 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
             {
                 size_t intValue = GetAstIntLiteralValue(exportedValue.native);
                 LLVMValueRef stored = LLVMConstInt(exportedValue.type.llvm,intValue,0);
-                exportedValue.llvm = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"stack");
+                exportedValue.llvm = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"intl");
                 LLVMBuildStore(emitter->builder,stored,exportedValue.llvm);
                 break;
             }
             case AST_LITERAL_FLOAT:
             {
                 long double floatValue = GetAstFloatLiteralValue(exportedValue.native);
-                exportedValue.llvm = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,NULL);
+                exportedValue.llvm = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"floatl");
                 LLVMValueRef stored = LLVMConstReal(exportedValue.type.llvm,floatValue);
                 LLVMBuildStore(emitter->builder,stored,exportedValue.llvm);
                 break;
@@ -805,7 +473,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 if (outValuePtr) {
                     exportedValue.llvm = outValuePtr;
                     LLVMValueRef loadedForChainYield = LLVMBuildLoad(emitter->builder,exportedResult.llvm,"chain_result_loaded");
-                    LLVMBuildStore(emitter->builder,exportedValue.llvm,loadedForChainYield);
+                    LLVMBuildStore(emitter->builder,loadedForChainYield,exportedValue.llvm);
                 }
                 break;
             }
@@ -816,24 +484,38 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
 
             case AST_STMT_VLET:
             {
+                // exporting the RHS:
+                AstNode* rhsNode = GetAstLetStmtRhs(exportedValue.native);
+                ExportedValue* exportedRhs = malloc(sizeof(ExportedValue));
+                *exportedRhs = exportValue(emitter,rhsNode);
+
+                // binding RHS to LHS lpattern:
                 AstNode* lhsNode = GetAstLetStmtLhs(exportedValue.native);
-                if (GetAstNodeKind(lhsNode) == AST_ORPHANED_FIELD) {
-                    AstNode* rhsNode = GetAstLetStmtRhs(exportedValue.native);
-                    ExportedValue* exportedRhs = malloc(sizeof(ExportedValue));
-                    *exportedRhs = exportValue(emitter,rhsNode);
-                    SymbolID symbolID = GetAstFieldName(lhsNode);
+                if (GetAstNodeKind(lhsNode) == AST_VPATTERN_SINGLETON) {
+                    AstNode* lhsField = GetAstSingletonPatternField(lhsNode);
+                    SymbolID symbolID = GetAstFieldName(lhsField);
                     
                     char* fmtname = fmt("let:%s",GetSymbolText(symbolID));
                     LLVMSetValueName(exportedRhs->llvm,fmtname);
                     free(fmtname);
 
-                    SetAstNodeLlvmRepr(lhsNode,exportedRhs);
-                    exportedValue.llvm = exportedRhs->llvm;
+                    SetAstNodeLlvmRepr(lhsField,exportedRhs);
+                    exportedValue.llvm = NULL;
                 } else {
                     COMPILER_ERROR("NotImplemented: let statements with destructured, non singleton, LHS vpatterns.");
                 }
                 break;
             }
+
+            //
+            // Set statements:
+            // TODO: implement these.
+            //
+
+            //
+            // VCall:
+            //
+
             case AST_VCALL:
             {
                 ExportedType callReturnType = exportType(typer,GetAstNodeTypingExt_Value(exportedValue.native));
@@ -858,10 +540,10 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                     // - sub->super is all that is required, very predictable
                     // - in the future, when we add classes, sub->super gets more complex, but stays fixed in compiler-world.
                     // - if we introduce overloadable type conversions, overload resolution complexity balloons; high cost, low payoff.
-                    COMPILER_ERROR(
-                        // exportedActual.type.native == exportedFormal_type_native,
-                        "NotImplemented: implicit type conversions from subtype to supertype in AST_VCALL"
-                    );
+                    // COMPILER_ERROR(
+                    //     // exportedActual.type.native == exportedFormal_type_native,
+                    //     "NotImplemented: implicit type conversions from subtype to supertype in AST_VCALL"
+                    // );
 
                     if (exportedActual_typeKind != T_UNIT) {
                         // allocating a new args buffer on demand:
@@ -869,8 +551,12 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                             elidedLlvmArgs = malloc(argCount * sizeof(LLVMValueRef));
                         }
 
+                        char* loadedForCallName = fmt("actual_%d_%d_loaded", argIndex, elidedLlvmArgCount);
+                        LLVMValueRef loadedForCall = LLVMBuildLoad2(emitter->builder,exportedActual.type.llvm,exportedActual.llvm,loadedForCallName);
+                        free(loadedForCallName); loadedForCallName = NULL;
+
                         // pushing arg into existing buffer:
-                        elidedLlvmArgs[elidedLlvmArgCount++] = exportedActual.llvm;
+                        elidedLlvmArgs[elidedLlvmArgCount++] = loadedForCall;
                     }
                 }
                 
@@ -885,6 +571,430 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 }
                 break;
             }
+
+            //
+            // Unary and binary operators:
+            //
+
+            case AST_UNARY:
+            {
+                AstNode* expr = exportedValue.native;
+                
+                AstUnaryOperator uop = GetAstUnaryOperator(expr);
+                
+                AstNode* exprArg = GetAstUnaryOperand(expr);
+                ExportedValue exprArgExportedValue = exportValue(emitter,exprArg);
+
+                exportedValue.llvm = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"uop_res");
+                switch (uop)
+                {
+                    case UOP_GETREF:
+                    {
+                        // exportedValue.llvm usually tracks a pointer to an alloca-ed block.
+                        // just store this pointer.
+                        LLVMBuildStore(emitter->builder, exprArgExportedValue.llvm, exportedValue.llvm);
+                        break;
+                    }
+                    case UOP_DEREF:
+                    {
+                        // first load the pointer to deref:
+                        LLVMValueRef loadedArg = LLVMBuildLoad2(emitter->builder, exprArgExportedValue.type.llvm, exprArgExportedValue.llvm, "uop_deref_arg_loaded");
+                        
+                        // then load from that ptr for the result:
+                        LLVMValueRef loadedRes = LLVMBuildLoad2(emitter->builder, exportedValue.type.llvm, loadedArg, "uop_deref_res_loaded");
+
+                        // store result in alloca-ed space:
+                        LLVMBuildStore(emitter->builder, loadedRes, exportedValue.llvm);
+                        break;
+                    }
+                    case UOP_PLUS:
+                    {
+                        // identity
+                        LLVMValueRef loadedArg = LLVMBuildLoad2(emitter->builder, exprArgExportedValue.type.llvm, exprArgExportedValue.llvm, "uop_plus_arg_loaded");
+                        LLVMBuildStore(emitter->builder, loadedArg, exportedValue.llvm);
+                        break;
+                    }
+                    case UOP_MINUS:
+                    {
+                        LLVMValueRef loadedArg = LLVMBuildLoad2(emitter->builder, exprArgExportedValue.type.llvm, exprArgExportedValue.llvm, "uop_minus_arg_loaded");
+                        TypeKind uopTKind = GetTypeKind(exportedValue.type.native);
+                        LLVMValueRef loadedRes = NULL;
+                        if (uopTKind == T_INT) {
+                            loadedRes = LLVMBuildNeg(emitter->builder, loadedArg, "uop_minus_res_loaded");
+                        } else if (uopTKind == T_FLOAT) {
+                            loadedRes = LLVMBuildFNeg(emitter->builder, loadedArg, "uop_minus_res_loaded");
+                        } else {
+                            COMPILER_ERROR("NotImplemented: exportValue for AST_UNARY/UOP_MINUS");
+                        }
+                        if (loadedRes) {
+                            LLVMBuildStore(emitter->builder, loadedRes, exportedValue.llvm);
+                        }
+                        break;
+                    }
+                    case UOP_NOT:
+                    {
+                        LLVMValueRef loadedArg = LLVMBuildLoad2(emitter->builder, exprArgExportedValue.type.llvm, exprArgExportedValue.llvm, "uop_not_arg_loaded");
+                        LLVMValueRef loadedRes = LLVMBuildNot(emitter->builder, loadedArg, "uop_not_res_loaded");
+                        LLVMBuildStore(emitter->builder, loadedRes, exportedValue.llvm);
+                        break;
+                    }
+                    default:
+                    {
+                        COMPILER_ERROR_VA("NotImplemented: exportValue for AST_UNARY with uop=%s", AstUnaryOperatorAsText(uop));
+                        break;
+                    }
+                }
+                break;
+            }
+            case AST_BINARY:
+            {
+                AstNode* exprNode = exportedValue.native;
+
+                AstBinaryOperator bop = GetAstBinaryOperator(exprNode);
+                
+                AstNode* ltArgNode = GetAstBinaryLtOperand(exprNode);
+                AstNode* rtArgNode = GetAstBinaryRtOperand(exprNode);
+                ExportedValue ltArgExpVal = exportValue(emitter,ltArgNode);
+                ExportedValue rtArgExpVal = exportValue(emitter,rtArgNode);
+                LLVMValueRef llvmLtArg = LLVMBuildLoad2(emitter->builder, ltArgExpVal.type.llvm, ltArgExpVal.llvm, "bop_ltarg_loaded");
+                LLVMValueRef llvmRtArg = LLVMBuildLoad2(emitter->builder, rtArgExpVal.type.llvm, rtArgExpVal.llvm, "bop_rtarg_loaded");
+
+                // TODO: CAST/CONVERT args IF REQD while exporting AST_BINARY
+                int isIntBop = (GetTypeKind(exportedValue.type.native) == T_INT);
+                int isFpBop = (GetTypeKind(exportedValue.type.native) == T_FLOAT);
+
+                exportedValue.llvm = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"bop_res");
+                LLVMValueRef loadedRes = NULL;
+                if (isIntBop) {
+                    if (GetIntTypeIsSigned(exportedValue.type.native)) {
+                        // signed-int
+                        switch (bop) 
+                        {
+                            case BOP_MUL:
+                            {
+                                loadedRes = LLVMBuildMul(emitter->builder,llvmLtArg,llvmRtArg,"bop_smul_loaded");
+                                break;
+                            }
+                            case BOP_DIV:
+                            {
+                                loadedRes = LLVMBuildSDiv(emitter->builder,llvmLtArg,llvmRtArg,"bop_sdiv_loaded");
+                                break;
+                            }
+                            case BOP_REM:
+                            {
+                                loadedRes = LLVMBuildSRem(emitter->builder,llvmLtArg,llvmRtArg,"bop_srem_loaded");
+                                break;
+                            }
+                            case BOP_ADD:
+                            {
+                                loadedRes = LLVMBuildAdd(emitter->builder,llvmLtArg,llvmRtArg,"bop_sadd_loaded");
+                                break;
+                            }
+                            case BOP_SUBTRACT:
+                            {
+                                loadedRes = LLVMBuildSub(emitter->builder,llvmLtArg,llvmRtArg,"bop_ssubtract_loaded");
+                                break;
+                            }
+                            case BOP_LTHAN:
+                            {
+                                LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntSLT,llvmLtArg,llvmRtArg,"bop_slt_loaded");
+                                loadedRes = LLVMBuildIntCast(emitter->builder,rawValue,LLVMInt1Type(),NULL);
+                                break;
+                            }
+                            case BOP_GTHAN:
+                            {
+                                LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntSGT,llvmLtArg,llvmRtArg,"bop_sgt_loaded");
+                                // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                                loadedRes = rawValue;
+                                break;
+                            }
+                            case BOP_LETHAN:
+                            {
+                                LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntSLE,llvmLtArg,llvmRtArg,"bop_sle_loaded");
+                                // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                                loadedRes = rawValue;
+                                break;
+                            }
+                            case BOP_GETHAN:
+                            {
+                                LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntSGE,llvmLtArg,llvmRtArg,"bop_sge_loaded");
+                                loadedRes = LLVMBuildIntCast(emitter->builder,rawValue,LLVMInt1Type(),NULL);
+                                break;
+                            }
+                            case BOP_EQUALS:
+                            {
+                                // LLVMValueRef rawValue = LLVMBuildFCmp(emitter->llvmBuilder,LLVMRealOEQ,llvmLtArg,llvmRtArg,"eq");
+                                LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntEQ,llvmLtArg,llvmRtArg,"bop_seq_loaded");
+                                // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                                loadedRes = rawValue;
+                                break;
+                            }
+                            case BOP_NEQUALS:
+                            {
+                                // LLVMValueRef rawValue = LLVMBuildFCmp(emitter->llvmBuilder,LLVMRealONE,llvmLtArg,llvmRtArg,"eq");
+                                LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntNE,llvmLtArg,llvmRtArg,"bop_sneq_loaded");
+                                // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                                loadedRes = rawValue;
+                                break;
+                            }
+                        }
+                    } else {
+                        // unsigned-int
+                        switch (bop) 
+                        {
+                            case BOP_MUL:
+                            {
+                                loadedRes = LLVMBuildMul(emitter->builder,llvmLtArg,llvmRtArg,"bop_umul_loaded");
+                                break;
+                            }
+                            case BOP_DIV:
+                            {
+                                loadedRes = LLVMBuildUDiv(emitter->builder,llvmLtArg,llvmRtArg,"bop_udiv_loaded");
+                                break;
+                            }
+                            case BOP_REM:
+                            {
+                                loadedRes = LLVMBuildURem(emitter->builder,llvmLtArg,llvmRtArg,"bop_urem_loaded");
+                                break;
+                            }
+                            case BOP_ADD:
+                            {
+                                loadedRes = LLVMBuildAdd(emitter->builder,llvmLtArg,llvmRtArg,"bop_uadd_loaded");
+                                break;
+                            }
+                            case BOP_SUBTRACT:
+                            {
+                                loadedRes = LLVMBuildSub(emitter->builder,llvmLtArg,llvmRtArg,"bop_usubtract_loaded");
+                                break;
+                            }
+                            case BOP_AND:
+                            {
+                                loadedRes = LLVMBuildAnd(emitter->builder,llvmLtArg,llvmRtArg,"bop_uand_loaded");
+                                break;
+                            }
+                            case BOP_XOR:
+                            {
+                                loadedRes = LLVMBuildXor(emitter->builder,llvmLtArg,llvmRtArg,"bop_uxor_loaded");
+                                break;
+                            }
+                            case BOP_OR:
+                            {
+                                loadedRes = LLVMBuildOr(emitter->builder,llvmLtArg,llvmRtArg,"bop_uor_loaded");
+                                break;
+                            }
+                            case BOP_LTHAN:
+                            {
+                                LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntULT,llvmLtArg,llvmRtArg,"bop_ult_loaded");
+                                // loadedRes = LLVMBuildIntCast2(emitter->builder,rawValue,LLVMInt1Type(),0,);
+                                loadedRes = rawValue;
+                                break;
+                            }
+                            case BOP_GTHAN:
+                            {
+                                LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntUGT,llvmLtArg,llvmRtArg,"bop_ugt_loaded");
+                                // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                                loadedRes = rawValue;
+                                break;
+                            }
+                            case BOP_LETHAN:
+                            {
+                                LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntULE,llvmLtArg,llvmRtArg,"bop_ule_loaded");
+                                // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                                loadedRes = rawValue;
+                                break;
+                            }
+                            case BOP_GETHAN:
+                            {
+                                LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntUGE,llvmLtArg,llvmRtArg,"bop_uge_loaded");
+                                loadedRes = LLVMBuildIntCast(emitter->builder,rawValue,LLVMInt1Type(),NULL);
+                                break;
+                            }
+                            case BOP_EQUALS:
+                            {
+                                // LLVMValueRef rawValue = LLVMBuildFCmp(emitter->llvmBuilder,LLVMRealOEQ,llvmLtArg,llvmRtArg,"eq");
+                                LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntEQ,llvmLtArg,llvmRtArg,"bop_ueq_loaded");
+                                // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                                loadedRes = rawValue;
+                                break;
+                            }
+                            case BOP_NEQUALS:
+                            {
+                                // LLVMValueRef rawValue = LLVMBuildFCmp(emitter->llvmBuilder,LLVMRealONE,llvmLtArg,llvmRtArg,"eq");
+                                LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntNE,llvmLtArg,llvmRtArg,"bop_uneq_loaded");
+                                // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                                loadedRes = rawValue;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else if (isFpBop) {
+                    // floating point:
+                    switch (bop) 
+                    {
+                        case BOP_MUL:
+                        {
+                            loadedRes = LLVMBuildFMul(emitter->builder,llvmLtArg,llvmRtArg,"bop_fmul_loaded");
+                            break;
+                        }
+                        case BOP_DIV:
+                        {
+                            loadedRes = LLVMBuildFDiv(emitter->builder,llvmLtArg,llvmRtArg,"bop_fdiv_loaded");
+                            break;
+                        }
+                        case BOP_REM:
+                        {
+                            loadedRes = LLVMBuildFRem(emitter->builder,llvmLtArg,llvmRtArg,"bop_frem_loaded");
+                            break;
+                        }
+                        case BOP_ADD:
+                        {
+                            loadedRes = LLVMBuildFAdd(emitter->builder,llvmLtArg,llvmRtArg,"bop_fadd_loaded");
+                            break;
+                        }
+                        case BOP_SUBTRACT:
+                        {
+                            loadedRes = LLVMBuildFSub(emitter->builder,llvmLtArg,llvmRtArg,"bop_fsubtract_loaded");
+                            break;
+                        }
+                        case BOP_LTHAN:
+                        {
+                            LLVMValueRef rawValue = LLVMBuildFCmp(emitter->builder,LLVMRealOLT,llvmLtArg,llvmRtArg,"bop_flt_loaded");
+                            loadedRes = LLVMBuildIntCast(emitter->builder,rawValue,LLVMInt1Type(),NULL);
+                            break;
+                        }
+                        case BOP_GTHAN:
+                        {
+                            LLVMValueRef rawValue = LLVMBuildFCmp(emitter->builder,LLVMRealOGT,llvmLtArg,llvmRtArg,"bop_fgt_loaded");
+                            // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                            loadedRes = rawValue;
+                            break;
+                        }
+                        case BOP_LETHAN:
+                        {
+                            LLVMValueRef rawValue = LLVMBuildFCmp(emitter->builder,LLVMRealOLE,llvmLtArg,llvmRtArg,"bop_fle_loaded");
+                            // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                            loadedRes = rawValue;
+                            break;
+                        }
+                        case BOP_GETHAN:
+                        {
+                            LLVMValueRef rawValue = LLVMBuildFCmp(emitter->builder,LLVMRealOGE,llvmLtArg,llvmRtArg,"bop_fge_loaded");
+                            // loadedRes = LLVMBuildIntCast(emitter->builder,rawValue,LLVMInt1Type(),NULL);
+                            loadedRes = rawValue;
+                            break;
+                        }
+                        case BOP_EQUALS:
+                        {
+                            LLVMValueRef rawValue = LLVMBuildFCmp(emitter->builder,LLVMRealOEQ,llvmLtArg,llvmRtArg,"bop_feq_loaded");
+                            // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                            loadedRes = rawValue;
+                            break;
+                        }
+                        case BOP_NEQUALS:
+                        {
+                            LLVMValueRef rawValue = LLVMBuildFCmp(emitter->builder,LLVMRealONE,llvmLtArg,llvmRtArg,"bop_fneq_loaded");
+                            // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
+                            loadedRes = rawValue;
+                            break;
+                        }
+                    }
+                }
+
+                LLVMBuildStore(emitter->builder, loadedRes, exportedValue.llvm);
+                break;
+            }
+            
+            //
+            // STRING: data stored C-style, pointer to first byte returned.
+            // todo: store string length
+            //
+
+            // case AST_LITERAL_STRING:
+            // {
+            //     char const* strValue = GetAstStringLiteralValue(value.exprNode);
+            //     size_t len = strlen(strValue);
+            //     value.llvmValueRef = LLVMConstString(strValue,len,0);
+            //     break;
+            // }
+            
+            // todo: emitExpr for tuples:
+            // - always returns a pointer to a tuple.
+
+            //
+            // ITEs:
+            //
+
+            // case AST_ITE:
+            // {
+            //     // getting the basic block we start in, to return to after computing the result:
+            //     LLVMBasicBlockRef predecessorBlock = NULL;
+            //     LLVMValueRef currentFunction = currentLlvmFunction(emitter);
+            //     if (currentFunction) {
+            //         LLVMBasicBlockRef optPredecessor = LLVMGetLastBasicBlock(currentFunction);
+            //         if (optPredecessor) {
+            //             predecessorBlock = optPredecessor;
+            //         }
+            //     }
+
+            //     // getting the ITE type:
+            //     Type* iteType = GetAstNodeValueType(expr);
+            //     LLVMTypeRef iteLlvmType = emitType(emitter->typer,iteType);
+                
+            //     // adding any basic blocks required:
+            //     LLVMValueRef func = currentLlvmFunction(emitter);
+            //     LLVMBasicBlockRef entryBlock = LLVMAppendBasicBlock(func, "ite-entry");
+            //     LLVMBasicBlockRef trueBlock = LLVMAppendBasicBlock(func, "ite-true");
+            //     LLVMBasicBlockRef falseBlock = LLVMAppendBasicBlock(func, "ite-false");
+            //     LLVMBasicBlockRef landingBlock = LLVMAppendBasicBlock(func, "ite-landing");
+                
+            //     // breaking to the entry block:
+            //     LLVMBuildBr(emitter->llvmBuilder,entryBlock);
+                
+            //     // computing cond, breaking to other blocks:
+            //     LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entryBlock);
+            //     AstNode* cond = GetAstIteCond(expr);
+            //     LLVMValueRef condLlvm = emitExpr(emitter,cond);
+            //     // LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entryBlock);
+            //     LLVMBuildCondBr(emitter->llvmBuilder,condLlvm,trueBlock,falseBlock);
+                
+            //     // populating 'ite-true':
+            //     LLVMPositionBuilderAtEnd(emitter->llvmBuilder,trueBlock);
+            //     AstNode* ifTrue = GetAstIteIfTrue(expr);
+            //     LLVMValueRef valueIfTrue = NULL;
+            //     if (ifTrue) {
+            //         valueIfTrue = emitExpr(emitter,ifTrue);
+            //     }
+            //     LLVMBasicBlockRef predTrueBlock = LLVMGetInsertBlock(emitter->llvmBuilder);
+            //     LLVMBuildBr(emitter->llvmBuilder,landingBlock);
+
+            //     // populating 'ite-false':
+            //     LLVMPositionBuilderAtEnd(emitter->llvmBuilder,falseBlock);
+            //     AstNode* ifFalse = GetAstIteIfFalse(expr);
+            //     LLVMValueRef valueIfFalse = NULL;
+            //     if (ifFalse) {
+            //         valueIfFalse = emitExpr(emitter,ifFalse);
+            //     }
+            //     LLVMBasicBlockRef predFalseBlock = LLVMGetInsertBlock(emitter->llvmBuilder);
+            //     LLVMBuildBr(emitter->llvmBuilder,landingBlock);
+
+            //     // tying together these blocks with a 'phi' node and returning:
+            //     LLVMPositionBuilderAtEnd(emitter->llvmBuilder,landingBlock);
+            //     LLVMValueRef phi = LLVMBuildPhi(emitter->llvmBuilder, iteLlvmType, "ite-result");
+            //     LLVMValueRef phi_values[] = {valueIfTrue, valueIfFalse};
+            //     LLVMBasicBlockRef phi_blocks[] = {predTrueBlock, predFalseBlock};
+            //     LLVMAddIncoming(phi, phi_values, phi_blocks, 2);
+            //     // if (predecessorBlock) {
+            //     //     LLVMBuildBr(emitter->llvmBuilder,predecessorBlock);
+            //     // }
+
+            //     exportedValue.llvm = LLVMBuildAlloca()
+            //     break;
+            // }
+
+            //
+            // Cast expressions:
+            //
 
             case AST_VCAST:
             {
@@ -934,9 +1044,12 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                         int toWidth = GetTypeSizeInBytes(typer,concreteTo);
                         int fromWidth = GetTypeSizeInBytes(typer,concreteFrom);
                         
-                        if (toIsSigned != fromIsSigned) {
-                            COMPILER_ERROR("NotImplemented: signed/unsigned or unsigned/signed type conversion.");
-                        } else {
+                        // NOTE: mixed signed/unsigned arithmetic is not ideal, should we forbid some actions?
+                        // if (toIsSigned != fromIsSigned) {
+                        //      
+                        // } else {
+                        
+                        if (1) {
                             if (toIsSigned) {
                                 exportedValue.llvm = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"cast_si");
                                 LLVMValueRef loadedInputLlvmValue = LLVMBuildLoad(emitter->builder,exportedRhs.llvm,"cast_si_input_loaded");
@@ -992,140 +1105,6 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 break;
             }
 
-            //
-            // Unary and binary operators:
-            //
-
-            // todo: painstakingly implement each of these functions, but not as binary operators, but callable functions.
-            // todo: implement operator overloading to bridge functions with operator invocation.
-
-            case AST_UNARY:
-            {
-                AstNode* expr = exportedValue.native;
-                AstBuiltinVDefKind builtinVDefKind = selectBuiltinUnaryVDefKind(emitter,expr);
-                if (COMPILER_ASSERT(builtinVDefKind != AST_BUILTIN_NULL,"Selected NULL builtinVDefKind while exporting AST_UNARY")) {
-                    // todo: emit code based on the builtin vdef kind.
-                }
-                COMPILER_ERROR("NotImplemented: exportValue for AST_UNARY");
-                break;
-            }
-            case AST_BINARY:
-            {
-                AstNode* expr = exportedValue.native;
-                AstBuiltinVDefKind builtinVDefKind = selectBuiltinBinaryVDefKind(emitter,expr);
-                if (COMPILER_ASSERT(builtinVDefKind != AST_BUILTIN_NULL,"Selected NULL builtinVDefKind while exporting AST_BINARY")) {
-                    // todo: emit code based on the builtin vdef kind.
-                }
-                COMPILER_ERROR("NotImplemented: exportValue for AST_BINARY");
-                break;
-            }
-            // case AST_BINARY:
-            // {
-            //     // todo: binary operators only support integers for now.
-            //     AstBinaryOperator op = GetAstBinaryOperator(expr);
-            //     AstNode* ltArg = GetAstBinaryLtOperand(expr);
-            //     AstNode* rtArg = GetAstBinaryRtOperand(expr);
-            //     LLVMValueRef llvmLtArg = emitExpr(emitter,ltArg);
-            //     LLVMValueRef llvmRtArg = emitExpr(emitter,rtArg);
-                
-            //     switch (op)
-            //     {
-            //         case BOP_MUL:
-            //         {
-            //             return LLVMBuildMul(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"mul");
-            //         }
-            //         case BOP_DIV:
-            //         {
-            //             return LLVMBuildUDiv(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"div");
-            //         }
-            //         case BOP_REM:
-            //         {
-            //             return LLVMBuildURem(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"rem");
-            //         }
-            //         case BOP_ADD:
-            //         {
-            //             return LLVMBuildAdd(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"sum");
-            //         }
-            //         case BOP_SUB:
-            //         {
-            //             return LLVMBuildSub(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"sub");
-            //         }
-            //         case BOP_AND:
-            //         {
-            //             return LLVMBuildAnd(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"and");
-            //         }
-            //         case BOP_XOR:
-            //         {
-            //             return LLVMBuildXor(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"xor");
-            //         }
-            //         case BOP_OR:
-            //         {
-            //             return LLVMBuildOr(emitter->llvmBuilder,llvmLtArg,llvmRtArg,"or");
-            //         }
-            //         case BOP_LTHAN:
-            //         {
-            //             LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntULT,llvmLtArg,llvmRtArg,"lt");
-            //             return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
-            //         }
-            //         case BOP_GTHAN:
-            //         {
-            //             LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntUGT,llvmLtArg,llvmRtArg,"gt");
-            //             // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
-            //             return rawValue;
-            //         }
-            //         case BOP_LETHAN:
-            //         {
-            //             LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntULE,llvmLtArg,llvmRtArg,"le");
-            //             // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
-            //             return rawValue;
-            //         }
-            //         case BOP_GETHAN:
-            //         {
-            //             LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntUGE,llvmLtArg,llvmRtArg,"ge");
-            //             return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
-            //         }
-            //         case BOP_EQUALS:
-            //         {
-            //             // LLVMValueRef rawValue = LLVMBuildFCmp(emitter->llvmBuilder,LLVMRealOEQ,llvmLtArg,llvmRtArg,"eq");
-            //             LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntEQ,llvmLtArg,llvmRtArg,"eq");
-            //             // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
-            //             return rawValue;
-            //         }
-            //         case BOP_NEQUALS:
-            //         {
-            //             // LLVMValueRef rawValue = LLVMBuildFCmp(emitter->llvmBuilder,LLVMRealONE,llvmLtArg,llvmRtArg,"eq");
-            //             LLVMValueRef rawValue = LLVMBuildICmp(emitter->llvmBuilder,LLVMIntNE,llvmLtArg,llvmRtArg,"neq");
-            //             // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
-            //             return rawValue;
-            //         }
-            //         default:
-            //         {
-            //             if (DEBUG) {
-            //                 printf("!!- NotImplemented: AST_BINARY in helpEmitExpr for BOP_?\n");
-            //             } else {
-            //                 assert(0 && "NotImplemented: AST_BINARY in helpEmitExpr for BOP_?");
-            //             }
-            //             return NULL;
-            //         }
-            //     }
-            // }
-
-            //
-            // STRING: data stored C-style, pointer to first byte returned.
-            // todo: store string length
-            //
-
-            // case AST_LITERAL_STRING:
-            // {
-            //     char const* strValue = GetAstStringLiteralValue(value.exprNode);
-            //     size_t len = strlen(strValue);
-            //     value.llvmValueRef = LLVMConstString(strValue,len,0);
-            //     break;
-            // }
-            
-            // todo: emitExpr for tuples:
-            // - always returns a pointer to a tuple.
-
             default:
             {
                 AstKind nodeKind = GetAstNodeKind(exportedValue.native);
@@ -1160,5 +1139,20 @@ int EmitLlvmModule(Typer* typer, AstNode* module) {
         LLVMDumpModule(emitter.module);
     }
 
+    char* verifyMsg = NULL;
+
+    int broken = LLVMVerifyModule(emitter.module,LLVMReturnStatusAction,&verifyMsg);
+    if (broken) {
+        COMPILER_ERROR_VA("LLVMVerifyModule failed with message(s):\n%s", verifyMsg);
+    } else {
+        SetAstNodeLlvmRepr(module,emitter.module);
+
+        if (DEBUG) {
+            printf("!!- LLVM verify msg:\n<msg>\n%s</msg>\n", verifyMsg);
+        }
+    }
+    LLVMDisposeMessage(verifyMsg); verifyMsg = NULL;
+    
+    LLVMDisposeBuilder(emitter.builder);
     return result;
 }
