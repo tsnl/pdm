@@ -37,6 +37,7 @@ typedef struct AstVCast             AstVCast;
 typedef struct AstModuleStmt        AstModuleStmt;
 typedef struct AstImportStmt        AstImportStmt;
 typedef struct AstSetStmt           AstSetStmt;
+typedef struct AstArray             AstArray;
 
 struct AstNodeList {
     size_t count;
@@ -53,7 +54,7 @@ struct AstModule {
 struct AstID {
     SymbolID name;
     void* lookupScope;
-    void* defn;
+    void* defnScope;
 };
 struct AstField {
     SymbolID name;
@@ -153,6 +154,10 @@ struct AstSetStmt {
     AstNode* lhs;
     AstNode* rhs;
 };
+struct AstArray {
+    AstNode* typespec;
+    AstNode* count;
+};
 
 union AstInfo {
     AstModule           Module;
@@ -188,17 +193,23 @@ union AstInfo {
     AstNode*            DiscardStmt_discarded;
     AstNode*            SingletonPattern_field;
     AstNodeList*        GenericList_items;
+    AstArray            Array;
 };
 
 struct AstNode {
     Span span;
     AstKind kind;
     AstInfo as;
+    
+    AstContext lookupContext;
+    AstNode* parentFunc;
+
     void* typingExt_value;
     void* typingExt_type;
-    AstContext lookupContext;
+    
+    void* constVal;
+
     void* llvmRepr;
-    AstNode* parentFunc;
 };
 
 //
@@ -226,6 +237,7 @@ AstNode* newNode(Span span, AstKind kind) {
     node->lookupContext = __ASTCTX_NONE;
     node->llvmRepr = NULL;
     node->parentFunc = NULL;
+    node->constVal = NULL;
     return node;
 }
 AstNodeList* newNodeList(void) {
@@ -342,7 +354,7 @@ AstNode* NewAstVID(Span span, SymbolID symbolID) {
     AstNode* idNode = newNode(span, AST_VID);
     idNode->as.ID.name = symbolID;
     idNode->as.ID.lookupScope = NULL;
-    idNode->as.ID.defn = NULL;
+    idNode->as.ID.defnScope = NULL;
     return idNode;
 }
 AstNode* NewAstIntLiteral(Span span, size_t value, int base) {
@@ -747,7 +759,7 @@ AstNode* NewAstTID(Span span, SymbolID symbolID) {
     AstNode* idNode = newNode(span, AST_TID);
     idNode->as.ID.name = symbolID;
     idNode->as.ID.lookupScope = NULL;
-    idNode->as.ID.defn = NULL;
+    idNode->as.ID.defnScope = NULL;
     return idNode;
 }
 AstNode* NewAstTTuple(Span span) {
@@ -764,6 +776,12 @@ AstNode* NewAstTTupleWithFieldsSb(Span span, AstNode** mov_fieldsSb) {
     }
     sb_free(mov_fieldsSb);
     return ttuple;
+}
+AstNode* NewAstTArray(Span span, AstNode* typespec, AstNode* count) {
+    AstNode* tarray = newNode(span,AST_TARRAY);
+    tarray->as.Array.typespec = typespec;
+    tarray->as.Array.count = count;
+    return tarray;
 }
 AstNode* NewAstTParen(Span span, AstNode* it) {
     AstNode* parenNode = newNode(span,AST_TPAREN);
@@ -1231,10 +1249,10 @@ void SetAstIdLookupScope(AstNode* node, void* scopeP) {
     node->as.ID.lookupScope = scopeP;
 }
 void* GetAstIdDefn(AstNode* node) {
-    return node->as.ID.defn;
+    return node->as.ID.defnScope;
 }
-void SetAstIdDefn(AstNode* node, void* defn) {
-    node->as.ID.defn = defn;
+void SetAstIdDefnScope(AstNode* node, void* defn) {
+    node->as.ID.defnScope = defn;
 }
 
 //
@@ -1524,6 +1542,87 @@ int RecursivelyVisitAstNode(void* context, AstNode* node, VisitorCb preVisitorCb
         }
     }
     return 1;
+}
+
+//
+// Const evaluation:
+//
+
+int IsAstNodeConstEvaluable(AstNode* node) {
+    switch (GetAstNodeKind(node))
+    {
+        case AST_LITERAL_INT:
+        case AST_LITERAL_FLOAT:
+        case AST_LITERAL_STRING:
+        {
+            return 1;
+        }
+        case AST_UNARY:
+        {
+            AstUnaryOperator operator = GetAstUnaryOperator(node);
+            int isConstOperator = (
+                operator != UOP_GETREF &&
+                operator != UOP_DEREF
+            );
+            AstNode* operand = GetAstUnaryOperand(node);
+            return isConstOperator && IsAstNodeConstEvaluable(operand);
+        }
+        case AST_BINARY:
+        {
+            AstNode* ltOperand = GetAstBinaryLtOperand(node);
+            AstNode* rtOperand = GetAstBinaryRtOperand(node);
+            return (
+                IsAstNodeConstEvaluable(ltOperand) &&
+                IsAstNodeConstEvaluable(rtOperand)
+            );
+        }
+        case AST_TYPE2VAL:
+        {
+            return IsAstNodeConstEvaluable(GetAstType2ValTypespec(node));
+        }
+        case AST_VAL2TYPE:
+        {
+            return IsAstNodeConstEvaluable(GetAstVal2TypeExpr(node));
+        }
+        case AST_TID:
+        {
+            return 1;
+        }
+        case AST_VID:
+        {
+            // vid constant <=> defnNode constant
+            Scope* defn = GetAstIdDefn(node);
+            AstNode* defnNode = defn->defnAstNode;
+            return IsAstNodeConstEvaluable(defnNode);
+        }
+
+        //
+        // DefnNodes (for derived VIDs):
+        //
+
+        case AST_VPATTERN_FIELD:
+        case AST_VPATTERN_SINGLETON_FIELD:
+        {
+            return 0;
+        }
+        case AST_TPATTERN_FIELD:
+        case AST_TPATTERN_SINGLETON_FIELD:
+        {
+            return 1;
+        }
+        
+        default:
+        {
+            return 0;
+        }
+    }
+}
+
+void* GetAstNodeConstValue(AstNode* node) {
+    return node->constVal;
+}
+void SetAstNodeConstValue(AstNode* node, void* value) {
+    node->constVal = value;
 }
 
 //

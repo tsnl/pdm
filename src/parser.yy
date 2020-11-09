@@ -99,6 +99,7 @@
 %type <nt> typespec
 %type <nt> primaryTypespec
 %type <nt> postfixTypespec
+%type <ntSb> typespec_cl
 
 //
 // Pattern Nonterminals:
@@ -158,6 +159,8 @@
 %token TK_KW_XOR "'xor'" 
 %token TK_KW_OR "'or'" 
 %token TK_KW_NOT "'not'"
+%token TK_KW_TTUPLE "'Tuple'"
+%token TK_KW_TARRAY "'Array'"
 
 %token <token> TK_DINT_LIT TK_XINT_LIT TK_FLOAT_LIT 
 %token <token> TK_DQSTRING_LIT TK_SQSTRING_LIT
@@ -429,9 +432,15 @@ orBinaryExpr
 typespec
     : postfixTypespec  { $$ = $1; }
     ;
+typespec_cl
+    : typespec                      { $$ = NULL; sb_push($$,$1); }
+    | typespec_cl TK_COMMA typespec { $$ = $1; sb_push($$,$3); }
+    ;
 
 primaryTypespec
-    : tid { $$ = NewAstTID(@$, $1.ID_symbolID); }
+    : tid                                                       { $$ = NewAstTID(@$, $1.ID_symbolID); }
+    | TK_KW_TTUPLE TK_LSQBRK typespec_cl TK_RSQBRK              { $$ = NewAstTTupleWithFieldsSb(@$,$3); }
+    | TK_KW_TARRAY TK_LSQBRK typespec TK_COMMA expr TK_RSQBRK   { $$ = NewAstTArray(@$,$3,NewAstVal2Type(@$,$5)); } 
     ;
 postfixTypespec
     : primaryTypespec                               { $$ = $1; }
@@ -529,7 +538,7 @@ int yylex(YYSTYPE* lvalp, YYLTYPE* llocp, Source* source) {
     // https://www.gnu.org/software/bison/manual/html_node/Calling-Convention.html
 
     TokenInfo* info = &lvalp->token;
-
+    llocp->source = source;
     int tk = LexOneToken(source,info,llocp);
     DebugPrintToken("YYLEX:", tk, info, llocp);
     

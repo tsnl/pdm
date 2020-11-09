@@ -24,7 +24,7 @@ enum AstKind {
     AST_UNIT, 
     AST_VCAST,
     AST_VPAREN, AST_VTUPLE, 
-    AST_TPAREN, AST_TTUPLE,
+    AST_TPAREN, AST_TTUPLE, AST_TARRAY,
     AST_VSTRUCT, AST_TSTRUCT, AST_CHAIN,
     AST_VPTR,
     AST_VLAMBDA,AST_TLAMBDA,
@@ -146,6 +146,7 @@ AstNode* NewAstBinary(Span span, AstBinaryOperator op, AstNode* ltArg, AstNode* 
 AstNode* NewAstTID(Span span, SymbolID symbolID);
 AstNode* NewAstTTuple(Span span);
 AstNode* NewAstTTupleWithFieldsSb(Span span, AstNode** mov_fieldsSb);
+AstNode* NewAstTArray(Span span, AstNode* typespec, AstNode* count);
 AstNode* NewAstTParen(Span span, AstNode* it);
 AstNode* NewAstTPtr(Span span, AstNode* pointee);
 
@@ -272,13 +273,22 @@ void SetAstNodeLookupContext(AstNode* node, AstContext context);
 void* GetAstIdLookupScope(AstNode* node);
 void* GetAstIdDefn(AstNode* node);
 void SetAstIdLookupScope(AstNode* node, void* scope);
-void SetAstIdDefn(AstNode* node, void* defn);
+void SetAstIdDefnScope(AstNode* node, void* defn);
 
 // Visitor API: calls a 'VisitorCb' function pre- and post- visiting children.
 // - `context` can be used to propagate contextual information as the visitor recurses.
 typedef int(*VisitorCb)(void* context, AstNode* node);
 
 int RecursivelyVisitAstNode(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb);
+
+//
+// Constant evaluation:
+//
+
+int IsAstNodeConstEvaluable(AstNode* node);
+
+void* GetAstNodeConstValue(AstNode* node);
+void SetAstNodeConstValue(AstNode* node, void* value);
 
 //
 // LLVM representations

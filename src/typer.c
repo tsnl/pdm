@@ -1304,7 +1304,7 @@ int typer_post(void* rawTyper, AstNode* node) {
                 );
             }
             Type* foundType = GetDefnType(foundDefn);
-            SetAstIdDefn(node,foundDefn);
+            SetAstIdDefnScope(node,foundDefn);
             if (lookupContext == ASTCTX_TYPING) {
                 COMPILER_ASSERT(nodeKind == AST_TID, "Cannot lookup non-TID in ASTCTX_TYPING context.");
                 SetAstNodeTypingExt_Type(node,foundType);

@@ -1,16 +1,12 @@
-# Each source file is composed of
-# 1. (1) 'namespace' statement
-# 2. (0 or more) 'typedef' or 'def' statements
-#    - typedefs must begin with uppercase letters.
-#    - all other IDs are assumed to be 'def' statements.
-
-namespace eg1;
+# Each source file is composed of (0 or more) 'typedef' or 'def' statements
+# - typedefs: struct,enum,type statements
+# - def: 'def'
 
 #
 # Circles:
 #
 
-type Circle = {
+struct Circle {
     center: (F32,F32),
     radius: (F32)
 };
@@ -27,18 +23,18 @@ def circumference (circle: Circle) = {
 # Pixels (generics):
 #
 
-type Pixel [T] = {r:T,g:T,b:T};
-type Image [T] = {name:String, size:(U32,U32), data:Buffer[Pixel[T]]};
+struct Pixel [T] {r:T,g:T,b:T};
+struct Image [T] {name:String, size:(U32,U32), data:Buffer[Pixel[T]]};
 
-def addPixel [T] (p: Pixel T, q: Pixel T) = {
+def addPixel [T] (p: Pixel[T], q: Pixel[T]) = {
     Pixel[T] (p.r+q.r, p.g+q.g, p.b+q.b)
 };
 
-def mulPixel [T] (p: Pixel T, s: T) = {
+def mulPixel [T] (p: Pixel[T], s: T) = {
     Pixel[T] (s*p.r, s*p.g, s*p.b)
 };
 
-def addImage [T] (lt: Image T, rt: Image T) = Image[T] {
+def addImage [T] (lt: Image[T], rt: Image[T]) = Image[T] {
     with lt.size == rt.size;
     Image[T] {
         name: fmt "({lt.name}+{rt.name})",
@@ -47,7 +43,7 @@ def addImage [T] (lt: Image T, rt: Image T) = Image[T] {
     }
 };
 
-def mulImage [T] (i: Image T, x: U8) = Image[T] {
+def mulImage [T] (i: Image[T], x: U8) = Image[T] {
     let scalePixelByX = fun p => {
         mulPixel p x
     };
@@ -62,11 +58,11 @@ def mulImage [T] (i: Image T, x: U8) = Image[T] {
 # Dicts (generics):
 #
 
-type Dict [K,V] = {
+struct Dict [K,V] {
     # ...
 };
 
-def newDict [K,V] = (Dict K V) {
+def newDict [K,V] = Dict[K,V] {
     # ...
 };
 
@@ -74,9 +70,9 @@ def newDict [K,V] = (Dict K V) {
 # Enums:
 #
 
-enum Color = {
-    rgba: (U8,U8,U8,U8),
-    hsva: (U8,U8,U8,U8),
+enum Color {
+    rgba: Tuple[U8,U8,U8,U8],
+    hsva: Tuple[U8,U8,U8,U8],
     name: String,
     none
 };

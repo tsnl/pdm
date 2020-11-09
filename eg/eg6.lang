@@ -1,6 +1,6 @@
 # Values as template parameters:
 
-type Array [T] (n:Int) = {
+struct Array [T] (n:Int) {
     # ...
 };
 

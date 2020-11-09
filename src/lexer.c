@@ -38,6 +38,8 @@ static SymbolID kwNotSymbolID = 0;
 static SymbolID kwSetSymbolID = 0;
 static SymbolID kwTypeSymbolID = 0;
 static SymbolID kwEnumSymbolID = 0;
+static SymbolID kwTTupleSymbolID = 0;
+static SymbolID kwTArraySymbolID = 0;
 
 static TokenKind lexOneToken(Source* source, TokenInfo* info, Span* span);
 static TokenKind lexOneSimpleToken(Source* source);
@@ -498,6 +500,8 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* infoP) {
     if (kwID == kwNotSymbolID) { return TK_KW_NOT; }
     if (kwID == kwSetSymbolID) { return TK_KW_SET; }
     if (kwID == kwTypeSymbolID) { return TK_KW_TYPE; }
+    if (kwID == kwTTupleSymbolID) { return TK_KW_TTUPLE; }
+    if (kwID == kwTArraySymbolID) { return TK_KW_TARRAY; }
     if (DEBUG) {
         printf("!!- Keyword not implemented: '%s' (id=%d)\n", strings_lookup_id(symbolsDict, kwID), kwID);
     } else {
