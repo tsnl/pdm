@@ -1,6 +1,9 @@
 # Enums: simple enough.
 
-enum Opt [T] {
-    some: T,
-    none
+mod opt {
+    enum Opt [T] {
+        some T,
+        none
+    };
 };
+

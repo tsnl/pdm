@@ -6,20 +6,26 @@
 # Since selective imports risk breaking a type's class membership, we
 # must import all symbols in a module into an ENCAPSULATED NAMESPACE.
 
-# The 'module' statement declaratively loads a module for access under a VID name.
+# The 'attach' statement declaratively loads a module for access by a fixed VID name.
 
-module std from "basic.lang" as "file/fs";
-module eg3 from "eg3.lang" as "file/fs";
-module sdl from "pandemonium-sdl2" as "lib/fs";
-module avx from "pandemonium-avx" as "lib/fs";
+attach std from "basic.lang" as "file/fs";
+attach eg3 from "eg3.lang" as "file/fs";
+attach sdl from "pandemonium-sdl2" as "lib/fs";
+attach avx from "pandemonium-avx" as "lib/fs";
 
-def newCar (name: Text, price: I32) = eg3.Car {
-    (name, price)
+mod car {
+    def new (name Text, price I32) = eg3.Car {
+        (name, price)
+    };
 };
 
-def wearAndTear (car: &eg3.Car, dsec: F32) = {
-    let fancyScoreDamagePerSec = 1.2;
-    set car.fancyScore = *car.fancyScore - U32(fancyScoreDamagePerSec * dsec);
+mod level1 {
+    mod damage {
+        def wearAndTear (car &eg3.Car, dsec F32) = {
+            let fancyScoreDamagePerSec = 1.2;
+            set car.fancyScore = *car.fancyScore - U32(fancyScoreDamagePerSec * dsec);
+        };
+    };
 };
 
 #
@@ -32,20 +38,24 @@ def wearAndTear (car: &eg3.Car, dsec: F32) = {
 # - class-requirement statements
 #
 
-import std.pi;
-import std.List;
-import std.Dict;
+mod demo {
 
-import eg3.Vehicle;
-import eg3.newCarList;
-import eg3.newCarDict;
-import eg3.printVehicle :: Fn Car Unit;
+    import std.pi;
+    import std.List;
+    import std.Dict;
 
-def test () = {
-    let carList: List Vehicle = newCarList();
-    let v1 = (1.0,2.0,3.0,4.0);
-    let v2 = (2.0,3.0,4.0,5.0);
-    
-    let result1 = avx.mul v1 v2;
-    let result2 = avx.add v1 v2;
+    import eg3.Vehicle;
+    import eg3.newCarList;
+    import eg3.newCarDict;
+    import eg3.printVehicle :: Fn Car Unit;
+
+    def test () = {
+        let carList List[Vehicle] = newCarList();
+        let v1 = (1.0,2.0,3.0,4.0);
+        let v2 = (2.0,3.0,4.0,5.0);
+        
+        let result1 = avx.mul v1 v2;
+        let result2 = avx.add v1 v2;
+    };
+
 };

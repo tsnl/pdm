@@ -1,13 +1,17 @@
 # Values as template parameters:
 
-struct Array [T] (n:Int) {
-    # ...
-};
+mod array {
 
-def map [T,U, n:Int] (f: Fn[T,U], a: Array[T,n]) = Array[U,n] {
-    # ...
-};
+    struct Array [T] (n Int) {
+        # ...
+    };
 
-def nmap [T,U, n:Int] (f: Fn[T,U], a: Array[T,n]) = Array[U,n] {
-    # ...
+    def map [T,U, n Int] (f Fn[T,U], a Array[T,n]) = Array[U,n] {
+        # ...
+    };
+
+    def nmap [T,U, n Int] (f Fn[T,U], a Array[T,n]) = Array[U,n] {
+        # ...
+    };
+
 };
