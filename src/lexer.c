@@ -4,12 +4,12 @@
 #include <assert.h>
 #include <string.h>
 
+#include "intern/strings.h"
+#include "stb/stretchy_buffer.h"
+
 #include "config.h"
 #include "source.h"
 #include "useful.h"
-
-#include "intern/strings.h"
-#include "stb/stretchy_buffer.h"
 
 #include "parser.tab.h"
 
@@ -540,6 +540,8 @@ static TokenKind lexOneString(Source* source, TokenInfo* infoP, Loc firstLoc) {
                 sb_push(contentStretchyBuffer, '\a');
             } else if (ReadSourceReaderHead(source) == 't') {
                 sb_push(contentStretchyBuffer, '\t');
+            } else if (ReadSourceReaderHead(source) == '0') {
+                sb_push(contentStretchyBuffer, 0);
             } else if (ReadSourceReaderHead(source) == '\\') {
                 sb_push(contentStretchyBuffer, '\\');
             } else if (ReadSourceReaderHead(source) == quoteChar) {
@@ -572,8 +574,9 @@ static TokenKind lexOneString(Source* source, TokenInfo* infoP, Loc firstLoc) {
     // reading the closing quote character:
     if (ReadSourceReaderHead(source) == quoteChar) {
         AdvanceSourceReaderHead(source);
-        sb_push(contentStretchyBuffer, '\0');
-        infoP->UnicodeStringSb = contentStretchyBuffer;
+        Utf32String utf32string = NewUtf32String(contentStretchyBuffer, sb_count(contentStretchyBuffer));
+        Utf8String utf8string = ConvertUtf32StringToUtf8String(utf32string);
+        infoP->String_utf8string = utf8string;
         return tokenKind;
     } else {
         FeedbackNote firstNote = {"here...", firstLoc, NULL};
@@ -899,9 +902,9 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
             name = "<text>";
             info[0] = '"';
             int index;
-            for (index = 0; ti->UnicodeStringSb[index]; index++) {
+            for (index = 0; ti->String_utf8string.buf[index]; index++) {
                 // todo: handle escape sequences correctly
-                info[1+index] = ti->UnicodeStringSb[index];
+                info[1+index] = ti->String_utf8string.buf[index];
             }
             info[index+1] = '"';
             break;
@@ -911,9 +914,9 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
             name = "<text>";
             info[0] = '\'';
             int index;
-            for (index = 0; ti->UnicodeStringSb[index]; index++) {
+            for (index = 0; ti->String_utf8string.buf[index]; index++) {
                 // todo: handle escape sequences correctly
-                info[1+index] = ti->UnicodeStringSb[index];
+                info[1+index] = ti->String_utf8string.buf[index];
             }
             info[index+1] = '\'';
             break;

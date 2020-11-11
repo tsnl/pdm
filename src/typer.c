@@ -152,6 +152,7 @@ union GenericTypeInfo {
     IntInfo Int;
     FloatWidth Float_width;
     Type* Ptr_pointee;
+    Type* Slice_element;
     MetaInfo Meta;
     FuncInfo Func;
     TypefuncInfo Typefunc;
@@ -171,6 +172,7 @@ struct Typer {
 
     Type anyType;
     Type unitType;
+    Type stringType;
     Type unsignedIntType[__INT_COUNT];
     Type signedIntType[__INT_COUNT];
     Type floatType[__FLOAT_COUNT];
@@ -179,6 +181,7 @@ struct Typer {
     MetaInfoExt* metatypeExtBuf;
 
     TypeBuf ptrTypeBuf;
+    TypeBuf sliceTypeBuf;
     TypeBuf typefuncTypeBuf;
     TypeBuf funcTypeBuf;
     TypeBuf moduleTypeBuf;
@@ -240,6 +243,7 @@ static int solveAndCheckAllMetavars(Typer* typer);
 // helpers (1)...
 static TypingResult helpSubtypeOp(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub, int noDeferral);
 static TypingResult helpSubtypeOp_unitSuper(Typer* typer,char const* why,Loc loc, Type* super, Type* sub, int noDeferral);
+static TypingResult helpSubtypeOp_stringSuper(Typer* typer,char const* why,Loc loc, Type* super, Type* sub, int noDeferral);
 static TypingResult helpSubtypeOp_intSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
 static TypingResult helpSubtypeOp_floatSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
 static TypingResult helpSubtypeOp_ptrSuper(Typer* typer, char const* why, Loc loc, Type* super, Type* sub, int noDeferral);
@@ -287,6 +291,7 @@ TyperCfg newDefaultTyperCfg(void) {
     return (TyperCfg) {
         .maxMetavarCount = chunkSize,
         .maxPtrCount = chunkSize,
+        .maxSliceCount = chunkSize,
         .maxTypefuncCount = chunkSize,
         .maxFuncCount = chunkSize,
         .maxModuleCount = chunkSize,
@@ -307,6 +312,8 @@ Typer* newTyper(TyperCfg config) {
     
     typer->unitType = newType(T_UNIT,(union GenericTypeInfo){});
     
+    typer->stringType = newType(T_STRING,(union GenericTypeInfo){});
+
     typer->floatType[FLOAT_16] = newType(T_FLOAT,(union GenericTypeInfo){.Float_width=FLOAT_16});
     typer->floatType[FLOAT_32] = newType(T_FLOAT,(union GenericTypeInfo){.Float_width=FLOAT_32});
     typer->floatType[FLOAT_64] = newType(T_FLOAT,(union GenericTypeInfo){.Float_width=FLOAT_64});
@@ -328,6 +335,7 @@ Typer* newTyper(TyperCfg config) {
     typer->metatypeExtBuf = malloc(sizeof(MetaInfoExt) * typer->backupCfg.maxMetavarCount);
     
     typer->ptrTypeBuf = newTypeBuf("ptrTypeBuf", typer->backupCfg.maxPtrCount);
+    typer->sliceTypeBuf = newTypeBuf("sliceTypeBuf", typer->backupCfg.maxSliceCount);
     typer->funcTypeBuf = newTypeBuf("funcTypeBuf", typer->backupCfg.maxFuncCount);
     typer->typefuncTypeBuf = newTypeBuf("typefuncTypeBuf", typer->backupCfg.maxTypefuncCount);
     typer->moduleTypeBuf = newTypeBuf("moduleTypeBuf", typer->backupCfg.maxModuleCount);
@@ -336,7 +344,6 @@ Typer* newTyper(TyperCfg config) {
     typer->miscTypeBuf = newTypeBuf("miscTypeBuf", typer->backupCfg.maxMiscCount);
 
     typer->anyATN = (AdtTrieNode) {NULL,NULL,&typer->anyType,-1,0};
-    // todo: singleton structs and tuples / unions == identity operation (!!)
     
     // initializing the subtyping error string to 'clear'; no message:
     typer->subtypingError = NULL;
@@ -599,9 +606,13 @@ int solveAndCheckAllMetavars(Typer* typer) {
 //
 
 TypingResult helpSubtypeOp(Typer* typer, char const* why, Loc locWhere, Type* super, Type* sub, int noDeferral) {
+    if (super->kind == T_CAST) {
+        return helpSubtypeOp(typer,why,locWhere,super->as.Cast.to,sub,noDeferral);
+    }
     switch (super->kind)
     {
         case T_UNIT: { return helpSubtypeOp_unitSuper(typer,why,locWhere,super,sub,noDeferral); }
+        case T_STRING: { return helpSubtypeOp_stringSuper(typer,why,locWhere,super,sub,noDeferral); }
         case T_INT: { return helpSubtypeOp_intSuper(typer,why,locWhere,super,sub,noDeferral); }
         case T_FLOAT: { return helpSubtypeOp_floatSuper(typer,why,locWhere,super,sub,noDeferral); }
         case T_PTR: { return helpSubtypeOp_ptrSuper(typer,why,locWhere,super,sub,noDeferral); }
@@ -628,9 +639,23 @@ TypingResult helpSubtypeOp_unitSuper(Typer* typer,char const* why,Loc loc, Type*
         {
             return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
         }
-        case T_CAST:
+        default:
         {
-            return helpSubtypeOp_unitSuper(typer,why,loc,super,sub->as.Cast.to,noDeferral);
+            setMismatchedKindsSubtypingError(typer,super,sub);
+            return TYPING_FAILURE;
+        }
+    }
+}
+TypingResult helpSubtypeOp_stringSuper(Typer* typer,char const* why,Loc loc, Type* super, Type* sub, int noDeferral) {
+    switch (sub->kind)
+    {
+        case T_STRING:
+        {
+            return TYPING_CONFIRM;
+        }
+        case T_META:
+        {
+            return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
         }
         default:
         {
@@ -694,10 +719,6 @@ TypingResult helpSubtypeOp_floatSuper(Typer* typer, char const* why, Loc loc, Ty
         {
             return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
         }
-        case T_CAST:
-        {
-            return helpSubtypeOp_floatSuper(typer,why,loc,super,sub->as.Cast.to,noDeferral);
-        }
         default:
         {
             setMismatchedKindsSubtypingError(typer,super,sub);
@@ -715,10 +736,6 @@ TypingResult helpSubtypeOp_ptrSuper(Typer* typer, char const* why, Loc loc, Type
         case T_META:
         {
             return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
-        }
-        case T_CAST:
-        {
-            return helpSubtypeOp_ptrSuper(typer,why,loc,super,sub->as.Cast.to,noDeferral);
         }
         default:
         {
@@ -779,10 +796,6 @@ TypingResult helpSubtypeOp_funcSuper(Typer* typer, char const* why, Loc loc, Typ
         {
             return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
         }
-        case T_CAST:
-        {
-            return helpSubtypeOp_funcSuper(typer,why,loc,super,sub->as.Cast.to,noDeferral);
-        }
         default:
         {
             setMismatchedKindsSubtypingError(typer,super,sub);
@@ -825,10 +838,6 @@ TypingResult helpSubtypeOp_tupleSuper(Typer* typer, char const* why, Loc loc, Ty
         case T_META:
         {
             return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
-        }
-        case T_CAST:
-        {
-            return helpSubtypeOp_tupleSuper(typer,why,loc,super,sub->as.Cast.to,noDeferral);
         }
         default:
         {
@@ -874,10 +883,6 @@ TypingResult helpSubtypeOp_unionSuper(Typer* typer, char const* why, Loc loc, Ty
         {
             return helpRequestSubtyping_genericMetaSub(typer,why,loc,super,sub,noDeferral);
         }
-        case T_CAST:
-        {
-            return helpSubtypeOp_unionSuper(typer,why,loc,super,sub->as.Cast.to,noDeferral);
-        }
         default:
         {
             setMismatchedKindsSubtypingError(typer,super,sub);
@@ -921,6 +926,7 @@ Type* getConcreteSoln(Typer* typer, Type* type, Type*** visitedMetavarSBP) {
         case T_UNIT:
         case T_FLOAT:
         case T_INT:
+        case T_STRING:
         {
             return type;
         }
@@ -1287,6 +1293,12 @@ int typer_post(void* rawTyper, AstNode* node) {
             SetAstNodeTypingExt_Value(node,t);
             break;
         }
+        case AST_LITERAL_STRING:
+        {
+            Type* t = GetStringType(typer);
+            SetAstNodeTypingExt_Value(node,t);
+            break;
+        }
         case AST_VID:
         case AST_TID:
         {
@@ -1373,6 +1385,10 @@ int typer_post(void* rawTyper, AstNode* node) {
             } else {
                 COMPILER_ERROR("typer: lhsType or rhsType is NULL (or both) in AST_STMT_VLET");
             }
+            break;
+        }
+        case AST_STMT_DISCARD:
+        {
             break;
         }
         case AST_VLAMBDA:
@@ -1659,6 +1675,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* typespec = GetAstType2ValTypespec(type2val);
             Type* type = GetAstNodeTypingExt_Type(typespec);
             SetAstNodeTypingExt_Value(type2val,type);
+            SetAstNodeTypingExt_Type(type2val,type);
             break;
         }
         case AST_VAL2TYPE:
@@ -1667,6 +1684,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* expr = GetAstVal2TypeExpr(val2type);
             Type* type = GetAstNodeTypingExt_Value(expr);
             SetAstNodeTypingExt_Type(val2type,type);
+            SetAstNodeTypingExt_Value(val2type,type);
             break;
         }
         case AST_VPTR:
@@ -1891,6 +1909,9 @@ Typer* NewTyper(TyperCfg config) {
 Type* GetUnitType(Typer* typer) {
     return &typer->unitType;
 }
+Type* GetStringType(Typer* typer) {
+    return &typer->stringType;
+}
 Type* GetIntType(Typer* typer, IntWidth width, int isSigned) {
     if (isSigned) {
         return &typer->signedIntType[width];
@@ -1915,6 +1936,19 @@ Type* NewOrGetPtrType(Typer* typer, Type* pointee) {
     Type* ptrType = pushToTypeBuf(&typer->ptrTypeBuf,T_PTR);
     ptrType->as.Ptr_pointee = pointee;
     return ptrType;
+}
+Type* NewOrGetSliceType(Typer* typer, Type* elementType) {
+    // searching for an existing, structurally equivalent type:
+    for (size_t index = 0; index < typer->sliceTypeBuf.count; index++) {
+        Type* cmpType = &typer->sliceTypeBuf.ptr[index];
+        if (cmpType->as.Slice_element == elementType) {
+            return cmpType;
+        }
+    }
+    // allocating a new type:
+    Type* sliceType = pushToTypeBuf(&typer->sliceTypeBuf,T_SLICE);
+    sliceType->as.Slice_element = elementType;
+    return sliceType;
 }
 Type* NewOrGetFuncType(Typer* typer, int argsCount, Type* args[], Type* image) {
     // normalizing NULL args for 0-args: 

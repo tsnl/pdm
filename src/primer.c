@@ -12,6 +12,7 @@
 // Taking static references to pre-defined symbols:
 static int symbols_loaded = 0;
 
+static SymbolID symbol_string = SYM_NULL;
 static SymbolID symbol_unit = SYM_NULL;
 static SymbolID symbol_u1 = SYM_NULL;
 static SymbolID symbol_u8 = SYM_NULL;
@@ -71,6 +72,7 @@ static Defn* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP
 
 void ensureStaticSymbolsLoaded() {
     if (symbols_loaded == 0) {
+        symbol_string = Symbol("String");
         symbol_unit = Symbol("Unit");
         symbol_u1   = Symbol("U1");
         symbol_u8   = Symbol("U8");
@@ -231,6 +233,8 @@ Scope* newRootScope(Typer* typer) {
     //
 
     root = newScope(root, symbol_unit, GetUnitType(typer), NULL, ASTCTX_TYPING, 0);
+
+    root = newScope(root, symbol_string, GetStringType(typer), NULL, ASTCTX_TYPING, 0);
 
     root = newScope(root, symbol_u1, GetIntType(typer,INT_1,0), NULL, ASTCTX_TYPING, 0);
     root = newScope(root, symbol_u8, GetIntType(typer,INT_8,0), NULL, ASTCTX_TYPING, 0);

@@ -47,6 +47,7 @@
 
 #include "useful.h"
 #include "primer.h"
+#include "unicoder.h"
 
 typedef struct Emitter Emitter;
 struct Emitter {
@@ -221,6 +222,11 @@ ExportedType exportType(Typer* typer, Type* type) {
                 exportedType.llvm = LLVMVoidType();
                 break;
             }
+            case T_STRING:
+            {
+                exportedType.llvm = LLVMPointerType(LLVMInt8Type(),0);
+                break;
+            }
             case T_INT:
             {
                 int numBits = GetIntTypeWidthInBits(exportedType.native);
@@ -321,6 +327,9 @@ ExportedType exportType(Typer* typer, Type* type) {
 
                 break;
             }
+            
+            // todo: add support for T_SLICE, whose LLVM type is just a ptr
+
             default:
             {
                 if (DEBUG) {
@@ -392,7 +401,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
             }
 
             //
-            // INT,FLOAT: llvmValueRef is the value.
+            // INT,FLOAT:
             //
 
             case AST_LITERAL_INT:
@@ -409,6 +418,38 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 exportedValue.llvm = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"floatl");
                 LLVMValueRef stored = LLVMConstReal(exportedValue.type.llvm,floatValue);
                 LLVMBuildStore(emitter->builder,stored,exportedValue.llvm);
+                break;
+            }
+
+            //
+            // STRINGs:
+            //
+
+            case AST_LITERAL_STRING:
+            {
+                // see: https://mapping-high-level-constructs-to-llvm-ir.readthedocs.io/en/latest/appendix-a-how-to-implement-a-string-type-in-llvm/
+                
+                Utf8String utf8string = GetAstStringLiteralValue(exportedValue.native);
+                LLVMTypeRef llvmCharType = LLVMInt32Type();
+                LLVMTypeRef llvmStringPtrType = exportedValue.type.llvm;
+                LLVMValueRef llvmStringPtr; {
+                    // todo: allocate all strings as global variables AOT
+                    // cf https://llvm.org/docs/LangRef.html#id1247
+                    LLVMValueRef llvmStringConstant = LLVMConstString(utf8string.buf,utf8string.count,1);
+                    LLVMBuildExtractValue(emitter->builder,llvmStringConstant,)
+                    LLVMValueRef indices[] = {
+                        LLVMConstInt(LLVMInt32Type(),0,0),
+                        LLVMConstInt(LLVMInt32Type(),0,0)
+                    };
+                    llvmStringPtr = LLVMBuildGEP(emitter->builder, llvmStringConstant, indices,2, "stringconst_ptr_loaded");
+                };
+                
+                // alloca, store ptr to static string literal.
+                // the default memory manager should ignore pointers in the data segment.
+                // note that 'String' is a general, read-only byte container.
+                // converting a String to a slice is explicit, and permits mutation.
+                exportedValue.llvm = LLVMBuildAlloca(emitter->builder,llvmStringPtrType,"string_literal");
+                LLVMBuildStore(emitter->builder,llvmStringPtr,exportedValue.llvm);
                 break;
             }
 
@@ -452,9 +493,8 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
             }
             case AST_CHAIN:
             {
+                // allocaing a result if non-void return type:
                 LLVMValueRef outValuePtr = NULL;
-
-                // allocaing a result:
                 int sizeInBytes = GetTypeSizeInBytes(emitter->typer,exportedValue.type.native);
                 if (sizeInBytes > 0) {
                     outValuePtr = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"chain_result");
@@ -467,13 +507,15 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                     exportValue(emitter,prefixStmt);
                 }
                 AstNode* result = GetAstChainResult(exportedValue.native);
-                ExportedValue exportedResult = exportValue(emitter,result);
-
-                // load & store if we allocated memory:
-                if (outValuePtr) {
-                    exportedValue.llvm = outValuePtr;
-                    LLVMValueRef loadedForChainYield = LLVMBuildLoad(emitter->builder,exportedResult.llvm,"chain_result_loaded");
-                    LLVMBuildStore(emitter->builder,loadedForChainYield,exportedValue.llvm);
+                if (result) {
+                    ExportedValue exportedResult = exportValue(emitter,result);
+                
+                    // load & store if we allocated memory:
+                    if (outValuePtr) {
+                        exportedValue.llvm = outValuePtr;
+                        LLVMValueRef loadedForChainYield = LLVMBuildLoad(emitter->builder,exportedResult.llvm,"chain_result_loaded");
+                        LLVMBuildStore(emitter->builder,loadedForChainYield,exportedValue.llvm);
+                    }
                 }
                 break;
             }

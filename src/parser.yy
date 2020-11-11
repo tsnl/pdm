@@ -251,8 +251,8 @@ moduleContentStmt
     | externStmt            { $$ = $1; }
     ;
 defStmt
-    : TK_KW_DEF vid          vpattern TK_BIND castExpr   { $$ = NewAstDefStmt(@$, $2.ID_symbolID, NULL, $3, $5); }
-    | TK_KW_DEF vid tpattern vpattern TK_BIND castExpr   { $$ = NewAstDefStmt(@$, $2.ID_symbolID, $3,   $4, $6); }
+    : TK_KW_DEF vid          vpattern TK_ARROW castExpr   { $$ = NewAstDefStmt(@$, $2.ID_symbolID, NULL, $3, $5); }
+    | TK_KW_DEF vid tpattern vpattern TK_ARROW castExpr   { $$ = NewAstDefStmt(@$, $2.ID_symbolID, $3,   $4, $6); }
     ;
 typedefStmt
     : TK_KW_TYPE tid tpattern TK_BIND typespec   { $$ = NewAstTypedefStmt(@$, $2.ID_symbolID, $3, $5); }
@@ -262,7 +262,7 @@ typedefStmt_enum
     ;
 
 moduleStmt
-    : TK_KW_MODULE vid TK_KW_FROM stringl TK_KW_AS stringl   { $$ = NewAstModuleStmt(@$, $2.ID_symbolID, $4.UnicodeStringSb, $6.UnicodeStringSb); }
+    : TK_KW_MODULE vid TK_KW_FROM stringl TK_KW_AS stringl   { $$ = NewAstModuleStmt(@$, $2.ID_symbolID, $4.String_utf8string, $6.String_utf8string); }
     ;
 importStmt
     : TK_KW_IMPORT vid TK_DOT vid               { $$ = NewAstImportStmt(@$, $2.ID_symbolID, $4.ID_symbolID, 0); }
@@ -318,7 +318,7 @@ primaryExpr
     | TK_DINT_LIT   { $$ = NewAstIntLiteral(@$, $1.Int, 10); }
     | TK_XINT_LIT   { $$ = NewAstIntLiteral(@$, $1.Int, 16); }
     | floatl        { $$ = NewAstFloatLiteral(@$, $1.Float); }
-    | stringl       { $$ = NewAstStringLiteral(@$, $1.UnicodeStringSb); }
+    | stringl       { $$ = NewAstStringLiteral(@$, $1.String_utf8string); }
     | ifThenElse    { $$ = $1; }
     ;
 vparen
@@ -473,14 +473,14 @@ vtarg_cl
  */
 
 vstructField
-    : vid TK_COLON expr { $$ = NewAstField(@$, $1.ID_symbolID, $3); }
+    : vid TK_BIND expr { $$ = NewAstField(@$, $1.ID_symbolID, $3); }
     ;
 vstructField_cl
     : vstructField                          { $$ = NULL; sb_push($$,$1); }
     | vstructField_cl TK_COMMA vstructField { $$ = $1; sb_push($$,$3); }
     ;
 vpatternField
-    : vid TK_COLON typespec { $$ = NewAstField(@$, $1.ID_symbolID, NewAstType2Val(@3,$3)); }
+    : vid typespec { $$ = NewAstField(@$, $1.ID_symbolID, NewAstType2Val(@2,$2)); }
     ;
 tpatternField
     : tid           { $$ = NewAstField(@$, $1.ID_symbolID, NULL); }

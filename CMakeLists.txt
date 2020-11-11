@@ -9,21 +9,12 @@ project(pandemonium)
 # - https://lowlevelbits.org/building-an-llvm-based-tool.-lessons-learned/
 # - https://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
 
-# set (LLVM_DIR ${PATH_TO_LLVM_PROJECT}/llvm/cmake/modules)
-# find_package(
-#     LLVM REQUIRED CONFIG
-#     NO_DEFAULT_PATH
-# )
-
 find_package(LLVM REQUIRED CONFIG)
 # find_package(Clang REQUIRED CONFIG)
 
 message(STATUS "... Found LLVM version (${LLVM_PACKAGE_VERSION})")
 message(STATUS "... Using LLVMConfig.cmake in: ${LLVM_DIR}")
 message(STATUS "... Add '/usr/local/Cellar/llvm/10.0.1_1/include/' to your IDE include path list for LLVM C API auto-complete.")
-
-# set (LLVM_ENABLE_PROJECTS "clang;clang-tools-extra;compiler-rt;libc")
-# set (CMAKE_CURRENT_BINARY_DIR "build")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
 
@@ -32,8 +23,6 @@ add_definitions(${LLVM_DEFINITIONS})
 add_executable(pc
     src/ast.c
     src/ast.h
-    src/llvm-emitter.c
-    src/llvm-emitter.h
     src/checker.c
     src/checker.h
     src/code-printer.c
@@ -41,10 +30,13 @@ add_executable(pc
     src/config.h
     src/debugger.c
     src/debugger.h
+    src/extra-tokens.h
     src/interp.c
     src/interp.h
     src/lexer.c
     src/lexer.h
+    src/llvm-emitter.c
+    src/llvm-emitter.h
     src/main.c
     src/parser.h
     src/parser.tab.c
@@ -57,8 +49,11 @@ add_executable(pc
     src/symbols.h
     src/typer.c
     src/typer.h
+    src/unicoder.c
+    src/unicoder.h
     src/useful.c
     src/useful.h
+    src/values.h
 )
 
 #
@@ -82,6 +77,14 @@ target_link_libraries(pc ${llvm_libs})
 #
 
 add_subdirectory(src/intern)
-target_link_libraries(pc
-    intern
+target_link_libraries(pc intern)
+
+#
+# utf8proc - Unicode support
+#
+
+add_library(utf8proc
+    src/utf8proc/utf8proc.c
+    src/utf8proc/utf8proc.h
 )
+target_link_libraries(pc utf8proc)

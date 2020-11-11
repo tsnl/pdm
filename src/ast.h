@@ -6,6 +6,7 @@
 #include "config.h"
 #include "source.h"
 #include "symbols.h"
+#include "unicoder.h"
 
 typedef struct AstNode AstNode;
 typedef struct AstNode RawAstNode;
@@ -77,7 +78,7 @@ void PushStmtToAstModule(AstNode* module, AstNode* def);
 AstNode* NewAstVID(Span span, SymbolID symbolID);
 AstNode* NewAstIntLiteral(Span span, size_t value, int base);
 AstNode* NewAstFloatLiteral(Span span, long double value);
-AstNode* NewAstStringLiteral(Span span, int* valueSb);
+AstNode* NewAstStringLiteral(Span span, Utf8String value);
 AstNode* NewAstVParen(Span span, AstNode* it);
 AstNode* NewAstUnit(Span span);
 
@@ -122,7 +123,7 @@ AstNode* NewAstDotName(Span span, AstNode* lhs, SymbolID rhs);
 AstNode* NewAstVLambda(Span span, AstNode* pattern, AstNode* body);
 AstNode* NewAstTLambda(Span span, AstNode* pattern, AstNode* body);
 
-AstNode* NewAstModuleStmt(Span span, SymbolID boundName, int* fromStr, int* asStr);
+AstNode* NewAstModuleStmt(Span span, SymbolID boundName, Utf8String fromStr, Utf8String asStr);
 AstNode* NewAstImportStmt(Span span, SymbolID module, SymbolID suffix, int glob);
 
 AstNode* NewAstLetStmt(Span span, AstNode* lhsPattern, AstNode* rhs);
@@ -178,7 +179,7 @@ SymbolID GetAstIdName(AstNode* node);
 size_t GetAstIntLiteralValue(AstNode* node);
 int GetAstIntLiteralBase(AstNode* node);
 long double GetAstFloatLiteralValue(AstNode* node);
-int const* GetAstStringLiteralValue(AstNode* node);
+Utf8String GetAstStringLiteralValue(AstNode* node);
 AstNode* GetAstParenItem(AstNode* node);
 
 int GetAstPatternLength(AstNode* node);

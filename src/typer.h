@@ -16,10 +16,8 @@ typedef enum TypeKind TypeKind;
 enum TypeKind {
     // concrete:
     T_ANY,
-    T_UNIT,
-    T_INT,
-    T_FLOAT,
-    T_PTR,
+    T_UNIT, T_INT, T_FLOAT, T_STRING,
+    T_PTR, T_SLICE,
     T_FUNC,
     T_TUPLE, T_UNION,
     T_CAST,
@@ -78,6 +76,7 @@ struct TypeField {
 struct TyperCfg {
     size_t maxMetavarCount;
     size_t maxPtrCount;
+    size_t maxSliceCount;
     size_t maxTypefuncCount;
     size_t maxFuncCount;
     size_t maxModuleCount;
@@ -96,9 +95,11 @@ Typer* NewTyper(TyperCfg config);
 //
 
 Type* GetUnitType(Typer* typer);
+Type* GetStringType(Typer* typer);
 Type* GetIntType(Typer* typer, IntWidth width, int isSigned);
 Type* GetFloatType(Typer* typer, FloatWidth width);
 Type* NewOrGetPtrType(Typer* typer, Type* pointee);
+Type* NewOrGetSliceType(Typer* typer, Type* elementType);
 Type* NewOrGetFuncType(Typer* typer, int argsCount, Type* args[], Type* image);
 Type* NewOrGetTypefuncType(Typer* typer, Type* arg, Type* body);
 Type* NewOrGetTupleType(Typer* typer, TypeField* typefields, int typefieldCount);

@@ -6,6 +6,7 @@
 
 #include "source.h"
 #include "symbols.h"
+#include "unicoder.h"
 
 typedef size_t LexerID;
 // typedef enum TokenKind TokenKind;
@@ -46,7 +47,7 @@ union TokenInfo {
     long double Float;
     size_t Int;
     SymbolID ID_symbolID;
-    int* UnicodeStringSb;
+    Utf8String String_utf8string;
 };
 
 //

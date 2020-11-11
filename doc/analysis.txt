@@ -1,0 +1,2 @@
+- Error if ptr-arg passed but not (1) set to, or (2) passed to another func.
+  * Enforce pointer for mutable only

@@ -7,12 +7,118 @@ see [##modules](modules) for **current sprint.**
 
 ## FIXES/WIP
 
-see commit 447814a7ddc699e72772fd5ad789e70ef78f31fe
+commit 447814a7ddc699e72772fd5ad789e70ef78f31fe
 
+TODO:
+
+- string literals
+  * link against 'puts'; maintain C-compatibility through pointers?
+  - req length stored AoT
+  - see pointers
+  - static string literals are CStr (constant/c string), both null-term
+    and length-aware
+- pointers require a lot of work...
+  - fix dereferences; bugs remain
+  - see set-statements
+- ITEs must be restored
+- set statements must be implemented
+- struct statements must be implemented
+- enum statements must be implemented
+- modules and imports
+  - allow user to specify (by path) C library files to use for linking
+  - rather than source-level interop, compile C to LLVM with Clang,
+    then link at LLVM (so we can output JS or binary)
+- output executable and/or js/wasm/wasi
+
+NOTE:
+
+- a new 'struct' statement is required since struct typespecs were
+  removed due to grammar conflicts.
+- need a plan to implement templates long-term
 
 ## TEMPLATES 
 
-see commit adbf846c924775010920a7946b44543d61bfd7fa
+commit adbf846c924775010920a7946b44543d61bfd7fa
+Author: Nikhil Tony Idiculla <nikhilidiculla@gmail.com>
+Date:   Mon Nov 9 00:06:52 2020 -0800
+
+Templates within reach
+
+- implementing post-primer-based check for whether or not an expr is
+  const evaluable (for expr targs)
+
+- to resolve templates, insert 'templater' pass after primer before
+  typer.
+  in AST,
+    - add support for
+      - AstLazilySubAndCopy, AstSubbedVID, AstSubbedTID
+      * AstXTemplate in def, type, struct, enum stmts
+    - AstLazilySubAndCopy replaces a def body's AstTIDs and AstVIDs with
+      AstSubbedTID and AstSubbedVID resp.
+      - implement AstXTemplate manager for defs to share <3
+    * AstXTemplate tracks...
+        - all its xcalls (vtcall or ttcall) (registered in templater)
+        - table of actualarg equality-classes -> monomorph def
+          (for vtemplate) or type (for ttemplate)
+          - note: monomorphs are children in AstVisit
+        - when xcall has concrete soln in typer (spoilers), it
+          messages AstXTemplate via defNode for...
+          1. a monomorph ID (monomorphs of fibonacci[T] are fibonacci.1,
+              fibonacci.2, ...)
+          2. a type solution in return
+              - the value CAN be a lambda
+              - but also a value e.g. size[T]
+              * solution provided by monomorph to xcall's TypingExt
+        - when this happens, LazilySubAndCopy...
+            1. looks up table; if args encountered already, use cached
+                monomorph type and monomorphID
+            2. if table miss,
+                1. SubAndCopy creates a new **definition** for a monomorph
+                    s.t. monomorph is def's AST child
+                2. prime monomorph
+                    using def's scope as base scope to preserve symbols
+                3. type monomorph
+                    but do not typecheck
+                4. monomorphID := add result to table for future lookups
+            3. (extra typing) add monomorph type as soln to metavar
+            4. return monomorphID
+            this is done to ensure monomorphs are only generated for
+            concrete types.
+        * LazilySubAndCopy (
+            xtemplate,
+            xcall,
+            actualTemplateArgs: a list of template args,
+          ) -> monomorphID
+
+  in templater*,
+    for each vtcall,ttcall,
+      1. check expr targs are const-evaluable (**only after primer)
+      2. store call on defined template, vice-versa
+
+  in typer,
+    1. on ttcall,vtcall, defer until args' types solved.
+        - vcall* -> targs can be omitted <=> args' types solvable
+          use metavars for ttargs and vtargs*,
+          match metavars from actual args
+        - this would require...
+            - a matchCall func to relate targs to vexpr_cl
+            - metavars solvable as constant values (Val2Type solns)
+    2. once targs are typechecked,
+        - const-eval expr args
+        - get monomorph ID from template stored by templater
+          using now-unique actual args
+          * see above first!
+          - AstXTemplate primes and types a monomorph s.t. the call is
+            typed.
+        - store monomorph ID for emitter
+
+  in emitter,
+    - for each def,
+        - remember to emit all monomorphs, headers too
+        - since AST_VLAMBDAs are included children, should work
+    - for each xcall,
+        - use stored monomorph ID and AstXTemplate to look up monomorph
+        - export monomorph value or type in .llvm field
 
 
 ## POINTERS & SLICES

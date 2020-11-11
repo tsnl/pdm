@@ -88,10 +88,9 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         case AST_LITERAL_STRING:
         {
             PrintChar(cp, '"');
-            int const* stringSb = GetAstStringLiteralValue(node);
-            int length = sb_count(stringSb);
-            for (int index = 0; index < length; index++) {
-                int ch = stringSb[index];
+            Utf8String string = GetAstStringLiteralValue(node);
+            for (int index = 0; index < string.count; index++) {
+                int ch = string.buf[index];
                 if (ch == '\\') {
                     PrintText(cp, "\\\\");
                 } else if (ch == '\n') {
@@ -102,6 +101,8 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                     PrintText(cp, "\\a");
                 } else if (ch == '"') {
                     PrintText(cp, "\\\"");
+                } else if (ch == 0) {
+                    PrintText(cp, "\\0");
                 } else {
                     PrintChar(cp, (char)ch);
                 }

@@ -142,8 +142,8 @@ struct AstVCast {
 };
 struct AstModuleStmt {
     SymbolID boundName;
-    int* from;
-    int* as;
+    Utf8String from;
+    Utf8String as;
 };
 struct AstImportStmt {
     SymbolID modName;
@@ -166,7 +166,7 @@ union AstInfo {
     AstBinary           Binary;
     AstInt              Int;
     long double         Float;
-    int*                UnicodeStringSb;
+    Utf8String          StringLiteral_utf8string;
     AstCall             Call;
     AstCast             Cast;
     AstNode*            CastTypespec;
@@ -368,9 +368,9 @@ AstNode* NewAstFloatLiteral(Span span, long double value) {
     floatNode->as.Float = value;
     return floatNode;
 }
-AstNode* NewAstStringLiteral(Span span, int* valueSb) {
+AstNode* NewAstStringLiteral(Span span, Utf8String utf8string) {
     AstNode* stringNode = newNode(span, AST_LITERAL_STRING);
-    stringNode->as.UnicodeStringSb = valueSb;
+    stringNode->as.StringLiteral_utf8string = utf8string;
     return stringNode;
 }
 AstNode* NewAstVParen(Span span, AstNode* it) {
@@ -657,7 +657,7 @@ AstNode* NewAstTLambda(Span span, AstNode* pattern, AstNode* body) {
     return lambdaNode;
 }
 
-AstNode* NewAstModuleStmt(Span span, SymbolID boundName, int* fromStr, int* asStr) {
+AstNode* NewAstModuleStmt(Span span, SymbolID boundName, Utf8String fromStr, Utf8String asStr) {
     AstNode* stmt = newNode(span, AST_STMT_MODULE);
     stmt->as.ModuleStmt.boundName = boundName;
     stmt->as.ModuleStmt.from = fromStr;
@@ -895,8 +895,8 @@ int GetAstIntLiteralBase(AstNode* node) {
 long double GetAstFloatLiteralValue(AstNode* node) {
     return node->as.Float;
 }
-int const* GetAstStringLiteralValue(AstNode* node) {
-    return node->as.UnicodeStringSb;
+Utf8String GetAstStringLiteralValue(AstNode* node) {
+    return node->as.StringLiteral_utf8string;
 }
 AstNode* GetAstParenItem(AstNode* node) {
     if (DEBUG) {
