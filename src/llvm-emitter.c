@@ -111,6 +111,7 @@ int exportModuleHeaders_postVisitor(void* rawEmitter, AstNode* node) {
         funcValue->type = exportedFuncType;
         funcValue->llvm = LLVMAddFunction(emitter->module,"synthetic-function",exportedFuncType.llvm);
         LLVMSetFunctionCallConv(funcValue->llvm,LLVMCCallConv);
+
         SetAstNodeLlvmRepr(node,funcValue);
     } 
     else if (nodeKind == AST_STMT_EXTERN) {
@@ -138,7 +139,25 @@ int exportModuleHeaders_postVisitor(void* rawEmitter, AstNode* node) {
         
         ExportedValue* llvmRepr = malloc(sizeof(ExportedValue));
         *llvmRepr = exportedRhs;
+
         SetAstNodeLlvmRepr(vdef,llvmRepr);
+    }
+    else if (nodeKind == AST_LITERAL_STRING) {
+        AstNode* literalString = node;
+        Utf8String utf8string = GetAstStringLiteralValue(literalString);
+        LLVMValueRef llvm_utf8string = LLVMConstString(utf8string.buf,utf8string.count,1);
+
+        Type* stringType = GetAstNodeTypingExt_Value(literalString);
+
+        ExportedValue* expVal = malloc(sizeof(ExportedValue));
+        expVal->native = node;
+        expVal->type = exportType(emitter->typer,stringType);
+        expVal->llvm = LLVMAddGlobal(emitter->module,LLVMTypeOf(llvm_utf8string),"literal_string");
+        LLVMSetInitializer(expVal->llvm,llvm_utf8string);
+        LLVMSetLinkage(expVal->llvm, LLVMInternalLinkage);
+        LLVMSetGlobalConstant(expVal->llvm,1);
+
+        SetAstNodeLlvmRepr(literalString, expVal);
     }
     return 1;
 }
@@ -188,6 +207,11 @@ int exportModule_preVisitor(void* rawEmitter, AstNode* node) {
         // - sniff test: is it mutable? if so, it must be loaded from the stack!
         LLVMValueRef returnValueLlvm = returnValue.llvm;
         switch (GetTypeKind(returnValue.type.native)) {
+            case T_UNIT:
+            {
+                returnValueLlvm = NULL;
+                break;
+            }
             case T_INT:
             case T_FLOAT:
             {
@@ -429,26 +453,33 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
             {
                 // see: https://mapping-high-level-constructs-to-llvm-ir.readthedocs.io/en/latest/appendix-a-how-to-implement-a-string-type-in-llvm/
                 
-                Utf8String utf8string = GetAstStringLiteralValue(exportedValue.native);
                 LLVMTypeRef llvmCharType = LLVMInt32Type();
                 LLVMTypeRef llvmStringPtrType = exportedValue.type.llvm;
                 LLVMValueRef llvmStringPtr; {
-                    // todo: allocate all strings as global variables AOT
-                    // cf https://llvm.org/docs/LangRef.html#id1247
-                    LLVMValueRef llvmStringConstant = LLVMConstString(utf8string.buf,utf8string.count,1);
-                    LLVMBuildExtractValue(emitter->builder,llvmStringConstant,)
+                    // all strings are allocated as global variables AOT
+                    // cf https://llvm.org/docs/LangRef.html#module-structure
+                    // "Global values are represented by a pointer to a memory location (in
+                    //  this case, a pointer to an array of char, and a pointer to a function), 
+                    //  and have one of the following linkage types."
+
+                    // rather than use gep as in the above example, we can also just bitcast the array ptr
+                    // cf https://stackoverflow.com/questions/37901866/get-pointer-to-first-element-of-array-in-llvm-ir
+
+                    ExportedValue* llvmStringGlobal = GetAstNodeLlvmRepr(exportedValue.native);
+                    
                     LLVMValueRef indices[] = {
                         LLVMConstInt(LLVMInt32Type(),0,0),
-                        LLVMConstInt(LLVMInt32Type(),0,0)
+                        LLVMConstInt(LLVMInt64Type(),0,0)
                     };
-                    llvmStringPtr = LLVMBuildGEP(emitter->builder, llvmStringConstant, indices,2, "stringconst_ptr_loaded");
+                    llvmStringPtr = LLVMBuildGEP(emitter->builder, llvmStringGlobal->llvm, indices,2, "stringconst_ptr_loaded");
+                    // llvmStringPtr = LLVMBuildBitCast(emitter->builder, llvmStringGlobal->llvm, llvmStringPtrType, "stringliteral_loaded");
                 };
                 
                 // alloca, store ptr to static string literal.
                 // the default memory manager should ignore pointers in the data segment.
                 // note that 'String' is a general, read-only byte container.
                 // converting a String to a slice is explicit, and permits mutation.
-                exportedValue.llvm = LLVMBuildAlloca(emitter->builder,llvmStringPtrType,"string_literal");
+                exportedValue.llvm = LLVMBuildAlloca(emitter->builder,llvmStringPtrType,"stringliteral");
                 LLVMBuildStore(emitter->builder,llvmStringPtr,exportedValue.llvm);
                 break;
             }
@@ -553,6 +584,18 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
             // Set statements:
             // TODO: implement these.
             //
+
+            //
+            // Discard statements:
+            //
+
+            case AST_STMT_DISCARD:
+            {
+                AstNode* discardedNode = GetAstDiscardStmtDiscarded(exportedValue.native);
+                ExportedValue discardedExpVal = exportValue(emitter,discardedNode);
+                exportedValue.llvm = NULL;
+                break;
+            }
 
             //
             // VCall:
@@ -1055,7 +1098,10 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                     TypeKind toKind = GetTypeKind(concreteTo);
                     TypeKind fromKind = GetTypeKind(concreteFrom);
 
-                    if ((toKind == T_FLOAT) && (fromKind == T_FLOAT)) {
+                    if ((toKind == T_UNIT) && (fromKind == T_UNIT)) {
+                        exportedValue.llvm = LLVMGetUndef(LLVMVoidType());
+                    }
+                    else if ((toKind == T_FLOAT) && (fromKind == T_FLOAT)) {
                         exportedValue.llvm = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"cast_fp");
                         LLVMValueRef loadedInputLlvmValue = LLVMBuildLoad(emitter->builder,exportedRhs.llvm,"cast_fp_input_loaded");
 
@@ -1175,12 +1221,6 @@ int EmitLlvmModule(Typer* typer, AstNode* module) {
     result = exportModuleHeaders(&emitter,module) && result;
     result = exportModule(&emitter,module) && result;
 
-    int debugPrintLlvmLL = 1;
-    if (DEBUG && debugPrintLlvmLL) {
-        printf("!!- LLVM Module Dump:\n");
-        LLVMDumpModule(emitter.module);
-    }
-
     char* verifyMsg = NULL;
 
     int broken = LLVMVerifyModule(emitter.module,LLVMReturnStatusAction,&verifyMsg);
@@ -1194,7 +1234,13 @@ int EmitLlvmModule(Typer* typer, AstNode* module) {
         }
     }
     LLVMDisposeMessage(verifyMsg); verifyMsg = NULL;
-    
+
+    int debugPrintLlvmLL = 1;
+    if (DEBUG && debugPrintLlvmLL) {
+        printf("!!- LLVM Module Dump:\n");
+        LLVMDumpModule(emitter.module);
+    }
+
     LLVMDisposeBuilder(emitter.builder);
     return result;
 }
