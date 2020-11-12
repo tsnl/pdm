@@ -3,52 +3,61 @@ extern def puts (s String) -> U32;
 
 extern def print_string (s String) -> Unit;
 extern def print_s32 (s S32) -> Unit;
+extern def print_f32 (f F32) -> Unit;
 extern def println () -> Unit;
 
-def fib (n S32) -> S32 {
-    if (n == 0) then {
-        0
-    } else {
-        if (n == 1) then {
-            1
-        } else {
-            fib(n-1) + fib(n-2)
-        }
-    }
+def add_s32 (x S32, y S32) -> S32 {
+    x + y
 };
 
-def print_fibonacci_table_until (n S32, ascend_not_descend U1) -> Unit {
-    let result S32 = fib(n);
-    do if (n != 0) then {
-        # if printing in ascending order, then print all prior fibonaccis
-        # before fib(n):
-        do if (ascend_not_descend) then {
-            do print_fibonacci_table_until(n-1, U1(1));
-        };
-
-        # printing fib(n) on one line
-        do print_string("fibonacci(\0");
-        do print_s32(n);
-        do print_string(") = \0");
-        do print_s32(fib(n));
-        do println();
-
-        # if printing in descending order, then pring all prior fibonaccis
-        # after fib(n)
-        do if (not ascend_not_descend) then {
-            do print_fibonacci_table_until(n-1, U1(0));
-        };
-    };
+def subtract_s32 (x S32, y S32) -> S32 {
+    x - y
 };
 
-
+def dot_s32 (x1 S32, y1 S32, x2 S32, y2 S32) -> S32 {
+    x1*x2 + y1*y2
+};
 
 def main () -> S32 {
-    let n S32 = 40;
-    do print_string("FIBONACCI PRINTER until \0");
-    do print_s32(n);
+    let x1 S32 = 42; let y1 S32 = 56;
+    let x2 S32 = 0;  let y2 S32 = 64;
+    
+    # print x1,y1
+    do print_string("(x1,y1) = {x=\0");
+    do print_s32(x1);
+    do print_string(",y=\0");
+    do print_s32(y1);
+    do print_string("}\0");
     do println();
 
-    do print_fibonacci_table_until(n, U1(1));
+    # print x2,y2
+    do print_string("(x2,y2) = {x=\0");
+    do print_s32(x2);
+    do print_string(",y=\0");
+    do print_s32(y2);
+    do print_string("}\0");
+    do println();
+
+    # subtract x1,y1 and x2,y2
+    do print_string("subtract_s32(x1,y1) = \0");
+    do print_s32(subtract_s32(x1,y1));
+    do println();
+    do print_string("subtract_s32(x2,y2) = \0");
+    do print_s32(subtract_s32(x2,y2));
+    do println();
+
+    # add x1,y1 and x2,y2
+    do print_string("add_s32(x1,y1) = \0");
+    do print_s32(add_s32(x1,y1));
+    do println();
+    do print_string("add_s32(x2,y2) = \0");
+    do print_s32(add_s32(x2,y2));
+    do println();
+
+    # dot(x1,y1,x2,y2)
+    do print_string("dot(x1,y1,x2,y2) = \0");
+    do print_s32(dot_s32(x1,y1,x2,y2));
+    do println();
+
     0
 };

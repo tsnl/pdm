@@ -2379,6 +2379,7 @@ char const* TypeKindAsText(TypeKind typeKind) {
         case T_UNIT: return "T_UNIT";
         case T_INT: return "T_INT";
         case T_FLOAT: return "T_FLOAT";
+        case T_STRING: return "T_STRING";
         case T_PTR: return "T_PTR";
         case T_FUNC: return "T_FUNC";
         case T_TUPLE: return "T_TUPLE";

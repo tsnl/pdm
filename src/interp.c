@@ -111,7 +111,9 @@ int InterpTypecheckModules(Interp* interp) {
     int result = SolveAndCheckTyper(interp->typer);
 
     // post typer dump:
-    PrintTyper(interp->typer);
+    if (DEBUG) {
+        PrintTyper(interp->typer);
+    }
 
     return result;
 }

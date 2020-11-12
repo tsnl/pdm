@@ -541,8 +541,9 @@ int yylex(YYSTYPE* lvalp, YYLTYPE* llocp, Source* source) {
     TokenInfo* info = &lvalp->token;
     llocp->source = source;
     int tk = LexOneToken(source,info,llocp);
-    DebugPrintToken("YYLEX:", tk, info, llocp);
-    
+    if (DEBUG) {
+        DebugPrintToken("YYLEX:", tk, info, llocp);
+    }
     if (tk == TK_EOS) {
         return YYEOF;
     } else {

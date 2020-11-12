@@ -9,6 +9,10 @@ void print_s32(int32_t s32) {
     printf("%d", s32);
 }
 
+void print_f32(float f32) {
+    printf("%f", f32);
+}
+
 void println() {
     printf("\n");
 }
