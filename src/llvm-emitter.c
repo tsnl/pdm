@@ -52,6 +52,7 @@
 typedef struct Emitter Emitter;
 struct Emitter {
     Typer* typer;
+    LLVMValueRef currentLlvmFunction;
     LLVMModuleRef module;
     LLVMBuilderRef builder;
 };
@@ -62,6 +63,7 @@ Emitter newEmitter(Typer* typer, char const* moduleName) {
     emitter.typer = typer;
     emitter.builder = LLVMCreateBuilder();
     emitter.module = LLVMModuleCreateWithName(moduleName);
+    emitter.currentLlvmFunction = NULL;
     return emitter;
 }
 
@@ -145,7 +147,7 @@ int exportModuleHeaders_postVisitor(void* rawEmitter, AstNode* node) {
     else if (nodeKind == AST_LITERAL_STRING) {
         AstNode* literalString = node;
         Utf8String utf8string = GetAstStringLiteralValue(literalString);
-        LLVMValueRef llvm_utf8string = LLVMConstString(utf8string.buf,utf8string.count,1);
+        LLVMValueRef llvm_utf8string = LLVMConstString((char const*)utf8string.buf,utf8string.count,1);
 
         Type* stringType = GetAstNodeTypingExt_Value(literalString);
 
@@ -170,8 +172,12 @@ int exportModule_preVisitor(void* rawEmitter, AstNode* node) {
         ExportedValue* syntheticFunctionExportedValue = GetAstNodeLlvmRepr(node);
         LLVMValueRef syntheticFunction = syntheticFunctionExportedValue->llvm;
 
+        // setting the current function for emission (must be unset before end of block):
+        COMPILER_ASSERT(emitter->currentLlvmFunction == NULL, "Accidentally clobbering emitted func <=> dirty state.");
+        emitter->currentLlvmFunction = syntheticFunction;
+
         // adding an entry BB:
-        LLVMBasicBlockRef entryBlock = LLVMAppendBasicBlock(syntheticFunction,"entry");
+        LLVMBasicBlockRef entryBlock = LLVMAppendBasicBlock(emitter->currentLlvmFunction,"entry");
         LLVMPositionBuilderAtEnd(emitter->builder,entryBlock);
         
         // adding arguments to the entry BB:
@@ -180,7 +186,7 @@ int exportModule_preVisitor(void* rawEmitter, AstNode* node) {
         int argCount = GetAstPatternLength(pattern);
         for (int index = 0; index < argCount; index++) {
             AstNode* argField = GetAstPatternFieldAt(pattern,index);
-            LLVMValueRef llvmArg = LLVMGetParam(syntheticFunction,index);
+            LLVMValueRef llvmArg = LLVMGetParam(emitter->currentLlvmFunction,index);
 
             ExportedType argExpType = exportType(emitter->typer,GetAstNodeTypingExt_Value(argField));
 
@@ -226,6 +232,9 @@ int exportModule_preVisitor(void* rawEmitter, AstNode* node) {
             }
         }
         LLVMBuildRet(emitter->builder,returnValueLlvm);
+
+        // un-setting the current function for emission:
+        emitter->currentLlvmFunction = NULL;
     }
     return 1;
 }
@@ -256,6 +265,7 @@ ExportedType exportType(Typer* typer, Type* type) {
                 int numBits = GetIntTypeWidthInBits(exportedType.native);
                 if (GetIntTypeIsSigned(exportedType.native)) {
                     COMPILER_ASSERT(numBits >= 2, "Cannot make a signed int of length < 2; 1 for sign bit, N-1 for mantissa");
+                    exportedType.llvm = LLVMIntType(numBits);
                 }
                 // llvm uses the same type for signed and unsigned integers.
                 exportedType.llvm = LLVMIntType(numBits);
@@ -453,7 +463,6 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
             {
                 // see: https://mapping-high-level-constructs-to-llvm-ir.readthedocs.io/en/latest/appendix-a-how-to-implement-a-string-type-in-llvm/
                 
-                LLVMTypeRef llvmCharType = LLVMInt32Type();
                 LLVMTypeRef llvmStringPtrType = exportedValue.type.llvm;
                 LLVMValueRef llvmStringPtr; {
                     // all strings are allocated as global variables AOT
@@ -603,8 +612,10 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
 
             case AST_VCALL:
             {
-                ExportedType callReturnType = exportType(typer,GetAstNodeTypingExt_Value(exportedValue.native));
-                exportedValue.llvm = LLVMBuildAlloca(emitter->builder,callReturnType.llvm,"call_alloca");
+                Type* returnedType = exportedValue.type.native;
+                if (returnedType != GetUnitType(emitter->typer)) {
+                    exportedValue.llvm = LLVMBuildAlloca(emitter->builder,exportedValue.type.llvm,"call_res");
+                }
 
                 ExportedValue lhsValue = exportValue(emitter,GetAstCallLhs(exportedValue.native));
                 
@@ -646,12 +657,24 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 }
                 
                 LLVMValueRef callValue = NULL;
-                if (elidedLlvmArgCount) {
-                    callValue = LLVMBuildCall(emitter->builder,lhsValue.llvm,elidedLlvmArgs,argCount,"call_value");
+                char const* name = NULL;
+                if (exportedValue.llvm) {
+                    // non-unit return type => result is named.
+                    name = "call_value";
                 } else {
-                    callValue = LLVMBuildCall(emitter->builder,lhsValue.llvm,NULL,0,"call_value");
+                    // void return type cannot accept a named result.
+                    // from https://msm.runhello.com/p/1013
+                    //      ... since printFactors returns void, the name passed to LLVMBuildCall() MUST be "", 
+                    //          exactly the value "" and no other, or the program crashes.
+                    name = "";
                 }
-                if (callValue) {
+                if (elidedLlvmArgCount) {
+                    callValue = LLVMBuildCall2(emitter->builder,lhsValue.type.llvm,lhsValue.llvm,elidedLlvmArgs,argCount,name);
+                } else {
+                    callValue = LLVMBuildCall2(emitter->builder,lhsValue.type.llvm,lhsValue.llvm,NULL,0,name);
+                }
+                if (exportedValue.llvm) {
+                    // non-unit return type => result can be stored.
                     LLVMBuildStore(emitter->builder,callValue,exportedValue.llvm);
                 }
                 break;
@@ -822,6 +845,11 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                                 loadedRes = rawValue;
                                 break;
                             }
+                            default:
+                            {
+                                COMPILER_ERROR_VA("Unsupported sint-bop: %s", AstBinaryOperatorAsText(bop));
+                                break;
+                            }
                         }
                     } else {
                         // unsigned-int
@@ -891,7 +919,8 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                             case BOP_GETHAN:
                             {
                                 LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntUGE,llvmLtArg,llvmRtArg,"bop_uge_loaded");
-                                loadedRes = LLVMBuildIntCast(emitter->builder,rawValue,LLVMInt1Type(),NULL);
+                                // loadedRes = LLVMBuildIntCast(emitter->builder,rawValue,LLVMInt1Type(),NULL);
+                                loadedRes = rawValue;
                                 break;
                             }
                             case BOP_EQUALS:
@@ -908,6 +937,11 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                                 LLVMValueRef rawValue = LLVMBuildICmp(emitter->builder,LLVMIntNE,llvmLtArg,llvmRtArg,"bop_uneq_loaded");
                                 // return LLVMBuildIntCast(emitter->llvmBuilder,rawValue,LLVMInt1Type(),NULL);
                                 loadedRes = rawValue;
+                                break;
+                            }
+                            default:
+                            {
+                                COMPILER_ERROR_VA("Unsupported uint-bop: %s", AstBinaryOperatorAsText(bop));
                                 break;
                             }
                         }
@@ -983,25 +1017,16 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                             loadedRes = rawValue;
                             break;
                         }
+                        default:
+                        {
+                            COMPILER_ERROR_VA("Unsupported fp-bop: %s", AstBinaryOperatorAsText(bop));
+                        }
                     }
                 }
 
                 LLVMBuildStore(emitter->builder, loadedRes, exportedValue.llvm);
                 break;
             }
-            
-            //
-            // STRING: data stored C-style, pointer to first byte returned.
-            // todo: store string length
-            //
-
-            // case AST_LITERAL_STRING:
-            // {
-            //     char const* strValue = GetAstStringLiteralValue(value.exprNode);
-            //     size_t len = strlen(strValue);
-            //     value.llvmValueRef = LLVMConstString(strValue,len,0);
-            //     break;
-            // }
             
             // todo: emitExpr for tuples:
             // - always returns a pointer to a tuple.
@@ -1010,72 +1035,80 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
             // ITEs:
             //
 
-            // case AST_ITE:
-            // {
-            //     // getting the basic block we start in, to return to after computing the result:
-            //     LLVMBasicBlockRef predecessorBlock = NULL;
-            //     LLVMValueRef currentFunction = currentLlvmFunction(emitter);
-            //     if (currentFunction) {
-            //         LLVMBasicBlockRef optPredecessor = LLVMGetLastBasicBlock(currentFunction);
-            //         if (optPredecessor) {
-            //             predecessorBlock = optPredecessor;
-            //         }
-            //     }
-
-            //     // getting the ITE type:
-            //     Type* iteType = GetAstNodeValueType(expr);
-            //     LLVMTypeRef iteLlvmType = emitType(emitter->typer,iteType);
+            case AST_ITE:
+            {
+                // getting the basic block and func we start in, to return to after computing the result:
+                LLVMValueRef currentFunction = emitter->currentLlvmFunction;
+                LLVMBasicBlockRef predecessorBlock = LLVMGetInsertBlock(emitter->builder);
+                COMPILER_ASSERT(predecessorBlock, "unexpected NULL predecessor block in ITE");
                 
-            //     // adding any basic blocks required:
-            //     LLVMValueRef func = currentLlvmFunction(emitter);
-            //     LLVMBasicBlockRef entryBlock = LLVMAppendBasicBlock(func, "ite-entry");
-            //     LLVMBasicBlockRef trueBlock = LLVMAppendBasicBlock(func, "ite-true");
-            //     LLVMBasicBlockRef falseBlock = LLVMAppendBasicBlock(func, "ite-false");
-            //     LLVMBasicBlockRef landingBlock = LLVMAppendBasicBlock(func, "ite-landing");
+                // getting the ITE type:
+                AstNode* iteNode = exportedValue.native;
+                Type* iteType = exportedValue.type.native;
+                LLVMTypeRef iteLlvmType = exportedValue.type.llvm;
                 
-            //     // breaking to the entry block:
-            //     LLVMBuildBr(emitter->llvmBuilder,entryBlock);
+                // adding any basic blocks required:
+                LLVMValueRef func = currentFunction;
+                LLVMBasicBlockRef entryBlock = LLVMAppendBasicBlock(func, "ite_entry_bb");
+                LLVMBasicBlockRef trueBlock = LLVMAppendBasicBlock(func, "ite_true_bb");
+                LLVMBasicBlockRef falseBlock = LLVMAppendBasicBlock(func, "ite_false_bb");
+                LLVMBasicBlockRef landingBlock = LLVMAppendBasicBlock(func, "ite_landing_bb");
                 
-            //     // computing cond, breaking to other blocks:
-            //     LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entryBlock);
-            //     AstNode* cond = GetAstIteCond(expr);
-            //     LLVMValueRef condLlvm = emitExpr(emitter,cond);
-            //     // LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entryBlock);
-            //     LLVMBuildCondBr(emitter->llvmBuilder,condLlvm,trueBlock,falseBlock);
+                // breaking to the entry block:
+                LLVMBuildBr(emitter->builder,entryBlock);
                 
-            //     // populating 'ite-true':
-            //     LLVMPositionBuilderAtEnd(emitter->llvmBuilder,trueBlock);
-            //     AstNode* ifTrue = GetAstIteIfTrue(expr);
-            //     LLVMValueRef valueIfTrue = NULL;
-            //     if (ifTrue) {
-            //         valueIfTrue = emitExpr(emitter,ifTrue);
-            //     }
-            //     LLVMBasicBlockRef predTrueBlock = LLVMGetInsertBlock(emitter->llvmBuilder);
-            //     LLVMBuildBr(emitter->llvmBuilder,landingBlock);
+                // computing cond, breaking to other blocks:
+                LLVMPositionBuilderAtEnd(emitter->builder,entryBlock);
+                AstNode* condNode = GetAstIteCond(iteNode);
+                ExportedValue condExpVal = exportValue(emitter,condNode);
+                LLVMValueRef condExpVal_loaded = LLVMBuildLoad2(emitter->builder,condExpVal.type.llvm,condExpVal.llvm,"ite_cond_loaded");
+                // LLVMPositionBuilderAtEnd(emitter->llvmBuilder,entryBlock);
+                LLVMBuildCondBr(emitter->builder,condExpVal_loaded,trueBlock,falseBlock);
+                
+                // populating 'ite-true':
+                LLVMPositionBuilderAtEnd(emitter->builder,trueBlock);
+                AstNode* ifTrueNode = GetAstIteIfTrue(iteNode);
+                ExportedValue ifTrueExpVal = exportValue(emitter,ifTrueNode);
+                LLVMValueRef ifTrueExpVal_loaded = NULL;
+                if (ifTrueExpVal.type.native != GetUnitType(typer)) {
+                    ifTrueExpVal_loaded = LLVMBuildLoad2(emitter->builder,ifTrueExpVal.type.llvm,ifTrueExpVal.llvm,"if_true_loaded");
+                }
+                LLVMBasicBlockRef predTrueBlock = LLVMGetInsertBlock(emitter->builder);
+                LLVMBuildBr(emitter->builder,landingBlock);
 
-            //     // populating 'ite-false':
-            //     LLVMPositionBuilderAtEnd(emitter->llvmBuilder,falseBlock);
-            //     AstNode* ifFalse = GetAstIteIfFalse(expr);
-            //     LLVMValueRef valueIfFalse = NULL;
-            //     if (ifFalse) {
-            //         valueIfFalse = emitExpr(emitter,ifFalse);
-            //     }
-            //     LLVMBasicBlockRef predFalseBlock = LLVMGetInsertBlock(emitter->llvmBuilder);
-            //     LLVMBuildBr(emitter->llvmBuilder,landingBlock);
+                // populating 'ite-false':
+                LLVMPositionBuilderAtEnd(emitter->builder,falseBlock);
+                AstNode* ifFalseNode = GetAstIteIfFalse(iteNode);
+                LLVMValueRef ifFalseExpVal_loaded = NULL;
+                if (ifFalseNode) {
+                    ExportedValue ifFalseExpVal = exportValue(emitter,ifFalseNode);
+                    if (ifFalseExpVal.type.native != GetUnitType(typer)) {
+                        ifFalseExpVal_loaded = LLVMBuildLoad2(emitter->builder,ifFalseExpVal.type.llvm,ifFalseExpVal.llvm,"if_false_loaded");
+                    }
+                }
+                LLVMBasicBlockRef predFalseBlock = LLVMGetInsertBlock(emitter->builder);
+                LLVMBuildBr(emitter->builder,landingBlock);
 
-            //     // tying together these blocks with a 'phi' node and returning:
-            //     LLVMPositionBuilderAtEnd(emitter->llvmBuilder,landingBlock);
-            //     LLVMValueRef phi = LLVMBuildPhi(emitter->llvmBuilder, iteLlvmType, "ite-result");
-            //     LLVMValueRef phi_values[] = {valueIfTrue, valueIfFalse};
-            //     LLVMBasicBlockRef phi_blocks[] = {predTrueBlock, predFalseBlock};
-            //     LLVMAddIncoming(phi, phi_values, phi_blocks, 2);
-            //     // if (predecessorBlock) {
-            //     //     LLVMBuildBr(emitter->llvmBuilder,predecessorBlock);
-            //     // }
+                // finally, converging to return a value:
+                LLVMPositionBuilderAtEnd(emitter->builder,landingBlock);
 
-            //     exportedValue.llvm = LLVMBuildAlloca()
-            //     break;
-            // }
+                int phiRequired = (iteType != GetUnitType(emitter->typer));
+                if (phiRequired) {
+                    // building a phi node:
+                    LLVMValueRef phi_loaded = LLVMBuildPhi(emitter->builder, iteLlvmType, "ite_result_loaded");
+                    LLVMValueRef phi_values[] = {ifTrueExpVal_loaded, ifFalseExpVal_loaded};
+                    LLVMBasicBlockRef phi_blocks[] = {predTrueBlock, predFalseBlock};
+                    LLVMAddIncoming(phi_loaded, phi_values, phi_blocks, 2);
+
+                    // storing the phi value result if non-unit:
+                    COMPILER_ASSERT(ifFalseNode != NULL, "ITE cannot return non-unit type with no false branch.");
+                    exportedValue.llvm = LLVMBuildAlloca(emitter->builder,iteLlvmType,"ite_result");
+                    LLVMBuildStore(emitter->builder,phi_loaded,exportedValue.llvm);
+                }  else {
+                    exportedValue.llvm = NULL;
+                }
+                break;
+            }
 
             //
             // Cast expressions:
@@ -1226,6 +1259,7 @@ int EmitLlvmModule(Typer* typer, AstNode* module) {
     int broken = LLVMVerifyModule(emitter.module,LLVMReturnStatusAction,&verifyMsg);
     if (broken) {
         COMPILER_ERROR_VA("LLVMVerifyModule failed with message(s):\n%s", verifyMsg);
+        result = 0;
     } else {
         SetAstNodeLlvmRepr(module,emitter.module);
 

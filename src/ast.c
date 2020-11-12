@@ -1279,11 +1279,19 @@ inline static int recursivelyVisitChildren(void* context, AstNode* node, Visitor
         }
         case AST_ITE:
         {
-            return (
-                RecursivelyVisitAstNode(context, GetAstIteCond(node), preVisitorCb, postVisitorCb) &&
-                RecursivelyVisitAstNode(context, GetAstIteIfTrue(node), preVisitorCb, postVisitorCb) &&
-                RecursivelyVisitAstNode(context, GetAstIteIfFalse(node), preVisitorCb, postVisitorCb)
-            );
+            AstNode* condNode = GetAstIteCond(node);
+            AstNode* ifTrueNode = GetAstIteIfTrue(node);
+            AstNode* ifFalseNode = GetAstIteIfFalse(node);
+            if (!RecursivelyVisitAstNode(context, condNode, preVisitorCb, postVisitorCb)) {
+                return 0;
+            }
+            if (!RecursivelyVisitAstNode(context, ifTrueNode, preVisitorCb, postVisitorCb)) {
+                return 0;
+            }
+            if (ifFalseNode && !RecursivelyVisitAstNode(context, ifFalseNode, preVisitorCb, postVisitorCb)) {
+                return 0;
+            }
+            return 1;
         }
         case AST_TLAMBDA:
         {

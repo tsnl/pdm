@@ -1564,8 +1564,8 @@ int typer_post(void* rawTyper, AstNode* node) {
             AstNode* ifFalse = GetAstIteIfFalse(node);
             Type* condType = GetAstNodeTypingExt_Value(cond);
             Type* ifTrueType = GetAstNodeTypingExt_Value(ifTrue);
-            Type* ifFalseType = ifFalse ? GetAstNodeTypingExt_Value(ifFalse) : GetUnitType(typer);
-            Type* type = GetPhiType(typer,nodeLoc,condType,ifTrueType,ifFalseType);
+            Type* optIfFalseType = ifFalse ? GetAstNodeTypingExt_Value(ifFalse) : NULL;
+            Type* type = GetPhiType(typer,nodeLoc,condType,ifTrueType,optIfFalseType);
             // Type* type = NULL;
             SetAstNodeTypingExt_Value(node,type);
             break;
@@ -2118,14 +2118,19 @@ Type* NewOrGetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, T
         }
     }
 }
-Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse) {
+Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* optIfFalse) {
     Type* boolType = GetIntType(typer,INT_1,0);
     if (requireSubtyping(typer,"if-bool",loc,boolType,cond) != TYPING_FAILURE) {
-        Type* outType = NewMetavarType(loc,typer,"ite-result");
-        TypingResult thenResult = requireSubtyping(typer,"if-then-equality",loc,ifTrue,outType);
-        TypingResult elseResult = requireSubtyping(typer,"if-else-equality",loc,ifFalse,outType);
-        if ((thenResult != TYPING_FAILURE) && (elseResult != TYPING_FAILURE)) {
-            return outType;
+        if (optIfFalse != NULL) {
+            Type* ifFalse = optIfFalse;
+            Type* outType = NewMetavarType(loc,typer,"ite-result");
+            TypingResult thenResult = requireSubtyping(typer,"if-then-equality",loc,ifTrue,outType);
+            TypingResult elseResult = requireSubtyping(typer,"if-else-equality",loc,ifFalse,outType);
+            if ((thenResult != TYPING_FAILURE) && (elseResult != TYPING_FAILURE)) {
+                return outType;
+            }
+        } else {
+            return GetUnitType(typer);
         }
     }
     return NULL;

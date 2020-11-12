@@ -134,7 +134,7 @@
 %token <token> TK_HOLE  "a HOLE (ID without any letters)"
 
 %token TK_KW_NAMESPACE  "'namespace'"
-%token TK_KW_DO "'do'"              // deprecated?
+%token TK_KW_DO "'do'"
 %token TK_KW_IF "'if'" 
 %token TK_KW_THEN "'then'"
 %token TK_KW_ELSE "'else'"
@@ -142,7 +142,7 @@
 %token TK_KW_MATCH "'match'"
 %token TK_KW_WITH "'with'"
 %token TK_KW_RETURN "'return'"      // deprecated?
-%token TK_KW_DISCARD "'discard'"
+%token TK_KW_DISCARD "'discard'"    // deprecated?
 %token TK_KW_MODULE "'module'"
 %token TK_KW_IMPORT "'import'"
 %token TK_KW_EXPORT "'export'"      // deprecated? 
@@ -195,7 +195,8 @@
 %token TK_EXCLAIM   "'!'"
 %token TK_EOS       "EOS"
 
-/* TK_KW_YIELD -> TK_KW_DISCARD 
+/* Added tokens:
+ * TK_KW_YIELD -> TK_KW_DISCARD 
  * TK_NOT -> TK_KW_NOT
  * -> TK_EXCLAIM
  * -> TK_KW_SET
@@ -239,7 +240,7 @@ setStmt
     : TK_KW_SET expr TK_BIND expr   { $$ = NewAstSetStmt(@$, $2, $4); }
     ; 
 discardStmt
-    : TK_KW_DISCARD expr    { $$ = NewAstDiscardStmt(@$, $2); }
+    : TK_KW_DO expr    { $$ = NewAstDiscardStmt(@$, $2); }
     ;
 
 moduleContentStmt
@@ -331,8 +332,8 @@ vstruct
     : TK_LCYBRK vstructField_cl TK_RCYBRK     { $$ = NewAstVStructWithFieldsSb(@$, $2); }
     ;
 ifThenElse
-    : TK_KW_IF parenExpr TK_KW_THEN parenExpr                          { $$ = NewAstIte(@$, $2, $4, NULL); }
-    | TK_KW_IF parenExpr TK_KW_THEN parenExpr TK_KW_ELSE parenExpr     { $$ = NewAstIte(@$, $2, $4, $6); }
+    : TK_KW_IF parenExpr TK_KW_THEN parenExpr                        { $$ = NewAstIte(@$, $2, $4, NULL); }
+    | TK_KW_IF parenExpr TK_KW_THEN parenExpr TK_KW_ELSE parenExpr   { $$ = NewAstIte(@$, $2, $4, $6); }
     ;
 chain
     : TK_LCYBRK expr             TK_RCYBRK      { $$ = NewAstChainWith(@$, NULL, $2); }

@@ -2,11 +2,11 @@ Terminals unused in grammar
 
     "a HOLE (ID without any letters)"
     "'namespace'"
-    "'do'"
     "'operator'"
     "'match'"
     "'with'"
     "'return'"
+    "'discard'"
     "'export'"
     "'fun'"
     "':'"
@@ -34,7 +34,7 @@ Grammar
 
     8 setStmt: "'set'" expr "'='" expr
 
-    9 discardStmt: "'discard'" expr
+    9 discardStmt: "'do'" expr
 
    10 moduleContentStmt: defStmt
    11                  | typedefStmt
@@ -223,7 +223,7 @@ Terminals, with rules where they appear
     "a TID (ID with first letter uppercase)" <token> (259) 24
     "a HOLE (ID without any letters)" <token> (260)
     "'namespace'" (261)
-    "'do'" (262)
+    "'do'" (262) 9
     "'if'" (263) 50 51
     "'then'" (264) 50 51
     "'else'" (265) 51
@@ -231,7 +231,7 @@ Terminals, with rules where they appear
     "'match'" (267)
     "'with'" (268)
     "'return'" (269)
-    "'discard'" (270) 9
+    "'discard'" (270)
     "'module'" (271) 20
     "'import'" (272) 21 22
     "'export'" (273)
@@ -1223,8 +1223,8 @@ State 73
 
     "a VID (ID with first letter lowercase)"  shift, and go to state 16
     "a TID (ID with first letter uppercase)"  shift, and go to state 21
+    "'do'"                                    shift, and go to state 121
     "'if'"                                    shift, and go to state 68
-    "'discard'"                               shift, and go to state 121
     "'let'"                                   shift, and go to state 122
     "'set'"                                   shift, and go to state 123
     "'not'"                                   shift, and go to state 103
@@ -1804,7 +1804,7 @@ State 120
 
 State 121
 
-    9 discardStmt: "'discard'" • expr
+    9 discardStmt: "'do'" • expr
 
     "a VID (ID with first letter lowercase)"  shift, and go to state 16
     "a TID (ID with first letter uppercase)"  shift, and go to state 21
@@ -1977,8 +1977,8 @@ State 130
 
     "a VID (ID with first letter lowercase)"  shift, and go to state 16
     "a TID (ID with first letter uppercase)"  shift, and go to state 21
+    "'do'"                                    shift, and go to state 121
     "'if'"                                    shift, and go to state 68
-    "'discard'"                               shift, and go to state 121
     "'let'"                                   shift, and go to state 122
     "'set'"                                   shift, and go to state 123
     "'not'"                                   shift, and go to state 103
@@ -2807,7 +2807,7 @@ State 168
 
 State 169
 
-    9 discardStmt: "'discard'" expr •
+    9 discardStmt: "'do'" expr •
 
     $default  reduce using rule 9 (discardStmt)
 
