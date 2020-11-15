@@ -25,7 +25,7 @@ struct Frame {
 };
 
 Primer* CreatePrimer(void* typer);
-int PrimeModule(Primer* primer, AstNode* node);
+int PrimeScript(Primer* primer, AstNode* node);
 
 Defn* LookupSymbol(Scope* scope, SymbolID lookupID, AstContext context);
 Defn* LookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context);

@@ -17,7 +17,7 @@ typedef struct LoadedSource LoadedSource;
 
 struct LoadedSource {
     Source* source;
-    AstNode* moduleAstNode;
+    AstNode* scriptAstNode;
 };
 
 struct Interp {
@@ -64,7 +64,7 @@ int InterpLoadModuleSource(Interp* interp, Source* scriptSource) {
         return 1;
     } else {
         {   // DEBUG: lex and exit
-            // !!- Do not try to parse after debug lex, since the stream is single-use.
+            // Do not try to parse after debug lex, since the stream is single-use.
             // DebugLexer(scriptSource);
             // return 0;
         }
@@ -72,8 +72,8 @@ int InterpLoadModuleSource(Interp* interp, Source* scriptSource) {
         LoadedSource loadedSource;
         
         loadedSource.source = scriptSource;
-        loadedSource.moduleAstNode = ParseSource(scriptSource);
-        if (!loadedSource.moduleAstNode) {
+        loadedSource.scriptAstNode = ParseScript(scriptSource);
+        if (!loadedSource.scriptAstNode) {
             return 0;
         }
 
@@ -81,11 +81,11 @@ int InterpLoadModuleSource(Interp* interp, Source* scriptSource) {
             // DEBUG: module dump
             printf("Loaded module '%s':\n", scriptSource->path);
             CodePrinter printer = CreateCodePrinter(stdout, 0);
-            PrintNode(&printer, loadedSource.moduleAstNode);
+            PrintNode(&printer, loadedSource.scriptAstNode);
             printf("\nEnd of Module dump.\n");
         }
 
-        if (!PrimeModule(interp->primer, loadedSource.moduleAstNode)) {
+        if (!PrimeScript(interp->primer, loadedSource.scriptAstNode)) {
             return 0;
         }
         if (GetErrorPosted()) {
@@ -94,7 +94,6 @@ int InterpLoadModuleSource(Interp* interp, Source* scriptSource) {
 
         // All ok! Pushing and returning OK.
         sb_push(interp->loadedSourceSb, loadedSource);
-
         return 1;
     }
 }
@@ -104,7 +103,7 @@ int InterpTypecheckModules(Interp* interp) {
     int loadedSourceCount = sb_count(interp->loadedSourceSb);
     for (int i = 0; i < loadedSourceCount; i++) {
         LoadedSource loadedSource = interp->loadedSourceSb[i];
-        TypeNode(interp->typer, loadedSource.moduleAstNode);
+        TypeNode(interp->typer, loadedSource.scriptAstNode);
     }
 
     // typechecking the whole system:
@@ -122,18 +121,18 @@ int InterpCompile(Interp* interp) {
     int loadedSourceCount = sb_count(interp->loadedSourceSb);
     for (int i = 0; i < loadedSourceCount; i++) {
         LoadedSource loadedSource = interp->loadedSourceSb[i];
-        result = EmitLlvmModule(interp->typer, loadedSource.moduleAstNode) && result;
+        result = EmitLlvmModule(interp->typer, loadedSource.scriptAstNode) && result;
     }
     return result;
 }
 int InterpExecute(Interp* interp, Source* entryScriptSource, SymbolID entryFieldName) {
     int index = lookupLoadedSource(interp,entryScriptSource);
     LoadedSource loaded = loadedSource(interp,index);
-    AstNode* moduleAstNode = loaded.moduleAstNode;
+    AstNode* scriptAstNode = loaded.scriptAstNode;
     AstNode* entryPointField = NULL;
-    int fieldCount = GetAstModuleLength(moduleAstNode);
+    int fieldCount = GetAstModuleLength(scriptAstNode);
     for (int fieldIndex = 0; fieldIndex < fieldCount; fieldIndex++) {
-        AstNode* field = GetAstModuleStmtAt(moduleAstNode,fieldIndex);
+        AstNode* field = GetAstModuleStmtAt(scriptAstNode,fieldIndex);
         if (GetAstFieldName(field) == entryFieldName) {
             entryPointField = field;
             break;
@@ -171,5 +170,5 @@ Source* GetLoadedModuleSourceAt(Interp* interp, int index) {
     return interp->loadedSourceSb[index].source;
 }
 AstNode* GetLoadedModuleAstNodeAt(Interp* interp, int index) {
-    return interp->loadedSourceSb[index].moduleAstNode;
+    return interp->loadedSourceSb[index].scriptAstNode;
 }

@@ -4,6 +4,6 @@
 #include "ast.h"
 #include "source.h"
 
-RawAstNode* ParseSource(Source* source);
+RawAstNode* ParseScript(Source* source);
 
 #endif  // INCLUDED_PARSER_H

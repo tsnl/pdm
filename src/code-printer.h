@@ -8,7 +8,7 @@
 typedef enum CodePrinterFlags CodePrinterFlags;
 enum CodePrinterFlags {
     PRINT_NONE = (0x0),
-    PRINT_INDENT = (0x1)
+    PRINT_INDENT = (0x1),
 };
 
 typedef struct CodePrinter CodePrinter;

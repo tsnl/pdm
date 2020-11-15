@@ -288,101 +288,153 @@ static int primer_post(void* primer, AstNode* node);
 
 int primer_pre(void* rawPrimer, AstNode* node) {
     Primer* primer = rawPrimer;
-    AstNode* topFunc = topFrameFunc(primer);
-    if (topFunc) {
-        SetAstNodeParentFunc(node,topFunc);
-    }
-
-    // whatever the node, we store if it is evaluated in a type or value context here:
-    SetAstNodeLookupContext(node,topFrameContext(primer));
     
-    AstKind kind = GetAstNodeKind(node);
-    switch (kind) {
-        case AST_TID:
-        {
-            SetAstIdLookupScope(node, topFrameScope(primer));
-            break;
-        }
-        case AST_VID:
-        {
-            SetAstIdLookupScope(node, topFrameScope(primer));
-            break;
-        }
-        case AST_VPAREN:
-        case AST_CHAIN:
-        {
-            pushFrame(primer, NULL, ASTCTX_VALUE, topFrameFunc(primer));
-            break;
-        }
-        case AST_TPATTERN_FIELD:
-        case AST_VPATTERN_FIELD:
-        case AST_TPATTERN_SINGLETON_FIELD:
-        case AST_VPATTERN_SINGLETON_FIELD:
-        {
-            // defining and storing on pattern
-            int isTyping = (kind == AST_TPATTERN_FIELD || kind == AST_TPATTERN_SINGLETON_FIELD);
-            int isValue = (kind == AST_VPATTERN_FIELD || kind == AST_VPATTERN_SINGLETON_FIELD);
-
-            Loc loc = GetAstNodeLoc(node);
-            SymbolID defnID = GetAstFieldName(node);
-            
-            void* patternType = NewMetavarType(loc, primer->typer, "%cpattern:%s", (isValue ? 'v':'t'), GetSymbolText(defnID));
-            pushSymbol(primer, defnID, patternType, node, (isValue ? ASTCTX_VALUE:ASTCTX_TYPING), 0);
-            
-            if (isValue) {
-                SetAstNodeTypingExt_Value(node,patternType);
-            } else {
-                SetAstNodeTypingExt_Type(node,patternType);
-            }
-
-            if (isValue) {
-                // pushing a new typing frame for RHS in mixed (value/type) items:
-                pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
-            }
-            break;
-        }
-        case AST_VSTRUCT_FIELD:
-        {
-            // SymbolID defnID = GetAstFieldName(node);
-            SetAstNodeTypingExt_Value(node, GetAstNodeTypingExt_Value(GetAstFieldRhs(node)));
-            break;
-        }
-        case AST_VLAMBDA:
-        {
-            // pushing a new frame for the function's contents:
-            pushFrame(primer,NULL,ASTCTX_VALUE,node);
-            break;
-        }
-        case AST_STMT_EXTERN:
-        case AST_STMT_TDEF:
-        {
-            pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
-            break;
-        }
-        case AST_VCAST:
-        {
-            // push a value scope, let type2val push a separate type scope.
-            pushFrame(primer,NULL,ASTCTX_VALUE,topFrameFunc(primer));
-            break;
-        }
-        case AST_TYPE2VAL:
-        {
-            // push a type scope, just for this little typespec
-            pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
-            break;
-        }
-        case AST_VAL2TYPE:
-        {
-            // push a value scope, just for this little value
-            pushFrame(primer,NULL,ASTCTX_VALUE,topFrameFunc(primer));
-            break;
-        }
-        default:
-        {
-            break;
-        }
+    // scripts:
+    if (GetAstNodeKind(node) == AST_SCRIPT) {
+        return 1;
     }
-    return 1;
+
+    // modules:
+    else if (GetAstNodeKind(node) == AST_MODULE) {
+        AstNode* module = node;
+
+        // todo: push & bind the module namespace
+
+        // defining all module-symbols in one go, storing as VALUE typing extensions:
+        pushFrame(primer,NULL,ASTCTX_VALUE,topFrameFunc(primer));
+        size_t moduleStmtLength = GetAstModuleLength(module);
+        for (size_t index = 0; index < moduleStmtLength; index++) {
+            // todo: HACKY let the symbol define itself as type or value in `PrimeScript`
+            AstNode* stmt = GetAstModuleStmtAt(module, index);
+            Loc loc = GetAstNodeLoc(stmt);
+            AstKind stmtKind = GetAstNodeKind(stmt);
+            if (stmtKind == AST_STMT_VDEF) {
+                SymbolID lhs = GetAstDefValueStmtLhs(stmt);
+                void* valueType = NewMetavarType(loc,primer->typer,"def-func:%s",GetSymbolText(lhs));
+                pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE,1);
+                SetAstNodeTypingExt_Value(stmt,valueType);
+            } else if (stmtKind == AST_STMT_EXTERN) {
+                SymbolID lhs = GetAstExternStmtName(stmt);
+                void* valueType = NewMetavarType(loc,primer->typer,"extern:%s",GetSymbolText(lhs));
+                pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE,1);
+                SetAstNodeTypingExt_Value(stmt,valueType);
+            } else if (stmtKind == AST_STMT_TDEF) {
+                SymbolID lhs = GetAstTypedefStmtName(stmt);
+                char const* symbolText = GetSymbolText(lhs);
+                void* typingType = NewMetavarType(loc,primer->typer,"typedef:%s",symbolText);
+                pushSymbol(primer,lhs,typingType,stmt,ASTCTX_TYPING,0);
+                SetAstNodeTypingExt_Type(stmt, typingType);
+            } else {
+                FeedbackNote* note = CreateFeedbackNote("statement here...", loc, NULL);
+                PostFeedback(FBK_ERROR, note, "Unsupported statement kind in module: %s", AstKindAsText(stmtKind));
+                if (DEBUG) {
+                    printf("!!- PrimeScript: Unsupported statement kind in module\n");
+                } else {
+                    assert(0 && "PrimeScript: Unsupported statement kind in module");
+                }
+            }
+        }
+        return 1;
+    } 
+    
+    // all other kinds of nodes:
+    else {
+        AstNode* topFunc = topFrameFunc(primer);
+        if (topFunc) {
+            SetAstNodeParentFunc(node,topFunc);
+        }
+
+        // whatever the node, we store if it is evaluated in a type or value context here:
+        SetAstNodeLookupContext(node,topFrameContext(primer));
+        
+        AstKind kind = GetAstNodeKind(node);
+        switch (kind) {
+            case AST_TID:
+            {
+                SetAstIdLookupScope(node, topFrameScope(primer));
+                break;
+            }
+            case AST_VID:
+            {
+                SetAstIdLookupScope(node, topFrameScope(primer));
+                break;
+            }
+            case AST_VPAREN:
+            case AST_CHAIN:
+            {
+                pushFrame(primer, NULL, ASTCTX_VALUE, topFrameFunc(primer));
+                break;
+            }
+            case AST_TPATTERN_FIELD:
+            case AST_VPATTERN_FIELD:
+            case AST_TPATTERN_SINGLETON_FIELD:
+            case AST_VPATTERN_SINGLETON_FIELD:
+            {
+                // defining and storing on pattern
+                int isTyping = (kind == AST_TPATTERN_FIELD || kind == AST_TPATTERN_SINGLETON_FIELD);
+                int isValue = (kind == AST_VPATTERN_FIELD || kind == AST_VPATTERN_SINGLETON_FIELD);
+
+                Loc loc = GetAstNodeLoc(node);
+                SymbolID defnID = GetAstFieldName(node);
+                
+                void* patternType = NewMetavarType(loc, primer->typer, "%cpattern:%s", (isValue ? 'v':'t'), GetSymbolText(defnID));
+                pushSymbol(primer, defnID, patternType, node, (isValue ? ASTCTX_VALUE:ASTCTX_TYPING), 0);
+                
+                if (isValue) {
+                    SetAstNodeTypingExt_Value(node,patternType);
+                } else {
+                    SetAstNodeTypingExt_Type(node,patternType);
+                }
+
+                if (isValue) {
+                    // pushing a new typing frame for RHS in mixed (value/type) items:
+                    pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
+                }
+                break;
+            }
+            case AST_VSTRUCT_FIELD:
+            {
+                // SymbolID defnID = GetAstFieldName(node);
+                SetAstNodeTypingExt_Value(node, GetAstNodeTypingExt_Value(GetAstFieldRhs(node)));
+                break;
+            }
+            case AST_VLAMBDA:
+            {
+                // pushing a new frame for the function's contents:
+                pushFrame(primer,NULL,ASTCTX_VALUE,node);
+                break;
+            }
+            case AST_STMT_EXTERN:
+            case AST_STMT_TDEF:
+            {
+                pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
+                break;
+            }
+            case AST_VCAST:
+            {
+                // push a value scope, let type2val push a separate type scope.
+                pushFrame(primer,NULL,ASTCTX_VALUE,topFrameFunc(primer));
+                break;
+            }
+            case AST_TYPE2VAL:
+            {
+                // push a type scope, just for this little typespec
+                pushFrame(primer,NULL,ASTCTX_TYPING,topFrameFunc(primer));
+                break;
+            }
+            case AST_VAL2TYPE:
+            {
+                // push a value scope, just for this little value
+                pushFrame(primer,NULL,ASTCTX_VALUE,topFrameFunc(primer));
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
+        return 1;
+    }
 }
 int primer_post(void* rawPrimer, AstNode* node) {
     Primer* primer = rawPrimer;
@@ -420,45 +472,14 @@ int primer_post(void* rawPrimer, AstNode* node) {
 Primer* CreatePrimer(void* typer) {
     return createPrimer(typer);
 }
-int PrimeModule(Primer* primer, AstNode* module) {
+int PrimeScript(Primer* primer, AstNode* script) {
+    
     if (DEBUG) {
-        assert(GetAstNodeKind(module) == AST_MODULE);
+        assert(GetAstNodeKind(script) == AST_SCRIPT);
     }
-
-    // defining all module-symbols in one go, storing as VALUE typing extensions:
-    pushFrame(primer,NULL,ASTCTX_VALUE,topFrameFunc(primer));
-    size_t moduleStmtLength = GetAstModuleLength(module);
-    for (size_t index = 0; index < moduleStmtLength; index++) {
-        // todo: HACKY let the symbol define itself as type or value in `PrimeModule`
-        AstNode* stmt = GetAstModuleStmtAt(module, index);
-        Loc loc = GetAstNodeLoc(stmt);
-        AstKind stmtKind = GetAstNodeKind(stmt);
-        if (stmtKind == AST_STMT_VDEF) {
-            SymbolID lhs = GetAstDefValueStmtLhs(stmt);
-            void* valueType = NewMetavarType(loc,primer->typer,"def-func:%s",GetSymbolText(lhs));
-            pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE,1);
-            SetAstNodeTypingExt_Value(stmt,valueType);
-        } else if (stmtKind == AST_STMT_EXTERN) {
-            SymbolID lhs = GetAstExternStmtName(stmt);
-            void* valueType = NewMetavarType(loc,primer->typer,"extern:%s",GetSymbolText(lhs));
-            pushSymbol(primer,lhs,valueType,stmt,ASTCTX_VALUE,1);
-            SetAstNodeTypingExt_Value(stmt,valueType);
-        } else if (stmtKind == AST_STMT_TDEF) {
-            SymbolID lhs = GetAstTypedefStmtName(stmt);
-            char const* symbolText = GetSymbolText(lhs);
-            void* typingType = NewMetavarType(loc,primer->typer,"typedef:%s",symbolText);
-            pushSymbol(primer,lhs,typingType,stmt,ASTCTX_TYPING,0);
-            SetAstNodeTypingExt_Type(stmt, typingType);
-        } else {
-            if (DEBUG) {
-                printf("!!- PrimeModule: Unsupported statement kind in module\n");
-            } else {
-                assert(0 && "PrimeModule: Unsupported statement kind in module");
-            }
-        }
-    }
+    
     // visiting the AST:
-    if (!RecursivelyVisitAstNode(primer, module, primer_pre, primer_post)) {
+    if (!RecursivelyVisitAstNode(primer, script, primer_pre, primer_post)) {
         return 0;
     }
     popFrame(primer);

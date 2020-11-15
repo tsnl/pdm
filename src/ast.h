@@ -19,6 +19,7 @@ typedef enum AstContext AstContext;
 enum AstKind {
     AST_ERROR = -1,
     AST_NULL = 0,
+    AST_SCRIPT,
     AST_MODULE,
     AST_TID, AST_VID,
     AST_LITERAL_INT, AST_LITERAL_FLOAT, AST_LITERAL_STRING, 
@@ -30,7 +31,7 @@ enum AstKind {
     AST_VPTR,
     AST_VLAMBDA,AST_TLAMBDA,
     AST_ITE,
-    AST_DOT_INDEX, AST_DOT_NAME,
+    AST_DOT_INDEX, AST_DOT_NAME, AST_COLON_NAME,
     AST_STMT_VLET, AST_STMT_VDEF, AST_STMT_TDEF, AST_TDEF_ENUM, AST_STMT_EXTERN, AST_STMT_ASSERT, AST_STMT_RETURN,
     AST_TCALL, AST_VCALL,
     AST_UNARY, AST_BINARY,
@@ -71,6 +72,7 @@ enum AstContext {
 // Constructors:
 //
 
+AstNode* NewAstScriptWithModulesSb(Span span, Source* source, AstNode** mov_modulesSb);
 AstNode* NewAstModule(Span span, SymbolID moduleID);
 AstNode* NewAstModuleWithStmtSb(Span span, SymbolID moduleID, AstNode** mov_contentSb);
 void PushStmtToAstModule(AstNode* module, AstNode* def);
@@ -119,6 +121,7 @@ void SetAstChainResult(AstNode* chain, AstNode* result);
 AstNode* NewAstIte(Span span, AstNode* cond, AstNode* ifTrue, AstNode* ifFalse);
 AstNode* NewAstDotIndex(Span span, AstNode* lhs, size_t index);
 AstNode* NewAstDotName(Span span, AstNode* lhs, SymbolID rhs);
+AstNode* NewAstColonName(Span span, AstNode* lhs, SymbolID rhs);
 
 AstNode* NewAstVLambda(Span span, AstNode* pattern, AstNode* body);
 AstNode* NewAstTLambda(Span span, AstNode* pattern, AstNode* body);
@@ -166,6 +169,9 @@ void ReqAstLambdaDefn(AstNode* lambda, void* defn);
 // Getters:
 //
 
+int GetAstScriptLength(AstNode* node);
+AstNode* GetAstScriptModuleAt(AstNode* node, int index);
+
 SymbolID GetAstModuleName(AstNode* module);
 int GetAstModuleLength(AstNode* module);
 AstNode* GetAstModuleStmtAt(AstNode* module, int index);
@@ -203,6 +209,8 @@ AstNode* GetAstDotIndexLhs(AstNode* dot);
 size_t GetAstDotIndexRhs(AstNode* dot);
 AstNode* GetAstDotNameLhs(AstNode* dot);
 SymbolID GetAstDotNameRhs(AstNode* dot);
+AstNode* GetAstColonNameLhs(AstNode* colon);
+SymbolID GetAstColonNameRhs(AstNode* colon);
 
 int CountAstLambdaCaptures(AstNode* lambda);
 void* GetAstVLambdaCaptureAt(AstNode* lambda, int index);

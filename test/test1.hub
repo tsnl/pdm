@@ -1,63 +1,70 @@
-extern def malloc (size U64) -> U8^;
-extern def puts (s String) -> U32;
-
-extern def print_string (s String) -> Unit;
-extern def print_s32 (s S32) -> Unit;
-extern def print_f32 (f F32) -> Unit;
-extern def println () -> Unit;
-
-def add_s32 (x S32, y S32) -> S32 {
-    x + y
+mod heap {
+    extern def malloc (size U64) -> U8^;
 };
 
-def subtract_s32 (x S32, y S32) -> S32 {
-    x - y
-};
-
-def dot_s32 (x1 S32, y1 S32, x2 S32, y2 S32) -> S32 {
-    x1*x2 + y1*y2
-};
-
-def main () -> S32 {
-    let x1 S32 = 42; let y1 S32 = 56;
-    let x2 S32 = 0;  let y2 S32 = 64;
+mod cprint {
+    extern def puts (s String) -> U32;
     
-    # print x1,y1
-    do print_string("(x1,y1) = {x=\0");
-    do print_s32(x1);
-    do print_string(",y=\0");
-    do print_s32(y1);
-    do print_string("}\0");
-    do println();
+    extern def string (s String) -> Unit;
+    extern def s32 (s S32) -> Unit;
+    extern def f32 (f F32) -> Unit;
+    extern def line () -> Unit;
+};
 
-    # print x2,y2
-    do print_string("(x2,y2) = {x=\0");
-    do print_s32(x2);
-    do print_string(",y=\0");
-    do print_s32(y2);
-    do print_string("}\0");
-    do println();
+mod demo {
+    def add_s32 (x S32, y S32) -> S32 {
+        x + y
+    };
 
-    # subtract x1,y1 and x2,y2
-    do print_string("subtract_s32(x1,y1) = \0");
-    do print_s32(subtract_s32(x1,y1));
-    do println();
-    do print_string("subtract_s32(x2,y2) = \0");
-    do print_s32(subtract_s32(x2,y2));
-    do println();
+    def subtract_s32 (x S32, y S32) -> S32 {
+        x - y
+    };
 
-    # add x1,y1 and x2,y2
-    do print_string("add_s32(x1,y1) = \0");
-    do print_s32(add_s32(x1,y1));
-    do println();
-    do print_string("add_s32(x2,y2) = \0");
-    do print_s32(add_s32(x2,y2));
-    do println();
+    def dot_s32 (x1 S32, y1 S32, x2 S32, y2 S32) -> S32 {
+        x1*x2 + y1*y2
+    };
 
-    # dot(x1,y1,x2,y2)
-    do print_string("dot(x1,y1,x2,y2) = \0");
-    do print_s32(dot_s32(x1,y1,x2,y2));
-    do println();
+    def main () -> S32 {
+        let x1 S32 = 42; let y1 S32 = 56;
+        let x2 S32 = 0;  let y2 S32 = 64;
+        
+        # print x1,y1
+        do print:string("(x1,y1) = {x=\0");
+        do print:s32(x1);
+        do print:string(",y=\0");
+        do print:s32(y1);
+        do print:string("}\0");
+        do print:line();
 
-    0
+        # print x2,y2
+        do print:string("(x2,y2) = {x=\0");
+        do print:s32(x2);
+        do print:string(",y=\0");
+        do print:s32(y2);
+        do print:string("}\0");
+        do print:line();
+
+        # subtract x1,y1 and x2,y2
+        do print:string("subtract_s32(x1,y1) = \0");
+        do print:s32(subtract_s32(x1,y1));
+        do print:line();
+        do print:string("subtract_s32(x2,y2) = \0");
+        do print:s32(subtract_s32(x2,y2));
+        do print:line();
+
+        # add x1,y1 and x2,y2
+        do print:string("add_s32(x1,y1) = \0");
+        do print:s32(add_s32(x1,y1));
+        do print:line();
+        do print:string("add_s32(x2,y2) = \0");
+        do print:s32(add_s32(x2,y2));
+        do print:line();
+
+        # dot(x1,y1,x2,y2)
+        do print:string("dot(x1,y1,x2,y2) = \0");
+        do print:s32(dot_s32(x1,y1,x2,y2));
+        do print:line();
+
+        0
+    };
 };

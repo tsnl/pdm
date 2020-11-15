@@ -17,6 +17,7 @@
 // %define lr.type canonical-lr
 %define api.pure true
 %locations
+%define api.location.type {Span}
 
 // adding a 'Source*' param to the lexer and parser:
 %param {Source* source}
@@ -46,6 +47,9 @@
 //
 // File Nonterminals:
 //
+
+%type <nt> script
+%type <ntSb> scriptContent
 
 %type <nt> module
 %type <ntSb> moduleContent
@@ -87,6 +91,8 @@
 %type <nt> postfixExpr 
 %type <nt> castExpr
 %type <nt> vtcall vvcall
+%type <nt> dotNmExpr dotIxExpr
+%type <nt> colonNmExpr
 
 %type <nt> binaryExpr 
 %type <nt> mulBinaryExpr addBinaryExpr cmpBinaryExpr eqBinaryExpr andBinaryExpr xorBinaryExpr orBinaryExpr
@@ -111,6 +117,7 @@
 %type <nt>   ttarg vtarg
 %type <ntSb> ttarg_cl vtarg_cl
 
+
 // we want 'ast.h' and 'extra-tokens.h' in the header
 // https://stackoverflow.com/questions/47726404/how-to-put-header-file-to-tab-h-in-bison
 %code requires {
@@ -119,8 +126,6 @@
     #include "lexer.h"
     #include "extra-tokens.h"
 
-    #define YYLTYPE Span
-    
     #include "stb/stretchy_buffer.h"
 }
 
@@ -134,6 +139,7 @@
 %token <token> TK_HOLE  "a HOLE (ID without any letters)"
 
 %token TK_KW_NAMESPACE  "'namespace'"
+%token TK_KW_MOD "'mod'"
 %token TK_KW_DO "'do'"
 %token TK_KW_IF "'if'" 
 %token TK_KW_THEN "'then'"
@@ -207,17 +213,30 @@
  * -> TK_KW_ENUM
  */
 
-%start module;
+%start script;
+// %start module;
 // %start letStmt
 
 %%
+
+/*
+ * Scripts:
+ */
+
+script
+    : scriptContent { $$ = NewAstScriptWithModulesSb(@$, source, $1); *outp = $$; }
+    ;
+scriptContent
+    : module               TK_SEMICOLON     { $$ = NULL; sb_push($$,$1); }
+    | scriptContent module TK_SEMICOLON     { $$ = $1; sb_push($$,$2); }
+    ;
 
 /*
  * Modules:
  */
 
 module
-    : moduleContent    { $$ = NewAstModuleWithStmtSb(@$, SYM_NULL, $1); *outp = $$; }
+    : TK_KW_MOD TK_VID TK_LCYBRK moduleContent TK_RCYBRK    { $$ = NewAstModuleWithStmtSb(@$, $2.ID_symbolID, $4); }
     ;
 moduleContent
     : moduleContentStmt TK_SEMICOLON                   { $$ = NULL; sb_push($$, $1); }
@@ -349,6 +368,9 @@ postfixExpr
     : primaryExpr   { $$ = $1; }
     | vtcall        { $$ = $1; }
     | vvcall        { $$ = $1; }
+    | dotNmExpr     { $$ = $1; }
+    | dotIxExpr     { $$ = $1; }
+    | colonNmExpr   { $$ = $1; }
     ;
 vtcall
     : postfixExpr TK_LSQBRK vtarg_cl TK_RSQBRK  { $$ = NewAstTCallWithArgsSb(@$, $1, $3); }
@@ -356,6 +378,15 @@ vtcall
 vvcall
     : postfixExpr TK_LPAREN TK_RPAREN           { $$ = NewAstVCallWithArgsSb(@$, $1, NULL); }
     | postfixExpr TK_LPAREN expr_cl TK_RPAREN   { $$ = NewAstVCallWithArgsSb(@$, $1, $3); }
+    ;
+dotNmExpr
+    : postfixExpr TK_DOT TK_VID         { $$ = NewAstDotName(@$, $1, $3.ID_symbolID); }
+    ;
+dotIxExpr
+    : postfixExpr TK_DOT TK_DINT_LIT    { $$ = NewAstDotIndex(@$, $1, $3.Int); }
+    ;
+colonNmExpr
+    : postfixExpr TK_COLON TK_VID       { $$ = NewAstColonName(@$, $1, $3.ID_symbolID); }
     ;
 
 castExpr
@@ -517,7 +548,7 @@ tpatternField_cl
 #include "source.h"
 #include "ast.h"
 
-RawAstNode* ParseSource(Source* source) {
+RawAstNode* ParseScript(Source* source) {
     // TODO: implement me from `parser.c`
     AstNode* out = NULL;
     int result = yyparse(source, &out);

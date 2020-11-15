@@ -23,6 +23,13 @@ CodePrinter CreateCodePrinter(FILE* file, int flags) {
 void PrintChar(CodePrinter* printer, char ch) {
     if (ch == '\t') {
         // extending tabs
+        // for (int tabIndex = 0; tabIndex < printer->indentCount; tabIndex++) {
+        //     fputc('\t', printer->file);
+        // }
+        fputc('\t', printer->file);
+    } else if (ch == '\n') {
+        // printing tabs upto indent count:
+        fputc('\n', printer->file);
         for (int tabIndex = 0; tabIndex < printer->indentCount; tabIndex++) {
             fputc('\t', printer->file);
         }
@@ -47,19 +54,39 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
     AstKind kind = GetAstNodeKind(node);
     switch (kind)
     {
-        case AST_UNIT:
+        case AST_SCRIPT:
         {
-            PrintText(cp, "()");
+            int length = GetAstScriptLength(node);
+            for (int index = 0; index < length; index++) {
+                AstNode* module = GetAstScriptModuleAt(node, index);
+                PrintNode(cp, module);
+                PrintText(cp, ";\n");
+            }
             break;
         }
         case AST_MODULE:
         {
+            PrintText(cp, "mod ");
+            PrintText(cp, GetSymbolText(GetAstModuleName(node)));
+            PrintText(cp, " {");
+            IndentPrinter(cp);
+            PrintChar(cp, '\n');
             int length = GetAstModuleLength(node);
-            PrintFormattedText(cp, "MODULE... (%d)\n", length);
             for (int i = 0; i < length; i++) {
                 PrintNode(cp, GetAstModuleStmtAt(node, i));
-                PrintText(cp, ";\n");
+                if (i != length-1) {
+                    PrintText(cp, ";\n");
+                }
             }
+            PrintChar(cp,';');
+            DeIndentPrinter(cp);
+            PrintChar(cp,'\n');
+            PrintText(cp, "}");
+            break;
+        }
+        case AST_UNIT:
+        {
+            PrintText(cp, "()");
             break;
         }
         case AST_VID:
@@ -112,7 +139,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         }
         case AST_STMT_DISCARD:
         {
-            PrintText(cp, "discard ");
+            PrintText(cp, "do ");
             PrintNode(cp, GetAstDiscardStmtDiscarded(node));
             break;
         }
@@ -276,19 +303,19 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             for (int index = 0; index < prefixLength; index++) {
                 AstNode* stmt = GetAstChainPrefixStmtAt(node, index);
                 PrintChar(cp, '\n');
-                PrintChar(cp, '\t');
+                // PrintChar(cp, '\t');
                 PrintNode(cp, stmt);
                 PrintChar(cp, ';');
             }
             AstNode* result = GetAstChainResult(node);
             if (result) {
                 PrintChar(cp, '\n');
-                PrintChar(cp, '\t');
+                // PrintChar(cp, '\t');
                 PrintNode(cp, result);
             }
             DeIndentPrinter(cp);
             PrintChar(cp, '\n');
-            PrintChar(cp, '\t');
+            // PrintChar(cp, '\t');
             PrintChar(cp, '}');
             break;
         }
@@ -366,9 +393,16 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         }
         case AST_DOT_NAME:
         {
-            PrintNode(cp, GetAstDotIndexLhs(node));
+            PrintNode(cp, GetAstDotNameLhs(node));
             PrintChar(cp, '.');
             PrintText(cp, GetSymbolText(GetAstDotNameRhs(node)));
+            break;
+        }
+        case AST_COLON_NAME:
+        {
+            PrintNode(cp, GetAstColonNameLhs(node));
+            PrintChar(cp, ':');
+            PrintText(cp, GetSymbolText(GetAstColonNameRhs(node)));
             break;
         }
         case AST_ITE:

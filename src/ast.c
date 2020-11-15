@@ -10,6 +10,7 @@
 
 #include "stb/stretchy_buffer.h"
 
+typedef struct AstScript            AstScript;
 typedef struct AstModule            AstModule;
 typedef struct AstID                AstID;
 typedef union  AstInfo              AstInfo;
@@ -45,6 +46,10 @@ struct AstNodeList {
     AstNode* items[MAX_AST_NODES_PER_LIST];
 };
 
+struct AstScript {
+    Source* source;
+    AstNodeList* modules;
+};
 struct AstModule {
     SymbolID name;
     AstNodeList* items;
@@ -160,6 +165,7 @@ struct AstArray {
 };
 
 union AstInfo {
+    AstScript           Script;
     AstModule           Module;
     AstID               ID;
     AstUnary            Unary;
@@ -316,11 +322,29 @@ AstNode* helpNewAstCall(Span span, AstKind kind, AstNode* lhs, AstNode* args[], 
     callNode->as.Call.args = newNodeList();
     for (int index = 0; index < argsCount; index++) {
         AstNode* arg = args[index];
-        pushListElement(callNode->as.Call.args,arg);
+        pushListElement(callNode->as.Call.args, arg);
     }
     return callNode;
 }
 
+//
+//
+// API:
+//
+//
+
+AstNode* NewAstScriptWithModulesSb(Span span, Source* source, AstNode** mov_modulesSb) {
+    AstNode* loadedScriptNode = newNode(span, AST_SCRIPT);
+    loadedScriptNode->as.Script.source = source;
+    loadedScriptNode->as.Script.modules = newNodeList();
+    int modulesCount = sb_count(mov_modulesSb);
+    for (int index = 0; index < modulesCount; index++) {
+        AstNode* moduleNode = mov_modulesSb[index];
+        pushListElement(loadedScriptNode->as.Script.modules, moduleNode);
+    }
+    sb_free(mov_modulesSb);
+    return loadedScriptNode;
+}
 AstNode* NewAstModule(Span span, SymbolID moduleID) {
     AstNode* node = newNode(span, AST_MODULE);
     node->as.Module.name = moduleID;
@@ -632,12 +656,17 @@ AstNode* NewAstDotIndex(Span span, AstNode* lhs, size_t index) {
     dotNode->as.DotIx.index = index;
     return dotNode;
 }
-
 AstNode* NewAstDotName(Span span, AstNode* lhs, SymbolID rhs) {
     AstNode* dotNode = newNode(span, AST_DOT_NAME);
     dotNode->as.DotNm.lhs = lhs;
     dotNode->as.DotNm.symbol = rhs;
     return dotNode;
+}
+AstNode* NewAstColonName(Span span, AstNode* lhs, SymbolID rhs) {
+    AstNode* colonNode = newNode(span, AST_COLON_NAME);
+    colonNode->as.DotNm.lhs = lhs;
+    colonNode->as.DotNm.symbol = rhs;
+    return colonNode;
 }
 
 AstNode* NewAstVLambda(Span span, AstNode* pattern, AstNode* body) {
@@ -854,6 +883,13 @@ void ReqAstLambdaDefn(AstNode* lambda, void* rawDefn) {
 // Getter implementation:
 //
 
+int GetAstScriptLength(AstNode* node) {
+    return countList(node->as.Script.modules);
+}
+AstNode* GetAstScriptModuleAt(AstNode* node, int index) {
+    return listItemAt(node->as.Script.modules, index);
+}
+
 SymbolID GetAstModuleName(AstNode* module) {
     return module->as.Module.name;
 }
@@ -997,6 +1033,24 @@ SymbolID GetAstDotNameRhs(AstNode* dot) {
         assert(dot->kind == AST_DOT_NAME);
     }
     return dot->as.DotNm.symbol;
+}
+AstNode* GetAstColonNameLhs(AstNode* colon) {
+    if (DEBUG) {
+        COMPILER_ASSERT_VA(
+            colon->kind == AST_COLON_NAME, 
+            "Expected AST_COLON_NAME, got %s", AstKindAsText(colon->kind)
+        );
+    }
+    return colon->as.DotNm.lhs;
+}
+SymbolID GetAstColonNameRhs(AstNode* colon) {
+    if (DEBUG) {
+        COMPILER_ASSERT_VA(
+            colon->kind == AST_COLON_NAME, 
+            "Expected AST_COLON_NAME, got %s", AstKindAsText(colon->kind)
+        );
+    }
+    return colon->as.DotNm.symbol;
 }
 
 AstNode* GetAstLetStmtLhs(AstNode* bindStmt) {
@@ -1334,6 +1388,10 @@ inline static int recursivelyVisitChildren(void* context, AstNode* node, Visitor
         {
             return RecursivelyVisitAstNode(context, GetAstDotNameLhs(node), preVisitorCb, postVisitorCb);
         }
+        case AST_COLON_NAME:
+        {
+            return RecursivelyVisitAstNode(context, GetAstColonNameLhs(node), preVisitorCb, postVisitorCb);
+        }
         case AST_UNARY:
         {
             return RecursivelyVisitAstNode(context, GetAstUnaryOperand(node), preVisitorCb, postVisitorCb);
@@ -1449,6 +1507,17 @@ inline static int recursivelyVisitChildren(void* context, AstNode* node, Visitor
             AstNode* rhs = GetAstFieldRhs(node);
             if (rhs && !RecursivelyVisitAstNode(context, rhs, preVisitorCb, postVisitorCb)) {
                 return 0;
+            }
+            return 1;
+        }
+        case AST_SCRIPT:
+        {
+            int scriptLength = GetAstScriptLength(node);
+            for (int i = 0; i < scriptLength; i++) {
+                AstNode* moduleNode = GetAstScriptModuleAt(node,i);
+                if (!RecursivelyVisitAstNode(context, moduleNode, preVisitorCb, postVisitorCb)) {
+                    return 0;
+                }
             }
             return 1;
         }
