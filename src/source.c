@@ -48,7 +48,9 @@ void PostFeedback(FeedbackKind kind, FeedbackNote* firstNote, char const* fmt, .
         // if (loc.lineIndex > 0 && loc.colIndex > 0) {
         fprintf(stderr, "- %s", noteP->message);
         if (loc.lineIndex >= 0) {
-            fprintf(stderr, " [%s:%d:%d]", noteP->loc.source->path, 1+loc.lineIndex, 1+loc.colIndex);
+            // todo: re-enable full path printouts once segfaults fixed:
+            // fprintf(stderr, " [%s:%d:%d]", noteP->loc.source->path, 1+loc.lineIndex, 1+loc.colIndex);
+            fprintf(stderr, " [%d:%d]", 1+loc.lineIndex, 1+loc.colIndex);
         }
         fprintf(stderr, "\n\n");
     }

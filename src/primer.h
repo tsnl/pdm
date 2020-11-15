@@ -4,35 +4,24 @@
 #include "symbols.h"
 #include "ast.h"
 
+// The same primer must be used for all scripts linked together.
+// Each new symbol occupies its own 'Scope'. Scopes are chained (linked) for lookup.
+// Each Scope/DefnScope points to one such node.
+// Frames store a chain of Scopes by beg and end, usually for container deref.
+
 typedef struct Primer Primer;
 typedef struct Scope Scope;
-typedef struct Scope Defn;
+typedef struct Scope DefnScope;
 typedef struct Frame Frame;
-
-struct Scope {
-    Scope* parent;
-    SymbolID defnID;
-    AstNode* defnAstNode;
-    AstContext context;
-    void* type;
-    int isOverloadedDefn;
-};
-struct Frame {
-    AstContext context;
-    Scope* begScope;
-    Scope* endScope;
-    AstNode* func;
-};
 
 Primer* CreatePrimer(void* typer);
 int PrimeScript(Primer* primer, AstNode* node);
 
-Defn* LookupSymbol(Scope* scope, SymbolID lookupID, AstContext context);
-Defn* LookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP, AstContext context);
+DefnScope* LookupSymbol(Scope* scope, SymbolID lookupID);
+DefnScope* LookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP);
+DefnScope* LookupSymbolInFrame(Frame* frame, SymbolID lookupID);
 
-SymbolID GetDefnName(Defn* defn);
-AstNode* GetDefnNode(Defn* defn);
-AstContext GetDefnContext(Defn* defn);
-void* GetDefnType(Defn* defn);
+SymbolID GetDefnName(DefnScope* defn);
+AstNode* GetDefnNode(DefnScope* defn);
 
 #endif  // INCLUDED_PRIMER_H

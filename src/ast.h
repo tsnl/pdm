@@ -14,7 +14,6 @@ typedef struct AstNode RawAstNode;
 typedef enum AstKind AstKind;
 typedef enum AstUnaryOperator AstUnaryOperator;
 typedef enum AstBinaryOperator AstBinaryOperator;
-typedef enum AstContext AstContext;
 
 enum AstKind {
     AST_ERROR = -1,
@@ -42,7 +41,7 @@ enum AstKind {
     AST_TPTR,
     AST_TYPE2VAL,
     AST_VAL2TYPE,
-    AST_VDEF_BUILTIN,
+    AST_VDEF_BUILTIN, AST_BUILTIN_TYPEDEF,
     AST_STMT_MODULE, AST_STMT_IMPORT,
     AST_STMT_SET, AST_STMT_DISCARD,
 };
@@ -61,13 +60,6 @@ enum AstBinaryOperator {
     __BOP_COUNT
 };
 
-enum AstContext {
-    ASTCTX_TYPING,
-    ASTCTX_VALUE,
-    __ASTCTX_COUNT,
-    __ASTCTX_NONE
-};
-
 //
 // Constructors:
 //
@@ -76,6 +68,8 @@ AstNode* NewAstScriptWithModulesSb(Span span, Source* source, AstNode** mov_modu
 AstNode* NewAstModule(Span span, SymbolID moduleID);
 AstNode* NewAstModuleWithStmtSb(Span span, SymbolID moduleID, AstNode** mov_contentSb);
 void PushStmtToAstModule(AstNode* module, AstNode* def);
+
+AstNode* NewAstBuiltinTypedefNode(SymbolID name, void* type);
 
 AstNode* NewAstVID(Span span, SymbolID symbolID);
 AstNode* NewAstIntLiteral(Span span, size_t value, int base);
@@ -211,6 +205,7 @@ AstNode* GetAstDotNameLhs(AstNode* dot);
 SymbolID GetAstDotNameRhs(AstNode* dot);
 AstNode* GetAstColonNameLhs(AstNode* colon);
 SymbolID GetAstColonNameRhs(AstNode* colon);
+void* GetAstColonNameRefedDefnScope(AstNode* colon);
 
 int CountAstLambdaCaptures(AstNode* lambda);
 void* GetAstVLambdaCaptureAt(AstNode* lambda, int index);
@@ -268,26 +263,33 @@ AstNode* GetAstVal2TypeExpr(AstNode* val2type);
 // Symbol and type storage:
 //
 
-void* GetAstNodeTypingExt_Value(AstNode* node);
-void* GetAstNodeTypingExt_Type(AstNode* node);
-void SetAstNodeTypingExt_Value(AstNode* node, void* type);
-void SetAstNodeTypingExt_Type(AstNode* node, void* type);
+typedef struct Frame Frame;
+void SetAstScriptContentFrame(AstNode* script, Frame* frame);
+void SetAstModuleContentFrame(AstNode* module, Frame* frame);
+Frame* GetAstScriptContentFrame(AstNode* script);
+Frame* GetAstModuleContentFrame(AstNode* module);
 
 AstNode* GetAstNodeParentFunc(AstNode* node);
 void SetAstNodeParentFunc(AstNode* node, AstNode* parentFunc);
-
-AstContext GetAstNodeLookupContext(AstNode* node);
-void SetAstNodeLookupContext(AstNode* node, AstContext context);
 
 void* GetAstIdLookupScope(AstNode* node);
 void* GetAstIdDefn(AstNode* node);
 void SetAstIdLookupScope(AstNode* node, void* scope);
 void SetAstIdDefnScope(AstNode* node, void* defn);
 
+void* GetAstNodeTypingExt_Value(AstNode* node);
+void* GetAstNodeTypingExt_Type(AstNode* node);
+void SetAstNodeTypingExt_Value(AstNode* node, void* type);
+void SetAstNodeTypingExt_Type(AstNode* node, void* type);
+
+void SetAstColonNameRefedDefnScope(AstNode* colonNode, void* refedDefnScope);
+
+//
 // Visitor API: calls a 'VisitorCb' function pre- and post- visiting children.
 // - `context` can be used to propagate contextual information as the visitor recurses.
-typedef int(*VisitorCb)(void* context, AstNode* node);
+//
 
+typedef int(*VisitorCb)(void* context, AstNode* node);
 int RecursivelyVisitAstNode(void* context, AstNode* node, VisitorCb preVisitorCb, VisitorCb postVisitorCb);
 
 //

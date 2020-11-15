@@ -135,7 +135,7 @@ struct TypefuncInfo {
     Type* body;
 };
 struct ModuleInfo {
-    // todo: implement type ModuleInfo
+    AstNode* node;
 };
 struct UnaryInfo {
     Type* soln;
@@ -1305,40 +1305,43 @@ int typer_post(void* rawTyper, AstNode* node) {
             Loc loc = GetAstNodeLoc(node);
             SymbolID name = GetAstIdName(node);
             Scope* scope = GetAstIdLookupScope(node);
-            AstContext lookupContext = GetAstNodeLookupContext(node);
-            Defn* foundDefn = LookupSymbol(scope, name, lookupContext);
+            
+            DefnScope* foundDefn = LookupSymbol(scope, name);
             if (foundDefn == NULL) {
                 FeedbackNote* note = CreateFeedbackNote("here...", loc, NULL);
                 PostFeedback(
                     FBK_ERROR, note,
-                    "Symbol '%s' not defined in this %s context",
-                    GetSymbolText(name), (lookupContext == ASTCTX_TYPING ? "typing" : "value")
+                    "Symbol '%s' not defined in this context",
+                    GetSymbolText(name)
                 );
-            }
-            Type* foundType = GetDefnType(foundDefn);
-            SetAstIdDefnScope(node,foundDefn);
-            if (lookupContext == ASTCTX_TYPING) {
-                COMPILER_ASSERT(nodeKind == AST_TID, "Cannot lookup non-TID in ASTCTX_TYPING context.");
-                SetAstNodeTypingExt_Type(node,foundType);
-            } else if (lookupContext == ASTCTX_VALUE) {
-                COMPILER_ASSERT(nodeKind == AST_VID, "Cannot lookup non-VID in ASTCTX_VALUE context.");
-                SetAstNodeTypingExt_Value(node,foundType);
             } else {
-                if (DEBUG) {
-                    printf("!!- Invalid lookup context while typing AST_?ID.\n");
-                } else {
-                    assert(0 && "Invalid lookup context while typing in AST_?ID.\n");
-                }
-                break;
-            }
+                SetAstIdDefnScope(node,foundDefn);
 
+                AstKind nodeKind = GetAstNodeKind(node);
+                AstNode* foundDefnNode = GetDefnNode(foundDefn);
+                if (nodeKind == AST_TID) {
+                    Type* foundType = GetAstNodeTypingExt_Type(foundDefnNode);
+                    SetAstNodeTypingExt_Type(node,foundType);
+                } else if (nodeKind == AST_VID) {
+                    Type* foundType = GetAstNodeTypingExt_Value(foundDefnNode);
+                    SetAstNodeTypingExt_Value(node,foundType);
+                } else {
+                    COMPILER_ERROR_VA("Unable to decide context while typing %s.", AstKindAsText(nodeKind));
+                    break;
+                }
+            }
             // tracking closures
             // ReqAstLambdaDefn(GetAstNodeParentFunc(node),foundDefn);
             break;
         }
         case AST_MODULE:
         {
-            // TODO: type a module
+            // modules are type-initialized in the primer.
+            break;
+        }
+        case AST_SCRIPT:
+        {
+            // scripts do not contain type information.
             break;
         }
         case AST_STMT_VLET:
@@ -1471,7 +1474,7 @@ int typer_post(void* rawTyper, AstNode* node) {
                     rhsTypingType = GetAstNodeTypingExt_Type(rhs);
                 } else if (valueContext) {
                     fieldType = GetAstNodeTypingExt_Value(node);
-                    rhsTypingType = GetAstNodeTypingExt_Value(rhs);
+                    rhsTypingType = GetAstNodeTypingExt_Type(rhs);
                 }
 
                 COMPILER_ASSERT(fieldType, "Non-null RHS but null field type in Typer.");
@@ -1705,6 +1708,48 @@ int typer_post(void* rawTyper, AstNode* node) {
             SetAstNodeTypingExt_Type(pointerNode,pointerType);
             break;
         }
+        case AST_COLON_NAME:
+        {
+            // colon LHS-es must be of type T_MODULE,
+            // this code looks up the module, finds the referenced value in the frame, 
+            // stores it on the node, and copies any type variables.
+
+            AstNode* lhsNode = GetAstColonNameLhs(node);
+            SymbolID rhsName = GetAstColonNameRhs(node);
+
+            Type* lhsType = GetAstNodeTypingExt_Value(lhsNode);
+            if (lhsType) {
+                COMPILER_ASSERT(GetTypeKind(lhsType) == T_MODULE, "Non-module lhs type in ':' expr");
+                AstNode* moduleNode = GetModuleTypeAstNode(lhsType);
+                Frame* moduleFrame = GetAstModuleContentFrame(moduleNode);
+                DefnScope* moduleLookupDefnScope = LookupSymbolInFrame(moduleFrame, rhsName);
+                if (moduleLookupDefnScope) {
+                    // setting the defn scope for the emitter:
+                    SetAstColonNameRefedDefnScope(node,moduleLookupDefnScope);
+                
+                    // further typing ...
+                    AstNode* moduleLookupDefnNode = GetDefnNode(moduleLookupDefnScope);
+                    if (GetAstNodeKind(moduleLookupDefnNode) == AST_MODULE) {
+                        // if submodule, create new module type.
+                        Type* newModuleType = NewModuleType(typer,moduleLookupDefnNode);
+                        SetAstNodeTypingExt_Value(node, newModuleType);
+                    } else {
+                        // otherwise, just copy value and type exts:
+                        Type* vext = GetAstNodeTypingExt_Value(moduleLookupDefnNode);
+                        if (vext) {
+                            SetAstNodeTypingExt_Value(node, vext);
+                        }
+                        Type* text = GetAstNodeTypingExt_Type(moduleLookupDefnNode);
+                        if (text) {
+                            SetAstNodeTypingExt_Type(node, text);
+                        }
+                    }
+                } else {
+                    COMPILER_ERROR_VA("TODO: PostFeedback, module-field :%s not found", GetSymbolText(rhsName));
+                }
+            }
+            break;
+        }
         default:
         {
             COMPILER_ERROR_VA("NotImplemented: TypeNode for AST node kind %s",AstKindAsText(nodeKind));
@@ -1743,6 +1788,7 @@ void printTyper(Typer* typer, int metaOnly) {
     printf("!!- Typer dump:\n");
     
     if (!metaOnly) {
+        printTypeLn(typer, &typer->unitType);
         printTypeLn(typer, &typer->unsignedIntType[INT_1]);
         printTypeLn(typer, &typer->unsignedIntType[INT_8]);
         printTypeLn(typer, &typer->unsignedIntType[INT_16]);
@@ -1847,7 +1893,9 @@ void printType(Typer* typer, Type* type) {
         }
         case T_MODULE:
         {
-            // todo: implement printType for T_MODULE.
+            AstNode* node = GetModuleTypeAstNode(type);
+            SymbolID moduleName = GetAstModuleName(node);
+            printf("module %s", GetSymbolText(moduleName));
             break;
         }
         case T_TUPLE:
@@ -1905,6 +1953,12 @@ Typer* NewTyper(TyperCfg config) {
 //
 // Constructors:
 //
+
+Type* NewModuleType(Typer* typer, AstNode* moduleNode) {
+    Type* type = pushToTypeBuf(&typer->moduleTypeBuf, T_MODULE);
+    type->as.Module.node = moduleNode;
+    return type;
+}
 
 Type* GetUnitType(Typer* typer) {
     return &typer->unitType;
@@ -2286,6 +2340,10 @@ char const* GetMetatypeName(Type* type) {
     return type->as.Meta.name;
 }
 
+AstNode* GetModuleTypeAstNode(Type* moduleType) {
+    return moduleType->as.Module.node;
+}
+
 //
 // Typer:
 // Recursively visits, calling 'applySubtyping'
@@ -2322,6 +2380,7 @@ size_t GetTypeSizeInBytes(Typer* typer, Type* type) {
                 case INT_32: return 4;
                 case INT_64: return 8;
                 case INT_128: return 16;
+                default: COMPILER_ERROR("Unknown int type size"); return -1;
             }
         }
         case T_FLOAT:
@@ -2330,6 +2389,7 @@ size_t GetTypeSizeInBytes(Typer* typer, Type* type) {
                 case FLOAT_16: return 2;
                 case FLOAT_32: return 4;
                 case FLOAT_64: return 8;
+                default: COMPILER_ERROR("Unknown float type size"); return -1;
             }
         }
         case T_TUPLE:

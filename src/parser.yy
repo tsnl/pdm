@@ -112,8 +112,8 @@
 //
 
 %type <nt> lpattern vpattern tpattern
-%type <nt> vpatternField      tpatternField    vstructField
-%type <ntSb> vpatternField_cl tpatternField_cl vstructField_cl
+%type <nt> vpatternField lpatternField tpatternField vstructField
+%type <ntSb> vpatternField_cl lpatternField_cl tpatternField_cl vstructField_cl
 %type <nt>   ttarg vtarg
 %type <ntSb> ttarg_cl vtarg_cl
 
@@ -514,13 +514,18 @@ vstructField_cl
 vpatternField
     : vid typespec { $$ = NewAstField(@$, $1.ID_symbolID, NewAstType2Val(@2,$2)); }
     ;
+lpatternField
+    : vpatternField { $$ = $1; }
+    | vid           { $$ = NewAstField(@$, $1.ID_symbolID, NULL); }
+    ;
 tpatternField
     : tid           { $$ = NewAstField(@$, $1.ID_symbolID, NULL); }
     | vpatternField { $$ = $1; }
     ;
 lpattern
-    : vpatternField { $$ = NewAstVPatternSingleton(@$,$1); }
-    | vpattern      { $$ = $1; }
+    : lpatternField                         { $$ = NewAstVPatternSingleton(@$,$1); }
+    | TK_LPAREN lpatternField_cl TK_RPAREN  { $$ = NewAstVPatternWithFieldsSb(@$,$2); }
+    | unit                                  { $$ = NewAstVPatternWithFieldsSb(@$,NULL); }
     ;
 vpattern
     : TK_LPAREN vpatternField_cl TK_RPAREN  { $$ = NewAstVPatternWithFieldsSb(@$,$2); }
@@ -532,6 +537,10 @@ tpattern
 vpatternField_cl
     : vpatternField                             { $$ = NULL; sb_push($$,$1); }
     | vpatternField_cl TK_COMMA vpatternField   { $$ = $1; sb_push($$,$3); }
+    ;
+lpatternField_cl
+    : lpatternField                             { $$ = NULL; sb_push($$,$1); }
+    | lpatternField_cl TK_COMMA lpatternField   { $$ = $1; sb_push($$,$3); }
     ;
 tpatternField_cl
     : tpatternField                             { $$ = NULL; sb_push($$,$1); }

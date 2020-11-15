@@ -94,6 +94,8 @@ Typer* NewTyper(TyperCfg config);
 // Constructor methods:
 //
 
+Type* NewModuleType(Typer* typer, AstNode* moduleNode);
+
 Type* GetUnitType(Typer* typer);
 Type* GetStringType(Typer* typer);
 Type* GetIntType(Typer* typer, IntWidth width, int isSigned);
@@ -133,6 +135,8 @@ int GetUnionTypeFieldCount(Type* type);
 void MapCompoundType(Typer* typer, Type* compound, FieldCB cb, void* context);
 
 char const* GetMetatypeName(Type* typeP);
+
+AstNode* GetModuleTypeAstNode(Type* moduleType);
 
 //
 // Typing and type-checking:

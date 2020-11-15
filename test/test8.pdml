@@ -1,0 +1,70 @@
+mod heap {
+    extern def malloc (size U64) -> U8^;
+};
+
+mod cprint {
+    extern def puts (s String) -> U32;
+    
+    extern def string (s String) -> Unit;
+    extern def s32 (s S32) -> Unit;
+    extern def f32 (f F32) -> Unit;
+    extern def line () -> Unit;
+};
+
+mod demo {
+    def add_s32 (x S32, y S32) -> S32 {
+        x + y
+    };
+
+    def subtract_s32 (x S32, y S32) -> S32 {
+        x - y
+    };
+
+    def dot_s32 (x1 S32, y1 S32, x2 S32, y2 S32) -> S32 {
+        x1*x2 + y1*y2
+    };
+
+    def main () -> S32 {
+        let x1 S32 = 42; let y1 S32 = 56;
+        let x2 S32 = 0;  let y2 S32 = 64;
+        
+        # cprint x1,y1
+        do cprint:string("(x1,y1) = {x=\0");
+        do cprint:s32(x1);
+        do cprint:string(",y=\0");
+        do cprint:s32(y1);
+        do cprint:string("}\0");
+        do cprint:line();
+
+        # cprint x2,y2
+        do cprint:string("(x2,y2) = {x=\0");
+        do cprint:s32(x2);
+        do cprint:string(",y=\0");
+        do cprint:s32(y2);
+        do cprint:string("}\0");
+        do cprint:line();
+
+        # subtract x1,y1 and x2,y2
+        do cprint:string("subtract_s32(x1,y1) = \0");
+        do cprint:s32(subtract_s32(x1,y1));
+        do cprint:line();
+        do cprint:string("subtract_s32(x2,y2) = \0");
+        do cprint:s32(subtract_s32(x2,y2));
+        do cprint:line();
+
+        # add x1,y1 and x2,y2
+        do cprint:string("add_s32(x1,y1) = \0");
+        do cprint:s32(add_s32(x1,y1));
+        do cprint:line();
+        do cprint:string("add_s32(x2,y2) = \0");
+        do cprint:s32(add_s32(x2,y2));
+        do cprint:line();
+
+        # dot(x1,y1,x2,y2)
+        do cprint:string("dot(x1,y1,x2,y2) = \0");
+        do cprint:s32(dot_s32(x1,y1,x2,y2));
+        do cprint:line();
+
+        0
+    };
+};

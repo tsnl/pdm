@@ -411,7 +411,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
             
             case AST_VID:
             {
-                Defn* defn = GetAstIdDefn(exportedValue.native);
+                DefnScope* defn = GetAstIdDefn(exportedValue.native);
                 AstNode* defnNode = GetDefnNode(defn);
                 ExportedValue* defnPtrExportedValue = GetAstNodeLlvmRepr(defnNode);
                 exportedValue = *defnPtrExportedValue;
@@ -1223,6 +1223,26 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                         COMPILER_ERROR("NotImplemented: generic extend+bitwise cast.");
                     }
                 }
+                break;
+            }
+
+            //
+            // Colon-expressions: static lookup
+            //
+            
+            case AST_COLON_NAME:
+            {
+                AstNode* colonNode = exportedValue.native;
+                DefnScope* refedDefnScope = GetAstColonNameRefedDefnScope(colonNode);
+                AstNode* refedDefnNode = GetDefnNode(refedDefnScope);
+
+                // HACK: if the defined node is a 'def' statement, obtain the RHS instead
+                if (GetAstNodeKind(refedDefnNode) == AST_STMT_VDEF) {
+                    refedDefnNode = GetAstDefValueStmtRhs(refedDefnNode);
+                }
+
+                ExportedValue exportedRefedValue = exportValue(emitter, refedDefnNode);
+                exportedValue.llvm = exportedRefedValue.llvm;
                 break;
             }
 

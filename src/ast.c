@@ -7,6 +7,7 @@
 #include "source.h"
 #include "symbols.h"
 #include "primer.h"
+#include "typer.h"
 
 #include "stb/stretchy_buffer.h"
 
@@ -21,6 +22,7 @@ typedef struct AstField             AstField;
 typedef enum   AstBinaryOperator    AstBinaryOperator;
 typedef struct AstDotIndex          AstDotIndex;
 typedef struct AstDotName           AstDotName;
+typedef struct AstColonName         AstColonName;
 typedef struct AstVLambda           AstVLambda;
 typedef struct AstTLambda           AstTLambda;
 typedef struct AstLet               AstLet;
@@ -39,6 +41,7 @@ typedef struct AstModuleStmt        AstModuleStmt;
 typedef struct AstImportStmt        AstImportStmt;
 typedef struct AstSetStmt           AstSetStmt;
 typedef struct AstArray             AstArray;
+typedef struct AstBuiltinType       AstBuiltinType;
 
 struct AstNodeList {
     size_t count;
@@ -49,10 +52,12 @@ struct AstNodeList {
 struct AstScript {
     Source* source;
     AstNodeList* modules;
+    Frame* frame;
 };
 struct AstModule {
     SymbolID name;
     AstNodeList* items;
+    Frame* frame;
     AstNode* importHeader;
     AstNode* exportHeader;
 };
@@ -75,11 +80,16 @@ struct AstDotName {
     AstNode* lhs;
     SymbolID symbol;
 };
+struct AstColonName {
+    AstNode* lhs;
+    SymbolID symbol;
+    DefnScope* refedDefnScope;
+};
 struct AstVLambda {
     AstNode* pattern;
     AstNode* body;
-    Defn** capturesSB;
-    Defn** localsSB;
+    DefnScope** capturesSB;
+    DefnScope** localsSB;
 };
 struct AstTLambda {
     AstNode* pattern;
@@ -163,6 +173,9 @@ struct AstArray {
     AstNode* typespec;
     AstNode* count;
 };
+struct AstBuiltinType {
+    SymbolID name;
+};
 
 union AstInfo {
     AstScript           Script;
@@ -179,6 +192,7 @@ union AstInfo {
     AstField            Field;
     AstDotIndex         DotIx;
     AstDotName          DotNm;
+    AstColonName        ColonNm;
     AstVLambda          VLambda;
     AstTLambda          TLambda;
     AstLet              Let;
@@ -200,6 +214,7 @@ union AstInfo {
     AstNode*            SingletonPattern_field;
     AstNodeList*        GenericList_items;
     AstArray            Array;
+    AstBuiltinType      BuiltinType;
 };
 
 struct AstNode {
@@ -207,7 +222,6 @@ struct AstNode {
     AstKind kind;
     AstInfo as;
     
-    AstContext lookupContext;
     AstNode* parentFunc;
 
     void* typingExt_value;
@@ -240,7 +254,6 @@ AstNode* newNode(Span span, AstKind kind) {
     node->kind = kind;
     node->typingExt_value = NULL;
     node->typingExt_type = NULL;
-    node->lookupContext = __ASTCTX_NONE;
     node->llvmRepr = NULL;
     node->parentFunc = NULL;
     node->constVal = NULL;
@@ -372,6 +385,14 @@ void PushStmtToAstModule(AstNode* module, AstNode* def) {
     AstKind nodeKind = GetAstNodeKind(def);
     COMPILER_ASSERT(isStmtKindModuleLevel(nodeKind), "Cannot push non-def/extern to AstModule.");
     pushListElement(module->as.Module.items, def);
+}
+
+AstNode* NewAstBuiltinTypedefNode(SymbolID name, void* type) {
+    AstNode* builtinType = newNode(NullSpan(), AST_BUILTIN_TYPEDEF);
+    builtinType->as.BuiltinType.name = name;
+    builtinType->typingExt_type = type;
+    builtinType->typingExt_value = type;
+    return builtinType;
 }
 
 AstNode* NewAstVID(Span span, SymbolID symbolID) {
@@ -664,8 +685,9 @@ AstNode* NewAstDotName(Span span, AstNode* lhs, SymbolID rhs) {
 }
 AstNode* NewAstColonName(Span span, AstNode* lhs, SymbolID rhs) {
     AstNode* colonNode = newNode(span, AST_COLON_NAME);
-    colonNode->as.DotNm.lhs = lhs;
-    colonNode->as.DotNm.symbol = rhs;
+    colonNode->as.ColonNm.lhs = lhs;
+    colonNode->as.ColonNm.symbol = rhs;
+    colonNode->as.ColonNm.refedDefnScope = NULL;
     return colonNode;
 }
 
@@ -846,14 +868,14 @@ AstNode* NewAstVal2Type(Span span, AstNode* valueExpr) {
 //
 
 void AddAstLambdaDefn(AstNode* lambda, void* rawDefn) {
-    Defn* defn = rawDefn;
+    DefnScope* defn = rawDefn;
     sb_push(lambda->as.VLambda.localsSB,defn);
 }
 void ReqAstLambdaDefn(AstNode* lambda, void* rawDefn) {
-    Defn* defn = rawDefn;
+    DefnScope* defn = rawDefn;
     int localCount = sb_count(lambda->as.VLambda.localsSB);
     for (int localIndex = 0; localIndex < localCount; localIndex++) {
-        Defn* localDefn = lambda->as.VLambda.localsSB[localIndex];
+        DefnScope* localDefn = lambda->as.VLambda.localsSB[localIndex];
         if (defn == localDefn) {
             // this defn was a local. returning early.
             return;
@@ -864,7 +886,7 @@ void ReqAstLambdaDefn(AstNode* lambda, void* rawDefn) {
     int captureCount = sb_count(lambda->as.VLambda.capturesSB);
     int pushReq = 1;
     for (int captureIndex = 0; captureIndex < captureCount; captureIndex++) {
-        Defn* captureDefn = lambda->as.VLambda.capturesSB[captureIndex];
+        DefnScope* captureDefn = lambda->as.VLambda.capturesSB[captureIndex];
         if (defn == captureDefn) {
             // this defn was a capture that was already added. returning early.
             pushReq = 0;
@@ -1041,7 +1063,7 @@ AstNode* GetAstColonNameLhs(AstNode* colon) {
             "Expected AST_COLON_NAME, got %s", AstKindAsText(colon->kind)
         );
     }
-    return colon->as.DotNm.lhs;
+    return colon->as.ColonNm.lhs;
 }
 SymbolID GetAstColonNameRhs(AstNode* colon) {
     if (DEBUG) {
@@ -1050,7 +1072,16 @@ SymbolID GetAstColonNameRhs(AstNode* colon) {
             "Expected AST_COLON_NAME, got %s", AstKindAsText(colon->kind)
         );
     }
-    return colon->as.DotNm.symbol;
+    return colon->as.ColonNm.symbol;
+}
+void* GetAstColonNameRefedDefnScope(AstNode* colon) {
+    if (DEBUG) {
+        COMPILER_ASSERT_VA(
+            colon->kind == AST_COLON_NAME, 
+            "Expected AST_COLON_NAME, got %s", AstKindAsText(colon->kind)
+        );
+    }
+    return colon->as.ColonNm.refedDefnScope;
 }
 
 AstNode* GetAstLetStmtLhs(AstNode* bindStmt) {
@@ -1264,6 +1295,10 @@ void SetAstNodeTypingExt_Type(AstNode* node, void* type) {
     node->typingExt_type = type;
 }
 
+void SetAstColonNameRefedDefnScope(AstNode* colonNode, void* refedDefnScope) {
+    colonNode->as.ColonNm.refedDefnScope = refedDefnScope;
+}
+
 // void SetAstTypedefStmtValueDefnType(AstNode* node, void* valueDefn) {
 //     node->as.Typedef.valueDefnType = valueDefn;
 // }
@@ -1278,6 +1313,20 @@ AstNode* GetAstCastRhs(AstNode* cast) {
     return cast->as.Cast.rhs;
 }
 
+
+void SetAstScriptContentFrame(AstNode* script, Frame* frame) {
+    script->as.Script.frame = frame;
+}
+void SetAstModuleContentFrame(AstNode* module, Frame* frame) {
+    module->as.Module.frame = frame;
+}
+Frame* GetAstScriptContentFrame(AstNode* script) {
+    return script->as.Script.frame;
+}
+Frame* GetAstModuleContentFrame(AstNode* module) {
+    return module->as.Module.frame;
+}
+
 AstNode* GetAstNodeParentFunc(AstNode* node) {
     return node->parentFunc;
 }
@@ -1287,13 +1336,6 @@ void SetAstNodeParentFunc(AstNode* node, AstNode* parentFunc) {
         "non-lambda parent func of kind '%s' in 'SetAstNodeParentFunc'", AstKindAsText(parentFunc->kind)
     );
     node->parentFunc = parentFunc;
-}
-
-AstContext GetAstNodeLookupContext(AstNode* node) {
-    return node->lookupContext;
-}
-void SetAstNodeLookupContext(AstNode* node, AstContext context) {
-    node->lookupContext = context;
 }
 
 void* GetAstIdLookupScope(AstNode* node) {
@@ -1669,7 +1711,7 @@ int IsAstNodeConstEvaluable(AstNode* node) {
         {
             // vid constant <=> defnNode constant
             Scope* defn = GetAstIdDefn(node);
-            AstNode* defnNode = defn->defnAstNode;
+            AstNode* defnNode = GetDefnNode(defn);
             return IsAstNodeConstEvaluable(defnNode);
         }
 
@@ -1746,6 +1788,7 @@ char const binaryOperatorTextArray[__BOP_COUNT][4] = {
 
 char const* AstKindAsText(AstKind kind) {
     switch (kind) {
+        case AST_SCRIPT: return "AST_SCRIPT";
         case AST_MODULE: return "AST_MODULE";
         case AST_TID: return "AST_TID";
         case AST_VID: return "AST_VID";
@@ -1763,6 +1806,7 @@ char const* AstKindAsText(AstKind kind) {
         case AST_ITE: return "AST_ITE";
         case AST_DOT_INDEX: return "AST_DOT_INDEX"; 
         case AST_DOT_NAME: return "AST_DOT_NAME";
+        case AST_COLON_NAME: return "AST_COLON_NAME";
         case AST_STMT_VLET: return "AST_STMT_VLET"; 
         case AST_STMT_VDEF: return "AST_STMT_VDEF";
         case AST_STMT_DISCARD: return "AST_STMT_DISCARD";
@@ -1792,6 +1836,7 @@ char const* AstKindAsText(AstKind kind) {
         case AST_TPTR: return "AST_TPTR";
         case AST_VPTR: return "AST_VPTR";
         case AST_VDEF_BUILTIN: return "AST_VDEF_BUILTIN";
+        case AST_BUILTIN_TYPEDEF: return "AST_BUILTIN_TYPEDEF";
         default: return "AST_?";
     }
 }

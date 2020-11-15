@@ -29,9 +29,17 @@ void PrintChar(CodePrinter* printer, char ch) {
         fputc('\t', printer->file);
     } else if (ch == '\n') {
         // printing tabs upto indent count:
+        int spacesPerTab = 4;
+
         fputc('\n', printer->file);
         for (int tabIndex = 0; tabIndex < printer->indentCount; tabIndex++) {
-            fputc('\t', printer->file);
+            if (spacesPerTab > 0) {
+                for (int spaceIndex = 0; spaceIndex < spacesPerTab; spaceIndex++) {
+                    fputc(' ', printer->file);
+                }
+            } else {
+                fputc('\t', printer->file);
+            }
         }
     } else {
         fputc(ch, printer->file);
@@ -196,7 +204,7 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             SymbolID lhs = GetAstFieldName(node);
             if (lhs != SYM_NULL) {
                 PrintText(cp, GetSymbolText(lhs));
-                PrintText(cp, ": ");
+                PrintText(cp, " ");
             }
             AstNode* rhs = GetAstFieldRhs(node);
             if (rhs) {
@@ -212,8 +220,8 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
                 int captureCount = CountAstLambdaCaptures(node);
                 PrintChar(cp, '{');
                 for (int index = 0; index < captureCount; index++) {
-                    Defn* captureDefn = GetAstVLambdaCaptureAt(node,index);
-                    PrintText(cp,GetSymbolText(captureDefn->defnID));
+                    DefnScope* captureDefn = GetAstVLambdaCaptureAt(node,index);
+                    PrintText(cp,GetSymbolText(GetDefnName(captureDefn)));
                     if (index == captureCount-1) {
                         PrintChar(cp,',');
                     }
