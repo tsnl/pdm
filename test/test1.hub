@@ -1,21 +1,59 @@
-mod othermod {
+extern def malloc (size U64) -> U8^;
+extern def puts (s String) -> U32;
+
+mod print {
+    extern def string (s String) -> Unit;
+    extern def s32 (s S32) -> Unit;
+    extern def line () -> Unit;
+};
+
+mod fibonaccis {
     def fib (n S32) -> S32 {
-        n * 1
+        if (n == 0) then {
+            0
+        } else {
+            if (n == 1) then {
+                1
+            } else {
+                let m S32 = 0;
+                fib(n-1) + fib(n-2)
+            }
+        }
     };
 
-    def fob (n S32) -> S32 {
-        n * -1
+    def print_fibonacci_table_until (n S32, ascend_not_descend U1) -> Unit {
+        let result S32 = fib(n);
+        do if (n != 0) then {
+            # if printing in ascending order, then print all prior fibonaccis
+            # before fib(n):
+            do if (ascend_not_descend) then {
+                do print_fibonacci_table_until(n-1, U1(1));
+            };
+
+            # printing fib(n) on one line
+            do print:string("fibonacci(\0");
+            do print:s32(n);
+            do print:string(") = \0");
+            do print:s32(fib(n));
+            do print:line();
+
+            # if printing in descending order, then pring all prior fibonaccis
+            # after fib(n)
+            do if (not ascend_not_descend) then {
+                do print_fibonacci_table_until(n-1, U1(0));
+            };
+        };
     };
 };
 
-mod testing {
-    def fib (n S32) -> S32 {
-        n * 2
-    };
+mod test {
+    def test_1 () -> S32 {
+        let n S32 = 40;
+        do print:string("FIBONACCI PRINTER until \0");
+        do print:s32(n);
+        do print:line();
 
-    def main() -> S32 {
-        let n S32 = 42;
-        let x S32 = fib(n);
+        do fibonaccis:print_fibonacci_table_until(n, U1(1));
         0
     };
 };

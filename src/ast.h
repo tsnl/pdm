@@ -19,7 +19,7 @@ enum AstKind {
     AST_ERROR = -1,
     AST_NULL = 0,
     AST_SCRIPT,
-    AST_MODULE,
+    AST_STMT_MODULE,
     AST_TID, AST_VID,
     AST_LITERAL_INT, AST_LITERAL_FLOAT, AST_LITERAL_STRING, 
     AST_UNIT, 
@@ -42,7 +42,7 @@ enum AstKind {
     AST_TYPE2VAL,
     AST_VAL2TYPE,
     AST_VDEF_BUILTIN, AST_BUILTIN_TYPEDEF,
-    AST_STMT_MODULE, AST_STMT_IMPORT,
+    AST_STMT_ATTACH, AST_STMT_IMPORT,
     AST_STMT_SET, AST_STMT_DISCARD,
 };
 
@@ -65,8 +65,8 @@ enum AstBinaryOperator {
 //
 
 AstNode* NewAstScriptWithModulesSb(Span span, Source* source, AstNode** mov_modulesSb);
-AstNode* NewAstModule(Span span, SymbolID moduleID);
-AstNode* NewAstModuleWithStmtSb(Span span, SymbolID moduleID, AstNode** mov_contentSb);
+AstNode* NewAstModuleStmt(Span span, SymbolID moduleID);
+AstNode* NewAstModuleStmtWithStmtSb(Span span, SymbolID moduleID, AstNode** mov_contentSb);
 void PushStmtToAstModule(AstNode* module, AstNode* def);
 
 AstNode* NewAstBuiltinTypedefNode(SymbolID name, void* type);
@@ -120,7 +120,7 @@ AstNode* NewAstColonName(Span span, AstNode* lhs, SymbolID rhs);
 AstNode* NewAstVLambda(Span span, AstNode* pattern, AstNode* body);
 AstNode* NewAstTLambda(Span span, AstNode* pattern, AstNode* body);
 
-AstNode* NewAstModuleStmt(Span span, SymbolID boundName, Utf8String fromStr, Utf8String asStr);
+AstNode* NewAstAttachStmt(Span span, SymbolID boundName, Utf8String fromStr, Utf8String asStr);
 AstNode* NewAstImportStmt(Span span, SymbolID module, SymbolID suffix, int glob);
 
 AstNode* NewAstLetStmt(Span span, AstNode* lhsPattern, AstNode* rhs);
@@ -164,11 +164,11 @@ void ReqAstLambdaDefn(AstNode* lambda, void* defn);
 //
 
 int GetAstScriptLength(AstNode* node);
-AstNode* GetAstScriptModuleAt(AstNode* node, int index);
+AstNode* GetAstScriptStmtAt(AstNode* node, int index);
 
-SymbolID GetAstModuleName(AstNode* module);
-int GetAstModuleLength(AstNode* module);
-AstNode* GetAstModuleStmtAt(AstNode* module, int index);
+SymbolID AstModuleStmt_GetName(AstNode* module);
+int AstModuleStmt_GetLength(AstNode* module);
+AstNode* AstModuleStmt_GetStmtAt(AstNode* module, int index);
 
 size_t GetAstNodeKey(AstNode* node);
 AstKind GetAstNodeKind(AstNode* node);
@@ -270,7 +270,9 @@ Frame* GetAstScriptContentFrame(AstNode* script);
 Frame* GetAstModuleContentFrame(AstNode* module);
 
 AstNode* GetAstNodeParentFunc(AstNode* node);
+AstNode* GetAstNodeParentModuleStmt(AstNode* node);
 void SetAstNodeParentFunc(AstNode* node, AstNode* parentFunc);
+void SetAstNodeParentModuleStmt(AstNode* node, AstNode* parentModuleStmt);
 
 void* GetAstIdLookupScope(AstNode* node);
 void* GetAstIdDefn(AstNode* node);
@@ -305,7 +307,7 @@ void SetAstNodeConstValue(AstNode* node, void* value);
 // LLVM representations
 //
 
-void SetAstNodeLlvmRepr(AstNode* node, void* repr);
+void AstNode_SetExportedPtr(AstNode* node, void* repr);
 void* GetAstNodeLlvmRepr(AstNode* node);
 
 //

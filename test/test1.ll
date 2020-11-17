@@ -1,17 +1,76 @@
 ; ModuleID = 'hub-test'
 source_filename = "hub-test"
 
-@literal_string = internal constant [14 x i8] c"(x1,y1) = {x=\00"
-@literal_string.1 = internal constant [4 x i8] c",y=\00"
-@literal_string.2 = internal constant [2 x i8] c"}\00"
-@literal_string.3 = internal constant [14 x i8] c"(x2,y2) = {x=\00"
-@literal_string.4 = internal constant [4 x i8] c",y=\00"
-@literal_string.5 = internal constant [2 x i8] c"}\00"
-@literal_string.6 = internal constant [23 x i8] c"subtract_s32(x1,y1) = \00"
-@literal_string.7 = internal constant [23 x i8] c"subtract_s32(x2,y2) = \00"
-@literal_string.8 = internal constant [18 x i8] c"add_s32(x1,y1) = \00"
-@literal_string.9 = internal constant [18 x i8] c"add_s32(x2,y2) = \00"
-@literal_string.10 = internal constant [20 x i8] c"dot(x1,y1,x2,y2) = \00"
+@literal_string = internal constant [11 x i8] c"fibonacci(\00"
+@literal_string.3 = internal constant [5 x i8] c") = \00"
+@literal_string.4 = internal constant [25 x i8] c"FIBONACCI PRINTER until \00"
+
+define i32 @fib(i32 %0) {
+entry:
+  %"arg:0-n" = alloca i32
+  store i32 %0, i32* %"arg:0-n"
+  %chain_result = alloca i32
+  %intl = alloca i32
+  store i32 1, i32* %intl
+  %bop_ltarg_loaded = load i32, i32* %"arg:0-n"
+  %bop_rtarg_loaded = load i32, i32* %intl
+  %bop_res = alloca i32
+  %bop_smul_loaded = mul i32 %bop_ltarg_loaded, %bop_rtarg_loaded
+  store i32 %bop_smul_loaded, i32* %bop_res
+  %chain_result_loaded = load i32, i32* %bop_res
+  store i32 %chain_result_loaded, i32* %chain_result
+  %cast_si = alloca i32
+  %cast_si_input_loaded = load i32, i32* %chain_result
+  store i32 %cast_si_input_loaded, i32* %cast_si
+  %loaded_for_return = load i32, i32* %cast_si
+  ret i32 %loaded_for_return
+}
+
+define i32 @fob(i32 %0) {
+entry:
+  %"arg:0-n" = alloca i32
+  store i32 %0, i32* %"arg:0-n"
+  %chain_result = alloca i32
+  %intl = alloca i32
+  store i32 1, i32* %intl
+  %uop_res = alloca i32
+  %uop_minus_arg_loaded = load i32, i32* %intl
+  %uop_minus_res_loaded = sub i32 0, %uop_minus_arg_loaded
+  store i32 %uop_minus_res_loaded, i32* %uop_res
+  %bop_ltarg_loaded = load i32, i32* %"arg:0-n"
+  %bop_rtarg_loaded = load i32, i32* %uop_res
+  %bop_res = alloca i32
+  %bop_smul_loaded = mul i32 %bop_ltarg_loaded, %bop_rtarg_loaded
+  store i32 %bop_smul_loaded, i32* %bop_res
+  %chain_result_loaded = load i32, i32* %bop_res
+  store i32 %chain_result_loaded, i32* %chain_result
+  %cast_si = alloca i32
+  %cast_si_input_loaded = load i32, i32* %chain_result
+  store i32 %cast_si_input_loaded, i32* %cast_si
+  %loaded_for_return = load i32, i32* %cast_si
+  ret i32 %loaded_for_return
+}
+
+define i32 @fib.1(i32 %0) {
+entry:
+  %"arg:0-n" = alloca i32
+  store i32 %0, i32* %"arg:0-n"
+  %chain_result = alloca i32
+  %intl = alloca i32
+  store i32 2, i32* %intl
+  %bop_ltarg_loaded = load i32, i32* %"arg:0-n"
+  %bop_rtarg_loaded = load i32, i32* %intl
+  %bop_res = alloca i32
+  %bop_smul_loaded = mul i32 %bop_ltarg_loaded, %bop_rtarg_loaded
+  store i32 %bop_smul_loaded, i32* %bop_res
+  %chain_result_loaded = load i32, i32* %bop_res
+  store i32 %chain_result_loaded, i32* %chain_result
+  %cast_si = alloca i32
+  %cast_si_input_loaded = load i32, i32* %chain_result
+  store i32 %cast_si_input_loaded, i32* %cast_si
+  %loaded_for_return = load i32, i32* %cast_si
+  ret i32 %loaded_for_return
+}
 
 declare i8* @malloc(i64 %0)
 
@@ -21,197 +80,251 @@ declare void @print_string(i8* %0)
 
 declare void @print_s32(i32 %0)
 
-declare void @print_f32(float %0)
-
 declare void @println()
 
-define i32 @add_s32(i32 %0, i32 %1) {
+define i32 @fib.2(i32 %0) {
 entry:
-  %"arg:0-x" = alloca i32
-  store i32 %0, i32* %"arg:0-x"
-  %"arg:1-y" = alloca i32
-  store i32 %1, i32* %"arg:1-y"
+  %"arg:0-n" = alloca i32
+  store i32 %0, i32* %"arg:0-n"
   %chain_result = alloca i32
-  %bop_ltarg_loaded = load i32, i32* %"arg:0-x"
-  %bop_rtarg_loaded = load i32, i32* %"arg:1-y"
-  %bop_res = alloca i32
-  %bop_sadd_loaded = add i32 %bop_ltarg_loaded, %bop_rtarg_loaded
-  store i32 %bop_sadd_loaded, i32* %bop_res
-  %chain_result_loaded = load i32, i32* %bop_res
-  store i32 %chain_result_loaded, i32* %chain_result
+  br label %ite_entry_bb
+
+ite_entry_bb:                                     ; preds = %entry
+  %intl = alloca i32
+  store i32 0, i32* %intl
+  %bop_ltarg_loaded = load i32, i32* %"arg:0-n"
+  %bop_rtarg_loaded = load i32, i32* %intl
+  %bop_res = alloca i1
+  %bop_ueq_loaded = icmp eq i32 %bop_ltarg_loaded, %bop_rtarg_loaded
+  store i1 %bop_ueq_loaded, i1* %bop_res
+  %ite_cond_loaded = load i1, i1* %bop_res
+  br i1 %ite_cond_loaded, label %ite_true_bb, label %ite_false_bb
+
+ite_true_bb:                                      ; preds = %ite_entry_bb
+  %chain_result1 = alloca i32
+  %intl2 = alloca i32
+  store i32 0, i32* %intl2
+  %chain_result_loaded = load i32, i32* %intl2
+  store i32 %chain_result_loaded, i32* %chain_result1
+  %if_true_loaded = load i32, i32* %chain_result1
+  br label %ite_landing_bb
+
+ite_false_bb:                                     ; preds = %ite_entry_bb
+  %chain_result3 = alloca i32
+  br label %ite_entry_bb4
+
+ite_landing_bb:                                   ; preds = %ite_landing_bb7, %ite_true_bb
+  %ite_result_loaded37 = phi i32 [ %if_true_loaded, %ite_true_bb ], [ %if_false_loaded36, %ite_landing_bb7 ]
+  %ite_result38 = alloca i32
+  store i32 %ite_result_loaded37, i32* %ite_result38
+  %chain_result_loaded39 = load i32, i32* %ite_result38
+  store i32 %chain_result_loaded39, i32* %chain_result
   %cast_si = alloca i32
   %cast_si_input_loaded = load i32, i32* %chain_result
   store i32 %cast_si_input_loaded, i32* %cast_si
   %loaded_for_return = load i32, i32* %cast_si
   ret i32 %loaded_for_return
+
+ite_entry_bb4:                                    ; preds = %ite_false_bb
+  %intl8 = alloca i32
+  store i32 1, i32* %intl8
+  %bop_ltarg_loaded9 = load i32, i32* %"arg:0-n"
+  %bop_rtarg_loaded10 = load i32, i32* %intl8
+  %bop_res11 = alloca i1
+  %bop_ueq_loaded12 = icmp eq i32 %bop_ltarg_loaded9, %bop_rtarg_loaded10
+  store i1 %bop_ueq_loaded12, i1* %bop_res11
+  %ite_cond_loaded13 = load i1, i1* %bop_res11
+  br i1 %ite_cond_loaded13, label %ite_true_bb5, label %ite_false_bb6
+
+ite_true_bb5:                                     ; preds = %ite_entry_bb4
+  %chain_result14 = alloca i32
+  %intl15 = alloca i32
+  store i32 1, i32* %intl15
+  %chain_result_loaded16 = load i32, i32* %intl15
+  store i32 %chain_result_loaded16, i32* %chain_result14
+  %if_true_loaded17 = load i32, i32* %chain_result14
+  br label %ite_landing_bb7
+
+ite_false_bb6:                                    ; preds = %ite_entry_bb4
+  %chain_result18 = alloca i32
+  %call_res = alloca i32
+  %intl19 = alloca i32
+  store i32 1, i32* %intl19
+  %bop_ltarg_loaded20 = load i32, i32* %"arg:0-n"
+  %bop_rtarg_loaded21 = load i32, i32* %intl19
+  %bop_res22 = alloca i32
+  %bop_ssubtract_loaded = sub i32 %bop_ltarg_loaded20, %bop_rtarg_loaded21
+  store i32 %bop_ssubtract_loaded, i32* %bop_res22
+  %actual_0_0_loaded = load i32, i32* %bop_res22
+  %call_value = call i32 @fib.2(i32 %actual_0_0_loaded)
+  store i32 %call_value, i32* %call_res
+  %call_res23 = alloca i32
+  %intl24 = alloca i32
+  store i32 2, i32* %intl24
+  %bop_ltarg_loaded25 = load i32, i32* %"arg:0-n"
+  %bop_rtarg_loaded26 = load i32, i32* %intl24
+  %bop_res27 = alloca i32
+  %bop_ssubtract_loaded28 = sub i32 %bop_ltarg_loaded25, %bop_rtarg_loaded26
+  store i32 %bop_ssubtract_loaded28, i32* %bop_res27
+  %actual_0_0_loaded29 = load i32, i32* %bop_res27
+  %call_value30 = call i32 @fib.2(i32 %actual_0_0_loaded29)
+  store i32 %call_value30, i32* %call_res23
+  %bop_ltarg_loaded31 = load i32, i32* %call_res
+  %bop_rtarg_loaded32 = load i32, i32* %call_res23
+  %bop_res33 = alloca i32
+  %bop_sadd_loaded = add i32 %bop_ltarg_loaded31, %bop_rtarg_loaded32
+  store i32 %bop_sadd_loaded, i32* %bop_res33
+  %chain_result_loaded34 = load i32, i32* %bop_res33
+  store i32 %chain_result_loaded34, i32* %chain_result18
+  %if_false_loaded = load i32, i32* %chain_result18
+  br label %ite_landing_bb7
+
+ite_landing_bb7:                                  ; preds = %ite_false_bb6, %ite_true_bb5
+  %ite_result_loaded = phi i32 [ %if_true_loaded17, %ite_true_bb5 ], [ %if_false_loaded, %ite_false_bb6 ]
+  %ite_result = alloca i32
+  store i32 %ite_result_loaded, i32* %ite_result
+  %chain_result_loaded35 = load i32, i32* %ite_result
+  store i32 %chain_result_loaded35, i32* %chain_result3
+  %if_false_loaded36 = load i32, i32* %chain_result3
+  br label %ite_landing_bb
 }
 
-define i32 @subtract_s32(i32 %0, i32 %1) {
+define void @print_fibonacci_table_until(i32 %0, i1 %1) {
 entry:
-  %"arg:0-x" = alloca i32
-  store i32 %0, i32* %"arg:0-x"
-  %"arg:1-y" = alloca i32
-  store i32 %1, i32* %"arg:1-y"
-  %chain_result = alloca i32
-  %bop_ltarg_loaded = load i32, i32* %"arg:0-x"
-  %bop_rtarg_loaded = load i32, i32* %"arg:1-y"
-  %bop_res = alloca i32
-  %bop_ssubtract_loaded = sub i32 %bop_ltarg_loaded, %bop_rtarg_loaded
-  store i32 %bop_ssubtract_loaded, i32* %bop_res
-  %chain_result_loaded = load i32, i32* %bop_res
-  store i32 %chain_result_loaded, i32* %chain_result
-  %cast_si = alloca i32
-  %cast_si_input_loaded = load i32, i32* %chain_result
-  store i32 %cast_si_input_loaded, i32* %cast_si
-  %loaded_for_return = load i32, i32* %cast_si
-  ret i32 %loaded_for_return
-}
+  %"arg:0-n" = alloca i32
+  store i32 %0, i32* %"arg:0-n"
+  %"arg:1-ascend_not_descend" = alloca i1
+  store i1 %1, i1* %"arg:1-ascend_not_descend"
+  %"let:result" = alloca i32
+  %actual_0_0_loaded = load i32, i32* %"arg:0-n"
+  %call_value = call i32 @fib.2(i32 %actual_0_0_loaded)
+  store i32 %call_value, i32* %"let:result"
+  br label %ite_entry_bb
 
-define i32 @dot_s32(i32 %0, i32 %1, i32 %2, i32 %3) {
-entry:
-  %"arg:0-x1" = alloca i32
-  store i32 %0, i32* %"arg:0-x1"
-  %"arg:1-y1" = alloca i32
-  store i32 %1, i32* %"arg:1-y1"
-  %"arg:2-x2" = alloca i32
-  store i32 %2, i32* %"arg:2-x2"
-  %"arg:3-y2" = alloca i32
-  store i32 %3, i32* %"arg:3-y2"
-  %chain_result = alloca i32
-  %bop_ltarg_loaded = load i32, i32* %"arg:0-x1"
-  %bop_rtarg_loaded = load i32, i32* %"arg:2-x2"
-  %bop_res = alloca i32
-  %bop_smul_loaded = mul i32 %bop_ltarg_loaded, %bop_rtarg_loaded
-  store i32 %bop_smul_loaded, i32* %bop_res
-  %bop_ltarg_loaded1 = load i32, i32* %"arg:1-y1"
-  %bop_rtarg_loaded2 = load i32, i32* %"arg:3-y2"
-  %bop_res3 = alloca i32
-  %bop_smul_loaded4 = mul i32 %bop_ltarg_loaded1, %bop_rtarg_loaded2
-  store i32 %bop_smul_loaded4, i32* %bop_res3
-  %bop_ltarg_loaded5 = load i32, i32* %bop_res
-  %bop_rtarg_loaded6 = load i32, i32* %bop_res3
-  %bop_res7 = alloca i32
-  %bop_sadd_loaded = add i32 %bop_ltarg_loaded5, %bop_rtarg_loaded6
-  store i32 %bop_sadd_loaded, i32* %bop_res7
-  %chain_result_loaded = load i32, i32* %bop_res7
-  store i32 %chain_result_loaded, i32* %chain_result
-  %cast_si = alloca i32
-  %cast_si_input_loaded = load i32, i32* %chain_result
-  store i32 %cast_si_input_loaded, i32* %cast_si
-  %loaded_for_return = load i32, i32* %cast_si
-  ret i32 %loaded_for_return
+ite_entry_bb:                                     ; preds = %entry
+  %intl = alloca i32
+  store i32 0, i32* %intl
+  %bop_ltarg_loaded = load i32, i32* %"arg:0-n"
+  %bop_rtarg_loaded = load i32, i32* %intl
+  %bop_res = alloca i1
+  %bop_uneq_loaded = icmp ne i32 %bop_ltarg_loaded, %bop_rtarg_loaded
+  store i1 %bop_uneq_loaded, i1* %bop_res
+  %ite_cond_loaded = load i1, i1* %bop_res
+  br i1 %ite_cond_loaded, label %ite_true_bb, label %ite_false_bb
+
+ite_true_bb:                                      ; preds = %ite_entry_bb
+  br label %ite_entry_bb1
+
+ite_false_bb:                                     ; preds = %ite_entry_bb
+  br label %ite_landing_bb
+
+ite_landing_bb:                                   ; preds = %ite_false_bb, %ite_landing_bb22
+  ret void
+
+ite_entry_bb1:                                    ; preds = %ite_true_bb
+  %ite_cond_loaded5 = load i1, i1* %"arg:1-ascend_not_descend"
+  br i1 %ite_cond_loaded5, label %ite_true_bb2, label %ite_false_bb3
+
+ite_true_bb2:                                     ; preds = %ite_entry_bb1
+  %intl6 = alloca i32
+  store i32 1, i32* %intl6
+  %bop_ltarg_loaded7 = load i32, i32* %"arg:0-n"
+  %bop_rtarg_loaded8 = load i32, i32* %intl6
+  %bop_res9 = alloca i32
+  %bop_ssubtract_loaded = sub i32 %bop_ltarg_loaded7, %bop_rtarg_loaded8
+  store i32 %bop_ssubtract_loaded, i32* %bop_res9
+  %actual_0_0_loaded10 = load i32, i32* %bop_res9
+  %intl11 = alloca i32
+  store i32 1, i32* %intl11
+  %cast_ui = alloca i1
+  %cast_ui_input_loaded = load i32, i32* %intl11
+  %cast_utrunc = trunc i32 %cast_ui_input_loaded to i1
+  store i1 %cast_utrunc, i1* %cast_ui
+  %actual_1_1_loaded = load i1, i1* %cast_ui
+  call void @print_fibonacci_table_until(i32 %actual_0_0_loaded10, i1 %actual_1_1_loaded)
+  br label %ite_landing_bb4
+
+ite_false_bb3:                                    ; preds = %ite_entry_bb1
+  br label %ite_landing_bb4
+
+ite_landing_bb4:                                  ; preds = %ite_false_bb3, %ite_true_bb2
+  %stringliteral = alloca i8*
+  store i8* getelementptr inbounds ([11 x i8], [11 x i8]* @literal_string, i32 0, i64 0), i8** %stringliteral
+  %actual_0_0_loaded12 = load i8*, i8** %stringliteral
+  call void @print_string(i8* %actual_0_0_loaded12)
+  %actual_0_0_loaded13 = load i32, i32* %"arg:0-n"
+  call void @print_s32(i32 %actual_0_0_loaded13)
+  %stringliteral14 = alloca i8*
+  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @literal_string.3, i32 0, i64 0), i8** %stringliteral14
+  %actual_0_0_loaded15 = load i8*, i8** %stringliteral14
+  call void @print_string(i8* %actual_0_0_loaded15)
+  %call_res = alloca i32
+  %actual_0_0_loaded16 = load i32, i32* %"arg:0-n"
+  %call_value17 = call i32 @fib.2(i32 %actual_0_0_loaded16)
+  store i32 %call_value17, i32* %call_res
+  %actual_0_0_loaded18 = load i32, i32* %call_res
+  call void @print_s32(i32 %actual_0_0_loaded18)
+  call void @println()
+  br label %ite_entry_bb19
+
+ite_entry_bb19:                                   ; preds = %ite_landing_bb4
+  %uop_res = alloca i1
+  %uop_not_arg_loaded = load i1, i1* %"arg:1-ascend_not_descend"
+  %uop_not_res_loaded = xor i1 %uop_not_arg_loaded, true
+  store i1 %uop_not_res_loaded, i1* %uop_res
+  %ite_cond_loaded23 = load i1, i1* %uop_res
+  br i1 %ite_cond_loaded23, label %ite_true_bb20, label %ite_false_bb21
+
+ite_true_bb20:                                    ; preds = %ite_entry_bb19
+  %intl24 = alloca i32
+  store i32 1, i32* %intl24
+  %bop_ltarg_loaded25 = load i32, i32* %"arg:0-n"
+  %bop_rtarg_loaded26 = load i32, i32* %intl24
+  %bop_res27 = alloca i32
+  %bop_ssubtract_loaded28 = sub i32 %bop_ltarg_loaded25, %bop_rtarg_loaded26
+  store i32 %bop_ssubtract_loaded28, i32* %bop_res27
+  %actual_0_0_loaded29 = load i32, i32* %bop_res27
+  %intl30 = alloca i32
+  store i32 0, i32* %intl30
+  %cast_ui31 = alloca i1
+  %cast_ui_input_loaded32 = load i32, i32* %intl30
+  %cast_utrunc33 = trunc i32 %cast_ui_input_loaded32 to i1
+  store i1 %cast_utrunc33, i1* %cast_ui31
+  %actual_1_1_loaded34 = load i1, i1* %cast_ui31
+  call void @print_fibonacci_table_until(i32 %actual_0_0_loaded29, i1 %actual_1_1_loaded34)
+  br label %ite_landing_bb22
+
+ite_false_bb21:                                   ; preds = %ite_entry_bb19
+  br label %ite_landing_bb22
+
+ite_landing_bb22:                                 ; preds = %ite_false_bb21, %ite_true_bb20
+  br label %ite_landing_bb
 }
 
 define i32 @main() {
 entry:
   %chain_result = alloca i32
-  %"let:x1" = alloca i32
-  store i32 42, i32* %"let:x1"
-  %"let:y1" = alloca i32
-  store i32 56, i32* %"let:y1"
-  %"let:x2" = alloca i32
-  store i32 0, i32* %"let:x2"
-  %"let:y2" = alloca i32
-  store i32 64, i32* %"let:y2"
+  %"let:n" = alloca i32
+  store i32 40, i32* %"let:n"
   %stringliteral = alloca i8*
-  store i8* getelementptr inbounds ([14 x i8], [14 x i8]* @literal_string, i32 0, i64 0), i8** %stringliteral
+  store i8* getelementptr inbounds ([25 x i8], [25 x i8]* @literal_string.4, i32 0, i64 0), i8** %stringliteral
   %actual_0_0_loaded = load i8*, i8** %stringliteral
   call void @print_string(i8* %actual_0_0_loaded)
-  %actual_0_0_loaded1 = load i32, i32* %"let:x1"
+  %actual_0_0_loaded1 = load i32, i32* %"let:n"
   call void @print_s32(i32 %actual_0_0_loaded1)
-  %stringliteral2 = alloca i8*
-  store i8* getelementptr inbounds ([4 x i8], [4 x i8]* @literal_string.1, i32 0, i64 0), i8** %stringliteral2
-  %actual_0_0_loaded3 = load i8*, i8** %stringliteral2
-  call void @print_string(i8* %actual_0_0_loaded3)
-  %actual_0_0_loaded4 = load i32, i32* %"let:y1"
-  call void @print_s32(i32 %actual_0_0_loaded4)
-  %stringliteral5 = alloca i8*
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @literal_string.2, i32 0, i64 0), i8** %stringliteral5
-  %actual_0_0_loaded6 = load i8*, i8** %stringliteral5
-  call void @print_string(i8* %actual_0_0_loaded6)
   call void @println()
-  %stringliteral7 = alloca i8*
-  store i8* getelementptr inbounds ([14 x i8], [14 x i8]* @literal_string.3, i32 0, i64 0), i8** %stringliteral7
-  %actual_0_0_loaded8 = load i8*, i8** %stringliteral7
-  call void @print_string(i8* %actual_0_0_loaded8)
-  %actual_0_0_loaded9 = load i32, i32* %"let:x2"
-  call void @print_s32(i32 %actual_0_0_loaded9)
-  %stringliteral10 = alloca i8*
-  store i8* getelementptr inbounds ([4 x i8], [4 x i8]* @literal_string.4, i32 0, i64 0), i8** %stringliteral10
-  %actual_0_0_loaded11 = load i8*, i8** %stringliteral10
-  call void @print_string(i8* %actual_0_0_loaded11)
-  %actual_0_0_loaded12 = load i32, i32* %"let:y2"
-  call void @print_s32(i32 %actual_0_0_loaded12)
-  %stringliteral13 = alloca i8*
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @literal_string.5, i32 0, i64 0), i8** %stringliteral13
-  %actual_0_0_loaded14 = load i8*, i8** %stringliteral13
-  call void @print_string(i8* %actual_0_0_loaded14)
-  call void @println()
-  %stringliteral15 = alloca i8*
-  store i8* getelementptr inbounds ([23 x i8], [23 x i8]* @literal_string.6, i32 0, i64 0), i8** %stringliteral15
-  %actual_0_0_loaded16 = load i8*, i8** %stringliteral15
-  call void @print_string(i8* %actual_0_0_loaded16)
-  %call_res = alloca i32
-  %actual_0_0_loaded17 = load i32, i32* %"let:x1"
-  %actual_1_1_loaded = load i32, i32* %"let:y1"
-  %call_value = call i32 @subtract_s32(i32 %actual_0_0_loaded17, i32 %actual_1_1_loaded)
-  store i32 %call_value, i32* %call_res
-  %actual_0_0_loaded18 = load i32, i32* %call_res
-  call void @print_s32(i32 %actual_0_0_loaded18)
-  call void @println()
-  %stringliteral19 = alloca i8*
-  store i8* getelementptr inbounds ([23 x i8], [23 x i8]* @literal_string.7, i32 0, i64 0), i8** %stringliteral19
-  %actual_0_0_loaded20 = load i8*, i8** %stringliteral19
-  call void @print_string(i8* %actual_0_0_loaded20)
-  %call_res21 = alloca i32
-  %actual_0_0_loaded22 = load i32, i32* %"let:x2"
-  %actual_1_1_loaded23 = load i32, i32* %"let:y2"
-  %call_value24 = call i32 @subtract_s32(i32 %actual_0_0_loaded22, i32 %actual_1_1_loaded23)
-  store i32 %call_value24, i32* %call_res21
-  %actual_0_0_loaded25 = load i32, i32* %call_res21
-  call void @print_s32(i32 %actual_0_0_loaded25)
-  call void @println()
-  %stringliteral26 = alloca i8*
-  store i8* getelementptr inbounds ([18 x i8], [18 x i8]* @literal_string.8, i32 0, i64 0), i8** %stringliteral26
-  %actual_0_0_loaded27 = load i8*, i8** %stringliteral26
-  call void @print_string(i8* %actual_0_0_loaded27)
-  %call_res28 = alloca i32
-  %actual_0_0_loaded29 = load i32, i32* %"let:x1"
-  %actual_1_1_loaded30 = load i32, i32* %"let:y1"
-  %call_value31 = call i32 @add_s32(i32 %actual_0_0_loaded29, i32 %actual_1_1_loaded30)
-  store i32 %call_value31, i32* %call_res28
-  %actual_0_0_loaded32 = load i32, i32* %call_res28
-  call void @print_s32(i32 %actual_0_0_loaded32)
-  call void @println()
-  %stringliteral33 = alloca i8*
-  store i8* getelementptr inbounds ([18 x i8], [18 x i8]* @literal_string.9, i32 0, i64 0), i8** %stringliteral33
-  %actual_0_0_loaded34 = load i8*, i8** %stringliteral33
-  call void @print_string(i8* %actual_0_0_loaded34)
-  %call_res35 = alloca i32
-  %actual_0_0_loaded36 = load i32, i32* %"let:x2"
-  %actual_1_1_loaded37 = load i32, i32* %"let:y2"
-  %call_value38 = call i32 @add_s32(i32 %actual_0_0_loaded36, i32 %actual_1_1_loaded37)
-  store i32 %call_value38, i32* %call_res35
-  %actual_0_0_loaded39 = load i32, i32* %call_res35
-  call void @print_s32(i32 %actual_0_0_loaded39)
-  call void @println()
-  %stringliteral40 = alloca i8*
-  store i8* getelementptr inbounds ([20 x i8], [20 x i8]* @literal_string.10, i32 0, i64 0), i8** %stringliteral40
-  %actual_0_0_loaded41 = load i8*, i8** %stringliteral40
-  call void @print_string(i8* %actual_0_0_loaded41)
-  %call_res42 = alloca i32
-  %actual_0_0_loaded43 = load i32, i32* %"let:x1"
-  %actual_1_1_loaded44 = load i32, i32* %"let:y1"
-  %actual_2_2_loaded = load i32, i32* %"let:x2"
-  %actual_3_3_loaded = load i32, i32* %"let:y2"
-  %call_value45 = call i32 @dot_s32(i32 %actual_0_0_loaded43, i32 %actual_1_1_loaded44, i32 %actual_2_2_loaded, i32 %actual_3_3_loaded)
-  store i32 %call_value45, i32* %call_res42
-  %actual_0_0_loaded46 = load i32, i32* %call_res42
-  call void @print_s32(i32 %actual_0_0_loaded46)
-  call void @println()
+  %actual_0_0_loaded2 = load i32, i32* %"let:n"
   %intl = alloca i32
-  store i32 0, i32* %intl
-  %chain_result_loaded = load i32, i32* %intl
+  store i32 1, i32* %intl
+  %cast_ui = alloca i1
+  %cast_ui_input_loaded = load i32, i32* %intl
+  %cast_utrunc = trunc i32 %cast_ui_input_loaded to i1
+  store i1 %cast_utrunc, i1* %cast_ui
+  %actual_1_1_loaded = load i1, i1* %cast_ui
+  call void @print_fibonacci_table_until(i32 %actual_0_0_loaded2, i1 %actual_1_1_loaded)
+  %intl3 = alloca i32
+  store i32 0, i32* %intl3
+  %chain_result_loaded = load i32, i32* %intl3
   store i32 %chain_result_loaded, i32* %chain_result
   %cast_si = alloca i32
   %cast_si_input_loaded = load i32, i32* %chain_result

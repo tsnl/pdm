@@ -66,22 +66,22 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
         {
             int length = GetAstScriptLength(node);
             for (int index = 0; index < length; index++) {
-                AstNode* module = GetAstScriptModuleAt(node, index);
+                AstNode* module = GetAstScriptStmtAt(node, index);
                 PrintNode(cp, module);
                 PrintText(cp, ";\n");
             }
             break;
         }
-        case AST_MODULE:
+        case AST_STMT_MODULE:
         {
             PrintText(cp, "mod ");
-            PrintText(cp, GetSymbolText(GetAstModuleName(node)));
+            PrintText(cp, GetSymbolText(AstModuleStmt_GetName(node)));
             PrintText(cp, " {");
             IndentPrinter(cp);
             PrintChar(cp, '\n');
-            int length = GetAstModuleLength(node);
+            int length = AstModuleStmt_GetLength(node);
             for (int i = 0; i < length; i++) {
-                PrintNode(cp, GetAstModuleStmtAt(node, i));
+                PrintNode(cp, AstModuleStmt_GetStmtAt(node, i));
                 if (i != length-1) {
                     PrintText(cp, ";\n");
                 }

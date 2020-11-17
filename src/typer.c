@@ -1334,7 +1334,7 @@ int typer_post(void* rawTyper, AstNode* node) {
             // ReqAstLambdaDefn(GetAstNodeParentFunc(node),foundDefn);
             break;
         }
-        case AST_MODULE:
+        case AST_STMT_MODULE:
         {
             // modules are type-initialized in the primer.
             break;
@@ -1729,7 +1729,7 @@ int typer_post(void* rawTyper, AstNode* node) {
                 
                     // further typing ...
                     AstNode* moduleLookupDefnNode = GetDefnNode(moduleLookupDefnScope);
-                    if (GetAstNodeKind(moduleLookupDefnNode) == AST_MODULE) {
+                    if (GetAstNodeKind(moduleLookupDefnNode) == AST_STMT_MODULE) {
                         // if submodule, create new module type.
                         Type* newModuleType = NewModuleType(typer,moduleLookupDefnNode);
                         SetAstNodeTypingExt_Value(node, newModuleType);
@@ -1894,7 +1894,7 @@ void printType(Typer* typer, Type* type) {
         case T_MODULE:
         {
             AstNode* node = GetModuleTypeAstNode(type);
-            SymbolID moduleName = GetAstModuleName(node);
+            SymbolID moduleName = AstModuleStmt_GetName(node);
             printf("module %s", GetSymbolText(moduleName));
             break;
         }

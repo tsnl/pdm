@@ -222,7 +222,8 @@ struct AstNode {
     AstKind kind;
     AstInfo as;
     
-    AstNode* parentFunc;
+    AstNode* parentVLambda;
+    AstNode* parentModuleStmt;
 
     void* typingExt_value;
     void* typingExt_type;
@@ -255,7 +256,8 @@ AstNode* newNode(Span span, AstKind kind) {
     node->typingExt_value = NULL;
     node->typingExt_type = NULL;
     node->llvmRepr = NULL;
-    node->parentFunc = NULL;
+    node->parentVLambda = NULL;
+    node->parentModuleStmt = NULL;
     node->constVal = NULL;
     return node;
 }
@@ -312,6 +314,7 @@ int isStmtKindModuleLevel(AstKind kind) {
         kind == AST_STMT_VDEF ||
         kind == AST_STMT_TDEF ||
         kind == AST_STMT_EXTERN ||
+        kind == AST_STMT_MODULE ||
         0
     );
 }
@@ -358,14 +361,14 @@ AstNode* NewAstScriptWithModulesSb(Span span, Source* source, AstNode** mov_modu
     sb_free(mov_modulesSb);
     return loadedScriptNode;
 }
-AstNode* NewAstModule(Span span, SymbolID moduleID) {
-    AstNode* node = newNode(span, AST_MODULE);
+AstNode* NewAstModuleStmt(Span span, SymbolID moduleID) {
+    AstNode* node = newNode(span, AST_STMT_MODULE);
     node->as.Module.name = moduleID;
     node->as.Module.items = newNodeList();
     return node;
 }
-AstNode* NewAstModuleWithStmtSb(Span span, SymbolID moduleID, AstNode** mov_contentSb) {
-    AstNode* node = NewAstModule(span, moduleID);
+AstNode* NewAstModuleStmtWithStmtSb(Span span, SymbolID moduleID, AstNode** mov_contentSb) {
+    AstNode* node = NewAstModuleStmt(span, moduleID);
 
     int count = sb_count(mov_contentSb);
     for (int index = 0; index < count; index++) {
@@ -708,8 +711,8 @@ AstNode* NewAstTLambda(Span span, AstNode* pattern, AstNode* body) {
     return lambdaNode;
 }
 
-AstNode* NewAstModuleStmt(Span span, SymbolID boundName, Utf8String fromStr, Utf8String asStr) {
-    AstNode* stmt = newNode(span, AST_STMT_MODULE);
+AstNode* NewAstAttachStmt(Span span, SymbolID boundName, Utf8String fromStr, Utf8String asStr) {
+    AstNode* stmt = newNode(span, AST_STMT_ATTACH);
     stmt->as.ModuleStmt.boundName = boundName;
     stmt->as.ModuleStmt.from = fromStr;
     stmt->as.ModuleStmt.as = asStr;
@@ -895,8 +898,8 @@ void ReqAstLambdaDefn(AstNode* lambda, void* rawDefn) {
     }
     if (pushReq) {
         sb_push(lambda->as.VLambda.capturesSB,defn);
-        if (lambda->parentFunc) {
-            ReqAstLambdaDefn(lambda->parentFunc,defn);
+        if (lambda->parentVLambda) {
+            ReqAstLambdaDefn(lambda->parentVLambda,defn);
         }
     }
 }
@@ -908,17 +911,17 @@ void ReqAstLambdaDefn(AstNode* lambda, void* rawDefn) {
 int GetAstScriptLength(AstNode* node) {
     return countList(node->as.Script.modules);
 }
-AstNode* GetAstScriptModuleAt(AstNode* node, int index) {
+AstNode* GetAstScriptStmtAt(AstNode* node, int index) {
     return listItemAt(node->as.Script.modules, index);
 }
 
-SymbolID GetAstModuleName(AstNode* module) {
+SymbolID AstModuleStmt_GetName(AstNode* module) {
     return module->as.Module.name;
 }
-int GetAstModuleLength(AstNode* module) {
+int AstModuleStmt_GetLength(AstNode* module) {
     return countList(module->as.Module.items);
 }
-AstNode* GetAstModuleStmtAt(AstNode* module, int index) {
+AstNode* AstModuleStmt_GetStmtAt(AstNode* module, int index) {
     return listItemAt(module->as.Module.items, index);
 }
 
@@ -1328,14 +1331,30 @@ Frame* GetAstModuleContentFrame(AstNode* module) {
 }
 
 AstNode* GetAstNodeParentFunc(AstNode* node) {
-    return node->parentFunc;
+    return node->parentVLambda;
 }
-void SetAstNodeParentFunc(AstNode* node, AstNode* parentFunc) {
-    COMPILER_ASSERT_VA(
-        parentFunc->kind == AST_VLAMBDA,
-        "non-lambda parent func of kind '%s' in 'SetAstNodeParentFunc'", AstKindAsText(parentFunc->kind)
-    );
-    node->parentFunc = parentFunc;
+AstNode* GetAstNodeParentModuleStmt(AstNode* node) {
+    return node->parentModuleStmt;
+}
+void SetAstNodeParentFunc(AstNode* node, AstNode* parentVLambda) {
+    if (parentVLambda != NULL) {
+        COMPILER_ASSERT_VA(
+            parentVLambda->kind == AST_VLAMBDA,
+            "SetAstNodeParentFunc: non-lambda parent func of kind '%s'", 
+            AstKindAsText(parentVLambda->kind)
+        );
+        node->parentVLambda = parentVLambda;
+    }
+}
+void SetAstNodeParentModuleStmt(AstNode* node, AstNode* parentModuleStmt) {
+    if (parentModuleStmt != NULL) {
+        COMPILER_ASSERT_VA(
+            parentModuleStmt->kind == AST_STMT_MODULE,
+            "SetAstNodeParentModuleStmt: non-module-stmt parent func of kind '%s'", 
+            AstKindAsText(parentModuleStmt->kind)
+        );
+        node->parentModuleStmt = parentModuleStmt;
+    }
 }
 
 void* GetAstIdLookupScope(AstNode* node) {
@@ -1556,18 +1575,18 @@ inline static int recursivelyVisitChildren(void* context, AstNode* node, Visitor
         {
             int scriptLength = GetAstScriptLength(node);
             for (int i = 0; i < scriptLength; i++) {
-                AstNode* moduleNode = GetAstScriptModuleAt(node,i);
+                AstNode* moduleNode = GetAstScriptStmtAt(node,i);
                 if (!RecursivelyVisitAstNode(context, moduleNode, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
             }
             return 1;
         }
-        case AST_MODULE:
+        case AST_STMT_MODULE:
         {
-            int moduleLength = GetAstModuleLength(node);
+            int moduleLength = AstModuleStmt_GetLength(node);
             for (int i = 0; i < moduleLength; i++) {
-                AstNode* moduleField = GetAstModuleStmtAt(node, i);
+                AstNode* moduleField = AstModuleStmt_GetStmtAt(node, i);
                 if (!RecursivelyVisitAstNode(context, moduleField, preVisitorCb, postVisitorCb)) {
                     return 0;
                 }
@@ -1748,7 +1767,7 @@ void SetAstNodeConstValue(AstNode* node, void* value) {
 // LLVM representations
 //
 
-void SetAstNodeLlvmRepr(AstNode* node, void* repr) {
+void AstNode_SetExportedPtr(AstNode* node, void* repr) {
     node->llvmRepr = repr;
 }
 
@@ -1789,7 +1808,7 @@ char const binaryOperatorTextArray[__BOP_COUNT][4] = {
 char const* AstKindAsText(AstKind kind) {
     switch (kind) {
         case AST_SCRIPT: return "AST_SCRIPT";
-        case AST_MODULE: return "AST_MODULE";
+        case AST_STMT_MODULE: return "AST_STMT_MODULE";
         case AST_TID: return "AST_TID";
         case AST_VID: return "AST_VID";
         case AST_LITERAL_INT: return "AST_LITERAL_INT"; 

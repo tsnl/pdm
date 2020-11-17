@@ -50,8 +50,9 @@
 
 %type <nt> script
 %type <ntSb> scriptContent
+%type <nt> scriptContentStmt
 
-%type <nt> module
+%type <nt> moduleStmt
 %type <ntSb> moduleContent
 
 //
@@ -60,8 +61,7 @@
 
 %type <nt> moduleContentStmt
 %type <nt> chainPrefixStmt letStmt setStmt discardStmt
-%type <nt> importStmt moduleStmt
-%type <nt> externStmt
+%type <nt> attachStmt importStmt externStmt
 %type <nt> typedefStmt_enum typedefStmt defStmt
 
 //
@@ -149,7 +149,7 @@
 %token TK_KW_WITH "'with'"
 %token TK_KW_RETURN "'return'"      // deprecated?
 %token TK_KW_DISCARD "'discard'"    // deprecated?
-%token TK_KW_MODULE "'module'"
+%token TK_KW_ATTACH "'attach'"
 %token TK_KW_IMPORT "'import'"
 %token TK_KW_EXPORT "'export'"      // deprecated? 
 %token TK_KW_EXTERN "'extern'"
@@ -227,16 +227,20 @@ script
     : scriptContent { $$ = NewAstScriptWithModulesSb(@$, source, $1); *outp = $$; }
     ;
 scriptContent
-    : module               TK_SEMICOLON     { $$ = NULL; sb_push($$,$1); }
-    | scriptContent module TK_SEMICOLON     { $$ = $1; sb_push($$,$2); }
+    : scriptContentStmt               TK_SEMICOLON     { $$ = NULL; sb_push($$,$1); }
+    | scriptContent scriptContentStmt TK_SEMICOLON     { $$ = $1; sb_push($$,$2); }
+    ;
+scriptContentStmt
+    : moduleStmt    { $$ = $1; }
+    | externStmt    { $$ = $1; }
     ;
 
 /*
  * Modules:
  */
 
-module
-    : TK_KW_MOD TK_VID TK_LCYBRK moduleContent TK_RCYBRK    { $$ = NewAstModuleWithStmtSb(@$, $2.ID_symbolID, $4); }
+moduleStmt
+    : TK_KW_MOD TK_VID TK_LCYBRK moduleContent TK_RCYBRK    { $$ = NewAstModuleStmtWithStmtSb(@$, $2.ID_symbolID, $4); }
     ;
 moduleContent
     : moduleContentStmt TK_SEMICOLON                   { $$ = NULL; sb_push($$, $1); }
@@ -266,9 +270,10 @@ moduleContentStmt
     : defStmt               { $$ = $1; }
     | typedefStmt           { $$ = $1; }
     | typedefStmt_enum      { $$ = $1; }
-    | moduleStmt            { $$ = $1; }
+    | attachStmt            { $$ = $1; }
     | importStmt            { $$ = $1; }
     | externStmt            { $$ = $1; }
+    | moduleStmt            { $$ = $1; }
     ;
 defStmt
     : TK_KW_DEF vid          vpattern TK_ARROW castExpr   { $$ = NewAstDefStmt(@$, $2.ID_symbolID, NULL, $3, $5); }
@@ -281,8 +286,8 @@ typedefStmt_enum
     : TK_KW_ENUM tid tpattern TK_BIND vstruct  { $$ = NewAstTypedefEnumStmt(@$, $2.ID_symbolID, $3, $5); }
     ;
 
-moduleStmt
-    : TK_KW_MODULE vid TK_KW_FROM stringl TK_KW_AS stringl   { $$ = NewAstModuleStmt(@$, $2.ID_symbolID, $4.String_utf8string, $6.String_utf8string); }
+attachStmt
+    : TK_KW_ATTACH vid TK_KW_FROM stringl TK_KW_AS stringl   { $$ = NewAstAttachStmt(@$, $2.ID_symbolID, $4.String_utf8string, $6.String_utf8string); }
     ;
 importStmt
     : TK_KW_IMPORT vid TK_DOT vid               { $$ = NewAstImportStmt(@$, $2.ID_symbolID, $4.ID_symbolID, 0); }

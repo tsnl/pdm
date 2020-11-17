@@ -23,7 +23,8 @@ struct Scope {
 struct Frame {
     Scope* begScope;
     Scope* endScope;
-    AstNode* func;
+    AstNode* moduleStmt;
+    AstNode* vlambda;
 };
 
 // Taking static references to pre-defined symbols:
@@ -72,10 +73,12 @@ Primer allocatedPrimers[MAX_PRIMER_COUNT];
 static Primer* createPrimer(Typer* typer);
 static void pushSymbol(Primer* primer, SymbolID defnID, void* type, AstNode* node);
 static Scope* pushFrame(Primer* primer, Scope* scope, AstNode* optFunc);
+static Scope* pushFrameWithMod(Primer* primer, Scope* scope, AstNode* optFunc, AstNode* optModuleStmt);
 static Frame popFrame(Primer* primer);
 Frame* topFrame(Primer* primer);
 Scope* topFrameScope(Primer* primer);
 AstNode* topFrameFunc(Primer* primer);
+AstNode* topFrameModuleStmt(Primer* primer);
 
 static size_t allocatedScopeCount = 0;
 static Scope allocatedScopes[MAX_AST_NODE_COUNT];
@@ -145,12 +148,26 @@ void pushSymbol(Primer* primer, SymbolID defnID, void* type, AstNode* defnAstNod
     }
 }
 Scope* pushFrame(Primer* primer, Scope* optNewScope, AstNode* optFunc) {
+    return pushFrameWithMod(primer, optNewScope, optFunc, NULL);
+}
+Scope* pushFrameWithMod(Primer* primer, Scope* optNewScope, AstNode* optFunc, AstNode* optModuleStmt) {
     if (optFunc) {
         AstKind nodeKind = GetAstNodeKind(optFunc);
         COMPILER_ASSERT_VA(
             nodeKind == AST_VLAMBDA, 
-            "Non-lambda parent func in `pushFrame`: %s", AstKindAsText(nodeKind)
+            "pushFrameWithMod: unexpected optFunc->kind: %s", AstKindAsText(nodeKind)
         );
+    } else {
+        optFunc = topFrameFunc(primer);
+    }
+    if (optModuleStmt) {
+        AstKind nodeKind = GetAstNodeKind(optModuleStmt);
+        COMPILER_ASSERT_VA(
+            nodeKind == AST_STMT_MODULE,
+            "pushFrameWithMod: unexpected optModuleStmt->kind: %s", AstKindAsText(nodeKind)
+        );
+    } else {
+        optModuleStmt = topFrameModuleStmt(primer);
     }
 
     Scope* topScope = topFrameScope(primer);
@@ -167,7 +184,7 @@ Scope* pushFrame(Primer* primer, Scope* optNewScope, AstNode* optFunc) {
             return NULL;
         }
     }
-    Frame frame = {optNewScope,optNewScope,optFunc};
+    Frame frame = {optNewScope,optNewScope,optModuleStmt,optFunc};
     int bufCount = sb_count(primer->frameStackSB);
     if (primer->frameStackCount == bufCount) {
         sb_push(primer->frameStackSB,frame);
@@ -191,7 +208,8 @@ Frame popFrame(Primer* primer) {
         Frame frame;
         frame.begScope = NULL;
         frame.endScope = NULL;
-        frame.func = NULL;
+        frame.moduleStmt = NULL;
+        frame.vlambda = NULL;
         return frame;
     }
 }
@@ -222,9 +240,17 @@ Scope* topFrameScope(Primer* primer) {
 AstNode* topFrameFunc(Primer* primer) {
     Frame* frame = topFrame(primer);
     if (frame) {
-        return frame->func;
+        return frame->vlambda;
     }
     return NULL;
+}
+AstNode* topFrameModuleStmt(Primer* primer) {
+    Frame* frame = topFrame(primer);
+    if (frame) {
+        return frame->moduleStmt;
+    } else {
+        return NULL;
+    }
 }
 
 inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defnAstNode) {
@@ -269,7 +295,7 @@ Scope* newRootScope(Typer* typer, Frame* rootFrame) {
     prevScope = newBuiltinTypedefScope(typer, prevScope, symbol_f64, GetFloatType(typer,FLOAT_64));
 
     rootFrame->endScope = prevScope;
-    rootFrame->func = NULL;
+    rootFrame->vlambda = NULL;
 
     return prevScope;
 }
@@ -309,64 +335,114 @@ DefnScope* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP) 
 static int primer_pre(void* primer, AstNode* node);
 static int primer_post(void* primer, AstNode* node);
 
+// earlydef stores a metavar on TypingExt_Value instead of waiting
+// for visitor... 
+// this allows shared access to multiple function scopes.
+static int primer_pre_earlydef(void* primer, AstNode* node);
+
+int primer_pre_earlydef(void* rawPrimer, AstNode* node) {
+    Loc loc = GetAstNodeLoc(node);
+    Primer* primer = rawPrimer;
+    AstKind nodeKind = GetAstNodeKind(node);
+    
+    if (nodeKind == AST_SCRIPT) {
+        pushFrame(primer, NULL, NULL);
+        int scriptLen = GetAstScriptLength(node);
+        for (int index = 0; index < scriptLen; index++) {
+            AstNode* stmt = GetAstScriptStmtAt(node,index);
+
+            if (0 == primer_pre_earlydef(primer, stmt)) {
+                return 0;
+            }
+        }
+        
+        // wait till primer_post to pop
+        return 1;
+    }
+
+    else if (nodeKind == AST_STMT_MODULE) {
+        Type* moduleType = NewModuleType(primer->typer, node);
+        SetAstNodeTypingExt_Value(node, moduleType);
+
+        // defining a symbol before pushing a frame:
+        SymbolID defnID = AstModuleStmt_GetName(node);
+        pushSymbol(primer, defnID, moduleType, node);
+
+        // pushing a content frame:
+        pushFrameWithMod(primer, NULL, NULL, node);
+
+        // defining all module-symbols in one go, with primer_pre_earlydef
+        size_t moduleStmtLength = AstModuleStmt_GetLength(node);
+        for (size_t index = 0; index < moduleStmtLength; index++) {
+            // todo: HACKY let the symbol define itself as type or value in `PrimeScript`
+            AstNode* stmt = AstModuleStmt_GetStmtAt(node, index);
+            Loc loc = GetAstNodeLoc(stmt);
+            AstKind stmtKind = GetAstNodeKind(stmt);
+            
+            if (0 == primer_pre_earlydef(primer, stmt)) {
+                return 0;
+            }
+        }
+
+        // wait to pop until primer_post.
+        // this way, arguments and nested scopes are in-scope.
+
+        return 1;
+    }
+
+    else if (nodeKind == AST_STMT_VDEF) {
+        Loc loc = GetAstNodeLoc(node);
+
+        SymbolID lhs = GetAstDefValueStmtLhs(node);
+        void* valueType = NewMetavarType(loc,primer->typer,"def:%s",GetSymbolText(lhs));
+        pushSymbol(primer,lhs,valueType,node);
+        SetAstNodeTypingExt_Value(node,valueType);
+        return 1;
+    }
+    else if (nodeKind == AST_STMT_EXTERN) {
+        Loc loc = GetAstNodeLoc(node);
+
+        SymbolID lhs = GetAstExternStmtName(node);
+        void* valueType = NewMetavarType(loc,primer->typer,"extern:%s",GetSymbolText(lhs));
+        pushSymbol(primer,lhs,valueType,node);
+        SetAstNodeTypingExt_Value(node,valueType);
+        return 1;
+    }
+    else if (nodeKind == AST_STMT_TDEF) {
+        Loc loc = GetAstNodeLoc(node);
+
+        SymbolID lhs = GetAstTypedefStmtName(node);
+        char const* symbolText = GetSymbolText(lhs);
+        void* typingType = NewMetavarType(loc,primer->typer,"type:%s",symbolText);
+        pushSymbol(primer,lhs,typingType,node);
+        SetAstNodeTypingExt_Type(node, typingType);
+        return 1;
+    }
+    else {
+        FeedbackNote* note = CreateFeedbackNote("statement here...", loc, NULL);
+        PostFeedback(FBK_ERROR, note, "Unsupported statement kind in module: %s", AstKindAsText(nodeKind));
+        if (DEBUG) {
+            printf("!!- PrimeScript: Unsupported statement kind in module\n");
+        } else {
+            assert(0 && "PrimeScript: Unsupported statement kind in module");
+        }
+        return 0;
+    }
+}
+
 int primer_pre(void* rawPrimer, AstNode* node) {
     Primer* primer = rawPrimer;
     AstKind nodeKind = GetAstNodeKind(node);
     
-    // scripts:
-    if (nodeKind == AST_SCRIPT) {
-        pushFrame(primer, NULL, NULL);
-        return 1;
+    // for all nodes: setting a parent module and function
+    SetAstNodeParentFunc(node, topFrameFunc(primer));
+    SetAstNodeParentModuleStmt(node, topFrameModuleStmt(primer));
+
+    // scripts & modules get predefed:
+    if (nodeKind == AST_SCRIPT || nodeKind == AST_STMT_MODULE) {
+        return primer_pre_earlydef(primer, node);
     }
 
-    // modules:
-    else if (nodeKind == AST_MODULE) {
-        AstNode* module = node;
-
-        // todo: check + store defined module symbol
-        SymbolID defnID = GetAstModuleName(node);
-        Type* moduleType = NewModuleType(primer->typer,node);
-        SetAstNodeTypingExt_Value(node,moduleType);
-        pushSymbol(primer, defnID, moduleType, node);
-
-        // defining all module-symbols in one go, storing as VALUE typing extensions:
-        // todo: store fully-qualified names with module prefixes for emission.
-        pushFrame(primer,NULL,topFrameFunc(primer));
-        size_t moduleStmtLength = GetAstModuleLength(module);
-        for (size_t index = 0; index < moduleStmtLength; index++) {
-            // todo: HACKY let the symbol define itself as type or value in `PrimeScript`
-            AstNode* stmt = GetAstModuleStmtAt(module, index);
-            Loc loc = GetAstNodeLoc(stmt);
-            AstKind stmtKind = GetAstNodeKind(stmt);
-            if (stmtKind == AST_STMT_VDEF) {
-                SymbolID lhs = GetAstDefValueStmtLhs(stmt);
-                void* valueType = NewMetavarType(loc,primer->typer,"def:%s",GetSymbolText(lhs));
-                pushSymbol(primer,lhs,valueType,stmt);
-                SetAstNodeTypingExt_Value(stmt,valueType);
-            } else if (stmtKind == AST_STMT_EXTERN) {
-                SymbolID lhs = GetAstExternStmtName(stmt);
-                void* valueType = NewMetavarType(loc,primer->typer,"extern:%s",GetSymbolText(lhs));
-                pushSymbol(primer,lhs,valueType,stmt);
-                SetAstNodeTypingExt_Value(stmt,valueType);
-            } else if (stmtKind == AST_STMT_TDEF) {
-                SymbolID lhs = GetAstTypedefStmtName(stmt);
-                char const* symbolText = GetSymbolText(lhs);
-                void* typingType = NewMetavarType(loc,primer->typer,"type:%s",symbolText);
-                pushSymbol(primer,lhs,typingType,stmt);
-                SetAstNodeTypingExt_Type(stmt, typingType);
-            } else {
-                FeedbackNote* note = CreateFeedbackNote("statement here...", loc, NULL);
-                PostFeedback(FBK_ERROR, note, "Unsupported statement kind in module: %s", AstKindAsText(stmtKind));
-                if (DEBUG) {
-                    printf("!!- PrimeScript: Unsupported statement kind in module\n");
-                } else {
-                    assert(0 && "PrimeScript: Unsupported statement kind in module");
-                }
-            }
-        }
-        return 1;
-    } 
-    
     // all other kinds of nodes:
     else {
         AstNode* topFunc = topFrameFunc(primer);
@@ -427,7 +503,8 @@ int primer_pre(void* rawPrimer, AstNode* node) {
             case AST_VLAMBDA:
             {
                 // pushing a new frame for the function's contents:
-                pushFrame(primer,NULL,node);
+                AstNode* lambda = node;
+                pushFrame(primer,NULL,lambda);
                 break;
             }
             case AST_STMT_EXTERN:
@@ -467,21 +544,16 @@ int primer_post(void* rawPrimer, AstNode* node) {
     AstKind kind = GetAstNodeKind(node);
     switch (kind) {
         case AST_SCRIPT:
+        case AST_STMT_MODULE:
         {
-            AstNode* script = node;
-            Frame* scriptFrame = malloc(sizeof(Frame));
-            *scriptFrame = popFrame(primer);
-            SetAstScriptContentFrame(script, scriptFrame);
+            // popping, setting the content frame:
+            Frame frame = popFrame(primer);
+            Frame* framePtr = malloc(sizeof(Frame));
+            *framePtr = frame;
+            SetAstModuleContentFrame(node, framePtr);
             break;
         }
-        case AST_MODULE:
-        {
-            AstNode* module = node;
-            Frame* moduleFrame = malloc(sizeof(Frame));
-            *moduleFrame = popFrame(primer);
-            SetAstModuleContentFrame(module,moduleFrame);
-            break;
-        }
+
         case AST_CHAIN:
         case AST_VPAREN:
         case AST_VLAMBDA:

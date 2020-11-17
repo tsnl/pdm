@@ -85,6 +85,7 @@ static int exportModuleHeaders_postVisitor(void* emitter, AstNode* node);
 static int exportModule_preVisitor(void* emitter, AstNode* node);
 static ExportedType exportType(Typer* typer, Type* type);
 static ExportedValue exportValue(Emitter* emitter, AstNode* exprNode);
+static char* exportName(AstNode* node);
 
 //
 //
@@ -114,35 +115,38 @@ int exportModuleHeaders_postVisitor(void* rawEmitter, AstNode* node) {
         funcValue->llvm = LLVMAddFunction(emitter->module,"synthetic-function",exportedFuncType.llvm);
         LLVMSetFunctionCallConv(funcValue->llvm,LLVMCCallConv);
 
-        SetAstNodeLlvmRepr(node,funcValue);
+        AstNode_SetExportedPtr(node,funcValue);
     } 
     else if (nodeKind == AST_STMT_EXTERN) {
-        // similar to lambda:
         AstNode* externNode = node;
-        char const* nameStr = GetSymbolText(GetAstExternStmtName(externNode));
+
+        // exporting and storing an ExportedValue* as LlvmRepr
+        char const* nameStr = exportName(externNode);
         Type* funcType = GetAstNodeTypingExt_Value(externNode);
         ExportedType exportedFuncType = exportType(emitter->typer,funcType);
         ExportedValue* externValue = malloc(sizeof(ExportedValue));
         externValue->native = externNode;
         externValue->type = exportedFuncType;
-        externValue->llvm = LLVMAddFunction(emitter->module,nameStr,exportedFuncType.llvm);
+        externValue->llvm = LLVMAddFunction(emitter->module, nameStr, exportedFuncType.llvm);
         LLVMSetFunctionCallConv(externValue->llvm,LLVMCCallConv);
-        
-        SetAstNodeLlvmRepr(externNode,externValue);
+        AstNode_SetExportedPtr(externNode,externValue);
     }
     else if (nodeKind == AST_STMT_VDEF) {
         AstNode* vdef = node;
 
+        // renaming and freeing name:
         // note: exportValue(RHS) = the synthetic for this function.
+        char* exportedName = exportName(vdef); 
         SymbolID lhs = GetAstDefValueStmtLhs(vdef);
         AstNode* rhsNode = GetAstDefValueStmtRhs(vdef);
         ExportedValue exportedRhs = exportValue(emitter,rhsNode);
-        LLVMSetValueName(exportedRhs.llvm,GetSymbolText(lhs));
+        LLVMSetValueName(exportedRhs.llvm,exportedName);
+        free(exportedName); exportedName = NULL;
         
         ExportedValue* llvmRepr = malloc(sizeof(ExportedValue));
         *llvmRepr = exportedRhs;
 
-        SetAstNodeLlvmRepr(vdef,llvmRepr);
+        AstNode_SetExportedPtr(vdef,llvmRepr);
     }
     else if (nodeKind == AST_LITERAL_STRING) {
         AstNode* literalString = node;
@@ -159,7 +163,7 @@ int exportModuleHeaders_postVisitor(void* rawEmitter, AstNode* node) {
         LLVMSetLinkage(expVal->llvm, LLVMInternalLinkage);
         LLVMSetGlobalConstant(expVal->llvm,1);
 
-        SetAstNodeLlvmRepr(literalString, expVal);
+        AstNode_SetExportedPtr(literalString, expVal);
     }
     return 1;
 }
@@ -202,7 +206,7 @@ int exportModule_preVisitor(void* rawEmitter, AstNode* node) {
             argExpVal->native = argField;
             argExpVal->type = argExpType;
             argExpVal->llvm = llvmArgMem;
-            SetAstNodeLlvmRepr(argField,argExpVal);
+            AstNode_SetExportedPtr(argField,argExpVal);
         }
 
         // exporting the body:
@@ -581,7 +585,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                     LLVMSetValueName(exportedRhs->llvm,fmtname);
                     free(fmtname);
 
-                    SetAstNodeLlvmRepr(lhsField,exportedRhs);
+                    AstNode_SetExportedPtr(lhsField,exportedRhs);
                     exportedValue.llvm = NULL;
                 } else {
                     COMPILER_ERROR("NotImplemented: let statements with destructured, non singleton, LHS vpatterns.");
@@ -1236,26 +1240,109 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 DefnScope* refedDefnScope = GetAstColonNameRefedDefnScope(colonNode);
                 AstNode* refedDefnNode = GetDefnNode(refedDefnScope);
 
-                // HACK: if the defined node is a 'def' statement, obtain the RHS instead
-                if (GetAstNodeKind(refedDefnNode) == AST_STMT_VDEF) {
-                    refedDefnNode = GetAstDefValueStmtRhs(refedDefnNode);
+                // if the defined node is an 'extern' statement, storing the llvm value directly:
+                if (GetAstNodeKind(refedDefnNode) == AST_STMT_EXTERN) {
+                    ExportedValue* externLlvmRepr = GetAstNodeLlvmRepr(refedDefnNode);
+                    exportedValue.llvm = externLlvmRepr->llvm;
+                    COMPILER_ASSERT(exportedValue.llvm != NULL, "NULL extern");
+                    // COMPILER_ERROR("DISABLED: 'extern' statements");
+                    // exportedValue.llvm = NULL;
+                } else {
+                    // HACK: if the defined node is a 'def', obtain the RHS instead
+                    if (GetAstNodeKind(refedDefnNode) == AST_STMT_VDEF) {
+                        refedDefnNode = GetAstDefValueStmtRhs(refedDefnNode);
+                    } 
+                    ExportedValue exportedRefedValue = exportValue(emitter, refedDefnNode);
+                    exportedValue.llvm = exportedRefedValue.llvm;
                 }
-
-                ExportedValue exportedRefedValue = exportValue(emitter, refedDefnNode);
-                exportedValue.llvm = exportedRefedValue.llvm;
                 break;
             }
 
             default:
             {
                 AstKind nodeKind = GetAstNodeKind(exportedValue.native);
-                COMPILER_ERROR_VA("NotImplemented: 'exportValue' for AST node of kind '%s'",AstKindAsText(nodeKind));
+                COMPILER_ERROR_VA("NotImplemented: 'exportValue' for AST node of kind '%s'", AstKindAsText(nodeKind));
                 break;
             }
         }
     }
     
     return exportedValue;
+}
+char* exportName(AstNode* node) {
+    char* exportedName = NULL;
+
+    // ensuring node if extern or def:
+    AstKind nodeKind = GetAstNodeKind(node);
+    COMPILER_ASSERT(
+        (nodeKind == AST_STMT_VDEF) ||
+        (nodeKind == AST_STMT_EXTERN),
+        "exportName: invalid node->kind: expected 'def' or 'extern'"
+    );
+
+    // defedName
+    // each parent namespace appends a name 'fragment' to an SB that
+    // initially contains just the defined symbol.
+    char const* defedName = NULL; {
+        if (nodeKind == AST_STMT_VDEF) {
+            defedName = GetSymbolText(GetAstDefValueStmtLhs(node));
+        } else if (nodeKind == AST_STMT_EXTERN) {
+            defedName = GetSymbolText(GetAstExternStmtName(node));
+        } else {
+            COMPILER_ERROR_VA("exportName: unknown node kind: %s", AstKindAsText(nodeKind));
+            return NULL;
+        }
+    }
+    
+    // separator: 3 underscores
+    char separator[] = "_" "_" "_";
+    int separatorLen = 3;
+
+    // creating the SB, length of all fragments added up:
+    char const** fragmentsSb = NULL; {
+        sb_push(fragmentsSb, defedName);
+    }
+    int fragmentsFlatLen = strlen(defedName);
+    int fragmentsCount = 1;
+
+    // traversing each parent module, adding to fragmentsSb:
+    AstNode* currentParentModuleStmt = GetAstNodeParentModuleStmt(node);
+    while (currentParentModuleStmt != NULL) {
+        SymbolID nameSymbolID = AstModuleStmt_GetName(currentParentModuleStmt);
+        char const* parentModuleNameFrag = GetSymbolText(nameSymbolID);
+        sb_push(fragmentsSb, parentModuleNameFrag);
+        fragmentsFlatLen += strlen(parentModuleNameFrag);
+        fragmentsCount += 1;
+
+        currentParentModuleStmt = GetAstNodeParentModuleStmt(currentParentModuleStmt);
+    }
+    
+    // for N>=1 fragments, we add N-1 separators
+    int exportedFlatLen = 0;
+    exportedFlatLen += fragmentsFlatLen;
+    if (fragmentsCount > 1) {
+        exportedFlatLen += separatorLen * (fragmentsCount - 1);
+    }
+
+    // allocating, copying:
+    exportedName = malloc(exportedFlatLen+1);
+    int offset = 0;
+    for (int fi = fragmentsCount-1; fi >= 0; fi--) {
+        int ch;
+        for (int j = 0; (ch = fragmentsSb[fi][j]); j++) {
+            exportedName[offset++] = ch;
+        }
+        if (fi != 0) {
+            for (int si = 0; si < separatorLen; si++) {
+                exportedName[offset++] = separator[si];
+            }
+        }
+    }
+    exportedName[offset++] = '\0';
+    COMPILER_ASSERT(offset == exportedFlatLen+1, "Invalid exportedName");
+
+    // freeing/moving/returning:
+    return exportedName;
 }
 
 void buildLlvmField(Typer* typer, void* rawSBP, SymbolID name, Type* type) {
@@ -1281,7 +1368,7 @@ int EmitLlvmModule(Typer* typer, AstNode* module) {
         COMPILER_ERROR_VA("LLVMVerifyModule failed with message(s):\n%s", verifyMsg);
         result = 0;
     } else {
-        SetAstNodeLlvmRepr(module,emitter.module);
+        AstNode_SetExportedPtr(module,emitter.module);
 
         if (DEBUG) {
             printf("!!- LLVM verify msg:\n<msg>\n%s</msg>\n", verifyMsg);

@@ -858,9 +858,9 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
             name = "set";
             break;
         }
-        case TK_KW_MODULE:
+        case TK_KW_ATTACH:
         {
-            name = "module";
+            name = "attach";
             break;
         }
         case TK_KW_FROM:
