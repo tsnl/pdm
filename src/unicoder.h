@@ -7,7 +7,7 @@ typedef struct Utf8String Utf8String;
 typedef struct Utf32String Utf32String;
 
 struct Utf8String {
-    uint8_t* buf;
+    int8_t* buf;
     int64_t count;
 };
 struct Utf32String {

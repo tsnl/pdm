@@ -27,7 +27,7 @@ static SymbolID kwMatchSymbolID = 0;
 static SymbolID kwWithSymbolID = 0;
 static SymbolID kwReturnSymbolID = 0;
 static SymbolID kwDiscardSymbolID = 0;
-static SymbolID kwExternSymbolID = 0;
+static SymbolID kwLinkSymbolID = 0;
 static SymbolID kwFunSymbolID = 0;
 static SymbolID kwDefSymbolID = 0;
 static SymbolID kwLetSymbolID = 0;
@@ -41,6 +41,8 @@ static SymbolID kwEnumSymbolID = 0;
 static SymbolID kwModSymbolID = 0;
 static SymbolID kwTTupleSymbolID = 0;
 static SymbolID kwTArraySymbolID = 0;
+static SymbolID kwFromSymbolID = 0;
+static SymbolID kwAsSymbolID = 0;
 
 static TokenKind lexOneToken(Source* source, TokenInfo* info, Span* span);
 static TokenKind lexOneSimpleToken(Source* source);
@@ -75,7 +77,7 @@ void InitLexer(void) {
     kwWithSymbolID = strings_intern(symbolsDict, "with");
     kwReturnSymbolID = strings_intern(symbolsDict, "return");
     kwDiscardSymbolID = strings_intern(symbolsDict, "discard");
-    kwExternSymbolID = strings_intern(symbolsDict, "extern");
+    kwLinkSymbolID = strings_intern(symbolsDict, "link");
     kwFunSymbolID = strings_intern(symbolsDict, "fun");
     kwDefSymbolID = strings_intern(symbolsDict, "def");
     kwLetSymbolID = strings_intern(symbolsDict, "let");
@@ -87,6 +89,10 @@ void InitLexer(void) {
     kwTypeSymbolID = strings_intern(symbolsDict, "type");
     kwEnumSymbolID = strings_intern(symbolsDict, "enum");
     kwModSymbolID = strings_intern(symbolsDict, "mod");
+    kwTArraySymbolID = strings_intern(symbolsDict, "Array");
+    kwTTupleSymbolID = strings_intern(symbolsDict, "Tuple");
+    kwFromSymbolID = strings_intern(symbolsDict, "from");
+    kwAsSymbolID = strings_intern(symbolsDict, "as");
 }
 
 void DeInitLexer(void) {
@@ -160,7 +166,8 @@ TokenKind lexOneToken(Source* source, TokenInfo* info, Span* span) {
 
     // populating lastLoc, creating span, returning VALID token kind found so far:
     Loc lastLoc; 
-    int headPos = GetSourceReaderHeadLoc(source,&lastLoc);
+    // int headPos = GetSourceReaderHeadLoc(source,&lastLoc);
+    GetSourceReaderHeadLoc(source,&lastLoc);
     *span = NewSpan(firstLoc,lastLoc);
     return outKind;
 }
@@ -492,7 +499,7 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* infoP) {
     if (kwID == kwWithSymbolID) { return TK_KW_WITH; }
     if (kwID == kwReturnSymbolID) { return TK_KW_RETURN; }
     if (kwID == kwDiscardSymbolID) { return TK_KW_DISCARD; }
-    if (kwID == kwExternSymbolID) { return TK_KW_EXTERN; }
+    if (kwID == kwLinkSymbolID) { return TK_KW_LINK; }
     if (kwID == kwFunSymbolID) { return TK_KW_FUN; }
     if (kwID == kwDefSymbolID) { return TK_KW_DEF; }
     if (kwID == kwLetSymbolID) { return TK_KW_LET; }
@@ -506,6 +513,8 @@ TokenKind lexOneIdOrKeyword(Source* source, TokenInfo* infoP) {
     if (kwID == kwModSymbolID) { return TK_KW_MOD; }
     if (kwID == kwTTupleSymbolID) { return TK_KW_TTUPLE; }
     if (kwID == kwTArraySymbolID) { return TK_KW_TARRAY; }
+    if (kwID == kwFromSymbolID) { return TK_KW_FROM; }
+    if (kwID == kwAsSymbolID) { return TK_KW_AS; }
     if (DEBUG) {
         printf("!!- Keyword not implemented: '%s' (id=%d)\n", strings_lookup_id(symbolsDict, kwID), kwID);
     } else {
@@ -778,9 +787,9 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
             name = "def";
             break;
         }
-        case TK_KW_EXTERN:
+        case TK_KW_LINK:
         {
-            name = "extern";
+            name = "link";
             break;
         }
         case TK_KW_IMPORT:
@@ -856,11 +865,6 @@ int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength) {
         case TK_KW_SET:
         {
             name = "set";
-            break;
-        }
-        case TK_KW_ATTACH:
-        {
-            name = "attach";
             break;
         }
         case TK_KW_FROM:

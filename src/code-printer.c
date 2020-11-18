@@ -50,6 +50,11 @@ void PrintText(CodePrinter* printer, char const* text) {
         PrintChar(printer, *text);
     }
 }
+void PrintUtf8String(CodePrinter* printer, Utf8String utf8string) {
+    for (int index = 0; index < utf8string.count; index++) {
+        PrintChar(printer, utf8string.buf[index]);
+    }
+}
 void PrintFormattedText(CodePrinter* printer, char const* fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -180,17 +185,46 @@ void PrintNode(CodePrinter* cp, AstNode* node) {
             }
             break;
         }
-        case AST_STMT_EXTERN:
+        case AST_STMT_IMPORT:
         {
-            SymbolID name = GetAstExternStmtName(node);
-            AstNode* pattern = GetAstExternPattern(node);
-            AstNode* typespec = GetAstExternTypespec(node);
-            PrintText(cp, "extern ");
+            PrintText(cp, "import ?");
+            break;
+        }
+        case AST_STMT_LINK:
+        {
+            PrintText(cp, "link ");
+            PrintUtf8String(cp, AstLinkStmt_GetReqSpecStr(node));
+            PrintText(cp, " {");
+            IndentPrinter(cp);
+            PrintText(cp, "\n");
+
+            int itemCount = AstLinkStmt_CountItems(node);
+            for (int index = 0; index < itemCount; index++) {
+                AstNode* itemNode = AstLinkStmt_GetItemAt(node, index);
+                PrintNode(cp, itemNode);
+                PrintText(cp, ";");
+                if (index+1 != itemCount) {
+                    PrintText(cp,"\n");
+                }
+            }
+            DeIndentPrinter(cp);
+            PrintText(cp,"\n}");
+            break;
+        }
+        case AST_STMT_LINK_ITEM:
+        {
+            SymbolID name = AstLinkItem_GetName(node);
+            AstNode* pattern = AstLinkItem_GetPattern(node);
+            AstNode* retTs = AstLinkItem_RetTs(node);
+            Utf8String alias = AstLinkItem_Alias(node);
+
             PrintText(cp, GetSymbolText(name));
             PrintChar(cp, ' ');
             PrintNode(cp, pattern);
             PrintText(cp, " -> ");
-            PrintNode(cp, typespec);
+            PrintNode(cp, retTs);
+            PrintText(cp, " from ");
+            PrintUtf8String(cp, alias);
             break;
         }
         case AST_ORPHANED_FIELD:

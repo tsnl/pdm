@@ -12,7 +12,7 @@
 #include "stb/stretchy_buffer.h"
 
 typedef struct AstScript            AstScript;
-typedef struct AstModule            AstModule;
+typedef struct AstModuleStmt        AstModuleStmt;
 typedef struct AstID                AstID;
 typedef union  AstInfo              AstInfo;
 typedef struct AstNodeList          AstNodeList;
@@ -28,8 +28,9 @@ typedef struct AstTLambda           AstTLambda;
 typedef struct AstLet               AstLet;
 typedef struct AstDef               AstDef;
 typedef struct AstVal               AstVal;
-typedef struct AstExtern            AstExtern;
 typedef struct AstTypedef           AstTypedef;
+typedef struct AstLinkStmt          AstLinkStmt;
+typedef struct AstLinkItem          AstLinkItem;
 typedef struct AstCheck             AstCheck;
 typedef struct AstUnary             AstUnary;
 typedef struct AstBinary            AstBinary;
@@ -37,7 +38,6 @@ typedef struct AstInt               AstInt;
 typedef struct AstChain             AstChain;
 typedef struct AstStruct            AstStruct;
 typedef struct AstVCast             AstVCast;
-typedef struct AstModuleStmt        AstModuleStmt;
 typedef struct AstImportStmt        AstImportStmt;
 typedef struct AstSetStmt           AstSetStmt;
 typedef struct AstArray             AstArray;
@@ -54,7 +54,7 @@ struct AstScript {
     AstNodeList* modules;
     Frame* frame;
 };
-struct AstModule {
+struct AstModuleStmt {
     SymbolID name;
     AstNodeList* items;
     Frame* frame;
@@ -122,6 +122,16 @@ struct AstTypedef {
     AstNode* rhs;
     // void* valueDefnType;
 };
+struct AstLinkStmt {
+    Utf8String linkedReqSpec;
+    AstNode** itemsSb;
+};
+struct AstLinkItem {
+    SymbolID name;
+    AstNode* pattern;
+    AstNode* retTs;
+    Utf8String alias;
+};
 struct AstCheck {
     AstNode* checked;
 };
@@ -155,15 +165,10 @@ struct AstVCast {
     AstNode* toTypespecT2V;
     AstNode* fromExpr;
 };
-struct AstModuleStmt {
+struct AstImportStmt {
     SymbolID boundName;
     Utf8String from;
     Utf8String as;
-};
-struct AstImportStmt {
-    SymbolID modName;
-    SymbolID suffix;
-    int glob;
 };
 struct AstSetStmt {
     AstNode* lhs;
@@ -179,7 +184,7 @@ struct AstBuiltinType {
 
 union AstInfo {
     AstScript           Script;
-    AstModule           Module;
+    AstModuleStmt           Module;
     AstID               ID;
     AstUnary            Unary;
     AstBinary           Binary;
@@ -198,8 +203,9 @@ union AstInfo {
     AstLet              Let;
     AstDef              Def;
     AstVal              Val;
-    AstExtern           Extern;
     AstTypedef          Typedef;
+    AstLinkStmt         LinkStmt;
+    AstLinkItem         LinkItem;
     AstCheck            Check;
     AstChain            Chain;
     AstNode*            Paren_item;
@@ -207,7 +213,6 @@ union AstInfo {
     AstNode*            T2V_typespec;
     AstNode*            V2T_expr;
     AstNode*            Ptr_pointee;
-    AstModuleStmt       ModuleStmt;
     AstImportStmt       ImportStmt;
     AstSetStmt          SetStmt;
     AstNode*            DiscardStmt_discarded;
@@ -311,9 +316,10 @@ static AstNode* helpNewAstCall(Span span, AstKind kind, AstNode* lhs, AstNode* a
 
 int isStmtKindModuleLevel(AstKind kind) {
     return (
+        kind == AST_STMT_IMPORT ||
         kind == AST_STMT_VDEF ||
         kind == AST_STMT_TDEF ||
-        kind == AST_STMT_EXTERN ||
+        kind == AST_STMT_LINK ||
         kind == AST_STMT_MODULE ||
         0
     );
@@ -386,7 +392,7 @@ void AttachToAstModule(AstNode* module, SymbolID boundName, char* from, char* as
 void PushStmtToAstModule(AstNode* module, AstNode* def) {
     COMPILER_ASSERT(def != NULL,"Cannot push NULL stmt to AstModule.");
     AstKind nodeKind = GetAstNodeKind(def);
-    COMPILER_ASSERT(isStmtKindModuleLevel(nodeKind), "Cannot push non-def/extern to AstModule.");
+    COMPILER_ASSERT_VA(isStmtKindModuleLevel(nodeKind), "Cannot push non-def/extern to AstModule: %s", AstKindAsText(nodeKind));
     pushListElement(module->as.Module.items, def);
 }
 
@@ -711,18 +717,11 @@ AstNode* NewAstTLambda(Span span, AstNode* pattern, AstNode* body) {
     return lambdaNode;
 }
 
-AstNode* NewAstAttachStmt(Span span, SymbolID boundName, Utf8String fromStr, Utf8String asStr) {
-    AstNode* stmt = newNode(span, AST_STMT_ATTACH);
-    stmt->as.ModuleStmt.boundName = boundName;
-    stmt->as.ModuleStmt.from = fromStr;
-    stmt->as.ModuleStmt.as = asStr;
-    return stmt;
-}
-AstNode* NewAstImportStmt(Span span, SymbolID module, SymbolID suffix, int glob) {
+AstNode* NewAstImportStmt(Span span, SymbolID boundName, Utf8String fromStr, Utf8String asStr) {
     AstNode* stmt = newNode(span, AST_STMT_IMPORT);
-    stmt->as.ImportStmt.modName = module;
-    stmt->as.ImportStmt.suffix = suffix;
-    stmt->as.ImportStmt.glob = glob;
+    stmt->as.ImportStmt.boundName = boundName;
+    stmt->as.ImportStmt.from = fromStr;
+    stmt->as.ImportStmt.as = asStr;
     return stmt;
 }
 
@@ -754,12 +753,19 @@ AstNode* NewAstTypedefEnumStmt(Span span, SymbolID lhs, AstNode* optPattern, Ast
     return ed;
 }
 
-AstNode* NewAstExternStmt(Span span, SymbolID lhs, AstNode* pattern, AstNode* typespec) {
-    AstNode* defNode = newNode(span, AST_STMT_EXTERN);
-    defNode->as.Extern.name = lhs;
-    defNode->as.Extern.pattern = pattern;
-    defNode->as.Extern.typespec = typespec;
-    return defNode;
+AstNode* NewAstLinkStmt(Span span, Utf8String linkedReqSpec, AstNode** mov_itemsSb) {
+    AstNode* link = newNode(span, AST_STMT_LINK);
+    link->as.LinkStmt.linkedReqSpec = linkedReqSpec;
+    link->as.LinkStmt.itemsSb = mov_itemsSb;
+    return link;
+}
+AstNode* NewAstLinkStmtItem(Span span, SymbolID lhs, AstNode* pattern, AstNode* typespec, Utf8String alias) {
+    AstNode* itemNode = newNode(span, AST_STMT_LINK_ITEM);
+    itemNode->as.LinkItem.name = lhs;
+    itemNode->as.LinkItem.pattern = pattern;
+    itemNode->as.LinkItem.retTs = typespec;
+    itemNode->as.LinkItem.alias = alias;
+    return itemNode;
 }
 
 AstNode* NewAstDiscardStmt(Span span, AstNode* discarded) {
@@ -1234,14 +1240,27 @@ AstNode* GetAstValStmtPattern(AstNode* valStmt) {
     return valStmt->as.Val.bodyPattern;
 }
 
-SymbolID GetAstExternStmtName(AstNode* externDef) {
-    return externDef->as.Extern.name;
+Utf8String AstLinkStmt_GetReqSpecStr(AstNode* linkStmt) {
+    return linkStmt->as.LinkStmt.linkedReqSpec;
 }
-AstNode* GetAstExternPattern(AstNode* externDef) {
-    return externDef->as.Extern.pattern;
+int AstLinkStmt_CountItems(AstNode* linkStmt) {
+    return sb_count(linkStmt->as.LinkStmt.itemsSb);
 }
-AstNode* GetAstExternTypespec(AstNode* externDef) {
-    return externDef->as.Extern.typespec;
+AstNode* AstLinkStmt_GetItemAt(AstNode* linkStmt, int index) {
+    return linkStmt->as.LinkStmt.itemsSb[index];
+}
+
+SymbolID AstLinkItem_GetName(AstNode* linkItem) {
+    return linkItem->as.LinkItem.name;
+}
+AstNode* AstLinkItem_GetPattern(AstNode*  linkItem) {
+    return linkItem->as.LinkItem.pattern;
+}
+AstNode* AstLinkItem_RetTs(AstNode*  linkItem) {
+    return linkItem->as.LinkItem.retTs;
+}
+Utf8String AstLinkItem_Alias(AstNode* linkItem) {
+    return linkItem->as.LinkItem.alias;
 }
 
 SymbolID GetAstTypedefStmtName(AstNode* td) {
@@ -1593,15 +1612,6 @@ inline static int recursivelyVisitChildren(void* context, AstNode* node, Visitor
             }
             return 1;
         }
-        case AST_STMT_EXTERN:
-        {
-            AstNode* pattern = GetAstExternPattern(node);
-            AstNode* typespec = GetAstExternTypespec(node);
-            return (
-                RecursivelyVisitAstNode(context, pattern, preVisitorCb, postVisitorCb) &&
-                RecursivelyVisitAstNode(context, typespec, preVisitorCb, postVisitorCb)
-            );
-        }
         case AST_STMT_TDEF:
         {
             AstNode* optPattern = GetAstTypedefStmtOptPattern(node);
@@ -1646,6 +1656,33 @@ inline static int recursivelyVisitChildren(void* context, AstNode* node, Visitor
         case AST_STMT_DISCARD:
         {
             return RecursivelyVisitAstNode(context,GetAstDiscardStmtDiscarded(node),preVisitorCb,postVisitorCb);
+        }
+        case AST_STMT_LINK:
+        {
+            int itemCount = AstLinkStmt_CountItems(node);
+            for (int index = 0; index < itemCount; index++) {
+                AstNode* itemNode = AstLinkStmt_GetItemAt(node, index);
+                if (!RecursivelyVisitAstNode(context, itemNode, preVisitorCb, postVisitorCb)) {
+                    return 0;
+                }
+            }
+            return 1;
+        }
+        case AST_STMT_LINK_ITEM:
+        {
+            // SymbolID name = AstLinkItem_GetName(node);
+            AstNode* pattern = AstLinkItem_GetPattern(node);
+            AstNode* retTs = AstLinkItem_RetTs(node);
+            // Utf8String alias = AstLinkItem_Alias(node);
+
+            return (
+                RecursivelyVisitAstNode(context, pattern, preVisitorCb, postVisitorCb) &&
+                RecursivelyVisitAstNode(context, retTs, preVisitorCb, postVisitorCb)
+            );
+        }
+        case AST_STMT_IMPORT:
+        {
+            return 1;
         }
         case AST_NULL:
         {
@@ -1779,8 +1816,8 @@ void* GetAstNodeLlvmRepr(AstNode* node) {
 // Reflection:
 //
 
-char const unaryOperatorTextArray[__UOP_COUNT][2] = {
-    [UOP_NOT] = "!",
+char const unaryOperatorTextArray[__UOP_COUNT][4] = {
+    [UOP_NOT] = "not",
     [UOP_GETREF] = "^",
     [UOP_DEREF] = "*"
 };
@@ -1832,7 +1869,8 @@ char const* AstKindAsText(AstKind kind) {
         case AST_STMT_TDEF: return "AST_STMT_TDEF";
         case AST_STMT_ASSERT: return "AST_STMT_ASSERT"; 
         case AST_STMT_RETURN: return "AST_STMT_RETURN";
-        case AST_STMT_EXTERN: return "AST_STMT_EXTERN"; 
+        case AST_STMT_LINK: return "AST_STMT_LINK"; 
+        case AST_STMT_LINK_ITEM: return "AST_STMT_LINK_ITEM";
         case AST_VCALL: return "AST_VCALL";
         case AST_TCALL: return "AST_TCALL";
         case AST_UNARY: return "AST_UNARY"; 
@@ -1856,6 +1894,7 @@ char const* AstKindAsText(AstKind kind) {
         case AST_VPTR: return "AST_VPTR";
         case AST_VDEF_BUILTIN: return "AST_VDEF_BUILTIN";
         case AST_BUILTIN_TYPEDEF: return "AST_BUILTIN_TYPEDEF";
+        case AST_STMT_IMPORT: return "AST_STMT_IMPORT";
         default: return "AST_?";
     }
 }

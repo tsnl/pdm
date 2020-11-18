@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+#include "useful.h"
 #include "ast.h"
 
 typedef enum CodePrinterFlags CodePrinterFlags;
@@ -21,6 +22,7 @@ struct CodePrinter {
 CodePrinter CreateCodePrinter(FILE* file, int flags);
 void PrintChar(CodePrinter* printer, char text);
 void PrintText(CodePrinter* printer, char const* text);
+void PrintUtf8String(CodePrinter* printer, Utf8String utf8string);
 void PrintFormattedText(CodePrinter* printer, char const* fmt, ...);
 void PrintNode(CodePrinter* cp, AstNode* node);
 void IndentPrinter(CodePrinter* printer);

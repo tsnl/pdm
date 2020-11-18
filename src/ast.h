@@ -31,7 +31,7 @@ enum AstKind {
     AST_VLAMBDA,AST_TLAMBDA,
     AST_ITE,
     AST_DOT_INDEX, AST_DOT_NAME, AST_COLON_NAME,
-    AST_STMT_VLET, AST_STMT_VDEF, AST_STMT_TDEF, AST_TDEF_ENUM, AST_STMT_EXTERN, AST_STMT_ASSERT, AST_STMT_RETURN,
+    AST_STMT_VLET, AST_STMT_VDEF, AST_STMT_TDEF, AST_TDEF_ENUM, AST_STMT_LINK, AST_STMT_LINK_ITEM, AST_STMT_ASSERT, AST_STMT_RETURN,
     AST_TCALL, AST_VCALL,
     AST_UNARY, AST_BINARY,
     AST_TPATTERN, AST_VPATTERN, AST_TPATTERN_SINGLETON, AST_VPATTERN_SINGLETON,
@@ -42,7 +42,7 @@ enum AstKind {
     AST_TYPE2VAL,
     AST_VAL2TYPE,
     AST_VDEF_BUILTIN, AST_BUILTIN_TYPEDEF,
-    AST_STMT_ATTACH, AST_STMT_IMPORT,
+    AST_STMT_IMPORT,
     AST_STMT_SET, AST_STMT_DISCARD,
 };
 
@@ -120,8 +120,7 @@ AstNode* NewAstColonName(Span span, AstNode* lhs, SymbolID rhs);
 AstNode* NewAstVLambda(Span span, AstNode* pattern, AstNode* body);
 AstNode* NewAstTLambda(Span span, AstNode* pattern, AstNode* body);
 
-AstNode* NewAstAttachStmt(Span span, SymbolID boundName, Utf8String fromStr, Utf8String asStr);
-AstNode* NewAstImportStmt(Span span, SymbolID module, SymbolID suffix, int glob);
+AstNode* NewAstImportStmt(Span span, SymbolID boundName, Utf8String fromStr, Utf8String asStr);
 
 AstNode* NewAstLetStmt(Span span, AstNode* lhsPattern, AstNode* rhs);
 AstNode* NewAstDefStmt(Span span, SymbolID lhs, AstNode* optTemplatePattern, AstNode* pattern, AstNode* rhs);
@@ -130,7 +129,8 @@ AstNode* NewAstTypedefEnumStmt(Span span, SymbolID lhs, AstNode* optPattern, Ast
 AstNode* NewAstSetStmt(Span span, AstNode* lhs, AstNode* rhs);
 AstNode* NewAstAssertStmt(Span span, AstNode* checked);
 AstNode* NewAstDiscardStmt(Span span, AstNode* discarded);
-AstNode* NewAstExternStmt(Span span, SymbolID lhs, AstNode* pattern, AstNode* typespec);
+AstNode* NewAstLinkStmt(Span span, Utf8String linkedFilepath, AstNode** mov_itemsSb);
+AstNode* NewAstLinkStmtItem(Span span, SymbolID lhs, AstNode* pattern, AstNode* typespec, Utf8String alias);
 
 AstNode* NewAstVCall(Span span, AstNode* lhs, AstNode* args[], int argsCount);
 AstNode* NewAstVCallWithArgsSb(Span span, AstNode* lhs, AstNode** mov_argsSb);
@@ -242,9 +242,18 @@ AstNode* GetAstValStmtOptTemplatePattern(AstNode* valStmt);
 SymbolID GetAstValStmtLhs(AstNode* valStmt);
 AstNode* GetAstValStmtPattern(AstNode* valStmt);
 
-SymbolID GetAstExternStmtName(AstNode* externDef);
-AstNode* GetAstExternPattern(AstNode* externDef);
-AstNode* GetAstExternTypespec(AstNode* externDef);
+Utf8String AstLinkStmt_GetReqSpecStr(AstNode* linkStmt);
+int AstLinkStmt_CountItems(AstNode* linkStmt);
+AstNode* AstLinkStmt_GetItemAt(AstNode* linkStmt, int index);
+
+SymbolID AstLinkItem_GetName(AstNode* linkItem);
+AstNode* AstLinkItem_GetPattern(AstNode*  linkItem);
+AstNode* AstLinkItem_RetTs(AstNode*  linkItem);
+Utf8String AstLinkItem_Alias(AstNode* linkItem);
+
+// SymbolID GetAstExternStmtName(AstNode* externDef);
+// AstNode* GetAstExternPattern(AstNode* externDef);
+// AstNode* GetAstExternTypespec(AstNode* externDef);
 
 SymbolID GetAstTypedefStmtName(AstNode* td);
 AstNode* GetAstTypedefStmtOptPattern(AstNode* td);

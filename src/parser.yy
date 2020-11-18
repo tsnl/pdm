@@ -61,8 +61,12 @@
 
 %type <nt> moduleContentStmt
 %type <nt> chainPrefixStmt letStmt setStmt discardStmt
-%type <nt> attachStmt importStmt externStmt
+%type <nt> importStmt
+
 %type <nt> typedefStmt_enum typedefStmt defStmt
+
+%type <nt> linkStmt linkStmtItem
+%type <ntSb> linkStmtContent
 
 //
 // Shared:
@@ -140,7 +144,7 @@
 
 %token TK_KW_NAMESPACE  "'namespace'"
 %token TK_KW_MOD "'mod'"
-%token TK_KW_DO "'do'"
+%token TK_KW_DO "'do'"              // deprecated?
 %token TK_KW_IF "'if'" 
 %token TK_KW_THEN "'then'"
 %token TK_KW_ELSE "'else'"
@@ -149,10 +153,10 @@
 %token TK_KW_WITH "'with'"
 %token TK_KW_RETURN "'return'"      // deprecated?
 %token TK_KW_DISCARD "'discard'"    // deprecated?
-%token TK_KW_ATTACH "'attach'"
+%token TK_KW_REQUIRE "'require'"    // deprecated?
 %token TK_KW_IMPORT "'import'"
 %token TK_KW_EXPORT "'export'"      // deprecated? 
-%token TK_KW_EXTERN "'extern'"
+%token TK_KW_LINK "'link'"
 %token TK_KW_FROM "'from'" 
 %token TK_KW_AS "'as'"
 %token TK_KW_FUN "'fun'"
@@ -232,7 +236,6 @@ scriptContent
     ;
 scriptContentStmt
     : moduleStmt    { $$ = $1; }
-    | externStmt    { $$ = $1; }
     ;
 
 /*
@@ -263,16 +266,15 @@ setStmt
     : TK_KW_SET expr TK_BIND expr   { $$ = NewAstSetStmt(@$, $2, $4); }
     ; 
 discardStmt
-    : TK_KW_DO expr    { $$ = NewAstDiscardStmt(@$, $2); }
+    : expr    { $$ = NewAstDiscardStmt(@$, $1); }
     ;
 
 moduleContentStmt
     : defStmt               { $$ = $1; }
     | typedefStmt           { $$ = $1; }
     | typedefStmt_enum      { $$ = $1; }
-    | attachStmt            { $$ = $1; }
     | importStmt            { $$ = $1; }
-    | externStmt            { $$ = $1; }
+    | linkStmt              { $$ = $1; }
     | moduleStmt            { $$ = $1; }
     ;
 defStmt
@@ -286,16 +288,19 @@ typedefStmt_enum
     : TK_KW_ENUM tid tpattern TK_BIND vstruct  { $$ = NewAstTypedefEnumStmt(@$, $2.ID_symbolID, $3, $5); }
     ;
 
-attachStmt
-    : TK_KW_ATTACH vid TK_KW_FROM stringl TK_KW_AS stringl   { $$ = NewAstAttachStmt(@$, $2.ID_symbolID, $4.String_utf8string, $6.String_utf8string); }
-    ;
 importStmt
-    : TK_KW_IMPORT vid TK_DOT vid               { $$ = NewAstImportStmt(@$, $2.ID_symbolID, $4.ID_symbolID, 0); }
-    | TK_KW_IMPORT vid TK_DOT vid TK_ASTERISK   { $$ = NewAstImportStmt(@$, $2.ID_symbolID, $4.ID_symbolID, 1); }
+    : TK_KW_IMPORT vid TK_KW_FROM stringl TK_KW_AS stringl  { $$ = NewAstImportStmt(@$, $2.ID_symbolID, $4.String_utf8string, $6.String_utf8string); }
     ;
 
-externStmt
-    : TK_KW_EXTERN TK_KW_DEF vid vpattern TK_ARROW typespec   { $$ = NewAstExternStmt(@$, $3.ID_symbolID, $4, NewAstType2Val(@6,$6)); }
+linkStmt
+    : TK_KW_LINK stringl TK_LCYBRK linkStmtContent TK_RCYBRK   { $$ = NewAstLinkStmt(@$, $2.String_utf8string, $4); }
+    ;
+linkStmtItem
+    : vid vpattern TK_ARROW typespec TK_KW_FROM stringl     { $$ = NewAstLinkStmtItem(@$, $1.ID_symbolID, $2, NewAstType2Val(@4,$4), $6.String_utf8string); }
+    ;
+linkStmtContent
+    : linkStmtItem TK_SEMICOLON                     { $$ = NULL; sb_push($$,$1); }
+    | linkStmtContent linkStmtItem TK_SEMICOLON     { $$ = $1; sb_push($$,$2); }
     ;
 
 /*

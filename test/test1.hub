@@ -1,10 +1,17 @@
-extern def malloc (size U64) -> U8^;
-extern def puts (s String) -> U32;
+mod basic {
+    link "./basic.c" {
+        alloc (size U64) -> U8^ from "./basic.c";
+        puts (s String) -> U32  from "./basic.c";
+    };
+};
 
 mod print {
-    extern def string (s String) -> Unit;
-    extern def s32 (s S32) -> Unit;
-    extern def line () -> Unit;
+    link "./print.c" {
+        string (s String) -> Unit   from "print_string";
+        s32 (s S32) -> Unit         from "print_s32";
+        f32 (f F32) -> Unit         from "print_f32";
+        line () -> Unit             from "print_line";
+    };
 };
 
 mod fibonaccis {
@@ -23,37 +30,39 @@ mod fibonaccis {
 
     def print_fibonacci_table_until (n S32, ascend_not_descend U1) -> Unit {
         let result S32 = fib(n);
-        do if (n != 0) then {
+        if (n != 0) then {
             # if printing in ascending order, then print all prior fibonaccis
             # before fib(n):
-            do if (ascend_not_descend) then {
-                do print_fibonacci_table_until(n-1, U1(1));
+            if (ascend_not_descend) then {
+                print_fibonacci_table_until(n-1, U1(1));
             };
 
             # printing fib(n) on one line
-            do print:string("fibonacci(\0");
-            do print:s32(n);
-            do print:string(") = \0");
-            do print:s32(fib(n));
-            do print:line();
+            print:string("fibonacci(\0");
+            print:s32(n);
+            print:string(") = \0");
+            print:s32(fib(n));
+            print:line();
 
             # if printing in descending order, then pring all prior fibonaccis
             # after fib(n)
-            do if (not ascend_not_descend) then {
-                do print_fibonacci_table_until(n-1, U1(0));
+            if (not ascend_not_descend) then {
+                print_fibonacci_table_until(n-1, U1(0));
             };
         };
     };
 };
 
 mod test {
+    import hello from "./hello.pdml" as "slm";
+
     def test_1 () -> S32 {
         let n S32 = 40;
-        do print:string("FIBONACCI PRINTER until \0");
-        do print:s32(n);
-        do print:line();
+        print:string("FIBONACCI PRINTER until \0");
+        print:s32(n);
+        print:line();
 
-        do fibonaccis:print_fibonacci_table_until(n, U1(1));
+        fibonaccis:print_fibonacci_table_until(n, U1(1));
         0
     };
 };

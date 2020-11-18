@@ -226,8 +226,8 @@ Type* pushToTypeBuf(TypeBuf* buf, TypeKind kind);
 // ATNs: a way to track compounds:
 static AdtTrieNode* newATN(AdtTrieNode* parent, Type* owner);
 static AdtTrieNode* getAtnChild(AdtTrieNode* root, AdtOperator operator, TypeField* typefields, int typefieldCount, int index, int noNewEdges);
-static AdtTrieNode* getCommonAncestorATN(AdtTrieNode* a, AdtTrieNode* b);
-static int isAncestorATN(AdtTrieNode* parent, AdtTrieNode* child);
+// static AdtTrieNode* getCommonAncestorATN(AdtTrieNode* a, AdtTrieNode* b);
+// static int isAncestorATN(AdtTrieNode* parent, AdtTrieNode* child);
 
 // typing constraints:
 // 1. we attempt to eagerly check typing constraints (CONFIRM/FAILURE), but
@@ -278,7 +278,7 @@ static void printType(Typer* typer, Type* type);
 static void printTypeLn(Typer* typer, Type* type);
 
 // deprecated:
-static Type* getConcreteType__deprecated(Typer* typer, Type* visited, Type*** visitedSBP);
+// static Type* getConcreteType__deprecated(Typer* typer, Type* visited, Type*** visitedSBP);
 
 //
 //
@@ -453,23 +453,23 @@ AdtTrieNode* getAtnChild(AdtTrieNode* parent, AdtOperator operator, TypeField* t
         }
     }
 }
-AdtTrieNode* getCommonAncestorATN(AdtTrieNode* a, AdtTrieNode* b) {
-    if (a == b) {
-        return a;
-    } else if (a == NULL) {
-        return NULL;
-    } else if (b == NULL) {
-        return NULL;
-    } else {
-        return getCommonAncestorATN(
-            getCommonAncestorATN(a->parent, b),
-            getCommonAncestorATN(a, b->parent)
-        );
-    }
-}
-int isAncestorATN(AdtTrieNode* parent, AdtTrieNode* child) {
-    return getCommonAncestorATN(parent,child) == parent;
-}
+// AdtTrieNode* getCommonAncestorATN(AdtTrieNode* a, AdtTrieNode* b) {
+//     if (a == b) {
+//         return a;
+//     } else if (a == NULL) {
+//         return NULL;
+//     } else if (b == NULL) {
+//         return NULL;
+//     } else {
+//         return getCommonAncestorATN(
+//             getCommonAncestorATN(a->parent, b),
+//             getCommonAncestorATN(a, b->parent)
+//         );
+//     }
+// }
+// int isAncestorATN(AdtTrieNode* parent, AdtTrieNode* child) {
+//     return getCommonAncestorATN(parent,child) == parent;
+// }
 
 //
 //
@@ -1271,7 +1271,7 @@ int typer_post(void* rawTyper, AstNode* node) {
         }
         case AST_LITERAL_INT:
         {
-            size_t value = GetAstIntLiteralValue(node);
+            // size_t value = GetAstIntLiteralValue(node);
             Type* type;
             // just default to S32
             type = GetIntType(typer,INT_32,1);
@@ -1630,11 +1630,15 @@ int typer_post(void* rawTyper, AstNode* node) {
             }
             break;
         }
-        case AST_STMT_EXTERN:
+        case AST_STMT_LINK:
+        {
+            break;
+        }
+        case AST_STMT_LINK_ITEM:
         {
             Loc loc = GetAstNodeLoc(node);
 
-            AstNode* lhsPattern = GetAstExternPattern(node);
+            AstNode* lhsPattern = AstLinkItem_GetPattern(node);
             int patternCount = GetAstPatternLength(lhsPattern);
             Type** argTypeBuf = NULL;
             if (patternCount > 0) {
@@ -1648,7 +1652,7 @@ int typer_post(void* rawTyper, AstNode* node) {
                 }
             }
 
-            AstNode* rhsTypespec = GetAstExternTypespec(node);
+            AstNode* rhsTypespec = AstLinkItem_RetTs(node);
             Type* rhsTypespecType = GetAstNodeTypingExt_Value(rhsTypespec);
             
             Type* defType = GetAstNodeTypingExt_Value(node);
@@ -1656,7 +1660,8 @@ int typer_post(void* rawTyper, AstNode* node) {
             if (defType && rhsTypespecType) {
                 // filling func as a solution (supertype) for defType
                 Type* solnType = NewOrGetFuncType(typer,patternCount,argTypeBuf,rhsTypespecType);
-                TypingResult result = requireSubtyping(typer,"extern",loc,solnType,defType);
+                // TypingResult result = requireSubtyping(typer,"extern",loc,solnType,defType);
+                requireSubtyping(typer,"extern",loc,solnType,defType);
             }
 
             break;

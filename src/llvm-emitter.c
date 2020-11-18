@@ -117,7 +117,7 @@ int exportModuleHeaders_postVisitor(void* rawEmitter, AstNode* node) {
 
         AstNode_SetExportedPtr(node,funcValue);
     } 
-    else if (nodeKind == AST_STMT_EXTERN) {
+    else if (nodeKind == AST_STMT_LINK) {
         AstNode* externNode = node;
 
         // exporting and storing an ExportedValue* as LlvmRepr
@@ -137,7 +137,7 @@ int exportModuleHeaders_postVisitor(void* rawEmitter, AstNode* node) {
         // renaming and freeing name:
         // note: exportValue(RHS) = the synthetic for this function.
         char* exportedName = exportName(vdef); 
-        SymbolID lhs = GetAstDefValueStmtLhs(vdef);
+        // SymbolID lhs = GetAstDefValueStmtLhs(vdef);
         AstNode* rhsNode = GetAstDefValueStmtRhs(vdef);
         ExportedValue exportedRhs = exportValue(emitter,rhsNode);
         LLVMSetValueName(exportedRhs.llvm,exportedName);
@@ -1165,7 +1165,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                     }
                     else if ((GetTypeKind(concreteTo) == T_INT) && (GetTypeKind(concreteFrom) == T_INT)) {
                         int toIsSigned = GetIntTypeIsSigned(concreteTo);
-                        int fromIsSigned = GetIntTypeIsSigned(concreteFrom);
+                        // int fromIsSigned = GetIntTypeIsSigned(concreteFrom);
                         int toWidth = GetTypeSizeInBytes(typer,concreteTo);
                         int fromWidth = GetTypeSizeInBytes(typer,concreteFrom);
                         
@@ -1241,7 +1241,7 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 AstNode* refedDefnNode = GetDefnNode(refedDefnScope);
 
                 // if the defined node is an 'extern' statement, storing the llvm value directly:
-                if (GetAstNodeKind(refedDefnNode) == AST_STMT_EXTERN) {
+                if (GetAstNodeKind(refedDefnNode) == AST_STMT_LINK) {
                     ExportedValue* externLlvmRepr = GetAstNodeLlvmRepr(refedDefnNode);
                     exportedValue.llvm = externLlvmRepr->llvm;
                     COMPILER_ASSERT(exportedValue.llvm != NULL, "NULL extern");
@@ -1276,9 +1276,19 @@ char* exportName(AstNode* node) {
     AstKind nodeKind = GetAstNodeKind(node);
     COMPILER_ASSERT(
         (nodeKind == AST_STMT_VDEF) ||
-        (nodeKind == AST_STMT_EXTERN),
+        (nodeKind == AST_STMT_LINK),
         "exportName: invalid node->kind: expected 'def' or 'extern'"
     );
+
+    // extern statements uniquely export just the alias:
+    if (nodeKind == AST_STMT_LINK_ITEM) {
+        // fixme: hacky, only works with ASCII subset of UTF-8, leaks memory
+        Utf8String alias = AstLinkItem_Alias(node);
+        char* outName = malloc(1+alias.count);
+        strncpy(outName,(char const*)alias.buf,alias.count);
+        outName[alias.count] = '\0';
+        return outName;
+    }
 
     // defedName
     // each parent namespace appends a name 'fragment' to an SB that
@@ -1286,8 +1296,6 @@ char* exportName(AstNode* node) {
     char const* defedName = NULL; {
         if (nodeKind == AST_STMT_VDEF) {
             defedName = GetSymbolText(GetAstDefValueStmtLhs(node));
-        } else if (nodeKind == AST_STMT_EXTERN) {
-            defedName = GetSymbolText(GetAstExternStmtName(node));
         } else {
             COMPILER_ERROR_VA("exportName: unknown node kind: %s", AstKindAsText(nodeKind));
             return NULL;

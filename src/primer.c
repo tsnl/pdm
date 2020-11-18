@@ -376,8 +376,8 @@ int primer_pre_earlydef(void* rawPrimer, AstNode* node) {
         for (size_t index = 0; index < moduleStmtLength; index++) {
             // todo: HACKY let the symbol define itself as type or value in `PrimeScript`
             AstNode* stmt = AstModuleStmt_GetStmtAt(node, index);
-            Loc loc = GetAstNodeLoc(stmt);
-            AstKind stmtKind = GetAstNodeKind(stmt);
+            // Loc loc = GetAstNodeLoc(stmt);
+            // AstKind stmtKind = GetAstNodeKind(stmt);
             
             if (0 == primer_pre_earlydef(primer, stmt)) {
                 return 0;
@@ -399,10 +399,23 @@ int primer_pre_earlydef(void* rawPrimer, AstNode* node) {
         SetAstNodeTypingExt_Value(node,valueType);
         return 1;
     }
-    else if (nodeKind == AST_STMT_EXTERN) {
+    else if (nodeKind == AST_STMT_LINK) {
+        // Loc loc = GetAstNodeLoc(node);
+
+        int itemCount = AstLinkStmt_CountItems(node);
+        for (int index = 0; index < itemCount; index++) {
+            AstNode* linkStmt = AstLinkStmt_GetItemAt(node,index);
+            int res = primer_pre_earlydef(primer, linkStmt);
+            if (res == 0) {
+                return 0;
+            }
+        }
+        return 1;
+    }
+    else if (nodeKind == AST_STMT_LINK_ITEM) {
         Loc loc = GetAstNodeLoc(node);
 
-        SymbolID lhs = GetAstExternStmtName(node);
+        SymbolID lhs = AstLinkItem_GetName(node);
         void* valueType = NewMetavarType(loc,primer->typer,"extern:%s",GetSymbolText(lhs));
         pushSymbol(primer,lhs,valueType,node);
         SetAstNodeTypingExt_Value(node,valueType);
@@ -418,14 +431,24 @@ int primer_pre_earlydef(void* rawPrimer, AstNode* node) {
         SetAstNodeTypingExt_Type(node, typingType);
         return 1;
     }
+    else if (nodeKind == AST_STMT_IMPORT) {
+        // todo: dispatch for the other module, prime, and prepare for type-checking.
+        COMPILER_ERROR("NotImplemented: primer_pre_earlydef for AST_STMT_IMPORT");
+        return 1;
+    }
     else {
         FeedbackNote* note = CreateFeedbackNote("statement here...", loc, NULL);
         PostFeedback(FBK_ERROR, note, "Unsupported statement kind in module: %s", AstKindAsText(nodeKind));
+        
         if (DEBUG) {
-            printf("!!- PrimeScript: Unsupported statement kind in module\n");
-        } else {
-            assert(0 && "PrimeScript: Unsupported statement kind in module");
+            COMPILER_ERROR_VA("Unsupported statement kind in module: %s", AstKindAsText(nodeKind));
         }
+
+        // if (DEBUG) {
+        //     printf("!!- PrimeScript: Unsupported statement kind in module\n");
+        // } else {
+        //     assert(0 && "PrimeScript: Unsupported statement kind in module");
+        // }
         return 0;
     }
 }
@@ -475,6 +498,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
                 // defining and storing on pattern
                 int isTyping = (nodeKind == AST_TPATTERN_FIELD || nodeKind == AST_TPATTERN_SINGLETON_FIELD);
                 int isValue = (nodeKind == AST_VPATTERN_FIELD || nodeKind == AST_VPATTERN_SINGLETON_FIELD);
+                COMPILER_ASSERT(isTyping ^ isValue, "Invalid typing/value pattern setup.");
 
                 Loc loc = GetAstNodeLoc(node);
                 SymbolID defnID = GetAstFieldName(node);
@@ -507,7 +531,7 @@ int primer_pre(void* rawPrimer, AstNode* node) {
                 pushFrame(primer,NULL,lambda);
                 break;
             }
-            case AST_STMT_EXTERN:
+            case AST_STMT_LINK:
             case AST_STMT_TDEF:
             {
                 pushFrame(primer,NULL,topFrameFunc(primer));
@@ -559,7 +583,7 @@ int primer_post(void* rawPrimer, AstNode* node) {
         case AST_VLAMBDA:
         case AST_VPATTERN_FIELD:
         case AST_VPATTERN_SINGLETON_FIELD:
-        case AST_STMT_EXTERN:
+        case AST_STMT_LINK:
         case AST_STMT_TDEF:
         case AST_VCAST:
         case AST_TYPE2VAL:
