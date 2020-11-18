@@ -1,5 +1,24 @@
 # Roadmap
 
+**Next:**
+
+- primer: factor into 4 passes
+  - pass 1: exclusively for validating arguments
+    - 'import' statements 'as' and 'from' strings must be checked
+  - pass 2: import dispatch + prime (add to a queue, all resolved before typing/checking/linking)
+  - pass 3: earlydef modules and module items
+  - pass 4: scoper (currently in primer)
+    - note: we don't need a separate pass for 'const'!
+      - usually only depends on AST node
+      - if ID, const iff refs value template param
+      - determination made by AST, so determining VID const = setting defn
+  - separate earlydef into its own pass, then push new frames for each module-stmt body (cf emitter), so all functions can access all modules, even imported ones.
+  - remove LookupSymbolInFrame, _SetContentFrame based lookup, and use the AST to lookup by name.
+
+- typer
+  - implement sub&copy in typer for ad-hoc monomorph templating w/o AST node copy
+  - requireSubtyping is too general: write specialized constraint functions and replace calls
+
 see [fixes/wip](##fixes-wip) for bugs and refinement.
 
 see [##modules](modules) for **current sprint.**
@@ -32,8 +51,6 @@ TODO:
 
 NOTE:
 
-- a new 'struct' statement is required since struct typespecs were
-  removed due to grammar conflicts.
 - need a plan to implement templates long-term
 
 ## TEMPLATES 
@@ -56,7 +73,8 @@ Templates within reach
     - AstLazilySubAndCopy replaces a def body's AstTIDs and AstVIDs with
       AstSubbedTID and AstSubbedVID resp.
       - implement AstXTemplate manager for defs to share <3
-    * AstXTemplate tracks...
+    * AstXTemplate generates monomorphs for concrete types.
+      It tracks...
         - all its xcalls (vtcall or ttcall) (registered in templater)
         - table of actualarg equality-classes -> monomorph def
           (for vtemplate) or type (for ttemplate)
@@ -75,15 +93,12 @@ Templates within reach
             2. if table miss,
                 1. SubAndCopy creates a new **definition** for a monomorph
                     s.t. monomorph is def's AST child
-                2. prime monomorph
-                    using def's scope as base scope to preserve symbols
+                2. typer SubAndCopy to generate new types with template subs
                 3. type monomorph
                     but do not typecheck
                 4. monomorphID := add result to table for future lookups
             3. (extra typing) add monomorph type as soln to metavar
             4. return monomorphID
-            this is done to ensure monomorphs are only generated for
-            concrete types.
         * LazilySubAndCopy (
             xtemplate,
             xcall,

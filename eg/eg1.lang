@@ -7,7 +7,7 @@
 #
 
 mod circle {
-    struct Circle {
+    type Circle = {
         center Tuple[F32,F32],
         radius Tuple[F32]
     };
@@ -26,8 +26,8 @@ mod circle {
 #
 
 mod pixel {
-    struct Pixel [T] {r T, g T, b T};
-    struct Image [T] {name String, size Tuple[U32,U32], data Buffer[Pixel[T]]};
+    type Pixel [T] = {r T, g T, b T};
+    type Image [T] = {name String, size Tuple[U32,U32], data Buffer[Pixel[T]]};
 
     def add [T] (p Pixel[T], q Pixel[T]) -> {
         Pixel[T](p.r+q.r, p.g+q.g, p.b+q.b)
@@ -123,8 +123,11 @@ mod closed {
     def loops () -> Unit {
         let prime_limit = console.read_int[I32]("Enter a number >2 until which to search for primes: ");
         let prime_count = 1;
-        for (iter 3 .. prime_limit step 2) i -> {
-            for (iter j = 0; j*j < i; j+2) (i) -> {
+        
+        for (iter 3 .. prime_limit step 2) do
+        fun i -> {
+            for (iter fac = 0; fac*fac < i; fac+2) do
+            fun (j S32) -> {
                 if i % 2 == 0 then {
                     set ^prime_count = prime_count+1;
                 } else {

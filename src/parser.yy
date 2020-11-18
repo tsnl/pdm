@@ -86,8 +86,7 @@
 %type <nt> parenExpr
 %type <nt> primaryExpr 
 %type <nt> vparen vtuple vstruct 
-%type <nt> ifThenElse 
-%type <nt> chain
+%type <nt> ifThenElse chain vlambda
 %type <ntSb> chainPrefix
 %type <nt> unaryExpr
 %type <uop> unaryOp
@@ -120,7 +119,6 @@
 %type <ntSb> vpatternField_cl lpatternField_cl tpatternField_cl vstructField_cl
 %type <nt>   ttarg vtarg
 %type <ntSb> ttarg_cl vtarg_cl
-
 
 // we want 'ast.h' and 'extra-tokens.h' in the header
 // https://stackoverflow.com/questions/47726404/how-to-put-header-file-to-tab-h-in-bison
@@ -341,6 +339,7 @@ parenExpr
     | vtuple        { $$ = $1; }
     | vstruct       { $$ = $1; }
     | chain         { $$ = $1; }
+    | vlambda       { $$ = $1; }
     ;
 primaryExpr
     : parenExpr     { $$ = $1; }
@@ -362,7 +361,7 @@ vstruct
     ;
 ifThenElse
     : TK_KW_IF parenExpr TK_KW_THEN parenExpr                        { $$ = NewAstIte(@$, $2, $4, NULL); }
-    | TK_KW_IF parenExpr TK_KW_THEN parenExpr TK_KW_ELSE parenExpr   { $$ = NewAstIte(@$, $2, $4, $6); }
+    | TK_KW_IF parenExpr TK_KW_THEN parenExpr TK_KW_ELSE primaryExpr { $$ = NewAstIte(@$, $2, $4, $6); }
     ;
 chain
     : TK_LCYBRK expr             TK_RCYBRK      { $$ = NewAstChainWith(@$, NULL, $2); }
@@ -372,6 +371,9 @@ chain
 chainPrefix
     : chainPrefixStmt             TK_SEMICOLON  { $$ = NULL; sb_push(($$),$1); }
     | chainPrefix chainPrefixStmt TK_SEMICOLON  { $$ = $1; sb_push(($$),$2); }
+    ;
+vlambda
+    : TK_KW_FUN lpattern TK_ARROW parenExpr   { $$ = NULL; }
     ;
 
 postfixExpr
