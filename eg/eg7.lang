@@ -1,0 +1,201 @@
+# delight cannot be unopinionated
+
+# add reference counting, 'mut' semantics:
+# - ^T for immutable ptr
+# - &T for mutable ptr
+# - gc.Buf[T] always RCed from fixed GC heap
+#   - collection triggers 
+# replace ':' operator with '.'
+# - restore ':' for struct initializers
+# add mandatory return type for 'def' stmt
+
+mod demo {
+    def showoff () F32 = {
+        let vec1 = vec.new_2f(0,0);
+        let vec2 = vec.new_2f(1,2);
+        let vec1_length = vec.length_sqr(vec1);
+        let vec2_length = vec.length_sqr(vec2);
+        let dot = vec.dot(vec1,vec2);
+        let sum = vec.add(vec1,vec2);
+
+        let p = printer.new_with(gc.alloc);
+        print.str(p, "{dot: \(dot), sum: \(sum)}");
+    };
+};
+
+mod vec {
+    type Vec2f = {
+        x F32,
+        y F32
+    };
+
+    type Norm = Vec2f -> F32;
+
+    def new_2f (x F32, y F32) Vec2f = {
+        x: x, 
+        y: y
+    };
+
+    def mul (s F32, v Vec2f) Vec2f = {
+        x: s * v.x,
+        y: s * v.y
+    };
+
+    def add (v Vec2f, w Vec2f) Vec2f = {
+        x: v.x + w.x, 
+        y: v.y + w.y
+    };
+
+    def dot (v Vec2f, w Vec2f) F32 = {
+        v.x * w.x + 
+        v.y * w.y
+    };
+
+    def length_sqr (v Vec2f) F32 = {
+        dot(v,v)
+    };
+
+    def subtract (v Vec2f, w Vec2f) F32 = {
+        vec.add(mul(w,-1))
+    };
+};
+
+#
+# Templates:
+#
+
+# modules are just constant struct instances
+# pointers can be passed as static arguments
+# more homogeneity between types and values would help.
+# - in particular, [...] args always static, (...) args always dynamic.
+# - separate IDs very powerful; <vid> <clsid> => a value from a type from a class.
+# * incomplete, 
+#   - 'scalar' is best version yet, vector wip
+#   - 'test' verges into formal specification. Heady stuff.
+
+mod scalar {
+    # scalar.Impl satisfies all implementations of 
+    cls Impl <I Any> [S Any] {
+        req I has on_add      (left S, right S) S;
+        req I has on_multiply (left S, right S) S;
+
+        # wip: 'test' functions further validate possible values
+        #      *at all times*
+        req I has zero        S;
+        req I has on_equals   (left S, right S) S;
+        
+        def is_zero (x S) = {
+            i.on_equals(x, i.zero)
+        };
+        test add_0_0_equals_0(i I, left S, right S) = {
+            if (is_zero(left) and is_zero(right) then {
+                # test if 0 + 0 = 0
+                let sum = i.on_add(left, right);
+                is_zero(sum)
+            } else {
+                # pass this test since input is irrelevant
+                1
+            }
+        };
+        test mul_0_0_equals_0(i I, left S, right S) = {
+            if (is_zero(left) and is_zero(right) then {
+                # test if 0 * 0 = 0
+                let product = i.on_multiply(left, right);
+                is_zero(sum)
+            } else {
+                # pass this test since input is irrelevant
+                1
+            }
+        };
+    };
+
+    cls Scalar <S Any> [i Impl[S]] = {};
+
+    def add [S Any, i Impl[S]] (left S, right Scalar[i]) Scalar = {
+        i.on_add(left, right)
+    };
+    def multiply [i Impl[S]] (left Scalar[i], right Scalar[i]) Scalar = {
+        i.on_multiply(left, right)
+    };
+};
+
+#
+# Broken, fix as above
+#
+
+mod vector {
+    class Impl <I Any> [V] {
+        req I has dimension (item V) U32;
+        req I has increment (base ^V, by V);
+        req I has scale     (base ^V, by S);
+    };
+    class Template <V> [
+        i Impl[V]
+    ] = {};
+
+    def dimension [i Impl[V]] (vec Template[I]) U32 = {
+        i.dimension(vec)
+    };
+    def increment [I] (vec ^Template[I], by Template[I]) = {
+        i.increment(vec, by)
+    };
+    def scale [I] (vec ^Template[I], by S) = {
+        i.scale(vec, by)
+    };
+};
+
+mod nvec [T scalar.Scalar, n U32] = {
+    # Vector is a class of Vs satisfying vector.Template with module 'impl' below.
+    # it is a singleton class in this context since V = Vector_Data
+    # Phew!
+    class Vector <V vector.Template[impl]> = {
+        req V = Vector_Data;
+    };
+    type Vector_Data = {
+        data: Array[T,n]
+    };
+    mod impl {
+        def dimension (item Vector_Data) U32 = {
+            n
+        };
+        def increment (vec ^Vector_Data, by Vector_Data) = {
+            for (i = 0; i < n; i+1) do {
+                let lt_ptr = i @ vec.data;
+                let rt_ptr = i @ by.data;
+                
+                let lt = *lt_ptr;
+                let rt = *rt_ptr;
+                
+                set lt_ptr = scalar.add(lt + rt);
+            }
+        };
+        def scale (vec ^Vector_Data, by T) = {
+            for (i = 0; i < n; i+1) do {
+                let lt_ptr = i @ vec.data;
+                let rt_ptr = i @ by.data;
+                
+                let lt = *lt_ptr;
+                let rt = *rt_ptr;
+                
+                set lt_ptr = scalar.add(lt + rt);
+            }
+        };
+    };
+};
+
+mod test {
+    type FScalar = scalar.Scalar[{
+        add: fun (x F32, y F32) F32 = {
+            x + y
+        },
+        multiply: fun (x F32, y F32) F32 = {
+            x * y
+        }
+    }];
+    type FVector [n U32] = nvec[FScalar,F32].Vector;
+};
+
+
+# - separate 'var' and 'let' for || const and dyn eval
+# - use '.(i)' for array access instead of '@'
+# - consider 'mod' as 'template' statement in 'D'
