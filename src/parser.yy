@@ -10,9 +10,9 @@
  *     https://www.gnu.org/software/bison/manual/html_node/Pure-Calling.html
  */
 
-// %glr-parser
+%glr-parser
 
-%define lr.type lalr
+// %define lr.type lalr
 // %define lr.type ielr
 // %define lr.type canonical-lr
 %define api.pure true
@@ -108,6 +108,7 @@
 %type <nt> typespec
 %type <nt> primaryTypespec
 %type <nt> postfixTypespec
+%type <nt> unaryTypespec
 %type <ntSb> typespec_cl
 
 //
@@ -200,6 +201,7 @@
 %token TK_NEQUALS   "'!='"
 %token TK_DOLLAR    "'$'"       // deprecated?
 %token TK_CARET     "'^'"
+%token TK_AMPERSAND "'&'"       // todo: implement lexer!
 %token TK_EXCLAIM   "'!'"
 %token TK_EOS       "EOS"
 
@@ -329,7 +331,7 @@ expr_cl
     | expr_cl TK_COMMA expr     { $$ = $1; sb_push(($$),$3); }
     ;
 expr_cl2
-    : expr TK_COMMA expr        { $$ = NULL; sb_push($$,$1); sb_push($$,$3); }
+    : expr TK_COMMA expr         { $$ = NULL; sb_push($$,$1); sb_push($$,$3); }
     | expr_cl2 TK_COMMA expr     { $$ = $1; sb_push($$,$3); }
     ;
 
@@ -385,7 +387,7 @@ postfixExpr
     | colonNmExpr   { $$ = $1; }
     ;
 vtcall
-    : postfixExpr TK_LSQBRK vtarg_cl TK_RSQBRK  { $$ = NewAstTCallWithArgsSb(@$, $1, $3); }
+    : postfixExpr TK_LTHAN vtarg_cl TK_GTHAN    { $$ = NewAstTCallWithArgsSb(@$, $1, $3); }
     ;
 vvcall
     : postfixExpr TK_LPAREN TK_RPAREN           { $$ = NewAstVCallWithArgsSb(@$, $1, NULL); }
@@ -487,9 +489,13 @@ primaryTypespec
     | TK_KW_TARRAY TK_LSQBRK typespec TK_COMMA expr TK_RSQBRK   { $$ = NewAstTArray(@$,$3,NewAstVal2Type(@$,$5)); } 
     ;
 postfixTypespec
-    : primaryTypespec                               { $$ = $1; }
-    | postfixTypespec TK_LSQBRK ttarg_cl TK_RSQBRK  { $$ = NewAstTCallWithArgsSb(@$, $1, $3); }
-    | postfixTypespec TK_CARET                      { $$ = NewAstTPtr(@$, $1); }
+    : primaryTypespec                             { $$ = $1; }
+    | postfixTypespec TK_LTHAN ttarg_cl TK_GTHAN  { $$ = NewAstTCallWithArgsSb(@$, $1, $3); }
+    | postfixTypespec TK_CARET                    { $$ = NewAstTPtr(@$, $1); }
+    ;
+unaryTypespec
+    : postfixTypespec               { $$ = $1; }
+    | TK_AMPERSAND unaryTypespec    { $$ = NewAstTMut(@$,$2); }
     ;
 
 /* type contexts' targs (template args): values have Val2Type wrappers */

@@ -17,6 +17,11 @@ Terminals unused in grammar
     "EOS"
 
 
+State 97 conflicts: 1 shift/reduce
+State 138 conflicts: 1 shift/reduce
+State 231 conflicts: 1 shift/reduce
+
+
 Grammar
 
     0 $accept: script $end
@@ -125,7 +130,7 @@ Grammar
    68            | dotIxExpr
    69            | colonNmExpr
 
-   70 vtcall: postfixExpr "'['" vtarg_cl "']'"
+   70 vtcall: postfixExpr "'<'" vtarg_cl "'>'"
 
    71 vvcall: postfixExpr "'('" "')'"
    72       | postfixExpr "'('" expr_cl "')'"
@@ -196,7 +201,7 @@ Grammar
   116                | "'Array'" "'['" typespec "','" expr "']'"
 
   117 postfixTypespec: primaryTypespec
-  118                | postfixTypespec "'['" ttarg_cl "']'"
+  118                | postfixTypespec "'<'" ttarg_cl "'>'"
   119                | postfixTypespec "'^'"
 
   120 ttarg: typespec
@@ -292,8 +297,8 @@ Terminals, with rules where they appear
     "':::'" (300)
     "'('" (301) 34 53 54 71 72 137 139
     "')'" (302) 34 53 54 71 72 137 139
-    "'['" (303) 70 115 116 118 141
-    "']'" (304) 70 115 116 118 141
+    "'['" (303) 115 116 141
+    "']'" (304) 115 116 141
     "'{'" (305) 5 25 55 58 59 60
     "'}'" (306) 5 25 55 58 59 60
     "'->'" (307) 20 21 26 63
@@ -302,9 +307,9 @@ Terminals, with rules where they appear
     "'%'" (310) 88
     "'+'" (311) 80 91
     "'-'" (312) 81 92
-    "'<'" (313) 95
+    "'<'" (313) 70 95 118
     "'<='" (314) 96
-    "'>'" (315) 97
+    "'>'" (315) 70 97 118
     "'>='" (316) 98
     "'='" (317) 11 12 22 23 128
     "'=='" (318) 101
@@ -1209,10 +1214,10 @@ State 72
 State 73
 
   111 typespec: postfixTypespec •
-  118 postfixTypespec: postfixTypespec • "'['" ttarg_cl "']'"
+  118 postfixTypespec: postfixTypespec • "'<'" ttarg_cl "'>'"
   119                | postfixTypespec • "'^'"
 
-    "'['"  shift, and go to state 114
+    "'<'"  shift, and go to state 114
     "'^'"  shift, and go to state 115
 
     $default  reduce using rule 111 (typespec)
@@ -1528,7 +1533,7 @@ State 96
 
 State 97
 
-   70 vtcall: postfixExpr • "'['" vtarg_cl "']'"
+   70 vtcall: postfixExpr • "'<'" vtarg_cl "'>'"
    71 vvcall: postfixExpr • "'('" "')'"
    72       | postfixExpr • "'('" expr_cl "')'"
    73 dotNmExpr: postfixExpr • "'.'" "a VID (ID with first letter lowercase)"
@@ -1539,9 +1544,67 @@ State 97
     "'.'"  shift, and go to state 154
     "':'"  shift, and go to state 155
     "'('"  shift, and go to state 156
-    "'['"  shift, and go to state 157
+    "'<'"  shift, and go to state 157
 
+    "'<'"     [reduce using rule 76 (castExpr)]
     $default  reduce using rule 76 (castExpr)
+
+    shift/reduce conflict on token "'<'":
+       76 castExpr: postfixExpr •
+       70 vtcall: postfixExpr • "'<'" vtarg_cl "'>'"
+      First example: "'mod'" "a VID (ID with first letter lowercase)" "'{'" "'def'" vid vpattern "'->'" typespec "'('" postfixExpr • "'<'" vtarg_cl "'>'" "')'" "';'" "'}'" "';'" $end
+      Shift derivation
+        $accept
+        ↳ script                                                                                                                                                                                                   $end
+          ↳ scriptContent
+            ↳ scriptContentStmt                                                                                                                                                                              "';'"
+              ↳ moduleStmt
+                ↳ "'mod'" "a VID (ID with first letter lowercase)" "'{'" moduleContent                                                                                                                 "'}'"
+                                                                         ↳ moduleContentStmt                                                                                                     "';'"
+                                                                           ↳ defStmt
+                                                                             ↳ "'def'" vid vpattern "'->'" castExpr
+                                                                                                           ↳ typespec vparen
+                                                                                                                      ↳ "'('" expr                                                         "')'"
+                                                                                                                              ↳ binaryExpr
+                                                                                                                                ↳ orBinaryExpr
+                                                                                                                                  ↳ xorBinaryExpr
+                                                                                                                                    ↳ andBinaryExpr
+                                                                                                                                      ↳ eqBinaryExpr
+                                                                                                                                        ↳ cmpBinaryExpr
+                                                                                                                                          ↳ addBinaryExpr
+                                                                                                                                            ↳ mulBinaryExpr
+                                                                                                                                              ↳ unaryExpr
+                                                                                                                                                ↳ castExpr
+                                                                                                                                                  ↳ postfixExpr
+                                                                                                                                                    ↳ vtcall
+                                                                                                                                                      ↳ postfixExpr • "'<'" vtarg_cl "'>'"
+      Second example: "'mod'" "a VID (ID with first letter lowercase)" "'{'" "'def'" vid vpattern "'->'" typespec "'('" postfixExpr • "'<'" addBinaryExpr "')'" "';'" "'}'" "';'" $end
+      Reduce derivation
+        $accept
+        ↳ script                                                                                                                                                                                                        $end
+          ↳ scriptContent
+            ↳ scriptContentStmt                                                                                                                                                                                   "';'"
+              ↳ moduleStmt
+                ↳ "'mod'" "a VID (ID with first letter lowercase)" "'{'" moduleContent                                                                                                                      "'}'"
+                                                                         ↳ moduleContentStmt                                                                                                          "';'"
+                                                                           ↳ defStmt
+                                                                             ↳ "'def'" vid vpattern "'->'" castExpr
+                                                                                                           ↳ typespec parenExpr
+                                                                                                                      ↳ vparen
+                                                                                                                        ↳ "'('" expr                                                            "')'"
+                                                                                                                                ↳ binaryExpr
+                                                                                                                                  ↳ orBinaryExpr
+                                                                                                                                    ↳ xorBinaryExpr
+                                                                                                                                      ↳ andBinaryExpr
+                                                                                                                                        ↳ eqBinaryExpr
+                                                                                                                                          ↳ cmpBinaryExpr
+                                                                                                                                            ↳ cmpBinaryExpr           cmpBinaryOp addBinaryExpr
+                                                                                                                                              ↳ addBinaryExpr         ↳ "'<'"
+                                                                                                                                                ↳ mulBinaryExpr
+                                                                                                                                                  ↳ unaryExpr
+                                                                                                                                                    ↳ castExpr
+                                                                                                                                                      ↳ postfixExpr •
+
 
 
 State 98
@@ -1730,7 +1793,7 @@ State 113
 
 State 114
 
-  118 postfixTypespec: postfixTypespec "'['" • ttarg_cl "']'"
+  118 postfixTypespec: postfixTypespec "'<'" • ttarg_cl "'>'"
 
     "a VID (ID with first letter lowercase)"  shift, and go to state 25
     "a TID (ID with first letter uppercase)"  shift, and go to state 31
@@ -2038,9 +2101,32 @@ State 138
     "'>'"   shift, and go to state 187
     "'>='"  shift, and go to state 188
 
+    "'>'"     [reduce using rule 103 (eqBinaryExpr)]
     $default  reduce using rule 103 (eqBinaryExpr)
 
     cmpBinaryOp  go to state 189
+
+    shift/reduce conflict on token "'>'":
+      103 eqBinaryExpr: cmpBinaryExpr •
+       97 cmpBinaryOp: • "'>'"
+      First example: cmpBinaryExpr • "'>'" "'>'"
+      Shift derivation
+        postfixTypespec
+        ↳ cmpBinaryExpr cmpBinaryOp ttarg_cl "'>'"
+                        ↳ • "'>'"   ↳ ε
+      Second example: postfixTypespec cmpBinaryExpr • "'>'"
+      Reduce derivation
+        postfixTypespec
+        ↳ postfixTypespec ttarg_cl                        "'>'"
+                          ↳ ttarg
+                            ↳ expr
+                              ↳ binaryExpr
+                                ↳ orBinaryExpr
+                                  ↳ xorBinaryExpr
+                                    ↳ andBinaryExpr
+                                      ↳ eqBinaryExpr
+                                        ↳ cmpBinaryExpr •
+
 
 
 State 139
@@ -2371,7 +2457,7 @@ State 156
 
 State 157
 
-   70 vtcall: postfixExpr "'['" • vtarg_cl "']'"
+   70 vtcall: postfixExpr "'<'" • vtarg_cl "'>'"
 
     "a VID (ID with first letter lowercase)"  shift, and go to state 25
     "a TID (ID with first letter uppercase)"  shift, and go to state 31
@@ -2517,11 +2603,11 @@ State 167
 
 State 168
 
-  118 postfixTypespec: postfixTypespec "'['" ttarg_cl • "']'"
+  118 postfixTypespec: postfixTypespec "'<'" ttarg_cl • "'>'"
   123 ttarg_cl: ttarg_cl • "','" ttarg
 
     "','"  shift, and go to state 220
-    "']'"  shift, and go to state 221
+    "'>'"  shift, and go to state 221
 
 
 State 169
@@ -3370,11 +3456,11 @@ State 214
 
 State 215
 
-   70 vtcall: postfixExpr "'['" vtarg_cl • "']'"
+   70 vtcall: postfixExpr "'<'" vtarg_cl • "'>'"
   127 vtarg_cl: vtarg_cl • "','" vtarg
 
     "','"  shift, and go to state 243
-    "']'"  shift, and go to state 244
+    "'>'"  shift, and go to state 244
 
 
 State 216
@@ -3529,7 +3615,7 @@ State 220
 
 State 221
 
-  118 postfixTypespec: postfixTypespec "'['" ttarg_cl "']'" •
+  118 postfixTypespec: postfixTypespec "'<'" ttarg_cl "'>'" •
 
     $default  reduce using rule 118 (postfixTypespec)
 
@@ -3627,9 +3713,34 @@ State 231
     "'>'"   shift, and go to state 187
     "'>='"  shift, and go to state 188
 
+    "'>'"     [reduce using rule 104 (eqBinaryExpr)]
     $default  reduce using rule 104 (eqBinaryExpr)
 
     cmpBinaryOp  go to state 189
+
+    shift/reduce conflict on token "'>'":
+      104 eqBinaryExpr: eqBinaryExpr eqBinaryOp cmpBinaryExpr •
+       97 cmpBinaryOp: • "'>'"
+      First example: cmpBinaryExpr • "'>'" "'>'"
+      Shift derivation
+        postfixTypespec
+        ↳ cmpBinaryExpr cmpBinaryOp ttarg_cl "'>'"
+                        ↳ • "'>'"   ↳ ttarg
+                                      ↳ expr
+                                        ↳ ε
+      Second example: postfixTypespec eqBinaryExpr eqBinaryOp cmpBinaryExpr • "'>'"
+      Reduce derivation
+        postfixTypespec
+        ↳ postfixTypespec ttarg_cl                                                "'>'"
+                          ↳ ttarg
+                            ↳ expr
+                              ↳ binaryExpr
+                                ↳ orBinaryExpr
+                                  ↳ xorBinaryExpr
+                                    ↳ andBinaryExpr
+                                      ↳ eqBinaryExpr
+                                        ↳ eqBinaryExpr eqBinaryOp cmpBinaryExpr •
+
 
 
 State 232
@@ -3939,7 +4050,7 @@ State 243
 
 State 244
 
-   70 vtcall: postfixExpr "'['" vtarg_cl "']'" •
+   70 vtcall: postfixExpr "'<'" vtarg_cl "'>'" •
 
     $default  reduce using rule 70 (vtcall)
 

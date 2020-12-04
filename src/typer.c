@@ -231,7 +231,7 @@ static AdtTrieNode* getAtnChild(AdtTrieNode* root, AdtOperator operator, TypeFie
 
 // typing constraints:
 // 1. we attempt to eagerly check typing constraints (CONFIRM/FAILURE), but
-// 2. if the result depends on a metavar, we return FAILURE unless matches hypothesis so far, then DEFERRED
+// 2. if the result depends on a metavar, we return FAILURE if (noDeferral) else DEFERRED
 // 3. after typing (no more solution possible), call 'solveDeferredMetavars' 
 // usage:
 // - call 'requireMetavarIsNumericOnly' to assert T is an int or float ONLY

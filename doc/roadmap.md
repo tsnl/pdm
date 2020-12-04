@@ -1,5 +1,10 @@
 # Roadmap
 
+**Warmup: add '&'**
+- added unaryTypespec in yacc with '&' prefix
+  - todo: add NewAstTMut, mut type
+  - todo: lex '&' symbol
+
 **Next:**
 
 - primer: factor into 4 passes

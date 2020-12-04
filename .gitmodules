@@ -13,3 +13,6 @@
 [submodule "src/utf8proc"]
 	path = src/utf8proc
 	url = https://github.com/JuliaStrings/utf8proc
+[submodule "dep/llvm-project"]
+	path = dep/llvm-project
+	url = https://github.com/llvm/llvm-project

@@ -8,6 +8,7 @@ project(pandemonium)
 # RESOURCES:
 # - https://lowlevelbits.org/building-an-llvm-based-tool.-lessons-learned/
 # - https://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
+# - todo: load source by adding dirs to 'CMAKE_MODULE_PATH' http://wiki.icub.org/wiki/CMake_and_FIND_PACKAGE
 
 find_package(LLVM REQUIRED CONFIG)
 # find_package(Clang REQUIRED CONFIG)
@@ -18,6 +19,7 @@ message(STATUS "... Add '/usr/local/Cellar/llvm/10.0.1_1/include/' to your IDE i
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
 
+# todo: change this path for different platforms
 include_directories("/usr/local/Cellar/llvm/10.0.1_1/include/")
 add_definitions(${LLVM_DEFINITIONS})
 add_executable(pc
@@ -57,6 +59,39 @@ add_executable(pc
 )
 
 #
+# WIP C++ rewrite
+#
+include_directories(
+    "src"
+)
+add_library(
+    pdm
+    src/pdm/ast/ast.cc
+    src/pdm/ast/ast.hh
+    src/pdm/ast/kind.hh
+    src/pdm/ast/node.hh
+    src/pdm/ast/visitor.cc
+    src/pdm/ast/visitor.hh
+    src/pdm/common/ints.hh
+    src/pdm/source/loc.hh
+    src/pdm/source/source.hh
+    src/pdm/source/span.hh
+    src/pdm/typer/constraint.hh
+    src/pdm/typer/rule.hh
+    src/pdm/typer/soln.cc
+    src/pdm/typer/soln.hh
+    src/pdm/typer/type.cc
+    src/pdm/typer/type.hh
+    src/pdm/typer/typer.cc
+    src/pdm/typer/typer.hh
+)
+add_executable(
+    pdm_cli
+    src/pdm_cli/main.cc
+)
+target_link_libraries(pdm_cli pdm)
+
+#
 # LLVM
 # - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt
 #
@@ -88,3 +123,5 @@ add_library(utf8proc
     src/utf8proc/utf8proc.h
 )
 target_link_libraries(pc utf8proc)
+
+set_property(TARGET pdm PROPERTY CXX_STANDARD 20)
