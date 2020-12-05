@@ -2,8 +2,4 @@
 
 namespace pdm::typer {
 
-    bool Soln::is_solved() const {
-        
-    }
-
 };

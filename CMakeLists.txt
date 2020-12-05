@@ -66,13 +66,13 @@ include_directories(
 )
 add_library(
     pdm
-    src/pdm/ast/ast.cc
-    src/pdm/ast/ast.hh
     src/pdm/ast/kind.hh
     src/pdm/ast/node.hh
     src/pdm/ast/visitor.cc
     src/pdm/ast/visitor.hh
-    src/pdm/common/ints.hh
+    src/pdm/core/integer.hh
+    src/pdm/core/intern.cc
+    src/pdm/core/intern.hh
     src/pdm/source/loc.hh
     src/pdm/source/source.hh
     src/pdm/source/span.hh
@@ -80,14 +80,16 @@ add_library(
     src/pdm/typer/rule.hh
     src/pdm/typer/soln.cc
     src/pdm/typer/soln.hh
-    src/pdm/typer/type.cc
-    src/pdm/typer/type.hh
+    src/pdm/typer/tv.cc
+    src/pdm/typer/tv.hh
     src/pdm/typer/typer.cc
     src/pdm/typer/typer.hh
 )
 add_executable(
     pdm_cli
     src/pdm_cli/main.cc
+    src/pdm_cli/typer_demo.cc
+    src/pdm_cli/typer_demo.hh
 )
 target_link_libraries(pdm_cli pdm)
 

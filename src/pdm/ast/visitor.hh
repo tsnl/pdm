@@ -115,46 +115,46 @@ namespace pdm::ast {
         virtual bool on_visit__tid_exp(TIdExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_paren_exp(ParenExp* node, bool pre_not_post) {
+        virtual bool on_visit__paren_exp(ParenExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_tuple_exp(TupleExp* node, bool pre_not_post) {
+        virtual bool on_visit__tuple_exp(TupleExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_array_exp(ArrayExp* node, bool pre_not_post) {
+        virtual bool on_visit__array_exp(ArrayExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_struct_exp(StructExp* node, bool pre_not_post) {
+        virtual bool on_visit__struct_exp(StructExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_chain_exp(ChainExp* node, bool pre_not_post) {
+        virtual bool on_visit__chain_exp(ChainExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_lambda_exp(LambdaExp* node, bool pre_not_post) {
+        virtual bool on_visit__lambda_exp(LambdaExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_if_exp(IfExp* node, bool pre_not_post) {
+        virtual bool on_visit__if_exp(IfExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_match_exp(MatchExp* node, bool pre_not_post) {
+        virtual bool on_visit__match_exp(MatchExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_dot_index_exp(DotIndexExp* node, bool pre_not_post) {
+        virtual bool on_visit__dot_index_exp(DotIndexExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_dot_name_exp(DotNameExp* node, bool pre_not_post) {
+        virtual bool on_visit__dot_name_exp(DotNameExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_unary_exp(UnaryExp* node, bool pre_not_post) {
+        virtual bool on_visit__unary_exp(UnaryExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_binary_exp(BinaryExp* node, bool pre_not_post) {
+        virtual bool on_visit__binary_exp(BinaryExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_v_call_exp(VCallExp* node, bool pre_not_post) {
+        virtual bool on_visit__v_call_exp(VCallExp* node, bool pre_not_post) {
             return true;
         }
-        virtual bool on_visit_t_call_exp(TCallExp* node, bool pre_not_post) {
+        virtual bool on_visit__t_call_exp(TCallExp* node, bool pre_not_post) {
             return true;
         }
         virtual bool on_visit__cast_exp(CastExp* node, bool pre_not_post) {
