@@ -29,49 +29,31 @@ namespace pdm::typer {
     // - which types are sup/sub types?
     class Soln {
         RoughClass m_rough_class;
-        std::vector<Constraint*> m_accepted_constraints;
-        std::vector<Constraint*> m_rejected_constraints;
-
+        std::string m_name;
+        
       // public getters:
       public:
-        virtual TvKind tv_kind() const = 0;
-
         RoughClass rough_class() const {
             return m_rough_class;
         }
-        int active_constraint_count() const {
-            return m_accepted_constraints.size();
+        std::string const& name() const {
+            return m_name;
         }
-        int inactive_constraint_count() const {
-            return m_rejected_constraints.size();
-        }
-        int total_constraint_count() const {
-            return active_constraint_count() + inactive_constraint_count();
-        }
-
+        
       // protected constructors:
       protected:
-        Soln(RoughClass rough_cls)
-        : m_rough_class(rough_cls) {}
+        Soln(std::string&& name, RoughClass rough_class)
+        : m_name(std::move(name)),
+          m_rough_class(rough_class) {}
 
-      // protected: solution update methods:
-      protected:
-        virtual ApplyConstraintResult on_apply_constraint(Constraint* constraint) = 0;
-
-      // public solution update methods:
+      // public: solution update methods:
       public:
-        ApplyConstraintResult apply_constraint(Constraint* constraint) {
-            ApplyConstraintResult result = on_apply_constraint(constraint);
-            if (result == ApplyConstraintResult::Rejected) {
-                m_rejected_constraints.push_back(constraint);
-            } else {
-                m_accepted_constraints.push_back(constraint);
-            }
-            return result;
-        }
+        // todo: enable this when ready
+        // virtual ApplyConstraintResult apply_constraint(Constraint* constraint) = 0;
 
       // public abstract properties:
       public:
+        virtual TvKind tv_kind() const = 0;
         virtual bool is_concrete() const = 0;
     };
 
@@ -83,8 +65,8 @@ namespace pdm::typer {
 
     class ConcreteSoln: public Soln {
       public:
-        ConcreteSoln(RoughClass rough_class)
-        : Soln(rough_class) {}
+        ConcreteSoln(std::string&& name, RoughClass rough_class)
+        : Soln(std::move(name), rough_class) {}
 
       public:
         virtual bool is_concrete() const override {
@@ -97,8 +79,8 @@ namespace pdm::typer {
     //
     class ConcreteTypeSoln: public ConcreteSoln {
       public:
-        ConcreteTypeSoln(RoughClass rough_class)
-        : ConcreteSoln(rough_class) {}
+        ConcreteTypeSoln(std::string&& name, RoughClass rough_class)
+        : ConcreteSoln(std::move(name), rough_class) {}
 
       public:
         virtual TvKind tv_kind() const override {
@@ -106,26 +88,71 @@ namespace pdm::typer {
         }
     };
     class UnitSoln: public ConcreteTypeSoln {
+      // shared singletons:
+      private:
+        static UnitSoln s_singleton;
       public:
+        static UnitSoln* get() { return &s_singleton; }
+
+      // protected constructor:
+      protected:
         UnitSoln()
-        : ConcreteTypeSoln(RoughClass::Unit) {}
+        : ConcreteTypeSoln("Unit", RoughClass::Unit) {}
     };
     class IntSoln: public ConcreteTypeSoln {
       private:
         int  m_width_in_bits;
         bool m_using_sign_ext;
+
+      // shared singletons:
+      private:
+        static IntSoln s_i8_singleton;
+        static IntSoln s_i16_singleton;
+        static IntSoln s_i32_singleton;
+        static IntSoln s_i64_singleton;
+        static IntSoln s_i128_singleton;
+        static IntSoln s_u1_singleton;
+        static IntSoln s_u8_singleton;
+        static IntSoln s_u16_singleton;
+        static IntSoln s_u32_singleton;
+        static IntSoln s_u64_singleton;
+        static IntSoln s_u128_singleton;
       public:
-        IntSoln(int width_in_bits, bool using_sign_ext)
-        : ConcreteTypeSoln(RoughClass::Int), 
+        static IntSoln* get_i8() { return &s_i8_singleton; }
+        static IntSoln* get_i16() { return &s_i16_singleton; }
+        static IntSoln* get_i32() { return &s_i32_singleton; }
+        static IntSoln* get_i64() { return &s_i64_singleton; }
+        static IntSoln* get_i128() { return &s_i128_singleton; }
+        static IntSoln* get_u1() { return &s_u8_singleton; }
+        static IntSoln* get_u8() { return &s_u8_singleton; }
+        static IntSoln* get_u16() { return &s_u16_singleton; }
+        static IntSoln* get_u32() { return &s_u32_singleton; }
+        static IntSoln* get_u64() { return &s_u64_singleton; }
+        static IntSoln* get_u128() { return &s_u128_singleton; }
+
+      // protected constructor:
+      protected:
+        IntSoln(std::string&& name, int width_in_bits, bool using_sign_ext)
+        : ConcreteTypeSoln(std::move(name), RoughClass::Int), 
           m_width_in_bits(width_in_bits),
           m_using_sign_ext(using_sign_ext) {}
     };
     class FloatSoln: public ConcreteTypeSoln {
       private:
         int m_width_in_bits;
+
+      private:
+        static FloatSoln s_float16_singleton;
+        static FloatSoln s_float32_singleton;
+        static FloatSoln s_float64_singleton;
       public:
-        FloatSoln(int width_in_bits)
-        : ConcreteTypeSoln(RoughClass::Float),
+        static FloatSoln* get_f16() { return &s_float16_singleton; }
+        static FloatSoln* get_f32() { return &s_float32_singleton; }
+        static FloatSoln* get_f64() { return &s_float64_singleton; }
+
+      protected:
+        FloatSoln(std::string&& name, int width_in_bits)
+        : ConcreteTypeSoln(std::move(name), RoughClass::Float),
           m_width_in_bits(width_in_bits) {}
     };
     class PtrSoln: public ConcreteTypeSoln {
@@ -133,7 +160,7 @@ namespace pdm::typer {
         ConcreteTypeSoln* m_pointee_soln;
       public:
         PtrSoln(ConcreteTypeSoln* pointee_soln)
-        : ConcreteTypeSoln(RoughClass::Ptr),
+        : ConcreteTypeSoln("^" + pointee_soln->name(), RoughClass::Ptr),
           m_pointee_soln(pointee_soln) {}
     };
     class StructSoln: public ConcreteTypeSoln {
@@ -153,7 +180,7 @@ namespace pdm::typer {
         std::vector<StructSoln::Field> m_fields;
       public:
         StructSoln(std::vector<StructSoln::Field>&& fields)
-        : ConcreteTypeSoln(RoughClass::Struct),
+        : ConcreteTypeSoln("Struct{}", RoughClass::Struct),
           m_fields(std::move(fields)) {}
     };
     class EnumSoln: public ConcreteTypeSoln {
@@ -181,7 +208,7 @@ namespace pdm::typer {
         std::vector<Field> m_fields;
       public:
         EnumSoln(std::vector<EnumSoln::Field>&& fields)
-        : ConcreteTypeSoln(RoughClass::Enum),
+        : ConcreteTypeSoln("Enum{}", RoughClass::Enum),
           m_fields(std::move(fields)) {}
     };
     
@@ -209,42 +236,8 @@ namespace pdm::typer {
         std::vector<ModuleSoln::Field> m_fields;
       public:
         ModuleSoln(std::vector<ModuleSoln::Field>&& fields)
-        : ConcreteTypeSoln(RoughClass::Module),
+        : ConcreteTypeSoln("Module{}", RoughClass::Module),
           m_fields(std::move(fields)) {}
-    };
-    class ClassSoln: public ConcreteTypeSoln {
-      public:
-        enum class Member_Kind {
-            Data,
-            Message
-        };
-        enum class Member_Visibility {
-            Public,
-            Private
-        };
-        enum class Member_Existence {
-            Abstract,
-            Defined
-        };
-        class Member {
-          private:
-            Member_Kind       m_kind;
-            Member_Visibility m_visibility;
-            Member_Existence  m_existence;
-            ConcreteTypeSoln* m_concrete_type_soln;
-          public:
-            Member(Member_Kind kind, Member_Visibility visibility, Member_Existence existence, ConcreteTypeSoln* concrete_type_soln)
-            : m_kind(kind),
-              m_visibility(visibility),
-              m_existence(existence),
-              m_concrete_type_soln(concrete_type_soln) {}
-        };
-      private:
-        std::vector<ClassSoln::Member> m_members;
-      public:
-        ClassSoln(std::vector<ClassSoln::Member>&& mov_members)
-        : ConcreteTypeSoln(RoughClass::Class),
-          m_members(std::move(mov_members)) {}
     };
     class VFuncSoln: public ConcreteTypeSoln {
       public:
@@ -296,7 +289,7 @@ namespace pdm::typer {
         bool                              m_returns_val_not_type;
       public:
         TFuncSoln(std::vector<TFuncSoln::FormalArg>&& mov_formal_args, TV* ret_tv, bool returns_val_not_type)
-        : ConcreteSoln(RoughClass::TFunc), 
+        : ConcreteSoln("TemplateFunc<>", RoughClass::TFunc), 
           m_formal_args(std::move(mov_formal_args)),
           m_actual_args(m_formal_args.size()),
           m_returns_val_not_type(returns_val_not_type) {}
@@ -306,7 +299,7 @@ namespace pdm::typer {
         std::vector<Constraint*> m_constraints;
       public:
         TypeclassSoln(std::vector<Constraint*>&& constraints)
-        : ConcreteSoln(RoughClass::Typeclass),
+        : ConcreteSoln("Typeclass{}", RoughClass::Typeclass),
           m_constraints(std::move(constraints)) {}
     };
 
@@ -318,26 +311,30 @@ namespace pdm::typer {
 
     class VarSoln: public Soln {
       protected:
-        VarSoln(RoughClass rough_class)
-        : Soln(rough_class) {}
+        VarSoln(std::string&& name, RoughClass rough_class)
+        : Soln(std::move(name), rough_class) {}
       public:
         virtual bool is_concrete() const override {
             return false;
+        }
+        virtual TvKind tv_kind() const override {
+            // todo: what about value solutions for tcalls?
+            return TvKind::Type;
         }
     };
     class MonomorphicVarSoln: public VarSoln {
       private:
         ConcreteSoln* m_concrete_substitute;
       public:
-        MonomorphicVarSoln()
-        : VarSoln(RoughClass::MonomorphicVar) {}
+        MonomorphicVarSoln(std::string&& name)
+        : VarSoln(std::move(name), RoughClass::MonomorphicVar) {}
     };
     class PolymorphicVarSoln: public VarSoln {
       private:
         std::vector<ConcreteSoln*> m_concrete_substitutes;
       public:
-        PolymorphicVarSoln()
-        : VarSoln(RoughClass::PolymorphicVar) {}
+        PolymorphicVarSoln(std::string&& name)
+        : VarSoln(std::move(name), RoughClass::PolymorphicVar) {}
     };
 
     //

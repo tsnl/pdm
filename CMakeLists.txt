@@ -20,7 +20,13 @@ message(STATUS "... Add '/usr/local/Cellar/llvm/10.0.1_1/include/' to your IDE i
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
 
 # todo: change this path for different platforms
-include_directories("/usr/local/Cellar/llvm/10.0.1_1/include/")
+include_directories(
+    "/usr/local/Cellar/llvm/10.0.1_1/include/"
+)
+include_directories(
+    "src"
+)
+
 add_definitions(${LLVM_DEFINITIONS})
 add_executable(pc
     src/ast.c
@@ -59,41 +65,6 @@ add_executable(pc
 )
 
 #
-# WIP C++ rewrite
-#
-include_directories(
-    "src"
-)
-add_library(
-    pdm
-    src/pdm/ast/kind.hh
-    src/pdm/ast/node.hh
-    src/pdm/ast/visitor.cc
-    src/pdm/ast/visitor.hh
-    src/pdm/core/integer.hh
-    src/pdm/core/intern.cc
-    src/pdm/core/intern.hh
-    src/pdm/source/loc.hh
-    src/pdm/source/source.hh
-    src/pdm/source/span.hh
-    src/pdm/typer/constraint.hh
-    src/pdm/typer/rule.hh
-    src/pdm/typer/soln.cc
-    src/pdm/typer/soln.hh
-    src/pdm/typer/tv.cc
-    src/pdm/typer/tv.hh
-    src/pdm/typer/typer.cc
-    src/pdm/typer/typer.hh
-)
-add_executable(
-    pdm_cli
-    src/pdm_cli/main.cc
-    src/pdm_cli/typer_demo.cc
-    src/pdm_cli/typer_demo.hh
-)
-target_link_libraries(pdm_cli pdm)
-
-#
 # LLVM
 # - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt
 #
@@ -126,4 +97,40 @@ add_library(utf8proc
 )
 target_link_libraries(pc utf8proc)
 
+
+#
+# WIP C++ rewrite
+#
+
+add_library(
+    pdm
+    src/pdm/ast/kind.hh
+    src/pdm/ast/node.hh
+    src/pdm/ast/visitor.cc
+    src/pdm/ast/visitor.hh
+    src/pdm/core/integer.hh
+    src/pdm/core/intern.cc
+    src/pdm/core/intern.hh
+    src/pdm/source/loc.hh
+    src/pdm/source/source.hh
+    src/pdm/source/span.hh
+    src/pdm/typer/constraint.hh
+    src/pdm/typer/rule.hh
+    src/pdm/typer/soln.cc
+    src/pdm/typer/soln.hh
+    src/pdm/typer/tv.cc
+    src/pdm/typer/tv.hh
+    src/pdm/typer/typer.cc
+    src/pdm/typer/typer.hh
+)
+target_link_libraries(pdm intern)
 set_property(TARGET pdm PROPERTY CXX_STANDARD 20)
+
+add_executable(
+    pdm_cli
+    src/pdm_cli/main.cc
+    src/pdm_cli/typer_demo.cc
+    src/pdm_cli/typer_demo.hh
+)
+target_link_libraries(pdm_cli pdm)
+set_property(TARGET pdm_cli PROPERTY CXX_STANDARD 20)

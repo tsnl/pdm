@@ -1,6 +1,8 @@
 #ifndef INCLUDED_PDM_TYPER_TYPE_HH
 #define INCLUDED_PDM_TYPER_TYPE_HH
 
+#include <deque>
+
 #include "tv_kind.hh"
 #include "soln.hh"
 
@@ -15,19 +17,33 @@ namespace pdm::typer {
     // when consecutive substitution passes reach a fixed point, the system is either definitely solved or in error.
     class TV {
         friend class pdm::typer::Typer;
-
+        
+        // for 'emplace_back' to work with STL containers:
+        friend std::allocator<TV>;
+        
       // data members:
       private:
         Typer* m_typer;
         Soln*  m_soln;
-
+        std::vector<Constraint*> m_accepted_constraints;
+        std::vector<Constraint*> m_rejected_constraints;
+  
       // public getters:
       public:
         Typer* typer() const {
             return m_typer;
         }
+        int active_constraint_count() const {
+            return m_accepted_constraints.size();
+        }
+        int inactive_constraint_count() const {
+            return m_rejected_constraints.size();
+        }
+        int total_constraint_count() const {
+            return active_constraint_count() + inactive_constraint_count();
+        }
 
-      // protected constructor:
+      // protected constructor: called by typer
       protected:
         TV(Typer* typer, Soln* soln)
         : m_typer(typer), m_soln(soln) {}

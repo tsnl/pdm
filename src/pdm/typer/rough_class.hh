@@ -11,33 +11,35 @@ namespace pdm::typer {
 
     enum class RoughClass {
         // Solns in these classes are just types, i.e. sets of values.
-        Unit           = 0x1,
-        Int            = 0x2,
-        Float          = 0x4,
-        Mut            = 0x8,
-        Ptr            = 0x10,
-        Struct         = 0x20,
-        Enum           = 0x40,
-        Module         = 0x80,
-        Class          = 0x100,
-        VFunc          = 0x200,
+        Unit,
+        Int,
+        Float,
+        Mut,
+        Ptr,
+        Struct,
+        Enum,
+        Module,
+        VFunc,
         
         // Typeclasses are sets of types that satisfy constraints
-        Typeclass      = 0x400,
+        Typeclass,
 
         // TFunc maps constvals & types to a constval/type
         // for each formal arg,
         // - if class, then type arg.
         // - if type, then val arg.
         // - 
-        TFunc          = 0x800,
+        TFunc,
 
         // TypeVars compute classes and accept one or more concrete substitutions.
-        MonomorphicVar = 0x1000,
-        PolymorphicVar = 0x2000,
+        MonomorphicVar,
+        PolymorphicVar,
         
         // ConstVals store constant values as args for TFuncs
-        ConstVal       = 0x4000
+        ConstVal,
+
+        // after all real elements, '__Count'
+        __Count
     };
 
 }

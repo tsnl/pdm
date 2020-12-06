@@ -31,15 +31,42 @@ namespace pdm::typer {
 
       // protected constructor => pure abstract
       protected:
-        Rule(ast::Node* ast_node, std::string&& why);
+        Rule(ast::Node* ast_node, std::string&& why)
+        : m_who(ast_node),
+          m_why(std::move(why)) {}
 
       // interface:
       public:
-        virtual void apply() = 0;
+        // todo: re-enable once implemented for all subtypes.
+        // virtual void apply() = 0;
     };
 
     // todo: implement various rules to handle each typing case in the language.
     //       each typing should add one or more rules to the typer
+
+    // TypespecRule for (x T) or <T Cls>
+    class TypespecRule: public Rule {
+      private:
+        intern::String m_lhs_name;
+        TV* m_lhs_tv;
+        TV* m_rhs_typespec;
+      protected:
+        TypespecRule(ast::Node* ast_node, intern::String lhs_name, TV* lhs_tv, TV* rhs_typespec)
+        : Rule(ast_node, "(" + std::string(lhs_name.str()) + " X)"),
+          m_lhs_name(lhs_name), 
+          m_lhs_tv(lhs_tv),
+          m_rhs_typespec(rhs_typespec) {}
+    };
+    class VIdTypespecRule: public TypespecRule {
+      public:
+        VIdTypespecRule(ast::Node* ast_node, intern::String lhs_vid_name, TV* lhs_tv, TV* rhs_typespec)
+        : TypespecRule(ast_node, lhs_vid_name, lhs_tv, rhs_typespec) {}
+    };
+    class TIdTypespecRule: public TypespecRule {
+      public:
+        TIdTypespecRule(ast::Node* ast_node, intern::String lhs_tid_name, TV* lhs_tv, TV* rhs_typespec)
+        : TypespecRule(ast_node, lhs_tid_name, lhs_tv, rhs_typespec) {}
+    };
 
     // AssignRule is used for let, def, type, enum, class, typeclass, module:
     class AssignRule: public Rule {

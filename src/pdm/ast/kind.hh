@@ -7,7 +7,7 @@ namespace pdm::ast {
         Script, 
         
         ModuleStmt,
-        ClassStmt, EnumStmt, TypeStmt, DefStmt, LetStmt,
+        TypeclassStmt, EnumStmt, TypeStmt, DefStmt, LetStmt,
 
         UnitExp, 
         IntExp, FloatExp, StringExp,

@@ -1,4 +1,6 @@
-#include <intern/strings.h>
+extern "C" {
+    #include <intern/strings.h>
+}
 
 #include "intern.hh"
 
