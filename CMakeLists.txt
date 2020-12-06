@@ -120,6 +120,7 @@ add_library(
     src/pdm/ast/exp/struct.hh
     src/pdm/ast/exp/tcall.hh
     src/pdm/ast/exp/tuple.hh
+    src/pdm/ast/exp/type_query.hh
     src/pdm/ast/exp/unary.hh
     src/pdm/ast/exp/unit.hh
     src/pdm/ast/exp/vcall.hh
@@ -128,6 +129,7 @@ add_library(
     src/pdm/ast/pattern/vpattern.hh
     src/pdm/ast/script/script.cc
     src/pdm/ast/script/script.hh
+    src/pdm/ast/stmt/const.hh
     src/pdm/ast/stmt/def.hh
     src/pdm/ast/stmt/enum.hh
     src/pdm/ast/stmt/let.hh

@@ -7,18 +7,19 @@ namespace pdm::ast {
         Script, 
         
         ModuleStmt,
-        TypeclassStmt, EnumStmt, TypeStmt, DefStmt, LetStmt,
+        TypeclassStmt, EnumStmt, TypeStmt, DefStmt, ConstStmt, LetStmt,
 
         UnitExp, 
         IntExp, FloatExp, StringExp,
         IdExp,
         ParenExp,
         TupleExp, ArrayExp, StructExp, ChainExp,
-        LambdaExp, 
+        LambdaExp,
         IfExp,
         DotIndexExp, DotNameExp,
         UnaryExp, BinaryExp,
         VCallExp, TCallExp,
+        TypeQueryExp,
 
         VPattern,       // used in def() and struct-typespec; top-mut types prohibited!
         TPattern,       // used in def<>/[], type<>/[], class<>/[]4
@@ -27,7 +28,7 @@ namespace pdm::ast {
         IdTypespec,
         MutTypespec, PtrTypespec,
         TCallTypespec,
-        DotNameTypespec,
+        DotNameTypespec_TypePrefix, DotNameTypespec_ModPrefix,
         StructTypespec,
     };
 

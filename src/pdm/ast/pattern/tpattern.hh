@@ -28,11 +28,13 @@ namespace pdm::ast {
 
       private:
         std::vector<TPattern::Field> m_fields;
+        bool                         m_is_captured;
 
       public:
-        TPattern(source::Loc loc, std::vector<Field>&& fields)
+        TPattern(source::Loc loc, std::vector<Field>&& fields, bool is_captured)
         : Node(loc, Kind::TPattern),
-          m_fields(std::move(fields)) {}
+          m_fields(std::move(fields)),
+          m_is_captured(is_captured) {}
     };
 }
 

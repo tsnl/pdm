@@ -12,7 +12,7 @@ namespace pdm::ast {
         std::vector<Node*> m_items;
       public:
         ArrayExp(source::Loc loc, std::vector<Node*>&& items)
-        : Exp(Kind::ArrayExp, loc),
+        : Exp(loc, Kind::ArrayExp),
           m_items(std::move(items)) {}
     };
 
