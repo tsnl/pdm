@@ -9,23 +9,23 @@
 namespace pdm::intern {
     
     class String;
-    class StringManager;
+    class Manager;
     
     class String {
-        friend class pdm::intern::StringManager;
+        friend class pdm::intern::Manager;
 
       private:
-        StringManager* m_manager;
+        Manager* m_manager;
         u32 m_id;
 
       protected:
-        String(StringManager* manager, u32 id);
+        String(Manager* manager, u32 id);
 
       public:
         char const* str() const;
     };
 
-    class StringManager {
+    class Manager {
         friend class pdm::intern::String;
 
       private:
@@ -37,7 +37,7 @@ namespace pdm::intern {
         }
 
       public:
-        StringManager();
+        Manager();
 
       public:
         String new_str(char const* cstr);

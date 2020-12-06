@@ -8,7 +8,7 @@
 namespace pdm_cli::typer_demo {
 
     void demo1() {
-        pdm::intern::StringManager sm;
+        pdm::intern::Manager sm;
         pdm::intern::String lhs_name = sm.new_str("x");
         
         pdm::typer::Typer typer{};

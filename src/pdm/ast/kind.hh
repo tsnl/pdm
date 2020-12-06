@@ -11,18 +11,24 @@ namespace pdm::ast {
 
         UnitExp, 
         IntExp, FloatExp, StringExp,
-        VIdExp, TIdExp,
+        IdExp,
         ParenExp,
         TupleExp, ArrayExp, StructExp, ChainExp,
         LambdaExp, 
-        IfExp, MatchExp,
+        IfExp,
         DotIndexExp, DotNameExp,
         UnaryExp, BinaryExp,
         VCallExp, TCallExp,
-        CastExp,
+
         VPattern,       // used in def() and struct-typespec; top-mut types prohibited!
         TPattern,       // used in def<>/[], type<>/[], class<>/[]4
-        LPattern        // used in let, lambda, match
+        LPattern,       // used in let, lambda, match
+
+        IdTypespec,
+        MutTypespec, PtrTypespec,
+        TCallTypespec,
+        DotNameTypespec,
+        StructTypespec,
     };
 
     // dependencies: 

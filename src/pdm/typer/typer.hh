@@ -185,6 +185,10 @@ namespace pdm::typer {
             typer::VIdTypespecRule* rule = new typer::VIdTypespecRule(ast_node, lhs_name, lhs_tv, rhs_typespec_tv);
             m_all_rules.push_back(rule);
         }
+        void apply_tid_typespec_rule(ast::Node* ast_node, intern::String lhs_name, TV* lhs_tv, TV* rhs_typespec_tv) {
+            typer::TIdTypespecRule* rule = new typer::TIdTypespecRule(ast_node, lhs_name, lhs_tv, rhs_typespec_tv);
+            m_all_rules.push_back(rule);
+        }
 
       // Dump:
       public:

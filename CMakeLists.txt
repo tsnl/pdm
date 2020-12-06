@@ -104,16 +104,63 @@ target_link_libraries(pc utf8proc)
 
 add_library(
     pdm
+
+    src/pdm/ast/exp/array.hh
+    src/pdm/ast/exp/binary.hh
+    src/pdm/ast/exp/chain.hh
+    src/pdm/ast/exp/dot.hh
+    src/pdm/ast/exp/exp.hh
+    src/pdm/ast/exp/float.hh
+    src/pdm/ast/exp/id.hh
+    src/pdm/ast/exp/if.hh
+    src/pdm/ast/exp/int.hh
+    src/pdm/ast/exp/lambda.hh
+    src/pdm/ast/exp/paren.hh
+    src/pdm/ast/exp/string.hh
+    src/pdm/ast/exp/struct.hh
+    src/pdm/ast/exp/tcall.hh
+    src/pdm/ast/exp/tuple.hh
+    src/pdm/ast/exp/unary.hh
+    src/pdm/ast/exp/unit.hh
+    src/pdm/ast/exp/vcall.hh
+    src/pdm/ast/pattern/lpattern.hh
+    src/pdm/ast/pattern/tpattern.hh
+    src/pdm/ast/pattern/vpattern.hh
+    src/pdm/ast/script/script.cc
+    src/pdm/ast/script/script.hh
+    src/pdm/ast/stmt/def.hh
+    src/pdm/ast/stmt/enum.hh
+    src/pdm/ast/stmt/let.hh
+    src/pdm/ast/stmt/module.cc
+    src/pdm/ast/stmt/module.hh
+    src/pdm/ast/stmt/stmt.hh
+    src/pdm/ast/stmt/type.hh
+    src/pdm/ast/stmt/typeclass.hh
+    src/pdm/ast/typespec/dot.hh
+    src/pdm/ast/typespec/id.hh
+    src/pdm/ast/typespec/mut.hh
+    src/pdm/ast/typespec/ptr.hh
+    src/pdm/ast/typespec/struct.hh
+    src/pdm/ast/typespec/tcall.hh
+    src/pdm/ast/typespec/typespec.hh
     src/pdm/ast/kind.hh
+    src/pdm/ast/manager.cc
+    src/pdm/ast/manager.hh
     src/pdm/ast/node.hh
     src/pdm/ast/visitor.cc
     src/pdm/ast/visitor.hh
+
+    src/pdm/compiler/compiler.cc
+    src/pdm/compiler/compiler.hh
+    
     src/pdm/core/integer.hh
     src/pdm/core/intern.cc
     src/pdm/core/intern.hh
+    
     src/pdm/source/loc.hh
+    src/pdm/source/pos.hh
     src/pdm/source/source.hh
-    src/pdm/source/span.hh
+
     src/pdm/typer/constraint.hh
     src/pdm/typer/rule.hh
     src/pdm/typer/soln.cc

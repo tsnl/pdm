@@ -7,13 +7,13 @@ extern "C" {
 namespace pdm::intern {
         
     //
-    // StringManager:
+    // Manager:
     //
 
-    StringManager::StringManager()
+    Manager::Manager()
     : m_strings_repository(strings_new()) {}
 
-    String StringManager::new_str(char const* c_str) {
+    String Manager::new_str(char const* c_str) {
         return String(this, strings_intern(strings_repository(), c_str));
     }
 
@@ -21,7 +21,7 @@ namespace pdm::intern {
     // String:
     //
 
-    String::String(StringManager* manager, u32 id)
+    String::String(Manager* manager, u32 id)
     : m_manager(manager),
       m_id(id) {}
 

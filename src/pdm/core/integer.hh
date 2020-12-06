@@ -9,7 +9,7 @@ namespace pdm {
     using i64 = int64_t;
     using u32 = uint32_t;
     using u64 = uint64_t;
-
+    
 }   // namespace pdm
 
 #endif  // INCLUDED_PDM_INTS_HH

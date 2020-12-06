@@ -2,28 +2,18 @@
 #define INCLUDED_AST_NODE_HH
 
 #include <string>
-
-#include "pdm/source/span.hh"
+#include "pdm/source/loc.hh"
 
 #include "kind.hh"
 
 namespace pdm::ast {
 
     class Node {
-        struct NodeHeader;
-
       // data members:
       private:
         Kind        m_kind;
-        NodeHeader* m_header;
+        source::Loc m_loc;
         void*       m_more;
-
-      // NodeHeader implementation:
-      private:
-        struct NodeHeader {
-            // source::Span span;
-            std::string  repr;
-        };
 
       // subtype 'more' ptr access <=> Node fixed size
       protected:
@@ -40,20 +30,12 @@ namespace pdm::ast {
             return m_kind;
         }
     
-      // basic constructors
+      // protected constructor:
       protected:
-        Node(Kind kind);
-
-      // public visitor API:
-      protected:
-        
-
-      public:
-    };
-
-    struct _NodeHeader {
-        // std::string repr;
-        // Span span;
+        Node(source::Loc loc, Kind kind)
+        : m_kind(kind),
+          m_loc(loc),
+          m_more(nullptr) {}
     };
 
 }   // namespace pdm::ast
