@@ -139,6 +139,7 @@ add_library(
     src/pdm/ast/stmt/type.hh
     src/pdm/ast/stmt/typeclass.hh
     src/pdm/ast/typespec/dot.hh
+    src/pdm/ast/typespec/func.hh
     src/pdm/ast/typespec/id.hh
     src/pdm/ast/typespec/mut.hh
     src/pdm/ast/typespec/ptr.hh
@@ -148,6 +149,7 @@ add_library(
     src/pdm/ast/kind.hh
     src/pdm/ast/manager.cc
     src/pdm/ast/manager.hh
+    src/pdm/ast/node.cc
     src/pdm/ast/node.hh
     src/pdm/ast/visitor.cc
     src/pdm/ast/visitor.hh

@@ -1,59 +1,50 @@
 #ifndef INCLUDED_PDM_AST_VISITOR_HH
 #define INCLUDED_PDM_AST_VISITOR_HH
 
-//
-// forward declarations:
-//
+#include "pdm/ast/exp/exp.hh"
+#include "pdm/ast/exp/array.hh"
+#include "pdm/ast/exp/binary.hh"
+#include "pdm/ast/exp/chain.hh"
+#include "pdm/ast/exp/dot.hh"
+#include "pdm/ast/exp/float.hh"
+#include "pdm/ast/exp/id.hh"
+#include "pdm/ast/exp/if.hh"
+#include "pdm/ast/exp/int.hh"
+#include "pdm/ast/exp/lambda.hh"
+#include "pdm/ast/exp/paren.hh"
+#include "pdm/ast/exp/string.hh"
+#include "pdm/ast/exp/struct.hh"
+#include "pdm/ast/exp/tcall.hh"
+#include "pdm/ast/exp/tuple.hh"
+#include "pdm/ast/exp/type_query.hh"
+#include "pdm/ast/exp/unary.hh"
+#include "pdm/ast/exp/unit.hh"
+#include "pdm/ast/exp/vcall.hh"
 
-namespace pdm::ast {
-    
-    // base node:
-    class Node;
+#include "pdm/ast/pattern/lpattern.hh"
+#include "pdm/ast/pattern/tpattern.hh"
+#include "pdm/ast/pattern/vpattern.hh"
 
-    // script:
-    class Script;
+#include "pdm/ast/script/script.hh"
 
-    // statements:
-    class ModuleStmt;
-    class ClassStmt;
-    class EnumStmt;
-    class TypeStmt;
-    class DefStmt;
-    class LetStmt;
+#include "pdm/ast/stmt/stmt.hh"
+#include "pdm/ast/stmt/const.hh"
+#include "pdm/ast/stmt/def.hh"
+#include "pdm/ast/stmt/enum.hh"
+#include "pdm/ast/stmt/let.hh"
+#include "pdm/ast/stmt/module.hh"
+#include "pdm/ast/stmt/type.hh"
+#include "pdm/ast/stmt/typeclass.hh"
 
-    // expressions:
-    class UnitExp;
-    class IntExp;
-    class FloatExp;
-    class StringExp;
-    class VIdExp;
-    class TIdExp;
-    class ParenExp;
-    class TupleExp;
-    class ArrayExp;
-    class StructExp;
-    class ChainExp;
-    class LambdaExp;
-    class IfExp;
-    class MatchExp;
-    class DotIndexExp;
-    class DotNameExp;
-    class UnaryExp;
-    class BinaryExp;
-    class VCallExp;
-    class TCallExp;
-    class CastExp;
-    
-    // patterns:
-    class VPattern;     // used in def() and struct-typespec
-    class TPattern;     // used in def<>/[], type<>/[], class<>/[]4
-    class LPattern;     // used in let, lambda, match
-
-    // todo: typespecs
-    // todo: vfield, tfield
-
-}   // namespace pdm::ast
-
+#include "pdm/ast/typespec/typespec.hh"
+#include "pdm/ast/typespec/dot.hh"
+#include "pdm/ast/typespec/id.hh"
+#include "pdm/ast/typespec/mut.hh"
+#include "pdm/ast/typespec/ptr.hh"
+#include "pdm/ast/typespec/struct.hh"
+#include "pdm/ast/typespec/tcall.hh"
+#include "pdm/ast/typespec/func.hh"
+#include "pdm/ast/typespec/typespec.hh"
 
 //
 // implementations:
@@ -61,117 +52,166 @@ namespace pdm::ast {
 
 namespace pdm::ast {
 
+    // Visitor recursively applies a pure-virtual method 'on_visit'
+    // to each node in an AST.
+    class Visitor {
+      public:
+        enum class VisitOrder {
+            Pre,
+            Post
+        };
+
+      private:
+        // shared:
+        bool on_visit(Node* node, VisitOrder visit_order);
+
+      // on_visit__X is a pure virtual callback called by 'visit' for each node
+      // of that kind.
+      // on_visit__X should not recurse on children. Instead, it should just
+      // perform the necessary processing for that node in pre/post and wait 
+      // for the visitor to apply other functions to children nodes.
+      public:
+        // scripts:
+        virtual bool on_visit__script(Script* script, VisitOrder visit_order) {
+            return true;
+        };
+
+        // statements:
+        virtual bool on_visit__module_stmt(ModuleStmt* node, VisitOrder visit_order) { 
+            return true;
+        }
+        virtual bool on_visit__typeclass_stmt(TypeclassStmt* node, VisitOrder visit_order) { 
+            return true;
+        }
+        virtual bool on_visit__type_stmt(TypeStmt* node, VisitOrder visit_order) { 
+            return true;
+        }
+        virtual bool on_visit__enum_stmt(EnumStmt* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__def_stmt(DefStmt* node, VisitOrder visit_order) { 
+            return true;
+        }
+        virtual bool on_visit__let_stmt(LetStmt* node, VisitOrder visit_order) { 
+            return true;
+        }
+        virtual bool on_visit__const_stmt(ConstStmt* node, VisitOrder visit_order) {
+            return true;
+        }
+
+        // expressions:
+        virtual bool on_visit__unit_exp(UnitExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__int_exp(IntExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__float_exp(FloatExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__string_exp(StringExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__id_exp(IdExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__paren_exp(ParenExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__tuple_exp(TupleExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__array_exp(ArrayExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__struct_exp(StructExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__type_query_exp(TypeQueryExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__chain_exp(ChainExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__lambda_exp(LambdaExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__if_exp(IfExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__dot_index_exp(DotIndexExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__dot_name_exp(DotNameExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__unary_exp(UnaryExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__binary_exp(BinaryExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__v_call_exp(VCallExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__t_call_exp(TCallExp* node, VisitOrder visit_order) {
+            return true;
+        }
+        
+        // patterns:
+        virtual bool on_visit__v_pattern(VPattern* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__t_pattern(TPattern* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__l_pattern(LPattern* node, VisitOrder visit_order) {
+            return true;
+        }
+
+        // typespecs:
+        virtual bool on_visit__id_typespec(IdTypespec* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__mut_typespec(MutTypespec* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__ptr_typespec(PtrTypespec* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__func_typespec(FuncTypespec* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__t_call_typespec(TCallTypespec* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__dot_name_typespec_type_prefix(DotNameTypespec_TypePrefix* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__dot_name_typespec_mod_prefix(DotNameTypespec_ModPrefix* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__struct_typespec(StructTypespec* node, VisitOrder visit_order) {
+            return true;
+        }
+
+      // visit is the outward-facing endpoint:
+      public:
+        bool visit(Node* node);
+    };
+
     class BaseVisitor {
-        // BaseVisitor takes a pure-virtual method 'on_visit'
-        // and applies it to each node in an AST recursively
       protected:
         virtual bool on_visit(Node* node, bool pre_not_post) = 0;
+    
+      public:
+        bool visit(Node* node);
     };
 
     class BaseVisitor_Factored: public BaseVisitor {
       // dummy implementations of visitors per-kind.
       protected:
-        // scripts:
-        virtual bool on_visit__script(Node* node, bool pre_not_post) {
-            return true;
-        };
-
-        // statements:
-        virtual bool on_visit__module_stmt(ModuleStmt* node, bool pre_not_post) { 
-            return true;
-        };
-        virtual bool on_visit__class_stmt(ClassStmt* node, bool pre_not_post) { 
-            return true;
-        };
-        virtual bool on_visit__type_stmt(TypeStmt* node, bool pre_not_post) { 
-            return true;
-        };
-        virtual bool on_visit__enum_stmt(EnumStmt* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__def_stmt(DefStmt* node, bool pre_not_post) { 
-            return true;
-        };
-        virtual bool on_visit__let_stmt(LetStmt* node, bool pre_not_post) { 
-            return true;
-        };
-
-        // expressions:
-        virtual bool on_visit__unit_exp(UnitExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__int_exp(IntExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__float_exp(FloatExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__string_exp(StringExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__vid_exp(VIdExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__tid_exp(TIdExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__paren_exp(ParenExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__tuple_exp(TupleExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__array_exp(ArrayExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__struct_exp(StructExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__chain_exp(ChainExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__lambda_exp(LambdaExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__if_exp(IfExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__match_exp(MatchExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__dot_index_exp(DotIndexExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__dot_name_exp(DotNameExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__unary_exp(UnaryExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__binary_exp(BinaryExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__v_call_exp(VCallExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__t_call_exp(TCallExp* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__cast_exp(CastExp* node, bool pre_not_post) {
-            return true;
-        }
-
-        // patterns:
-        virtual bool on_visit__v_pattern(VPattern* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__t_pattern(TPattern* node, bool pre_not_post) {
-            return true;
-        }
-        virtual bool on_visit__l_pattern(LPattern* node, bool pre_not_post) {
-            return true;
-        }
-
+        
       // implementation of BaseVisitor's on_visit
       protected:
         // todo: add more virtual overloads per node-type

@@ -19,6 +19,11 @@ namespace pdm::ast {
         DotExp(source::Loc loc, Kind node_kind, Exp* lhs)
         : Exp(loc, node_kind),
           m_lhs(lhs) {}
+
+      public:
+        Exp* lhs() const {
+            return m_lhs;
+        }
     };
 
     class DotNameExp: public DotExp {
@@ -29,6 +34,11 @@ namespace pdm::ast {
         DotNameExp(source::Loc loc, Exp* lhs, intern::String rhs_name)
         : DotExp(loc, Kind::DotNameExp, lhs),
           m_rhs_name(rhs_name) {}
+
+      public:
+        intern::String rhs_name() const {
+            return m_rhs_name;
+        }
     };
 
     class DotIndexExp: public DotExp {
@@ -39,6 +49,11 @@ namespace pdm::ast {
         DotIndexExp(source::Loc loc, Exp* lhs, Exp* rhs_exp)
         : DotExp(loc, Kind::DotIndexExp, lhs),
           m_rhs_exp(rhs_exp) {}
+
+      public:
+        Exp* rhs_exp() const {
+            return m_rhs_exp;
+        }
     };
 
 }

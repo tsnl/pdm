@@ -12,11 +12,20 @@ namespace pdm::ast {
       private:
         LPattern* m_lhs_lpattern;
         Exp*      m_rhs_body;
+
       public:
-        LetStmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_body)
+        LetStmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp)
         : Stmt(loc, Kind::LetStmt),
           m_lhs_lpattern(lhs_lpattern),
-          m_rhs_body(rhs_body) {}
+          m_rhs_body(rhs_exp) {}
+      
+      public:
+        LPattern* lhs_lpattern() const {
+            return m_lhs_lpattern;
+        }
+        Exp* rhs_exp() const {
+            return m_rhs_body;
+        }
     };
 
 }

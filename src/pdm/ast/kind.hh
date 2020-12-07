@@ -4,16 +4,24 @@
 namespace pdm::ast {
 
     enum class Kind {
+        // scripts:
         Script, 
         
+        // statements:
+        LetStmt,
+        ConstStmt,
+        DefStmt,
+        TypeStmt,
+        EnumStmt,
+        TypeclassStmt,
         ModuleStmt,
-        TypeclassStmt, EnumStmt, TypeStmt, DefStmt, ConstStmt, LetStmt,
 
+        // expressions:
         UnitExp, 
         IntExp, FloatExp, StringExp,
         IdExp,
         ParenExp,
-        TupleExp, ArrayExp, StructExp, ChainExp,
+        ArrayExp, TupleExp, StructExp, ChainExp,
         LambdaExp,
         IfExp,
         DotIndexExp, DotNameExp,
@@ -21,13 +29,15 @@ namespace pdm::ast {
         VCallExp, TCallExp,
         TypeQueryExp,
 
+        // patterns:
         VPattern,       // used in def() and struct-typespec; top-mut types prohibited!
         TPattern,       // used in def<>/[], type<>/[], class<>/[]4
         LPattern,       // used in let, lambda, match
 
+        // typespecs:
         IdTypespec,
         MutTypespec, PtrTypespec,
-        TCallTypespec,
+        FuncTypespec, TCallTypespec,
         DotNameTypespec_TypePrefix, DotNameTypespec_ModPrefix,
         StructTypespec,
     };

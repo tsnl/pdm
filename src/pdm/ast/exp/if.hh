@@ -19,6 +19,17 @@ namespace pdm::ast {
           m_cond_exp(cond_exp),
           m_then_exp(then_exp),
           m_else_exp(else_exp) {}
+
+      public:
+        Exp* cond_exp() const {
+            return m_cond_exp;
+        }
+        Exp* then_exp() const {
+            return m_then_exp;
+        }
+        Exp* else_exp() const {
+            return m_else_exp;
+        }
     };
 
 }

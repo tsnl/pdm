@@ -1,5 +1,31 @@
 # Roadmap
 
+**Prime or Parse?**
+- can either work on primer or parser in cpp version next.
+- for parser, write wrapper around existing C lexer but write new ANTLR callbacks.
+  - require backward-compatible C bindings for 'Source'
+- for scoper (nee primer), subclass and implement 'Visitor', porting logic from C version
+  - dedicated 'Symbol' classes! At last!
+  - a much more feature-rich symbol table/graph is required
+  - tbd after surveying C version
+  * module fields (esp types) MUST be resolved at scoping time 
+    - so treat the scoper like the typer! detailed traces, even if we don't need them, just
+      to keep us honest :)
+    - each 'context' is exactly a frontier of all defined/queriable symbols
+      - implementation as an **LL-slice** in a graph aside
+
+**New Exprs, Typespecs in C++ Version**
+- **todo:** add 'typecheck' exprs (T :: U, T :< U, T >: U where T,U typespecs) (dec 6)
+  - done (dec 7)
+- **todo:** add support for the following builtins (dec 6):
+  - `Fn<A,R>`: the function type (replaced with FuncType dec 7)
+  - 'bitcast<T>(v)`: the cast function
+  - `I__, U__, F__`
+- **todo:** implement 'const' statements
+  - done (dec 7)
+- **todo:** implement 'typeclass' statements
+  - done (dec 7), tentatively
+
 **Warmup: add '&'**
 - added unaryTypespec in yacc with '&' prefix
   - todo: add NewAstTMut, mut type

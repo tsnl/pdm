@@ -9,7 +9,7 @@
 namespace pdm::ast {
 
     class Stmt: public Node {
-      public:
+      protected:
         Stmt(source::Loc loc, Kind stmt_kind)
         : Node(loc, stmt_kind) {}
     };

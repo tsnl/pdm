@@ -8,14 +8,39 @@
 namespace pdm::ast {
 
     class TCallTypespec: public Typespec {
-      private:
-        Typespec*          m_lhs_called;
-        std::vector<Node*> m_args;
       public:
-        TCallTypespec(source::Loc loc, Typespec* lhs_called, std::vector<Node*>&& args)
+        class Arg {
+          private:
+            Node* m_node;
+            bool  m_is_type_not_val;
+
+          public:
+            Arg(Node* node, bool is_type_not_val)
+            : m_node(node), m_is_type_not_val(is_type_not_val) {}
+            
+            virtual ~Arg() {};
+          
+          public:
+            Node* node() const { return m_node; }
+            bool is_type_not_val() const { return m_is_type_not_val; }
+        };
+
+      private:
+        Typespec*                       m_lhs_called;
+        std::vector<TCallTypespec::Arg> m_args;
+      public:
+        TCallTypespec(source::Loc loc, Typespec* lhs_called, std::vector<TCallTypespec::Arg>&& args)
         : Typespec(loc, Kind::TCallTypespec),
           m_lhs_called(lhs_called),
           m_args(std::move(args)) {}
+      
+      public:
+        Typespec* lhs_called() const {
+            return m_lhs_called;
+        }
+        std::vector<TCallTypespec::Arg> const& args() const {
+            return m_args;
+        }
     };
 
 }

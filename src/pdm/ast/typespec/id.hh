@@ -17,6 +17,11 @@ namespace pdm::ast {
         IdTypespec(source::Loc loc, intern::String name)
         : Typespec(loc, Kind::IdTypespec),
           m_name(name) {}
+      
+      public:
+        intern::String name() const {
+            return m_name;
+        }
     };
 
 }

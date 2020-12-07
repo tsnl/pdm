@@ -24,6 +24,14 @@ namespace pdm::ast {
         : Exp(loc, Kind::UnaryExp),
           m_operator(unary_operator),
           m_operand(operand) {}
+      
+      public:
+        UnaryOperator unary_operator() const {
+            return m_operator;
+        }
+        Exp* operand() const {
+            return m_operand;
+        }
     };
 
 }

@@ -8,7 +8,7 @@
 namespace pdm::ast {
 
     class Typespec: public Node {
-      public:
+      protected:
         Typespec(source::Loc loc, Kind kind)
         : Node(loc, kind) {}
     };

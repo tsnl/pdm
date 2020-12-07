@@ -17,6 +17,11 @@ namespace pdm::ast {
         MutTypespec(source::Loc loc, Typespec* mutatee)
         : Typespec(loc, Kind::MutTypespec),
           m_mutatee(mutatee) {}
+      
+      public:
+        Typespec* mutatee() const {
+            return m_mutatee;
+        }
     };
 
 }

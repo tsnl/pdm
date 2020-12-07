@@ -9,6 +9,7 @@
 namespace pdm::ast {
 
     class LambdaExp: public Exp {
+      private:
         VPattern* m_lhs_vpattern;
         Exp*      m_body;
     
@@ -17,6 +18,14 @@ namespace pdm::ast {
         : Exp(loc, Kind::LambdaExp),
           m_lhs_vpattern(lhs_vpattern),
           m_body(body) {}
+      
+      public:
+        VPattern* lhs_vpattern() const {
+            return m_lhs_vpattern;
+        }
+        Exp* body() const {
+            return m_body;
+        }
     };
 
 }

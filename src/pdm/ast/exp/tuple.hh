@@ -17,6 +17,11 @@ namespace pdm::ast {
         TupleExp(source::Loc loc, std::vector<Exp*>&& items)
         : Exp(loc, Kind::TupleExp),
           m_items(std::move(items)) {}
+      
+      public:
+        std::vector<Exp*> const& items() const {
+            return m_items;
+        }
     };
 
 }

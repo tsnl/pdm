@@ -13,9 +13,18 @@ namespace pdm::ast {
     class Script: public Node {
         friend Manager;
 
+      private:
+        source::Source* m_source;
+
       protected:
         Script(source::Source* source)
-        : Node(source::Loc::none, Kind::Script) {}
+        : Node(source::Loc::none, Kind::Script),
+          m_source(source) {}
+    
+      public:
+        source::Source* source() const {
+            return m_source;
+        }
     };
 
 }   // namespace pdm::ast

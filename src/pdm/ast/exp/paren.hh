@@ -9,12 +9,18 @@
 namespace pdm::ast {
 
     class ParenExp: public Exp {
+      private:
         Exp* m_nested;
     
       public:
         ParenExp(source::Loc loc, Exp* nested)
         : Exp(loc, Kind::ParenExp),
           m_nested(nested) {}
+      
+      public:
+        Exp* nested() const {
+            return m_nested;
+        }
     };
 
 }

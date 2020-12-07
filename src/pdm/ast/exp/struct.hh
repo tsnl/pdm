@@ -19,6 +19,14 @@ namespace pdm::ast {
           public:
             Field(intern::String name, Exp* value)
             : m_name(name), m_value(value) {}
+          
+          public:
+            intern::String name() const {
+                return m_name;
+            }
+            Exp* value() const {
+                return m_value;
+            }
         };
 
       private:
@@ -28,6 +36,11 @@ namespace pdm::ast {
         StructExp(source::Loc loc, std::vector<StructExp::Field>&& fields)
         : Exp(loc, Kind::StructExp),
           m_fields(std::move(fields)) {}
+
+      public:
+        std::vector<StructExp::Field> const& fields() const {
+            return m_fields;
+        }
     };
 
 }

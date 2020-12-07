@@ -6,9 +6,12 @@
 namespace pdm::ast {
 
     class Exp: public Node {
-      public:
+      protected:
         Exp(source::Loc loc, Kind kind)
         : Node(loc, kind) {}
+
+      protected:
+        virtual bool is_const_evaluable() const;
     };
 
 }

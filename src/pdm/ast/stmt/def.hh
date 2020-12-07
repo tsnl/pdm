@@ -20,6 +20,7 @@ namespace pdm::ast {
         VPattern* m_vpattern;
         Typespec* m_return_ts;
         Exp* m_body;
+
       public:
         DefStmt(source::Loc loc, intern::String name, std::vector<TPattern*> tpatterns, VPattern* vpattern, Typespec* return_ts, Exp* body)
         : Stmt(loc, Kind::DefStmt),
@@ -28,6 +29,20 @@ namespace pdm::ast {
           m_vpattern(vpattern),
           m_return_ts(return_ts),
           m_body(body) {}
+
+      public:
+        intern::String name() const {
+            return m_name;
+        }
+        std::vector<TPattern*> const& tpatterns() const {
+            return m_tpatterns;
+        }
+        VPattern* vpattern() const {
+            return m_vpattern;
+        }
+        Typespec* return_ts() const {
+            return m_return_ts;
+        }
     };
 
 }

@@ -17,6 +17,14 @@ namespace pdm::ast {
         : Stmt(loc, Kind::ConstStmt),
           m_lhs_lpattern(lhs_lpattern),
           m_rhs_exp(rhs_exp) {}
+
+      public:
+        LPattern* lhs_lpattern() const {
+            return m_lhs_lpattern;
+        }
+        Exp* rhs_exp() const {
+            return m_rhs_exp;
+        }
     };
 
 }

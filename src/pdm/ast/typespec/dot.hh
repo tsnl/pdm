@@ -20,6 +20,14 @@ namespace pdm::ast {
         : Typespec(loc, Kind::DotNameTypespec_TypePrefix),
           m_lhs_typespec(lhs_typespec),
           m_rhs_name(rhs_name) {}
+      
+      public:
+        Typespec* lhs_typespec() const {
+            return m_lhs_typespec;
+        }
+        intern::String rhs_name() const {
+            return m_rhs_name;
+        }
     };
 
     class DotNameTypespec_ModPrefix: public Typespec {
@@ -32,6 +40,14 @@ namespace pdm::ast {
         : Typespec(loc, Kind::DotNameTypespec_ModPrefix),
           m_lhs_prefixes(std::move(lhs_prefixes)),
           m_rhs_name(rhs_name) {}
+      
+      public:
+        std::vector<intern::String> const& lhs_prefixes() const {
+            return m_lhs_prefixes;
+        }
+        intern::String rhs_name() const {
+            return m_rhs_name;
+        }
     };
 
 }

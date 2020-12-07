@@ -12,11 +12,20 @@ namespace pdm::ast {
       private:
         intern::String  m_name;
         StructTypespec* m_body_struct_typespec;
+      
       public:
         EnumStmt(source::Loc loc, intern::String name, StructTypespec* body_struct_typespec)
         : Stmt(loc, Kind::EnumStmt),
           m_name(name),
           m_body_struct_typespec(body_struct_typespec) {}
+      
+      public:
+        intern::String name() const {
+            return m_name;
+        }
+        StructTypespec* body_struct_typespec() const {
+            return m_body_struct_typespec;
+        }
     };
 
 }

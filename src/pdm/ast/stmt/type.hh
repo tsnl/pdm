@@ -19,6 +19,14 @@ namespace pdm::ast {
         : Stmt(loc, Kind::TypeStmt),
           m_lhs_name(lhs_name),
           m_rhs_typespec(rhs_typespec) {}
+      
+      public:
+        intern::String lhs_name() const {
+            return m_lhs_name;
+        }
+        Typespec* rhs_typespec() const {
+            return m_rhs_typespec;
+        }
     };
 
 }

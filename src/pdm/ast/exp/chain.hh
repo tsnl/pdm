@@ -11,14 +11,23 @@
 namespace pdm::ast {
 
     class ChainExp: public Exp {
+      private:
         std::vector<Stmt*> m_prefix;
-        Exp* m_suffix;
+        Exp*               m_suffix;
       
       public:
         ChainExp(source::Loc loc, std::vector<Stmt*>&& prefix, Exp* suffix = nullptr)
         : Exp(loc, Kind::ChainExp),
           m_prefix(std::move(prefix)),
           m_suffix(suffix) {}
+      
+      public:
+        std::vector<Stmt*> const& prefix() const {
+            return m_prefix;
+        }
+        Exp* suffix() const {
+            return m_suffix;
+        }
     };
 
 }

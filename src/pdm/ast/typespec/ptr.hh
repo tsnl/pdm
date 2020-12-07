@@ -17,6 +17,11 @@ namespace pdm::ast {
         PtrTypespec(source::Loc loc, Typespec* pointee)
         : Typespec(loc, Kind::PtrTypespec),
           m_pointee(pointee) {}
+      
+      public:
+        Typespec* pointee() const {
+            return m_pointee;
+        }
     };
 
 }

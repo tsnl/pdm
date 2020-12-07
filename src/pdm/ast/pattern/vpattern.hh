@@ -13,12 +13,15 @@ namespace pdm::ast {
       public:
         class Field {
           private:
-            intern::String m_name;
+            intern::String m_lhs_name;
             Typespec*      m_typespec;
           public:
-            Field(intern::String name, Typespec* typespec)
-            : m_name(name),
-              m_typespec(typespec) {}
+            Field(intern::String name, Typespec* rhs_typespec)
+            : m_lhs_name(name),
+              m_typespec(rhs_typespec) {}
+          public:
+            intern::String lhs_name() const { return m_lhs_name; }
+            Typespec* rhs_typespec() const { return m_typespec; }
         };
       
       private:
@@ -28,6 +31,11 @@ namespace pdm::ast {
         VPattern(source::Loc loc, std::vector<VPattern::Field>&& fields)
         : Node(loc, Kind::VPattern),
           m_fields(std::move(fields)) {}
+
+      public:
+        std::vector<VPattern::Field> const& fields() const {
+            return m_fields;
+        }
     };
 
 }

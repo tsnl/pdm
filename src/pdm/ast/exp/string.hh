@@ -11,12 +11,18 @@
 namespace pdm::ast {
 
     class StringExp: public Exp {
+      private:
         std::vector<int> m_content;
     
       public:
         StringExp(source::Loc loc, std::vector<int>&& content)
         : Exp(loc, Kind::StringExp),
           m_content(std::move(content)) {}
+
+      public:
+        std::vector<int> const& content() const {
+            return m_content;
+        }
     };
 
 }

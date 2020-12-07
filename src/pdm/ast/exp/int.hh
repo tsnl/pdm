@@ -9,12 +9,18 @@
 namespace pdm::ast {
 
     class IntExp: public Exp {
+      private:
         u64 m_value;
     
       public:
         IntExp(source::Loc loc, u64 value)
         : Exp(loc, Kind::IntExp),
           m_value(value) {}
+      
+      public:
+        u64 value() const {
+            return m_value;
+        }
     };
 
 }

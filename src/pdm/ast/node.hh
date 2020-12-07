@@ -8,34 +8,46 @@
 
 namespace pdm::ast {
 
+    // NodeState specifies a growing series of capabilities.
+    // - only 'Fresh' nodes can be modified
+    // - 'Primed' nodes and newer have placeholder free types
+    // - only 'Typed' nodes have either concrete solutions or errors
+    // * Fresh -> Primed -> Typed
+    enum class NodeState {
+        Fresh,
+        Primed,
+        Typed
+    };
+
     class Node {
       // data members:
       private:
         Kind        m_kind;
         source::Loc m_loc;
-        void*       m_more;
-
-      // subtype 'more' ptr access <=> Node fixed size
-      protected:
-        void* more() const {
-            return m_more;
-        }
-        void* more(void* ptr) {
-            return m_more = ptr;
-        }
+        NodeState   m_state;
 
       // general-purpose getters
       public:
         Kind kind() const {
             return m_kind;
         }
-    
+        NodeState state() const {
+            return m_state;
+        }
+
+      // state transitions:
+      public:
+        void chgstate__fresh_to_primed();
+        void chgstate__primed_to_typed();
+
       // protected constructor:
       protected:
         Node(source::Loc loc, Kind kind)
         : m_kind(kind),
-          m_loc(loc),
-          m_more(nullptr) {}
+          m_loc(loc) {}
+
+      public:
+        virtual ~Node() {}
     };
 
 }   // namespace pdm::ast

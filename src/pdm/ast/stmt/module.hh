@@ -11,15 +11,22 @@ namespace pdm::ast {
 
     class ModuleStmt: public Stmt {
       private:
-        source::Loc        m_loc;
         intern::String     m_module_name;
         std::vector<Stmt*> m_defns;
+
       public:
         ModuleStmt(source::Loc loc, intern::String module_name, std::vector<Stmt*> defns)
         : Stmt(loc, Kind::ModuleStmt),
-          m_loc(loc),
           m_module_name(module_name),
           m_defns(defns) {}
+      
+      public:
+        intern::String module_name() const {
+            return m_module_name;
+        }
+        std::vector<Stmt*> const& defns() const {
+            return m_defns;
+        }
     };
 
 }

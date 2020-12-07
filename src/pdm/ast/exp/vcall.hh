@@ -18,6 +18,14 @@ namespace pdm::ast {
         : Exp(loc, Kind::TCallExp),
           m_lhs_called(lhs_called),
           m_args(std::move(args)) {}
+      
+      public:
+        Exp* lhs_called() const {
+            return m_lhs_called;
+        }
+        std::vector<Exp*> const& args() const {
+            return m_args;
+        }
     };
 
 }

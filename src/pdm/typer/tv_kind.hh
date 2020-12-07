@@ -10,7 +10,8 @@ namespace pdm::typer {
         Value,
         Type,
         Typeclass,
-        TFunc
+        TFunc_Value,
+        TFunc_Type
     };
 
 }
