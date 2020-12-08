@@ -5,50 +5,32 @@ extern "C" {
 #include "intern.hh"
 
 namespace pdm::intern {
-        
+
     //
-    // Manager:
+    // Static String Manager:
     //
 
-    Manager::Manager()
-    : m_strings_repository(strings_new()) {}
+    String::Manager String::s_manager;
 
-    String Manager::new_str(char const* c_str) {
-        return String(this, strings_intern(strings_repository(), c_str));
+    String::Manager::Manager() {
+        s_manager.m_strings_repository = strings_new();
+    }
+    String::Manager::~Manager() {
+        strings_free(s_manager.m_strings_repository);
+        s_manager.m_strings_repository = nullptr;
     }
 
     //
     // String:
     //
 
-    String::String(Manager* manager, u32 id)
-    : m_manager(manager),
-      m_id(id) {}
+    String::String(char const* str_content)
+    : m_id(0) {
+        m_id = strings_intern(s_manager.m_strings_repository, str_content);
+    }
 
-    char const* String::str() const {
-        return strings_lookup_id(m_manager->strings_repository(), m_id);
+    char const* String::content() const {
+        return strings_lookup_id(s_manager.m_strings_repository, m_id);
     }
     
-
-    // void InitSymbols(void) {
-    //     if (!stringsRepository) {
-    //         stringsRepository = strings_new();
-    //     }
-    // }
-
-    // void DeInitSymbols(void) {
-    //     if (stringsRepository) {
-    //         strings_free(stringsRepository);
-    //         stringsRepository = NULL;
-    //     }
-    // }
-
-    // SymbolID Symbol(char const* text) {
-    //     return strings_intern(stringsRepository, text);
-    // }
-
-    // char const* GetSymbolText(SymbolID symbolID) {
-    //     return strings_lookup_id(stringsRepository, symbolID);
-    // }
-
-}
+}   // namespace pdm::intern

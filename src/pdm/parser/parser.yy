@@ -137,12 +137,12 @@
     void yyerror(YYLTYPE* llocp, Source* source, AstNode** outp, char const* message);
 }
 
-%token <token> TK_VID   "a VID (ID with first letter lowercase)"
-%token <token> TK_TID   "a TID (ID with first letter uppercase)"
-%token <token> TK_HOLE  "a HOLE (ID without any letters)"
+%token <token> TK_VID   "a vid"
+%token <token> TK_TID   "a TId"
+%token <token> TK_HOLE  "a HOLE (e.g. _, _123)"
 
 %token TK_KW_NAMESPACE  "'namespace'"
-%token TK_KW_MOD "'mod'"
+%token TK_KW_MOD "'module'"
 %token TK_KW_DO "'do'"              // deprecated?
 %token TK_KW_IF "'if'" 
 %token TK_KW_THEN "'then'"
@@ -168,8 +168,8 @@
 %token TK_KW_XOR "'xor'" 
 %token TK_KW_OR "'or'" 
 %token TK_KW_NOT "'not'"
-%token TK_KW_TTUPLE "'Tuple'"
-%token TK_KW_TARRAY "'Array'"
+%token TK_KW_TTUPLE "'Tuple'"   // deprecated? don't use keyword
+%token TK_KW_TARRAY "'Array'"   // deprecated? don't use keyword
 
 %token <token> TK_DINT_LIT TK_XINT_LIT TK_FLOAT_LIT 
 %token <token> TK_DQSTRING_LIT TK_SQSTRING_LIT

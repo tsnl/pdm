@@ -52,7 +52,7 @@ namespace pdm::typer {
         TV* m_rhs_typespec;
       protected:
         TypespecRule(ast::Node* ast_node, intern::String lhs_name, TV* lhs_tv, TV* rhs_typespec)
-        : Rule(ast_node, "(" + std::string(lhs_name.str()) + " X)"),
+        : Rule(ast_node, "(" + std::string(lhs_name.content()) + " X)"),
           m_lhs_name(lhs_name), 
           m_lhs_tv(lhs_tv),
           m_rhs_typespec(rhs_typespec) {}

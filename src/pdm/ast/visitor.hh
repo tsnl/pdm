@@ -31,7 +31,9 @@
 #include "pdm/ast/stmt/const.hh"
 #include "pdm/ast/stmt/def.hh"
 #include "pdm/ast/stmt/enum.hh"
+#include "pdm/ast/stmt/import.hh"
 #include "pdm/ast/stmt/let.hh"
+#include "pdm/ast/stmt/link.hh"
 #include "pdm/ast/stmt/module.hh"
 #include "pdm/ast/stmt/type.hh"
 #include "pdm/ast/stmt/typeclass.hh"
@@ -43,6 +45,7 @@
 #include "pdm/ast/typespec/ptr.hh"
 #include "pdm/ast/typespec/struct.hh"
 #include "pdm/ast/typespec/tcall.hh"
+#include "pdm/ast/typespec/tuple.hh"
 #include "pdm/ast/typespec/func.hh"
 #include "pdm/ast/typespec/typespec.hh"
 
@@ -55,6 +58,18 @@ namespace pdm::ast {
     // Visitor recursively applies a pure-virtual method 'on_visit'
     // to each node in an AST.
     class Visitor {
+
+      // visit is the outward-facing endpoint:
+      public:
+        bool visit(Node* node);
+
+      // on_visit calls on_visit__X based on node->kind()
+      // on_visit__X is a pure virtual callback called by 'visit' for each node
+      // of that kind.
+      // on_visit__X should not recurse on children. Instead, it should just
+      // perform the necessary processing for that node in pre/post and wait 
+      // for the visitor to apply other functions to children nodes.
+
       public:
         enum class VisitOrder {
             Pre,
@@ -62,15 +77,9 @@ namespace pdm::ast {
         };
 
       private:
-        // shared:
         bool on_visit(Node* node, VisitOrder visit_order);
-
-      // on_visit__X is a pure virtual callback called by 'visit' for each node
-      // of that kind.
-      // on_visit__X should not recurse on children. Instead, it should just
-      // perform the necessary processing for that node in pre/post and wait 
-      // for the visitor to apply other functions to children nodes.
-      public:
+      
+      protected:
         // scripts:
         virtual bool on_visit__script(Script* script, VisitOrder visit_order) {
             return true;
@@ -96,6 +105,12 @@ namespace pdm::ast {
             return true;
         }
         virtual bool on_visit__const_stmt(ConstStmt* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__link_stmt(LinkStmt* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__import_stmt(ImportStmt* node, VisitOrder visit_order) {
             return true;
         }
 
@@ -185,6 +200,9 @@ namespace pdm::ast {
         virtual bool on_visit__t_call_typespec(TCallTypespec* node, VisitOrder visit_order) {
             return true;
         }
+        virtual bool on_visit__tuple_typespec(TupleTypespec* node, VisitOrder visit_order) {
+            return true;
+        }
         virtual bool on_visit__dot_name_typespec_type_prefix(DotNameTypespec_TypePrefix* node, VisitOrder visit_order) {
             return true;
         }
@@ -194,29 +212,6 @@ namespace pdm::ast {
         virtual bool on_visit__struct_typespec(StructTypespec* node, VisitOrder visit_order) {
             return true;
         }
-
-      // visit is the outward-facing endpoint:
-      public:
-        bool visit(Node* node);
-    };
-
-    class BaseVisitor {
-      protected:
-        virtual bool on_visit(Node* node, bool pre_not_post) = 0;
-    
-      public:
-        bool visit(Node* node);
-    };
-
-    class BaseVisitor_Factored: public BaseVisitor {
-      // dummy implementations of visitors per-kind.
-      protected:
-        
-      // implementation of BaseVisitor's on_visit
-      protected:
-        // todo: add more virtual overloads per node-type
-        // todo: implement 'on_visit', delegating to on_visit__...
-        virtual bool on_visit(Node* node, bool pre_not_post) override;
     };
 
 }   // namespace pdm::ast

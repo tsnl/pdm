@@ -1,8 +1,30 @@
 # Roadmap
 
 **Prime or Parse?**
-- can either work on primer or parser in cpp version next.
-- for parser, write wrapper around existing C lexer but write new ANTLR callbacks.
+
+**TODO (dec 7)**
+- added utf8 string support, see pdm/core/utf8 or pdm/ast/expr/string
+* **todo**: implement new `pdm::feedback` module!
+  - source-independent
+  - just tracks and organizes compiler messages in order received
+- to work on parser, lexer must be ported to C++
+  - utf8 string builder support can be shimmed out to C
+  - but 'source' and 'feedback' have changed
+  - doesn't mean most of C code can be preserved (incl. TK_); conservative port
+- work on `scoper` may proceed...
+  * implemented much of scaffolding
+  * **todo**: implement scoper visitor methods
+  * **todo**: implement `Defn` subtypes for `using` and `import` statements.
+    - requires well-specified `Compiler` interface to request a module.
+    - consider providing a metavar and deferring module loading?
+  
+**UPDATED:**
+- added 'link', 'import'
+- visitor working
+
+**TODO (dec 6)**
+- can either work on scoper (old primer) or parser in cpp version next.
+- for parser, write wrapper around existing C lexer but write new YACC callbacks.
   - require backward-compatible C bindings for 'Source'
 - for scoper (nee primer), subclass and implement 'Visitor', porting logic from C version
   - dedicated 'Symbol' classes! At last!

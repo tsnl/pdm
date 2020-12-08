@@ -31,6 +31,9 @@ namespace pdm::ast {
         Kind kind() const {
             return m_kind;
         }
+        source::Loc const& loc() const {
+            return m_loc;
+        }
         NodeState state() const {
             return m_state;
         }
@@ -44,7 +47,8 @@ namespace pdm::ast {
       protected:
         Node(source::Loc loc, Kind kind)
         : m_kind(kind),
-          m_loc(loc) {}
+          m_loc(loc),
+          m_state(NodeState::Fresh) {}
 
       public:
         virtual ~Node() {}

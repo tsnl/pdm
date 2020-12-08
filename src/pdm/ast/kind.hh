@@ -15,6 +15,8 @@ namespace pdm::ast {
         EnumStmt,
         TypeclassStmt,
         ModuleStmt,
+        LinkStmt,
+        ImportStmt,
 
         // expressions:
         UnitExp, 
@@ -39,7 +41,7 @@ namespace pdm::ast {
         MutTypespec, PtrTypespec,
         FuncTypespec, TCallTypespec,
         DotNameTypespec_TypePrefix, DotNameTypespec_ModPrefix,
-        StructTypespec,
+        TupleTypespec, StructTypespec,
     };
 
     // dependencies: 

@@ -92,6 +92,22 @@ namespace pdm::ast {
                 }
                 break;
             }
+            case Kind::LinkStmt:
+            {
+                LinkStmt* link_stmt = dynamic_cast<LinkStmt*>(node);
+                ok = visit(link_stmt->linkage_name_exp()) && ok;
+                ok = visit(link_stmt->linked_file_array_exp()) && ok;
+                for (LinkStmt::Item const& item: link_stmt->items()) {
+                    ok = visit(item.src_name()) && ok;
+                }
+                break;
+            }
+            case Kind::ImportStmt:
+            {
+                ImportStmt* import_stmt = dynamic_cast<ImportStmt*>(node);
+                ok = visit(import_stmt->imported_from_exp()) && ok;
+                break;
+            }
 
             //
             // expressions:
@@ -297,6 +313,14 @@ namespace pdm::ast {
                 }
                 break;
             }
+            case Kind::TupleTypespec:
+            {
+                TupleTypespec* tuple_typespec = dynamic_cast<TupleTypespec*>(node);
+                for (Typespec* item_typespec: tuple_typespec->items()) {
+                    ok = visit(item_typespec) && ok;
+                }
+                break;
+            }
         }
 
         ok = on_visit(node, VisitOrder::Post) && ok;
@@ -340,6 +364,14 @@ namespace pdm::ast {
             case Kind::ModuleStmt:
             {
                 return on_visit__module_stmt(dynamic_cast<ModuleStmt*>(node), visit_order);
+            }
+            case Kind::LinkStmt:
+            {
+                return on_visit__link_stmt(dynamic_cast<LinkStmt*>(node), visit_order);
+            }
+            case Kind::ImportStmt:
+            {
+                return on_visit__import_stmt(dynamic_cast<ImportStmt*>(node), visit_order);
             }
 
             // expressions:
@@ -454,6 +486,10 @@ namespace pdm::ast {
             case Kind::TCallTypespec:
             {
                 return on_visit__t_call_typespec(dynamic_cast<TCallTypespec*>(node), visit_order);
+            }
+            case Kind::TupleTypespec:
+            {
+                return on_visit__tuple_typespec(dynamic_cast<TupleTypespec*>(node), visit_order);
             }
             case Kind::DotNameTypespec_TypePrefix:
             {
