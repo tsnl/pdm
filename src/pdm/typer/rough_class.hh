@@ -11,7 +11,7 @@ namespace pdm::typer {
 
     enum class RoughClass {
         // Solns in these classes are just types, i.e. sets of values.
-        Unit,
+        Void,
         Int,
         Float,
         Mut,

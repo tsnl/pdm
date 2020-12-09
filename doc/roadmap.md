@@ -2,6 +2,9 @@
 
 **Prime or Parse?**
 
+**TODO (dec 9)**
+- implement 'feedback'!
+
 **TODO (dec 7)**
 - added utf8 string support, see pdm/core/utf8 or pdm/ast/expr/string
 * **todo**: implement new `pdm::feedback` module!

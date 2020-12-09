@@ -10,6 +10,8 @@ namespace pdm::scoper {
 
     };
 
+    // Frame is a sequence of consecutively nested contexts.
+    // last_context->parent->parent... = first_context
     class Frame {
       private:
         FrameKind m_kind;

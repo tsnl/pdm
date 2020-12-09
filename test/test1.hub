@@ -3,13 +3,13 @@
 #
 
 mod basic {
-    link ("./basic.c") {
-        alloc (size U64) -> ^U8 from "./basic.c";
-        puts  (s String) -> U32 from "./basic.c";
+    link "C" ["./basic.c"] {
+        alloc (size U64) -> ^U8 from "alloc";
+        puts  (s String) -> U32 from "puts";
     };
 };
 mod print {
-    link ("./print.c") {
+    link "C" ["./print.c"] {
         string (s String) -> Unit from "print_string";
         s32    (s S32)    -> Unit from "print_s32";
         f32    (f F32)    -> Unit from "print_f32";

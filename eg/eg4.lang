@@ -6,37 +6,48 @@
 # Since selective imports risk breaking a type's class membership, we
 # must import all symbols in a module into an ENCAPSULATED NAMESPACE.
 
-# The 'attach' statement declaratively loads a module for access by a fixed VID name.
+# The 'import' statement declaratively loads a module for access by a fixed VID name.
+# the expressions can be const stored elsewhere.
+# Libraries are 'installed' to the filesystem to build to, though in the future, it may
+# be possible to specify libraries via git/hg URI which the compiler will automatically
+# install and cache.
 
-attach std from "basic.lang" as "file/fs";
-attach eg3 from "eg3.lang" as "file/fs";
-attach sdl from "pandemonium-sdl2" as "lib/fs";
-attach avx from "pandemonium-avx" as "lib/fs";
+import std from ("file/fs", "basic.lang");
+import eg3 from ("file/fs", "eg3.lang");
+import sdl from ("lib/fs", "pandemonium-sdl2");
+import avx from ("lib/fs", "pandemonium-avx");
 
 mod car {
-    def new (name Text, price I32) = eg3.Car {
+    type Car = {
+        name Text,
+        price I32
+    };
+    def new (name Text, price I32) Car = {
         (name, price)
     };
 };
 
 mod level1 {
     mod damage {
-        def wearAndTear (car &eg3.Car, dsec F32) = {
+        def wearAndTear (car ^&eg3.Car, dsec F32) Void = {
             let fancyScoreDamagePerSec = 1.2;
-            set car.fancyScore = *car.fancyScore - U32(fancyScoreDamagePerSec * dsec);
+            set car->fancyScore = car->fancyScore - U32(fancyScoreDamagePerSec * dsec);
         };
     };
 };
 
 #
-# 'import' explicitly brings another module's symbols into this module's namespace.
+# ~'import'~ 'using' explicitly brings another module's symbols into this module's namespace.
 # - optional '::' => import 1 symbol matching...; exactly like 'class' requirement
 # - optional '*' suffix => match this and everything with this suffix
-# thus, the 3 options to import symbols, from coarsest to finest:
-# - whole name imports
+# thus, the ~3~ 2 options to import symbols, from coarsest to finest:
 # - globbed name imports
-# - class-requirement statements
+# - whole name imports
+# - ~class-requirement statements~
 #
+
+using std.deq.*;
+using std.vec.Vec;
 
 mod demo {
 
@@ -49,7 +60,7 @@ mod demo {
     import eg3.newCarDict;
     import eg3.printVehicle :: Fn Car Unit;
 
-    def test () = {
+    def test () := {
         let carList List[Vehicle] = newCarList();
         let v1 = (1.0,2.0,3.0,4.0);
         let v2 = (2.0,3.0,4.0,5.0);

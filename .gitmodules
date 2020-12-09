@@ -1,17 +1,17 @@
 # The `intern` library is used for string interning for symbols.
 # Used modules:
 # - symbols
-[submodule "src/intern"]
-	path = src/intern
+[submodule "dep/intern"]
+	path = dep/intern
 	url = https://github.com/chriso/intern
-[submodule "src/tinydir"]
-	path = src/tinydir
+[submodule "dep/tinydir"]
+	path = dep/tinydir
 	url = https://github.com/cxong/tinydir
-[submodule "src/stb"]
-	path = src/stb
+[submodule "dep/stb"]
+	path = dep/stb
 	url = https://github.com/nothings/stb
-[submodule "src/utf8proc"]
-	path = src/utf8proc
+[submodule "dep/utf8proc"]
+	path = dep/utf8proc
 	url = https://github.com/JuliaStrings/utf8proc
 [submodule "dep/llvm-project"]
 	path = dep/llvm-project

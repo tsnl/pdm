@@ -30,7 +30,7 @@ namespace pdm::typer {
         std::deque<TV> m_all_tvs;
         std::vector<Rule*> m_all_rules;
 
-        TV* m_unit_tv;
+        TV* m_void_tv;
         TV* m_string_tv;
         TV* m_type_info_tv;
         TV* m_i8_tv;
@@ -59,7 +59,7 @@ namespace pdm::typer {
 
       public:
         Typer() {
-            m_unit_tv = new_unit_tv();
+            m_void_tv = new_void_tv();
             m_i8_tv = new_i8_tv();
             m_i16_tv = new_i16_tv();
             m_i32_tv = new_i32_tv();
@@ -81,8 +81,8 @@ namespace pdm::typer {
             m_all_tvs.emplace_back(this, soln);
             return &m_all_tvs.back();
         }
-        TV* new_unit_tv() {
-            return new_tv(UnitSoln::get());
+        TV* new_void_tv() {
+            return new_tv(VoidSoln::get());
         }
         TV* new_i8_tv() {
             return new_tv(IntSoln::get_i8());
@@ -130,8 +130,9 @@ namespace pdm::typer {
       //
       // TV creation and acquisition:
       //
+
       public:
-        TV* get_unit_tv() { return m_unit_tv; }
+        TV* get_void_tv() { return m_void_tv; }
         TV* get_string_tv() { return m_string_tv; }
         TV* get_type_info_tv() { return m_type_info_tv; }
 
@@ -176,10 +177,10 @@ namespace pdm::typer {
 
         // TV* new_typeclass_tv();
 
-
       //
       // Rules:
       //
+
       public:
         void apply_vid_typespec_rule(ast::Node* ast_node, intern::String lhs_name, TV* lhs_tv, TV* rhs_typespec_tv) {
             typer::VIdTypespecRule* rule = new typer::VIdTypespecRule(ast_node, lhs_name, lhs_tv, rhs_typespec_tv);

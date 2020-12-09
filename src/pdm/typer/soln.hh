@@ -87,17 +87,17 @@ namespace pdm::typer {
             return TvKind::Type;
         }
     };
-    class UnitSoln: public ConcreteTypeSoln {
+    class VoidSoln: public ConcreteTypeSoln {
       // shared singletons:
       private:
-        static UnitSoln s_singleton;
+        static VoidSoln s_singleton;
       public:
-        static UnitSoln* get() { return &s_singleton; }
+        static VoidSoln* get() { return &s_singleton; }
 
       // protected constructor:
       protected:
-        UnitSoln()
-        : ConcreteTypeSoln("Unit", RoughClass::Unit) {}
+        VoidSoln()
+        : ConcreteTypeSoln("Unit", RoughClass::Void) {}
     };
     class IntSoln: public ConcreteTypeSoln {
       private:

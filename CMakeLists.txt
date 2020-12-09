@@ -24,44 +24,46 @@ include_directories(
     "/usr/local/Cellar/llvm/10.0.1_1/include/"
 )
 include_directories(
-    "src"
+    src
+    src/pdm_old_c
+    dep
 )
 
 add_definitions(${LLVM_DEFINITIONS})
 add_executable(pc
-    src/ast.c
-    src/ast.h
-    src/checker.c
-    src/checker.h
-    src/code-printer.c
-    src/code-printer.h
-    src/config.h
-    src/debugger.c
-    src/debugger.h
-    src/extra-tokens.h
-    src/interp.c
-    src/interp.h
-    src/lexer.c
-    src/lexer.h
-    src/llvm-emitter.c
-    src/llvm-emitter.h
-    src/main.c
-    src/parser.h
-    src/parser.tab.c
-    src/parser.tab.h
-    src/primer.c
-    src/primer.h
-    src/source.c
-    src/source.h
-    src/symbols.c
-    src/symbols.h
-    src/typer.c
-    src/typer.h
-    src/unicoder.c
-    src/unicoder.h
-    src/useful.c
-    src/useful.h
-    src/values.h
+    src/pdm_old_c/ast.c
+    src/pdm_old_c/ast.h
+    src/pdm_old_c/checker.c
+    src/pdm_old_c/checker.h
+    src/pdm_old_c/code-printer.c
+    src/pdm_old_c/code-printer.h
+    src/pdm_old_c/config.h
+    src/pdm_old_c/debugger.c
+    src/pdm_old_c/debugger.h
+    src/pdm_old_c/extra-tokens.h
+    src/pdm_old_c/interp.c
+    src/pdm_old_c/interp.h
+    src/pdm_old_c/lexer.c
+    src/pdm_old_c/lexer.h
+    src/pdm_old_c/llvm-emitter.c
+    src/pdm_old_c/llvm-emitter.h
+    src/pdm_old_c/main.c
+    src/pdm_old_c/parser.h
+    src/pdm_old_c/parser.tab.c
+    src/pdm_old_c/parser.tab.h
+    src/pdm_old_c/primer.c
+    src/pdm_old_c/primer.h
+    src/pdm_old_c/source.c
+    src/pdm_old_c/source.h
+    src/pdm_old_c/symbols.c
+    src/pdm_old_c/symbols.h
+    src/pdm_old_c/typer.c
+    src/pdm_old_c/typer.h
+    src/pdm_old_c/unicoder.c
+    src/pdm_old_c/unicoder.h
+    src/pdm_old_c/useful.c
+    src/pdm_old_c/useful.h
+    src/pdm_old_c/values.h
 )
 
 #
@@ -84,7 +86,7 @@ target_link_libraries(pc ${llvm_libs})
 # Intern library:
 #
 
-add_subdirectory(src/intern)
+add_subdirectory(dep/intern)
 target_link_libraries(pc intern)
 
 #
@@ -92,8 +94,8 @@ target_link_libraries(pc intern)
 #
 
 add_library(utf8proc
-    src/utf8proc/utf8proc.c
-    src/utf8proc/utf8proc.h
+    dep/utf8proc/utf8proc.c
+    dep/utf8proc/utf8proc.h
 )
 target_link_libraries(pc utf8proc)
 
@@ -133,6 +135,7 @@ add_library(
     src/pdm/ast/stmt/def.hh
     src/pdm/ast/stmt/enum.hh
     src/pdm/ast/stmt/let.hh
+    src/pdm/ast/stmt/link.hh
     src/pdm/ast/stmt/module.cc
     src/pdm/ast/stmt/module.hh
     src/pdm/ast/stmt/stmt.hh
@@ -160,7 +163,19 @@ add_library(
     src/pdm/core/integer.hh
     src/pdm/core/intern.cc
     src/pdm/core/intern.hh
-    
+    src/pdm/core/utf8.cc
+    src/pdm/core/utf8.hh
+
+    src/pdm/scoper/context.cc
+    src/pdm/scoper/context.hh
+    src/pdm/scoper/defn.cc
+    src/pdm/scoper/defn.hh
+    src/pdm/scoper/scoper.cc
+    src/pdm/scoper/scoper.hh
+    src/pdm/scoper/frame.cc
+    src/pdm/scoper/frame.hh
+    src/pdm/scoper/root_frame.hh
+
     src/pdm/source/loc.hh
     src/pdm/source/pos.hh
     src/pdm/source/source.hh

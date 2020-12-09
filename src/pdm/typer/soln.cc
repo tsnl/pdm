@@ -2,7 +2,7 @@
 
 namespace pdm::typer {
 
-    UnitSoln UnitSoln::s_singleton {};
+    VoidSoln VoidSoln::s_singleton {};
 
     IntSoln IntSoln::s_i8_singleton {"I8", 8, true};
     IntSoln IntSoln::s_i16_singleton {"I16", 16, true};
