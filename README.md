@@ -20,7 +20,7 @@ Furthermore, as projects evolve, costly rewrites can be avoided since...
 
 Lastly, PDM naturally links with existing C (and thus subsets of C++) code. By supporting the de jure standard
 in ABIs with `link "C"` statements, PDM simplifies dependency management and allows users to 
-**use C libraries (even templates) out of the box.** This is possible using Clang's excellent, highly modular C/C++ parser,
+**use C libraries out of the box.** This is possible using Clang's excellent, highly modular C/C++ parser,
 and the fact that PDM's type system accommodates C's (with some caveats with respect to non-discriminated unions).
 Support for C++ libraries is currently not planned.
 
