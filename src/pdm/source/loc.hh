@@ -2,6 +2,7 @@
 #define INCLUDED_PDM_SOURCE_LOC_HH
 
 #include <cassert>
+#include <ostream>
 
 #include "pos.hh"
 
@@ -46,6 +47,9 @@ namespace pdm::source {
         int last_column() const {
             return m_last_column;
         }
+
+      public:
+        void print(std::ostream& out) const;
 
       public:
         static Loc none;

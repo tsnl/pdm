@@ -37,6 +37,7 @@
 #include "pdm/ast/stmt/module.hh"
 #include "pdm/ast/stmt/type.hh"
 #include "pdm/ast/stmt/typeclass.hh"
+#include "pdm/ast/stmt/builtin_type.hh"
 
 #include "pdm/ast/typespec/typespec.hh"
 #include "pdm/ast/typespec/dot.hh"
@@ -210,6 +211,9 @@ namespace pdm::ast {
             return true;
         }
         virtual bool on_visit__struct_typespec(StructTypespec* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__builtin_type_stmt(BuiltinTypeStmt* node, VisitOrder visit_order) {
             return true;
         }
     };

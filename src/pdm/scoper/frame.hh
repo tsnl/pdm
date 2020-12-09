@@ -1,32 +1,57 @@
 #ifndef INCLUDED_PDM_SCOPER_FRAME_HH
 #define INCLUDED_PDM_SCOPER_FRAME_HH
 
-#include "pdm/scoper/context.hh"
+#include <vector>
+
 #include "pdm/ast/stmt/stmt.hh"
+#include "pdm/scoper/context.hh"
+#include "pdm/typer/typer.hh"
 
 namespace pdm::scoper {
 
     enum class FrameKind {
-
+        Root,
     };
 
     // Frame is a sequence of consecutively nested contexts.
     // last_context->parent->parent... = first_context
     class Frame {
       private:
-        FrameKind m_kind;
-        Frame*    m_parent_frame;
-        Context*  m_first_context;
-        Context*  m_last_context;
+        typer::Typer*       m_typer;
+        FrameKind           m_kind;
+        Frame*              m_parent_frame;
+        std::vector<Frame*> m_child_frames;
+        Context*            m_first_context;
+        Context*            m_last_context;
       
-      public:
-        Frame(FrameKind kind, Frame* parent_frame)
-        : m_kind(kind),
+      protected:
+        // primary constructor: called by all other constructors
+        Frame(FrameKind kind, Frame* parent_frame, typer::Typer* typer)
+        : m_typer(typer),
+          m_kind(kind),
           m_parent_frame(parent_frame),
           m_first_context(nullptr),
-          m_last_context(nullptr) {}
+          m_last_context(nullptr) {
+            if (m_parent_frame) {
+                m_parent_frame->m_child_frames.push_back(this);
+            }
+        }
     
       public:
+        Frame(FrameKind kind, Frame* parent_frame)
+        : Frame(kind, parent_frame, parent_frame->typer()) {}
+
+      public:
+        typer::Typer* typer() const {
+            return m_typer;
+        }
+        Frame* parent_frame() const {
+            return m_parent_frame;
+        }
+        std::vector<Frame*> const& child_frames() const {
+            return m_child_frames;
+        }
+
         Context* opt_last_context() const {
             if (m_last_context) {
                 return m_last_context;

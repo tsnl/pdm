@@ -2,8 +2,8 @@
 
 **Prime or Parse?**
 
-**TODO (dec 9)**
-- implement 'feedback'!
+**DONE (dec 9)**
+- implemented 'feedback' module; truly ready for primer/parser!
 
 **TODO (dec 7)**
 - added utf8 string support, see pdm/core/utf8 or pdm/ast/expr/string

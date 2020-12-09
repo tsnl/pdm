@@ -10,6 +10,7 @@ namespace pdm::scoper {
     class Context;
 
     enum class DefnKind {
+        BuiltinType,
         Def,
         Const,
         Let,

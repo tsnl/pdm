@@ -126,11 +126,15 @@ add_library(
     src/pdm/ast/exp/unary.hh
     src/pdm/ast/exp/unit.hh
     src/pdm/ast/exp/vcall.hh
+    
     src/pdm/ast/pattern/lpattern.hh
     src/pdm/ast/pattern/tpattern.hh
     src/pdm/ast/pattern/vpattern.hh
+    
     src/pdm/ast/script/script.cc
     src/pdm/ast/script/script.hh
+
+    src/pdm/ast/stmt/stmt.hh
     src/pdm/ast/stmt/const.hh
     src/pdm/ast/stmt/def.hh
     src/pdm/ast/stmt/enum.hh
@@ -138,9 +142,12 @@ add_library(
     src/pdm/ast/stmt/link.hh
     src/pdm/ast/stmt/module.cc
     src/pdm/ast/stmt/module.hh
-    src/pdm/ast/stmt/stmt.hh
+    src/pdm/ast/stmt/builtin_type.cc
+    src/pdm/ast/stmt/builtin_type.hh
     src/pdm/ast/stmt/type.hh
     src/pdm/ast/stmt/typeclass.hh
+    
+    src/pdm/ast/typespec/typespec.hh
     src/pdm/ast/typespec/dot.hh
     src/pdm/ast/typespec/func.hh
     src/pdm/ast/typespec/id.hh
@@ -148,7 +155,7 @@ add_library(
     src/pdm/ast/typespec/ptr.hh
     src/pdm/ast/typespec/struct.hh
     src/pdm/ast/typespec/tcall.hh
-    src/pdm/ast/typespec/typespec.hh
+    
     src/pdm/ast/kind.hh
     src/pdm/ast/manager.cc
     src/pdm/ast/manager.hh
@@ -174,8 +181,10 @@ add_library(
     src/pdm/scoper/scoper.hh
     src/pdm/scoper/frame.cc
     src/pdm/scoper/frame.hh
+    src/pdm/scoper/root_frame.cc
     src/pdm/scoper/root_frame.hh
 
+    src/pdm/source/loc.cc
     src/pdm/source/loc.hh
     src/pdm/source/pos.hh
     src/pdm/source/source.hh
@@ -188,6 +197,16 @@ add_library(
     src/pdm/typer/tv.hh
     src/pdm/typer/typer.cc
     src/pdm/typer/typer.hh
+
+    src/pdm/feedback/feedback.cc
+    src/pdm/feedback/feedback.hh
+    src/pdm/feedback/manager.cc
+    src/pdm/feedback/manager.hh
+    src/pdm/feedback/letter.cc
+    src/pdm/feedback/letter.hh
+    src/pdm/feedback/note.cc
+    src/pdm/feedback/note.hh
+    src/pdm/feedback/severity.hh
 )
 target_link_libraries(pdm intern)
 set_property(TARGET pdm PROPERTY CXX_STANDARD 20)
@@ -197,6 +216,8 @@ add_executable(
     src/pdm_cli/main.cc
     src/pdm_cli/typer_demo.cc
     src/pdm_cli/typer_demo.hh
+    src/pdm_cli/feedback_demo.cc
+    src/pdm_cli/feedback_demo.hh
 )
 target_link_libraries(pdm_cli pdm)
 set_property(TARGET pdm_cli PROPERTY CXX_STANDARD 20)

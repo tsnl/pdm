@@ -321,6 +321,18 @@ namespace pdm::ast {
                 }
                 break;
             }
+
+            //
+            // non-syntactic elements:
+            // (never parsed, only compiler-created)
+            //
+
+            case Kind::BuiltinTypeStmt:
+            {
+                break;
+            }
+
+
         }
 
         ok = on_visit(node, VisitOrder::Post) && ok;
@@ -330,6 +342,7 @@ namespace pdm::ast {
 
     bool Visitor::on_visit(Node* node, VisitOrder visit_order) {
         switch (node->kind()) {
+            
             // script:
             case Kind::Script: 
             {
@@ -503,6 +516,13 @@ namespace pdm::ast {
             {
                 return on_visit__struct_typespec(dynamic_cast<StructTypespec*>(node), visit_order);
             }
+
+            // non-syntactic elements:
+            case Kind::BuiltinTypeStmt:
+            {
+                return on_visit__builtin_type_stmt(dynamic_cast<BuiltinTypeStmt*>(node), visit_order);
+            }
+
         }
     }
 

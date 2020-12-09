@@ -8,6 +8,7 @@ namespace pdm::ast {
         Script, 
         
         // statements:
+        BuiltinTypeStmt,    // non-syntactic
         LetStmt,
         ConstStmt,
         DefStmt,
