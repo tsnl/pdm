@@ -2,6 +2,8 @@
 
 Work in progress.
 
+## Overview
+
 The PDM Programming language aims to **bridge the gap between static and interpreted programming languages.**
 It augments a C-like foundation with compile-time analysis (templates) and evaluation (constexprs), and
 uses this toolset to construct a Python-esque programming environment. By providing high-level features
@@ -16,8 +18,17 @@ Furthermore, as projects evolve, costly rewrites can be avoided since...
    reducing the baseline demand for highly specified (and thus performant) code.
 2. Duck-typed implementations can always be rewritten behind a well-typed interface. 
 
+Lastly, PDM naturally links with existing C (and thus subsets of C++) code. By supporting the de jure standard
+in ABIs with `link "C"` statements, PDM simplifies dependency management and allows users to 
+**use C libraries (even templates) out of the box.** This is possible using Clang's excellent, highly modular C/C++ parser,
+and the fact that PDM's type system accommodates C's (with some caveats with respect to non-discriminated unions).
+Support for C++ libraries is currently not planned.
+
+## Summary
+
 This repository currently builds...
-1. `pc`: An old (but functional) C compiler implementation for a subset of the language
+1. `pc`: An old (but functional) C compiler implementation for a subset of the language. Just validates a program 
+   and then prints LLVM IR to stdout. The benchmark for performance.
 2. `[lib]pdm`: A library that compilers, interpreters, and editor tools can share. Written in OO-C++. WIP.
 3. `pdm_cli`: An eventual CLI frontend, currently just console tests for `pdm`. WIP.
 After building, try running `$ ./pc <file>` or `$ ./pdm_cli`.
@@ -31,6 +42,7 @@ This repository contains...
 
 For the latest updates, see my latest commits.
 
+
 ## How to Build
 
 1. Clone this repository using 'git', ensuring you clone submodules.
@@ -40,6 +52,20 @@ For the latest updates, see my latest commits.
    - In due time, LLVM (and Clang) will be built and linked from source, so no CMake configuration
      should be required to compile a 'sensible default build' on desktop.
 2. Use 'CMake' to build the project, `cmake --build .`
+
+
+## Project Horizon
+
+1. Implementing a standard library (modelled off of Rust and C++), with
+   1. Optional, selective reference counting GC (`shared_ptr` or `Rc`/`Arc`)
+   2. Language-wide support for hashing (standardized but flexible `Hashable` typeclass)
+   3. Collections for different scales, like `SlotMap<K,V>` or `Deque<T>` to organize
+      chunks of contiguous, stable memory, but also `Vec<T>` for smaller/throwaway 
+      computation
+   4. Excellent UTF-8 and UTF-32 support (as well as natural interop between characters in either set)
+   5. IPC batteries included (files, sockets, )
+2. Implementing an LSP server for PDM (so VSCode integration is first class) 
+3. Implementing a WebGPU (proposal, likely Obsidian) wrapper (in WebGL and OpenGL/Vulkan)
 
 ## Contact Me
 
