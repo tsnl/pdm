@@ -2,6 +2,18 @@
 
 **Prime or Parse?**
 
+**TODO (dec 10)**
+- need to update scoper for position-independent 'def',
+- for 'ScriptContent' and 'ModuleContent', store symbols in SHARED CONTEXT LL.
+  - SharedContexts allow the user to define multiple symbols that are all accessible.
+  - lookup in SharedContext is position independent
+- **done:** allow 'Context' to 'define' multiple symbols and 'define_shadowed' when reqd.
+  - multiple symbols in lpatterns handled and checked for uniq
+  - multiple symbols in 'mod' or 'script' content handled and checked for uniq
+  - 'define_shadowed' pushes & returns FRESH context, but should only be used for 'chain'
+    - use 'Frame' to push 'shadow' chain and then restore to share
+    - so a scoper dump mirrors source code in order, similar nesting
+
 **DONE (dec 9)**
 - implemented 'feedback' module; truly ready for primer/parser!
 

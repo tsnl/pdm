@@ -2,6 +2,7 @@
 #define INCLUDED_PDM_SCOPER_FRAME_HH
 
 #include <vector>
+#include <cassert>
 
 #include "pdm/ast/stmt/stmt.hh"
 #include "pdm/scoper/context.hh"
@@ -62,16 +63,25 @@ namespace pdm::scoper {
             return nullptr;
         }
 
-        void append_new_context(scoper::Defn* defn) {
+      public:
+        // push a new context in this frame 
+        Context* append_child_context(ContextKind context_kind) {
+            Context* parent_context = opt_last_context();
+            assert(parent_context != nullptr);
+            m_last_context = parent_context->new_child_context(context_kind, this);
+
+            if (m_first_context == nullptr) {
+                m_first_context = m_last_context;
+            }
+            
+            return m_last_context;
+        }
+
+        bool try_define_in_last_context(scoper::Defn* defn) {
             // allocating a new context:
             Context* parent_context = opt_last_context();
-            Context* new_context = new Context(this, parent_context, defn);
-
-            // updating first/last ptrs:
-            if (m_first_context == nullptr) {
-                m_first_context = new_context;
-            }
-            m_last_context = new_context;
+            assert(parent_context != nullptr);
+            return parent_context->try_define(defn);
         }
     };
 

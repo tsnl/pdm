@@ -26,12 +26,12 @@ namespace pdm::scoper {
         intern::String m_name;
         ast::Stmt*     m_stmt;
         typer::TV*     m_tv;
-        Context*       m_buddy_context;
+        Context*       m_container_context;
 
       public:
         Defn(DefnKind kind, intern::String name, ast::Stmt* stmt, typer::TV* tv)
         : m_kind(kind), m_name(name), m_stmt(stmt), m_tv(tv),
-          m_buddy_context(nullptr) {}
+          m_container_context(nullptr) {}
 
       public:
         DefnKind kind() const {
@@ -46,13 +46,13 @@ namespace pdm::scoper {
         typer::TV* tv() const {
             return m_tv;
         }
-        Context* buddy_context() const {
-            return m_buddy_context;
+        Context* container_context() const {
+            return m_container_context;
         }
 
       public:
-        Context* buddy_context(Context* context) {
-            return m_buddy_context = context;
+        Context* container_context(Context* context) {
+            return m_container_context = context;
         }
     };
 

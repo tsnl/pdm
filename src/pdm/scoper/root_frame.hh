@@ -14,7 +14,7 @@ namespace pdm::scoper {
         RootFrame(typer::Typer* typer);
 
       private:
-        void help_append_new_builtin_type_context(intern::String name, typer::TV* tv);
+        void help_define_builtin_type(intern::String name, typer::TV* tv);
     };
 
 }

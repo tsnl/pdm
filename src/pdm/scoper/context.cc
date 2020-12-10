@@ -16,9 +16,9 @@ namespace pdm::scoper {
     }
 
     Defn* Context::help_lookup(intern::String name) {
-        if (m_opt_defn) {
-            if (m_opt_defn->name() == name) {
-                return m_opt_defn;
+        for (Defn* my_defn: m_defns) {
+            if (my_defn->name() == name) {
+                return my_defn;
             }
         }
         if (m_opt_parent_context) {
