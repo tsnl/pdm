@@ -39,13 +39,17 @@ namespace pdm::ast {
                 ok = visit(const_stmt->rhs_exp()) && ok;
                 break;
             }
-            case Kind::DefStmt:
+            case Kind::FnStmt:
             {
-                DefStmt* def_stmt = dynamic_cast<DefStmt*>(node);
-                for (TPattern* tpattern: def_stmt->tpatterns()) {
+                FnStmt* fn_stmt = dynamic_cast<FnStmt*>(node);
+                for (TPattern* tpattern: fn_stmt->tpatterns()) {
                     ok = visit(tpattern) && ok;
                 }
-                ok = visit(def_stmt->vpattern()) && ok;
+                ok = visit(fn_stmt->vpattern()) && ok;
+                if (fn_stmt->opt_return_ts()) {
+                    ok = visit(fn_stmt->opt_return_ts()) && ok;
+                }
+                ok = visit(fn_stmt->opt_return_ts()) && ok;
                 break;
             }
             case Kind::TypeStmt:
@@ -56,7 +60,7 @@ namespace pdm::ast {
             }
             case Kind::EnumStmt:
             {
-                // notably, enum doesn't emit anything.
+                // notably, enum doesn't need any visits; all fields should be processed in this node's pre or post visit handler.
                 break;
             }
             case Kind::TypeclassStmt:
@@ -84,9 +88,9 @@ namespace pdm::ast {
                 }
                 break;
             }
-            case Kind::ModuleStmt:
+            case Kind::ModStmt:
             {
-                ModuleStmt* module_stmt = dynamic_cast<ModuleStmt*>(node);
+                ModStmt* module_stmt = dynamic_cast<ModStmt*>(node);
                 for (Stmt* defn_stmt: module_stmt->defns()) {
                     ok = visit(defn_stmt) && ok;
                 }
@@ -146,8 +150,8 @@ namespace pdm::ast {
             case Kind::StructExp:
             {
                 StructExp* struct_exp = dynamic_cast<StructExp*>(node);
-                for (StructExp::Field const& field: struct_exp->fields()) {
-                    ok = visit(field.value()) && ok;
+                for (StructExp::Field* field: struct_exp->fields()) {
+                    ok = visit(field->value()) && ok;
                 }
                 break;
             }
@@ -217,8 +221,8 @@ namespace pdm::ast {
             {
                 TCallExp* tcall_exp = dynamic_cast<TCallExp*>(node);
                 ok = visit(tcall_exp->lhs_called()) && ok;
-                for (TCallExp::Arg const& arg: tcall_exp->args()) {
-                    ok = visit(arg.node()) && ok;
+                for (TCallExp::Arg* arg: tcall_exp->args()) {
+                    ok = visit(arg->node()) && ok;
                 }
                 break;
             }
@@ -237,24 +241,24 @@ namespace pdm::ast {
             case Kind::VPattern:
             {
                 VPattern* vpattern = dynamic_cast<VPattern*>(node);
-                for (VPattern::Field const& field: vpattern->fields()) {
-                    ok = visit(field.rhs_typespec()) && ok;
+                for (VPattern::Field* field: vpattern->fields()) {
+                    ok = visit(field->rhs_typespec()) && ok;
                 }
                 break;
             }
             case Kind::TPattern:
             {
                 TPattern* tpattern = dynamic_cast<TPattern*>(node);
-                for (TPattern::Field const& field: tpattern->fields()) {
-                    ok = visit(field.rhs_typespec()) && ok;
+                for (TPattern::Field* field: tpattern->fields()) {
+                    ok = visit(field->rhs_typespec()) && ok;
                 }
                 break;
             }
             case Kind::LPattern:
             {
                 LPattern* lpattern = dynamic_cast<LPattern*>(node);
-                for (LPattern::Field const& field: lpattern->fields()) {
-                    Typespec* opt_field_typespec = field.opt_rhs_typespec();
+                for (LPattern::Field* field: lpattern->fields()) {
+                    Typespec* opt_field_typespec = field->opt_rhs_typespec();
                     if (opt_field_typespec) {
                         ok = visit(opt_field_typespec) && ok;
                     }
@@ -283,19 +287,19 @@ namespace pdm::ast {
                 ok = visit(ptr_typespec->pointee()) && ok;
                 break;
             }
-            case Kind::FuncTypespec:
+            case Kind::FnTypespec:
             {
-                FuncTypespec* func_typespec = dynamic_cast<FuncTypespec*>(node);
-                ok = visit(func_typespec->lhs_vpattern()) && ok;
-                ok = visit(func_typespec->rhs_typespec()) && ok;
+                FnTypespec* fn_typespec = dynamic_cast<FnTypespec*>(node);
+                ok = visit(fn_typespec->lhs_vpattern()) && ok;
+                ok = visit(fn_typespec->rhs_typespec()) && ok;
                 break;
             }
             case Kind::TCallTypespec:
             {
                 TCallTypespec* tcall_typespec = dynamic_cast<TCallTypespec*>(node);
                 ok = visit(tcall_typespec->lhs_called()) && ok;
-                for (TCallTypespec::Arg const& arg: tcall_typespec->args()) {
-                    ok = visit(arg.node()) && ok;
+                for (TCallTypespec::Arg* arg: tcall_typespec->args()) {
+                    ok = visit(arg->node()) && ok;
                 }
                 break;
             }
@@ -308,8 +312,8 @@ namespace pdm::ast {
             case Kind::StructTypespec:
             {
                 StructTypespec* struct_typespec = dynamic_cast<StructTypespec*>(node);
-                for (StructTypespec::Field const& field: struct_typespec->fields()) {
-                    ok = visit(field.rhs_typespec()) && ok;
+                for (StructTypespec::Field* field: struct_typespec->fields()) {
+                    ok = visit(field->rhs_typespec()) && ok;
                 }
                 break;
             }
@@ -358,9 +362,9 @@ namespace pdm::ast {
             {
                 return on_visit__const_stmt(dynamic_cast<ConstStmt*>(node), visit_order);
             }
-            case Kind::DefStmt:
+            case Kind::FnStmt:
             {
-                return on_visit__def_stmt(dynamic_cast<DefStmt*>(node), visit_order);
+                return on_visit__fn_stmt(dynamic_cast<FnStmt*>(node), visit_order);
             }
             case Kind::TypeStmt:
             {
@@ -374,9 +378,9 @@ namespace pdm::ast {
             {
                 return on_visit__typeclass_stmt(dynamic_cast<TypeclassStmt*>(node), visit_order);
             }
-            case Kind::ModuleStmt:
+            case Kind::ModStmt:
             {
-                return on_visit__module_stmt(dynamic_cast<ModuleStmt*>(node), visit_order);
+                return on_visit__mod_stmt(dynamic_cast<ModStmt*>(node), visit_order);
             }
             case Kind::LinkStmt:
             {
@@ -492,9 +496,9 @@ namespace pdm::ast {
             {
                 return on_visit__ptr_typespec(dynamic_cast<PtrTypespec*>(node), visit_order);
             }
-            case Kind::FuncTypespec:
+            case Kind::FnTypespec:
             {
-                return on_visit__func_typespec(dynamic_cast<FuncTypespec*>(node), visit_order);
+                return on_visit__fn_typespec(dynamic_cast<FnTypespec*>(node), visit_order);
             }
             case Kind::TCallTypespec:
             {
@@ -522,7 +526,6 @@ namespace pdm::ast {
             {
                 return on_visit__builtin_type_stmt(dynamic_cast<BuiltinTypeStmt*>(node), visit_order);
             }
-
         }
     }
 

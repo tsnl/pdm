@@ -10,10 +10,15 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class PtrTypespec: public Typespec {
+        friend Manager;
+
       private:
         Typespec* m_pointee;
-      public:
+
+      protected:
         PtrTypespec(source::Loc loc, Typespec* pointee)
         : Typespec(loc, Kind::PtrTypespec),
           m_pointee(pointee) {}

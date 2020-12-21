@@ -14,8 +14,10 @@ namespace pdm::scoper {
         Root,
     };
 
-    // Frame is a sequence of consecutively nested contexts.
+    // Frame is a sequence of Contexts, s.t. each predecessor is successor's parent
     // last_context->parent->parent... = first_context
+    // - denote a 'scope' of definitions
+    // - used by links
     class Frame {
       private:
         typer::Typer*       m_typer;
@@ -24,7 +26,7 @@ namespace pdm::scoper {
         std::vector<Frame*> m_child_frames;
         Context*            m_first_context;
         Context*            m_last_context;
-      
+
       protected:
         // primary constructor: called by all other constructors
         Frame(FrameKind kind, Frame* parent_frame, typer::Typer* typer)
@@ -52,7 +54,13 @@ namespace pdm::scoper {
         std::vector<Frame*> const& child_frames() const {
             return m_child_frames;
         }
-
+        Context* opt_first_new_context() const {
+            if (m_first_context) {
+                return m_first_context;
+            } else {
+                return nullptr;
+            }
+        }
         Context* opt_last_context() const {
             if (m_last_context) {
                 return m_last_context;
@@ -65,10 +73,10 @@ namespace pdm::scoper {
 
       public:
         // push a new context in this frame 
-        Context* append_child_context(ContextKind context_kind) {
+        Context* shadow(ContextKind new_context_kind) {
             Context* parent_context = opt_last_context();
             assert(parent_context != nullptr);
-            m_last_context = parent_context->new_child_context(context_kind, this);
+            m_last_context = parent_context->shadow(new_context_kind, this);
 
             if (m_first_context == nullptr) {
                 m_first_context = m_last_context;
@@ -77,11 +85,11 @@ namespace pdm::scoper {
             return m_last_context;
         }
 
-        bool try_define_in_last_context(scoper::Defn* defn) {
+        bool define(scoper::Defn* defn) {
             // allocating a new context:
             Context* parent_context = opt_last_context();
             assert(parent_context != nullptr);
-            return parent_context->try_define(defn);
+            return parent_context->define(defn);
         }
     };
 

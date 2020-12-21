@@ -11,10 +11,15 @@ namespace pdm::typer {
 
 namespace pdm::ast {
 
+    class Manager;
+
     class BuiltinTypeStmt: public Stmt {
+        friend Manager;
+
       private:
         std::string m_desc;
         typer::TV*  m_tv;
+
       public:
         BuiltinTypeStmt(std::string&& desc, typer::TV* tv);
     };

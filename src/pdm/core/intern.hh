@@ -14,6 +14,8 @@ namespace pdm::intern {
             strings* m_strings_repository;
             Manager();
             ~Manager();
+
+            void ensure_init();
         };
 
         static Manager s_manager;
@@ -22,6 +24,10 @@ namespace pdm::intern {
         u32 m_id;
 
       public:
+        static void ensure_init();
+
+      public:
+        String() = default;
         String(String const& other) = default;
         String(char const* str);
 

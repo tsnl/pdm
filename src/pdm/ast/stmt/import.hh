@@ -7,12 +7,14 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class ImportStmt: public Stmt {
       private:
         intern::String  m_imported_name;
         Exp*            m_imported_from_exp;
       
-      public:
+      protected:
         ImportStmt(source::Loc loc, intern::String imported_name, Exp* imported_from_exp)
         : Stmt(loc, Kind::ImportStmt),
           m_imported_name(imported_name),

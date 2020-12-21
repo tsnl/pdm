@@ -7,11 +7,15 @@ namespace pdm::source {
 
     class Source {
       private:
-        std::string m_path;
+        std::string m_abs_path;
 
       public:
-        std::string const& path() const {
-            return m_path;
+        Source(std::string&& abs_path)
+        : m_abs_path(std::move(abs_path)) {}
+
+      public:
+        std::string const& abs_path() const {
+            return m_abs_path;
         }
     };
 

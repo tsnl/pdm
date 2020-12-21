@@ -9,11 +9,15 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class TupleExp: public Exp {
+        friend Manager;
+
       private:
         std::vector<Exp*> m_items;
 
-      public:
+      protected:
         TupleExp(source::Loc loc, std::vector<Exp*>&& items)
         : Exp(loc, Kind::TupleExp),
           m_items(std::move(items)) {}

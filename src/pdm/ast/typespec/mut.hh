@@ -9,11 +9,16 @@
 #include "pdm/ast/typespec/typespec.hh"
 
 namespace pdm::ast {
+  
+    class Manager;
 
     class MutTypespec: public Typespec {
+        friend Manager;
+
       private:
         Typespec* m_mutatee;
-      public:
+
+      protected:
         MutTypespec(source::Loc loc, Typespec* mutatee)
         : Typespec(loc, Kind::MutTypespec),
           m_mutatee(mutatee) {}

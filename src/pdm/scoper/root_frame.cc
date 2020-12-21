@@ -8,7 +8,7 @@ namespace pdm::scoper {
 
     RootFrame::RootFrame(typer::Typer* frame_typer)
     : Frame(FrameKind::Root, nullptr, frame_typer) {
-        append_child_context(ContextKind::Root); {
+        shadow(ContextKind::Root); {
             help_define_builtin_type("Void", typer()->get_void_tv());
             help_define_builtin_type("String", typer()->get_string_tv());
             help_define_builtin_type("TypeInfo", typer()->get_type_info_tv());
@@ -36,7 +36,7 @@ namespace pdm::scoper {
         std::string debug_name = std::string("root_scope.") + std::string(name.content());
         ast::Stmt* stmt = new ast::BuiltinTypeStmt(std::move(debug_name), tv);
         Defn* defn = new Defn(DefnKind::BuiltinType, "U1", stmt, tv);
-        try_define_in_last_context(defn);
+        define(defn);
     }
 
 }

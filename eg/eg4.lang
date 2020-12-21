@@ -7,66 +7,61 @@
 # must import all symbols in a module into an ENCAPSULATED NAMESPACE.
 
 # The 'import' statement declaratively loads a module for access by a fixed VID name.
-# the expressions can be const stored elsewhere.
+# - the arg expressions can be const stored elsewhere; e.g. const t = "file/fs"; import t from "./a.pdm" type t
 # Libraries are 'installed' to the filesystem to build to, though in the future, it may
 # be possible to specify libraries via git/hg URI which the compiler will automatically
 # install and cache.
 
-import std from ("file/fs", "basic.lang");
-import eg3 from ("file/fs", "eg3.lang");
-import sdl from ("lib/fs", "pandemonium-sdl2");
-import avx from ("lib/fs", "pandemonium-avx");
+import std from "basic.pdm" type "fs/file";
+import eg3 from "eg3.pdm"   type "fs/file";
 
 mod car {
     type Car = {
         name Text,
         price I32
     };
-    def new (name Text, price I32) Car = {
+    fn new (name Text, price I32) -> Car = {
         (name, price)
     };
 };
 
 mod level1 {
     mod damage {
-        def wearAndTear (car ^&eg3.Car, dsec F32) Void = {
+        fn wearAndTear (car ^&eg3.Car, dsec F32) = {
             let fancyScoreDamagePerSec = 1.2;
-            set car->fancyScore = car->fancyScore - U32(fancyScoreDamagePerSec * dsec);
+            set car->fancyScore = car->fancyScore - convert[U32](fancyScoreDamagePerSec * dsec);
         };
     };
 };
 
 #
-# ~'import'~ 'using' explicitly brings another module's symbols into this module's namespace.
-# - optional '::' => import 1 symbol matching...; exactly like 'class' requirement
+# 'using' explicitly brings another module's symbols into this module's namespace.
 # - optional '*' suffix => match this and everything with this suffix
-# thus, the ~3~ 2 options to import symbols, from coarsest to finest:
+# thus, the 2 options to import symbols, from coarsest to finest:
 # - globbed name imports
 # - whole name imports
-# - ~class-requirement statements~
 #
 
 using std.deq.*;
 using std.vec.Vec;
 
 mod demo {
+    using std.pi;
+    using std.List;
+    using std.Dict;
 
-    import std.pi;
-    import std.List;
-    import std.Dict;
+    using eg3.Vehicle;
+    using eg3.newCarList;
+    using eg3.newCarDict;
+    using eg3.printVehicle :: Fn Car Unit;
 
-    import eg3.Vehicle;
-    import eg3.newCarList;
-    import eg3.newCarDict;
-    import eg3.printVehicle :: Fn Car Unit;
-
-    def test () := {
+    fn test () = {
         let carList List[Vehicle] = newCarList();
         let v1 = (1.0,2.0,3.0,4.0);
         let v2 = (2.0,3.0,4.0,5.0);
         
-        let result1 = avx.mul v1 v2;
-        let result2 = avx.add v1 v2;
+        let result1 = avx.mul(v1,v2);
+        let result2 = avx.add(v1,v2);
     };
 
 };

@@ -9,7 +9,11 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class LinkStmt: public Stmt {
+        friend Manager;
+
       public:
         enum class ItemKind {
             Val,

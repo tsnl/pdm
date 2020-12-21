@@ -7,6 +7,8 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     enum class TypeQueryKind {
         LhsSubtypeRhs,
         LhsSuperRhs,
@@ -14,11 +16,14 @@ namespace pdm::ast {
     };
 
     class TypeQueryExp: public Exp {
+        friend Manager;
+
       private:
         TypeQueryKind m_kind;
         Typespec*     m_lhs_typespec;
         Typespec*     m_rhs_typespec;
-      public:
+      
+      protected:
         TypeQueryExp(source::Loc loc, TypeQueryKind kind, Typespec* lhs_typespec, Typespec* rhs_typespec)
         : Exp(loc, Kind::TypeQueryExp),
           m_kind(kind),

@@ -21,9 +21,15 @@ namespace pdm::ast {
         : Node(source::Loc::none, Kind::Script),
           m_source(source) {}
     
+        Script()
+        : Script(nullptr) {}
+
       public:
         source::Source* source() const {
             return m_source;
+        }
+        void source(source::Source* source) {
+            m_source = source;
         }
     };
 

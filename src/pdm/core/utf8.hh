@@ -19,6 +19,10 @@ namespace pdm::utf8 {
         size_t m_count;
 
       public:
+        String()
+        : m_data(nullptr),
+          m_count(0) {}
+
         String(String&& other)
         : m_data(other.m_data), m_count(other.m_count) { 
             other.m_data = nullptr;

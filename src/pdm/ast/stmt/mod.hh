@@ -1,5 +1,5 @@
-#ifndef INCLUDED_PDM_AST_MODULE_STMT_HH
-#define INCLUDED_PDM_AST_MODULE_STMT_HH
+#ifndef INCLUDED_PDM_AST_MOD_STMT_HH
+#define INCLUDED_PDM_AST_MOD_STMT_HH
 
 #include <vector>
 
@@ -9,14 +9,18 @@
 
 namespace pdm::ast {
 
-    class ModuleStmt: public Stmt {
+    class Manager;
+
+    class ModStmt: public Stmt {
+        friend Manager;
+
       private:
         intern::String     m_module_name;
         std::vector<Stmt*> m_defns;
 
       public:
-        ModuleStmt(source::Loc loc, intern::String module_name, std::vector<Stmt*> defns)
-        : Stmt(loc, Kind::ModuleStmt),
+        ModStmt(source::Loc loc, intern::String module_name, std::vector<Stmt*>&& defns)
+        : Stmt(loc, Kind::ModStmt),
           m_module_name(module_name),
           m_defns(defns) {}
       

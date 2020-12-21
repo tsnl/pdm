@@ -11,11 +11,11 @@ namespace pdm::ast {
         BuiltinTypeStmt,    // non-syntactic
         LetStmt,
         ConstStmt,
-        DefStmt,
+        FnStmt,
         TypeStmt,
         EnumStmt,
         TypeclassStmt,
-        ModuleStmt,
+        ModStmt,
         LinkStmt,
         ImportStmt,
 
@@ -40,7 +40,7 @@ namespace pdm::ast {
         // typespecs:
         IdTypespec,
         MutTypespec, PtrTypespec,
-        FuncTypespec, TCallTypespec,
+        FnTypespec, TCallTypespec,
         DotNameTypespec_TypePrefix, DotNameTypespec_ModPrefix,
         TupleTypespec, StructTypespec,
     };

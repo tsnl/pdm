@@ -11,7 +11,11 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class TypeclassStmt: public Stmt {
+        friend Manager;
+
       public:
         enum class FieldKind {
             Exp,

@@ -4,6 +4,9 @@ Work in progress.
 
 ## Overview
 
+*Why decide between a compromised web experience and a dedicated native one?*
+*Why separate logical dependencies with slow, unnecessary HTTP barriers?*
+
 The PDM Programming language aims to **bridge the gap between static and interpreted programming languages.**
 It augments a C-like foundation with compile-time analysis (templates) and evaluation (constexprs), and
 uses this toolset to construct a Python-esque programming environment. By providing high-level features
@@ -12,6 +15,17 @@ as libraries for a low-level language,
 
 Since the gaps between C-land and Python-land are filled in by the compiler ahead of time (AoT), a
 programmer has the power to choose whether to strictly or loosely specify their code as needed.
+The programmer's options transparently reflect the capabilities of the underlying, practically
+standardized hardware. Low-level features like register types, memory addresses, and unsafe memory
+operations apply on an abstract computer with basic features expected of many common platforms.
+
+LLVM makes emitting faster code easier, and WebAssembly allows a derivative of that fast code to run in browsers.
+WebGPU is an in-development project to bring a standardized GPU API to browsers to succeed WebGL2.
+These facts highlight a pattern: complex GUI applications can be 
+**written once and run natively and on browsers without performance degradation** in an 
+**environment-aware way**. Furthermore, since the compiler understands when two processes execute on the same
+system, it can **statically swap slow inter-process communication for faster in-process library calls** without
+requiring more complexity on the programmer's part.
 
 Furthermore, as projects evolve, costly rewrites can be avoided since...
 1. Since PDM is AoT compiled, unnecessary runtime checks can be elided in favor of static checks, thereby 
@@ -28,9 +42,9 @@ Support for C++ libraries is currently not planned.
 
 This repository currently builds...
 1. `pc`: An old (but functional) C compiler implementation for a subset of the language. Just validates a program 
-   and then prints LLVM IR to stdout. The benchmark for performance.
-2. `[lib]pdm`: A library that compilers, interpreters, and editor tools can share. Written in OO-C++. WIP.
-3. `pdm_cli`: An eventual CLI frontend, currently just console tests for `pdm`. WIP.
+   and then prints LLVM IR to stdout. The benchmark for performance (it's really quick!).
+2. `[lib]pdm`: A library that compilers, interpreters, and editor tools can share. Written in OO-C++. **WIP. (does not build, must disable through CMake)**
+3. `pdm_cli`: An eventual CLI frontend, currently just console tests for `pdm`. **WIP.**
 After building, try running `$ ./pc <file>` or `$ ./pdm_cli`.
 
 This repository contains...
@@ -45,16 +59,38 @@ For the latest updates, see my latest commits.
 
 ## How to Build
 
+While PDM will have a single-command installer very soon, please follow these instructions while PDM is under
+development or wait until the build process becomes easier if you're having trouble (est. < 2 weeks).
+
+In all the following examples, `.` refers to the root of this repository.
+
 1. Clone this repository using 'git', ensuring you clone submodules.
-1. Run `src/pdm_old_c/bison-build.sh` in that working directory to build C parser.
 1. Use 'CMake' to configure the project, `cmake .`
-   - Note 'CMakeLists.txt' contains some hardcoded paths for LLVM development on macOS.
-   - In due time, LLVM (and Clang) will be built and linked from source, so no CMake configuration
-     should be required to compile a 'sensible default build' on desktop.
-2. Use 'CMake' to build the project, `cmake --build .`
+   - Please set `PDM_LLVM_INSTALL_DIR` to the directory containing an installation of the LLVM library, built.
+     Although the LLVM project is a large submodule dependency, CMake integration is difficult since in-source
+     builds are disabled for LLVM.
+
+     If you don't have LLVM installed, please follow LLVM's instructions for building your desired version from 
+     source. Once you have built this, set `PDM_LLVM_INSTALL_DIR` accordingly.
+   
+     **To set `PDM_LLVM_INSTALL_DIR`**, simply run `ccmake .` to run the console CMake configuration tool, or 
+     `cmake-gui .`.
+
+   - If you've installed LLVM using Homebrew on macOS, your path might look like...
+      `/usr/local/Cellar/llvm/10.0.1_1`
+1. Use 'CMake' to build the project, `cmake --build .`
+   - I recommend running `cmake --build . -j <N>` where `N` is the number of 'jobs' or parallell processes you
+     would like to use. On a computer with M cores, set N >= M for optimal results.
+     **Example:** `$ cmake --build . -j 4   # on a 2-core MacBook Air with Hyperthreading/SMT`
 
 
 ## Project Horizon
+
+For my rawest updates, please see `doc/roadmap.md`. It's a poor task tracker, but the text-soup helps me view (and factor)
+tasks into code-like trees. Why break from what you work with 99% of the time, right?
+
+More human-friendly documentation will follow when implementing tests takes priority over implementing new features, i.e.
+when polish is a greater user barrier than absence of features. This point is yet undetermined.
 
 1. Implementing a standard library (modelled off of Rust and C++), with
    1. Optional, selective reference counting GC (`shared_ptr` or `Rc`/`Arc`)

@@ -8,8 +8,12 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class UnitExp: public Exp {
-      public:
+        friend Manager;
+      
+      protected:
         UnitExp(source::Loc loc)
         : Exp(loc, Kind::UnitExp) {}
     };

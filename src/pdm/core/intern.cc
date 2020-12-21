@@ -12,9 +12,14 @@ namespace pdm::intern {
 
     String::Manager String::s_manager;
 
-    String::Manager::Manager() {
-        s_manager.m_strings_repository = strings_new();
+    String::Manager::Manager(): m_strings_repository(nullptr) {}
+
+    void String::Manager::ensure_init() {
+        if (m_strings_repository == nullptr) {
+            m_strings_repository = strings_new();
+        }
     }
+
     String::Manager::~Manager() {
         strings_free(s_manager.m_strings_repository);
         s_manager.m_strings_repository = nullptr;
@@ -31,6 +36,10 @@ namespace pdm::intern {
 
     char const* String::content() const {
         return strings_lookup_id(s_manager.m_strings_repository, m_id);
+    }
+
+    void String::ensure_init() {
+        s_manager.ensure_init();
     }
     
 }   // namespace pdm::intern

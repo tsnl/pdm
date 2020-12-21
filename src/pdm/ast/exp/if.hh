@@ -8,12 +8,17 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class IfExp: public Exp {
+        friend Manager;
+
+      private:
         Exp* m_cond_exp;
         Exp* m_then_exp;
         Exp* m_else_exp;
     
-      public:
+      protected:
         IfExp(source::Loc loc, Exp* cond_exp, Exp* then_exp, Exp* else_exp)
         : Exp(loc, Kind::IfExp),
           m_cond_exp(cond_exp),

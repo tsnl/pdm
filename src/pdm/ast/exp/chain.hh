@@ -10,12 +10,16 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class ChainExp: public Exp {
+        friend Manager;
+
       private:
         std::vector<Stmt*> m_prefix;
         Exp*               m_suffix;
       
-      public:
+      protected:
         ChainExp(source::Loc loc, std::vector<Stmt*>&& prefix, Exp* suffix = nullptr)
         : Exp(loc, Kind::ChainExp),
           m_prefix(std::move(prefix)),

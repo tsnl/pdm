@@ -10,13 +10,20 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class StructExp: public Exp {
+        friend Manager;
+
       public:
         class Field {
+            friend Manager;
+
+          private:
             intern::String m_name;
             Exp*           m_value;
 
-          public:
+          protected:
             Field(intern::String name, Exp* value)
             : m_name(name), m_value(value) {}
           
@@ -30,15 +37,15 @@ namespace pdm::ast {
         };
 
       private:
-        std::vector<StructExp::Field> m_fields;
+        std::vector<StructExp::Field*> m_fields;
     
-      public:
-        StructExp(source::Loc loc, std::vector<StructExp::Field>&& fields)
+      protected:
+        StructExp(source::Loc loc, std::vector<StructExp::Field*>&& fields)
         : Exp(loc, Kind::StructExp),
           m_fields(std::move(fields)) {}
 
       public:
-        std::vector<StructExp::Field> const& fields() const {
+        std::vector<StructExp::Field*> const& fields() const {
             return m_fields;
         }
     };

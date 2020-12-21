@@ -1,13 +1,81 @@
 # Roadmap
 
-**Prime or Parse?**
+**WIP (dec 21):** Parser WIP
+- todo: finish adding compiler hooks so `import(i_path, i_type)` works as in Python, hitting a cache.
+- wip: porting old C lexer to C++ (mostly done)
+- wip: porting old Bison grammar
+  - most old rules updated with C++ types
+  - todo: (cleanup) can delete `pdm::parser::` and `pdm::` prefices (added prefix namespace)
+  - todo: implement rule handlers (follow 'type clash' warnings from bison grammar on 'bison-build.sh' in `src/pdm/parser`)
+  - todo: regularize grammar names to match C++ scheme (much less confusing)
+  - todo: add 'const' statements to the grammar
+  - todo: add 'type-query' expressions to the grammar
+  - todo: add mod-prefix dot typespecs to the grammar
+  - todo: add struct-typespecs to the grammar (wip)
+  - todo: add ... (probably more I'm missing, ensure 1-1 with C++ ast)
+  
+- once this is done, will turn attention to scoper, other analysis passes.
 
 **TODO (dec 10)**
+
+- **done:** 'define', 'shadow', 'link': three scoper tools
+  - 'link' associates any frame with a context
+    - **todo:** check for cycles?
+  - 'define': adds to context, 'shadow': pushes new context
+
+- **todo:** parser
+  - impl 'reader': port 'source' from c version to C++ (with unicode, without feedback, loc)
+  - port 'lexer' to read from 'reader'
+  - port 'parser' to read from 'lexer' and construct AST
+
+- **todo:** default-initialize TVs in AST constructor itself.
+  - each node has one or more tv attributes.
+  - e.g.: each exp has a 'valtype_tv' tv
+  - e.g.: each typespec has a 'spectype_tv' tv
+  - this allows constraints to be applied on TVs
+
+- **todo:** add pre-scoper pass: 'dependency_dispatcher'
+  - accepts string literal args of 'import'{'from','type'}
+  - construct dependency graph
+  - instantiate ast::Script, push to 'Compiler' where analysis can begin.
+- **todo:** implement 'scoper'
+  - pass 1: uses ASTN TVs to initialize 'Defns'
+    - can add a filter predicate to only lookup symbols with prefix, matching pattern, etc.
+  - pass 2: 
+    - set 'link' for 'using' or 'import' (requires lookup)
+    - create '{V|T}IdLookupRule'...s to bind ID TVs to lookup Defn TVs
+
+- can then use 'typer' to set up constraints, 'solve' to finalize.
+- **plan:** include 'templater' in 'typer'?
+- **plan:** diff passes for typer
+
+- **done:** create 'Compiler' with following interface:
+  - *completed dec 21*
+  - call 'import(path:str, type:str)' on entry point path
+    - LAZY: if already loaded, return cached.
+    - ELSE:
+      - create new script
+      - run reader + lexer + parser, module_dispatcher, and type_initializer.
+        - halt if any fail
+        - note that 'module' symbols are resolved by scoper.
+      - cache new script
+      - importer returns list of other modules to 'load'. call 'load'.
+  - call 'typecheck()' to run the typer.
+- **plan:**
+  - LATER...
+    call 'emit_llvm_executable("hello.out")'
+    to emit a file using the LLVM backend whose type depends on the extension.
+    cf 'emit(Platform::Wasm, "hello.wasm")'
+  - LATER...
+    call 'execute(ast_script, "test.main")' to immediately execute some loaded   
+    code.
+
+**TODO (dec 10)**
+- **done:** allow 'Context' to 'define' multiple symbols and 'define_shadowed' when reqd.
 - need to update scoper for position-independent 'def',
 - for 'ScriptContent' and 'ModuleContent', store symbols in SHARED CONTEXT LL.
   - SharedContexts allow the user to define multiple symbols that are all accessible.
   - lookup in SharedContext is position independent
-- **done:** allow 'Context' to 'define' multiple symbols and 'define_shadowed' when reqd.
   - multiple symbols in lpatterns handled and checked for uniq
   - multiple symbols in 'mod' or 'script' content handled and checked for uniq
   - 'define_shadowed' pushes & returns FRESH context, but should only be used for 'chain'
@@ -32,7 +100,8 @@
   * **todo**: implement `Defn` subtypes for `using` and `import` statements.
     - requires well-specified `Compiler` interface to request a module.
     - consider providing a metavar and deferring module loading?
-  
+- **done** (as of dec 21)
+
 **UPDATED:**
 - added 'link', 'import'
 - visitor working

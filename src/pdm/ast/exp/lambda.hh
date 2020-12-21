@@ -8,12 +8,16 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class LambdaExp: public Exp {
+        friend Manager;
+
       private:
         VPattern* m_lhs_vpattern;
         Exp*      m_body;
     
-      public:
+      protected:
         LambdaExp(source::Loc loc, VPattern* lhs_vpattern, Exp* body)
         : Exp(loc, Kind::LambdaExp),
           m_lhs_vpattern(lhs_vpattern),

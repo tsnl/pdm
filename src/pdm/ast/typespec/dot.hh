@@ -10,12 +10,16 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class DotNameTypespec_TypePrefix: public Typespec {
+        friend Manager;
+
       private:
         Typespec*      m_lhs_typespec;
         intern::String m_rhs_name;
 
-      public:
+      protected:
         DotNameTypespec_TypePrefix(source::Loc loc, Typespec* lhs_typespec, intern::String rhs_name)
         : Typespec(loc, Kind::DotNameTypespec_TypePrefix),
           m_lhs_typespec(lhs_typespec),
@@ -31,11 +35,13 @@ namespace pdm::ast {
     };
 
     class DotNameTypespec_ModPrefix: public Typespec {
+        friend Manager;
+
       private:
         std::vector<intern::String> m_lhs_prefixes;
         intern::String              m_rhs_name;
 
-      public:
+      protected:
         DotNameTypespec_ModPrefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name)
         : Typespec(loc, Kind::DotNameTypespec_ModPrefix),
           m_lhs_prefixes(std::move(lhs_prefixes)),

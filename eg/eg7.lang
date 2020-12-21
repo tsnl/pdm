@@ -7,10 +7,10 @@
 #   - collection triggers 
 # replace ':' operator with '.'
 # - restore ':' for struct initializers
-# add mandatory return type for 'def' stmt
+# add mandatory return type for 'fn' stmt 
 
 mod demo {
-    def showoff () F32 = {
+    fn showoff () -> F32 = {
         let vec1 = vec.new_2f(0,0);
         let vec2 = vec.new_2f(1,2);
         let vec1_length = vec.length_sqr(vec1);
@@ -31,31 +31,31 @@ mod vec {
 
     type Norm = Vec2f -> F32;
 
-    def new_2f (x F32, y F32) Vec2f = {
+    fn new_2f (x F32, y F32) -> Vec2f = {
         x: x, 
         y: y
     };
 
-    def mul (s F32, v Vec2f) Vec2f = {
+    fn mul (s F32, v Vec2f) -> Vec2f = {
         x: s * v.x,
         y: s * v.y
     };
 
-    def add (v Vec2f, w Vec2f) Vec2f = {
+    fn add (v Vec2f, w Vec2f) -> Vec2f = {
         x: v.x + w.x, 
         y: v.y + w.y
     };
 
-    def dot (v Vec2f, w Vec2f) F32 = {
+    fn dot (v Vec2f, w Vec2f) -> F32 = {
         v.x * w.x + 
         v.y * w.y
     };
 
-    def length_sqr (v Vec2f) F32 = {
+    fn length_sqr (v Vec2f) -> F32 = {
         dot(v,v)
     };
 
-    def subtract (v Vec2f, w Vec2f) F32 = {
+    fn subtract (v Vec2f, w Vec2f) -> F32 = {
         vec.add(mul(w,-1))
     };
 };
@@ -64,7 +64,7 @@ mod vec {
 # Templates:
 #
 
-# modules are just constant struct instances
+# mod are just constant struct instances
 # pointers can be passed as static arguments
 # more homogeneity between types and values would help.
 # - in particular, [...] args always static, (...) args always dynamic.
@@ -76,19 +76,14 @@ mod vec {
 mod scalar {
     # instances of types in scalar.Impl contain functions
     # satisfying 'scalar' properties.
-    Impl of I Any [S Any] {
-        req I has on_add      (left S, right S) S;
-        req I has on_multiply (left S, right S) S;
+    typeclass Impl(I Any) [S Any] = {
+        I.on_add      :: (left S, right S) -> S;
+        I.on_multiply :: (left S, right S) -> S;
 
-        # wip: 'test' functions further validate possible values
-        #      *at all times*
-        req I has zero        S;
-        req I has on_equals   (left S, right S) S;
+        I.zero        :: S;
+        I.on_equals   :: (left S, right S) -> S;
         
-        def is_zero (x S) = {
-            i.on_equals(x, i.zero)
-        };
-        test add_0_0_equals_0 (i I, left S, right S) = {
+        add_0_0_equals_0 (i I, left S, right S) = {
             if (is_zero(left) and is_zero(right)) then {
                 # test if 0 + 0 = 0
                 let sum = i.on_add(left, right);
@@ -98,7 +93,7 @@ mod scalar {
                 1
             }
         };
-        test mul_0_0_equals_0 (i I, left S, right S) = {
+        mul_0_0_equals_0 (i I, left S, right S) = {
             if (is_zero(left) and is_zero(right)) then {
                 # test if 0 * 0 = 0
                 let product = i.on_multiply(left, right);
@@ -110,12 +105,12 @@ mod scalar {
         };
     };
 
-    def Scalar of S Any [i Impl[S]] = {};
+    fn Scalar of S Any [i Impl[S]] = {};
 
-    def add [S Any, i Impl[S]] (left S, right Scalar[i]) -> Scalar = {
+    fn add [S Any, i Impl[S]] (left S, right Scalar[i]) -> Scalar = {
         i.on_add(left, right)
     };
-    def multiply [S Any, i Impl[S]] (left Scalar[i], right Scalar[i]) -> Scalar = {
+    fn multiply [S Any, i Impl[S]] (left Scalar[i], right Scalar[i]) -> Scalar = {
         i.on_multiply(left, right)
     };
 };
@@ -162,7 +157,7 @@ mod const {
     #   (*) can eval closures at CT!
     #
     # WHAT IS A 'CONST'?
-    # - all values in 'aot' scopes (def without value args)
+    # - all values in 'aot' scopes (fn without value args)
     # - literals
     # - values bound to 'let' statements
     # - types, tcalls
@@ -182,7 +177,7 @@ mod const {
     #
     #
 
-    def loaded_images (im_path String) -> Vec[Texture] = {
+    fn loaded_images (im_path String) -> Vec[Texture] = {
         let images_in_dir = vfs.static.ls(im_path, "*.png");
         let images = map(load_image,images_in_dir);
         images
@@ -191,7 +186,7 @@ mod const {
     # at compile time, `aot` values ('const_eval') are evaluated and stored in the exe.
     # at runtime, these values are just loaded from data segment.
     # * any closed values must be passed as constant args.
-    def display_images [config Config] () -> Unit = {
+    fn display_images [config Config] () -> Unit = {
         # loading tableau at compile-time...
         let tableau = const_eval {
             let images_1 = loaded_images(vfs.join(config.res_path, "demo1"));
@@ -208,9 +203,9 @@ mod const {
 
     # to pass static arg, use '(...)'
     
-    def Vector <T Any, n U32> = Array<T,n>;
+    fn Vector <T Any, n U32> = Array<T,n>;
 
-    def add [T Any, n U32] [V Vector<T,n>] (v1, v2 V) -> Vector<T,n> = {
+    fn add [T Any, n U32] [V Vector<T,n>] (v1, v2 V) -> Vector<T,n> = {
         for (i = 0; i < n; i+1) do {
             let sum = v1.(i) + v2.(i);
         };
@@ -220,11 +215,11 @@ mod const {
     # 3 kinds of defn brackets: (), <>, and []
     # 2 kinds of call brackets: (), <>
     # in defn and call contexts,
-    # o     DEFN ?? |               CALL |         VID/TID |      IN CONST? |       DYN? |
-    # - defn ()     | call ()       only | vid        only | n (exc. aot)   | y          |
-    # - defn <>     | call       <> only | vid or tid      | y ( => )       | y (cached) |
-    # - defn []     | cannot be called   | vid or tid      | y ( => )       | y (cached) |
-    # note [] args are implicitly captured
+    # o     DEFN ?? |               CALL |         VID/TID |      IN CONST? | IN RUNTIME? |
+    # - defn ()     | call ()       only | vid        only | n (exc. aot)   | y           |
+    # - defn []     | call       [] only | vid or tid      | y ( => )       | n (cached)  |
+    # - defn <>     | cannot be called   | vid or tid      | y ( => )       | n (cached)  |
+    # note <> args are always implicitly captured
     # can even add Typefunc signatures with '=>' arrow
 
     # NOTE: cannot call () args as <>; instead, use 'const_eval'
@@ -288,7 +283,7 @@ mod vector {
 };
 
 mod nvec [T scalar.Scalar, n U32] = {
-    # Vector is a class of Vs satisfying vector.Template with module 'impl' below.
+    # Vector is a class of Vs satisfying vector.Template with module ule 'impl' below.
     # it is a singleton class in this context since V = Vector_Data
     # Phew!
     class Vector <V vector.Template[impl]> = {
@@ -297,11 +292,11 @@ mod nvec [T scalar.Scalar, n U32] = {
     type Vector_Data = {
         data: Array[T,n]
     };
-    mod impl {
-        def dimension (item Vector_Data) U32 = {
+    module impl {
+        fn dimension (item Vector_Data) U32 = {
             n
         };
-        def increment (vec ^Vector_Data, by Vector_Data) = {
+        fn increment (vec ^Vector_Data, by Vector_Data) = {
             for (i = 0; i < n; i+1) do {
                 let lt_ptr = i @ vec.data;
                 let rt_ptr = i @ by.data;
@@ -312,7 +307,7 @@ mod nvec [T scalar.Scalar, n U32] = {
                 set lt_ptr = scalar.add(lt + rt);
             }
         };
-        def scale (vec ^Vector_Data, by T) = {
+        fn scale (vec ^Vector_Data, by T) = {
             for (i = 0; i < n; i+1) do {
                 let lt_ptr = i @ vec.data;
                 let rt_ptr = i @ by.data;
@@ -341,4 +336,4 @@ mod test {
 
 # - separate 'var' and 'let' for || const and dyn eval
 # - use '.(i)' for array access instead of '@'
-# - consider 'mod' as 'template' statement in 'D'
+# - consider 'mod ' as 'template' statement in 'D'

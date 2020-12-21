@@ -1,5 +1,5 @@
-#ifndef INCLUDED_PDM_AST_STMT_DEF_HH
-#define INCLUDED_PDM_AST_STMT_DEF_HH
+#ifndef INCLUDED_PDM_AST_STMT_FN_HH
+#define INCLUDED_PDM_AST_STMT_FN_HH
 
 #include "pdm/core/intern.hh"
 #include "pdm/source/loc.hh"
@@ -10,10 +10,13 @@
 #include "pdm/ast/pattern/tpattern.hh"
 #include "pdm/ast/pattern/vpattern.hh"
 
-
 namespace pdm::ast {
+    
+    class Manager;
 
-    class DefStmt: public Stmt {
+    class FnStmt: public Stmt {
+        friend Manager;
+
       private:
         intern::String m_name;
         std::vector<TPattern*> m_tpatterns;
@@ -21,13 +24,13 @@ namespace pdm::ast {
         Typespec* m_return_ts;
         Exp* m_body;
 
-      public:
-        DefStmt(source::Loc loc, intern::String name, std::vector<TPattern*> tpatterns, VPattern* vpattern, Typespec* return_ts, Exp* body)
-        : Stmt(loc, Kind::DefStmt),
+      protected:
+        FnStmt(source::Loc loc, intern::String name, std::vector<TPattern*> tpatterns, VPattern* vpattern, Typespec* opt_return_ts, Exp* body)
+        : Stmt(loc, Kind::FnStmt),
           m_name(name),
           m_tpatterns(std::move(tpatterns)),
           m_vpattern(vpattern),
-          m_return_ts(return_ts),
+          m_return_ts(opt_return_ts),
           m_body(body) {}
 
       public:
@@ -40,11 +43,14 @@ namespace pdm::ast {
         VPattern* vpattern() const {
             return m_vpattern;
         }
-        Typespec* return_ts() const {
+        Typespec* opt_return_ts() const {
             return m_return_ts;
+        }
+        Exp* body() const {
+            return m_body;
         }
     };
 
 }
 
-#endif  // INCLUDED_PDM_AST_STMT_DEF_HH
+#endif  // INCLUDED_PDM_AST_STMT_FN_HH

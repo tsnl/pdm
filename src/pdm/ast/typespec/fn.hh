@@ -8,13 +8,18 @@
 
 namespace pdm::ast {
 
-    class FuncTypespec: public Typespec {
+    class Manager;
+
+    class FnTypespec: public Typespec {
+        friend Manager;
+
       private:
         VPattern* m_lhs_vpattern;
         Typespec* m_rhs_typespec;
-      public:
-        FuncTypespec(source::Loc loc, VPattern* lhs_vpattern, Typespec* rhs_typespec)
-        : Typespec(loc, Kind::FuncTypespec),
+
+      protected:
+        FnTypespec(source::Loc loc, VPattern* lhs_vpattern, Typespec* rhs_typespec)
+        : Typespec(loc, Kind::FnTypespec),
           m_lhs_vpattern(lhs_vpattern),
           m_rhs_typespec(rhs_typespec) {}
       

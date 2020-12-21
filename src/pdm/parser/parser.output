@@ -1,0 +1,4226 @@
+Terminals unused in grammar
+
+    "<__42__>"
+    "using"
+    "match"
+    "with"
+    ":"
+    "::"
+    "!"
+    "EOS"
+    "<null>"
+
+
+State 149 conflicts: 2 shift/reduce
+State 200 conflicts: 3 shift/reduce
+State 243 conflicts: 2 shift/reduce
+
+
+Grammar
+
+    0 $accept: script $end
+
+    1 script: scriptContent
+
+    2 scriptContent: scriptContentStmt ";"
+    3              | scriptContent scriptContentStmt ";"
+
+    4 scriptContentStmt: moduleStmt
+
+    5 moduleStmt: "mod" "<val_id>" "{" moduleContent "}"
+
+    6 moduleContent: moduleContentStmt ";"
+    7              | moduleContent moduleContentStmt ";"
+
+    8 chainPrefixStmt: letStmt
+    9                | setStmt
+   10                | discardStmt
+
+   11 letStmt: "let" lpattern "=" expr
+
+   12 setStmt: "set" expr "=" expr
+
+   13 discardStmt: expr
+
+   14 moduleContentStmt: defStmt
+   15                  | typedefStmt
+   16                  | typedefStmt_enum
+   17                  | importStmt
+   18                  | linkStmt
+   19                  | moduleStmt
+
+   20 defStmt: "fn" vid vpattern "->" expr
+   21        | "fn" vid tpattern vpattern "->" expr
+
+   22 typedefStmt: "type" tid tpattern "=" typespec
+
+   23 typedefStmt_enum: "enum" tid tpattern "=" structTypespec
+
+   24 importStmt: "import" vid "from" stringl "as" stringl
+
+   25 linkStmt: "link" stringl "{" linkStmtContent "}"
+
+   26 linkStmtItem: vid vpattern "->" typespec "from" stringl
+
+   27 linkStmtContent: linkStmtItem ";"
+   28                | linkStmtContent linkStmtItem ";"
+
+   29 tid: "<TypeId>"
+
+   30 vid: "<val_id>"
+
+   31 floatl: "4.2"
+
+   32 stringl: "'sq-string-literal'"
+   33        | "\"dq-string-literal\""
+
+   34 expr: binaryExpr
+
+   35 expr_cl1: expr
+   36         | expr_cl1 "," expr
+
+   37 expr_cl2: expr "," expr
+   38         | expr_cl2 "," expr
+
+   39 parenExpr: unitExpr
+   40          | vparenExpr
+   41          | vtupleExpr
+   42          | vstructExpr
+   43          | chainExpr
+   44          | vlambdaExpr
+
+   45 unitExpr: "(" ")"
+
+   46 primaryExpr: parenExpr
+   47            | vid
+   48            | "42"
+   49            | "0x2a"
+   50            | floatl
+   51            | stringl
+   52            | ifThenElseExpr
+
+   53 vparenExpr: "(" expr ")"
+
+   54 vtupleExpr: "(" expr_cl2 ")"
+
+   55 vstructExpr: "{" vstructExprField_cl "}"
+
+   56 ifThenElseExpr: "if" parenExpr "then" parenExpr
+   57               | "if" parenExpr "then" parenExpr "else" primaryExpr
+
+   58 chainExpr: "{" expr "}"
+   59          | "{" chainPrefix "}"
+   60          | "{" chainPrefix expr "}"
+
+   61 chainPrefix: chainPrefixStmt ";"
+   62            | chainPrefix chainPrefixStmt ";"
+
+   63 vlambdaExpr: "fn" lpattern parenExpr
+
+   64 postfixExpr: primaryExpr
+   65            | vtcallExpr
+   66            | vvcallExpr
+   67            | dotNmExpr
+   68            | dotIxExpr
+
+   69 vtcallExpr: postfixExpr "[" vtarg_cl "]"
+
+   70 vvcallExpr: postfixExpr "(" ")"
+   71           | postfixExpr "(" expr_cl1 ")"
+
+   72 dotNmExpr: postfixExpr "." "<val_id>"
+
+   73 dotIxExpr: postfixExpr "." "42"
+
+   74 unaryExpr: postfixExpr
+   75          | unaryOp unaryExpr
+
+   76 unaryOp: "+"
+   77        | "-"
+   78        | "*"
+   79        | "^"
+   80        | "not"
+
+   81 binaryExpr: orBinaryExpr
+
+   82 mulBinaryOp: "*"
+   83            | "/"
+   84            | "%"
+
+   85 mulBinaryExpr: unaryExpr
+   86              | mulBinaryExpr mulBinaryOp unaryExpr
+
+   87 addBinaryOp: "+"
+   88            | "-"
+
+   89 addBinaryExpr: mulBinaryExpr
+   90              | addBinaryExpr addBinaryOp mulBinaryExpr
+
+   91 cmpBinaryOp: "<"
+   92            | "<="
+   93            | ">"
+   94            | ">="
+
+   95 cmpBinaryExpr: addBinaryExpr
+   96              | cmpBinaryExpr cmpBinaryOp addBinaryExpr
+
+   97 eqBinaryOp: "=="
+   98           | "!="
+
+   99 eqBinaryExpr: cmpBinaryExpr
+  100             | eqBinaryExpr eqBinaryOp cmpBinaryExpr
+
+  101 andBinaryExpr: eqBinaryExpr
+  102              | andBinaryExpr "and" eqBinaryExpr
+
+  103 xorBinaryExpr: andBinaryExpr
+  104              | xorBinaryExpr "xor" andBinaryExpr
+
+  105 orBinaryExpr: xorBinaryExpr
+  106             | orBinaryExpr "or" xorBinaryExpr
+
+  107 typespec: unaryTypespec
+
+  108 typespec_cl: typespec
+  109            | typespec_cl "," typespec
+
+  110 structTypespecField: vid typespec
+
+  111 structTypespecField_cl: structTypespecField
+  112                       | structTypespecField_cl "," structTypespecField
+
+  113 primaryTypespec: tid
+  114                | parenTypespec
+  115                | structTypespec
+  116                | tupleTypespec
+
+  117 parenTypespec: "(" typespec ")"
+
+  118 structTypespec: "{" structTypespecField_cl "}"
+
+  119 tupleTypespec: "[" typespec_cl "]"
+
+  120 postfixTypespec: primaryTypespec
+  121                | ttcall
+  122                | tdot
+
+  123 ttcall: postfixTypespec "[" ttarg_cl "]"
+
+  124 tdot: postfixTypespec "." "<val_id>"
+
+  125 unaryTypespec: postfixTypespec
+  126              | "&" unaryTypespec
+  127              | "^" unaryTypespec
+
+  128 ttarg: typespec
+  129      | expr
+
+  130 ttarg_cl: ttarg
+  131         | ttarg_cl "," ttarg
+
+  132 vtarg: typespec
+  133      | expr
+
+  134 vtarg_cl: vtarg
+  135         | vtarg_cl "," vtarg
+
+  136 vstructExprField: vid "=" expr
+
+  137 vpatternField: vid typespec
+
+  138 lpatternField: vpatternField
+  139              | vid
+
+  140 tpatternField: tid
+  141              | vpatternField
+
+  142 lpattern: lpatternField
+  143         | "(" lpatternField_cl ")"
+  144         | "(" ")"
+
+  145 vpattern: "(" vpatternField_cl ")"
+  146         | "(" ")"
+
+  147 tpattern: "[" tpatternField_cl "]"
+  148         | "<" tpatternField_cl ">"
+
+  149 vpatternField_cl: vpatternField
+  150                 | vpatternField_cl "," vpatternField
+
+  151 lpatternField_cl: lpatternField
+  152                 | lpatternField_cl "," lpatternField
+
+  153 tpatternField_cl: tpatternField
+  154                 | tpatternField_cl "," tpatternField
+
+  155 vstructExprField_cl: vstructExprField
+  156                    | vstructExprField_cl "," vstructExprField
+
+
+Terminals, with rules where they appear
+
+    $end (0) 0
+    error (256)
+    "<val_id>" <pdm::parser::TokenInfo> (258) 5 30 72 124
+    "<TypeId>" <pdm::parser::TokenInfo> (259) 29
+    "<__42__>" <pdm::parser::TokenInfo> (260)
+    "using" (261)
+    "mod" (262) 5
+    "if" (263) 56 57
+    "then" (264) 56 57
+    "else" (265) 57
+    "match" (266)
+    "with" (267)
+    "import" (268) 24
+    "link" (269) 25
+    "from" (270) 24 26
+    "as" (271) 24
+    "let" (272) 11
+    "set" (273) 12
+    "fn" (274) 20 21 63
+    "type" (275) 22
+    "enum" (276) 23
+    "and" (277) 102
+    "xor" (278) 104
+    "or" (279) 106
+    "not" (280) 80
+    "42" <token> (281) 48 73
+    "0x2a" <token> (282) 49
+    "4.2" <token> (283) 31
+    "\"dq-string-literal\"" <token> (284) 33
+    "'sq-string-literal'" <token> (285) 32
+    "." (286) 72 73 124
+    ":" (287)
+    "," (288) 36 37 38 109 112 131 135 150 152 154 156
+    ";" (289) 2 3 6 7 27 28 61 62
+    "::" (290)
+    "(" (291) 45 53 54 70 71 117 143 144 145 146
+    ")" (292) 45 53 54 70 71 117 143 144 145 146
+    "[" (293) 69 119 123 147
+    "]" (294) 69 119 123 147
+    "{" (295) 5 25 55 58 59 60 118
+    "}" (296) 5 25 55 58 59 60 118
+    "->" (297) 20 21 26
+    "*" (298) 78 82
+    "/" (299) 83
+    "%" (300) 84
+    "+" (301) 76 87
+    "-" (302) 77 88
+    "<" (303) 91 148
+    "<=" (304) 92
+    ">" (305) 93 148
+    ">=" (306) 94
+    "=" (307) 11 12 22 23 136
+    "==" (308) 97
+    "!=" (309) 98
+    "^" (310) 79 127
+    "&" (311) 126
+    "!" (312)
+    "EOS" (313)
+    "<null>" (314)
+
+
+Nonterminals, with rules where they appear
+
+    $accept (60)
+        on left: 0
+    script <script> (61)
+        on left: 1
+        on right: 0
+    scriptContent <script_sb> (62)
+        on left: 2 3
+        on right: 1 3
+    scriptContentStmt <stmt> (63)
+        on left: 4
+        on right: 2 3
+    moduleStmt <stmt> (64)
+        on left: 5
+        on right: 4 19
+    moduleContent <stmt_sb> (65)
+        on left: 6 7
+        on right: 5 7
+    chainPrefixStmt <stmt> (66)
+        on left: 8 9 10
+        on right: 61 62
+    letStmt <stmt> (67)
+        on left: 11
+        on right: 8
+    setStmt <stmt> (68)
+        on left: 12
+        on right: 9
+    discardStmt <stmt> (69)
+        on left: 13
+        on right: 10
+    moduleContentStmt <stmt> (70)
+        on left: 14 15 16 17 18 19
+        on right: 6 7
+    defStmt <stmt> (71)
+        on left: 20 21
+        on right: 14
+    typedefStmt <stmt> (72)
+        on left: 22
+        on right: 15
+    typedefStmt_enum <stmt> (73)
+        on left: 23
+        on right: 16
+    importStmt <stmt> (74)
+        on left: 24
+        on right: 17
+    linkStmt <stmt> (75)
+        on left: 25
+        on right: 18
+    linkStmtItem <stmt> (76)
+        on left: 26
+        on right: 27 28
+    linkStmtContent <stmt_sb> (77)
+        on left: 27 28
+        on right: 25 28
+    tid <token> (78)
+        on left: 29
+        on right: 22 23 113 140
+    vid <token> (79)
+        on left: 30
+        on right: 20 21 24 26 47 110 136 137 139
+    floatl <token> (80)
+        on left: 31
+        on right: 50
+    stringl <token> (81)
+        on left: 32 33
+        on right: 24 25 26 51
+    expr <exp> (82)
+        on left: 34
+        on right: 11 12 13 20 21 35 36 37 38 53 58 60 129 133 136
+    expr_cl1 <exp_sb> (83)
+        on left: 35 36
+        on right: 36 71
+    expr_cl2 <exp_sb> (84)
+        on left: 37 38
+        on right: 38 54
+    parenExpr <exp> (85)
+        on left: 39 40 41 42 43 44
+        on right: 46 56 57 63
+    unitExpr <exp> (86)
+        on left: 45
+        on right: 39
+    primaryExpr <exp> (87)
+        on left: 46 47 48 49 50 51 52
+        on right: 57 64
+    vparenExpr <exp> (88)
+        on left: 53
+        on right: 40
+    vtupleExpr <exp> (89)
+        on left: 54
+        on right: 41
+    vstructExpr <exp> (90)
+        on left: 55
+        on right: 42
+    ifThenElseExpr <exp> (91)
+        on left: 56 57
+        on right: 52
+    chainExpr <exp> (92)
+        on left: 58 59 60
+        on right: 43
+    chainPrefix <stmt_sb> (93)
+        on left: 61 62
+        on right: 59 60 62
+    vlambdaExpr <exp> (94)
+        on left: 63
+        on right: 44
+    postfixExpr <exp> (95)
+        on left: 64 65 66 67 68
+        on right: 69 70 71 72 73 74
+    vtcallExpr <exp> (96)
+        on left: 69
+        on right: 65
+    vvcallExpr <exp> (97)
+        on left: 70 71
+        on right: 66
+    dotNmExpr <exp> (98)
+        on left: 72
+        on right: 67
+    dotIxExpr <exp> (99)
+        on left: 73
+        on right: 68
+    unaryExpr <exp> (100)
+        on left: 74 75
+        on right: 75 85 86
+    unaryOp <uop> (101)
+        on left: 76 77 78 79 80
+        on right: 75
+    binaryExpr <exp> (102)
+        on left: 81
+        on right: 34
+    mulBinaryOp <bop> (103)
+        on left: 82 83 84
+        on right: 86
+    mulBinaryExpr <exp> (104)
+        on left: 85 86
+        on right: 86 89 90
+    addBinaryOp <bop> (105)
+        on left: 87 88
+        on right: 90
+    addBinaryExpr <exp> (106)
+        on left: 89 90
+        on right: 90 95 96
+    cmpBinaryOp <bop> (107)
+        on left: 91 92 93 94
+        on right: 96
+    cmpBinaryExpr <exp> (108)
+        on left: 95 96
+        on right: 96 99 100
+    eqBinaryOp <bop> (109)
+        on left: 97 98
+        on right: 100
+    eqBinaryExpr <exp> (110)
+        on left: 99 100
+        on right: 100 101 102
+    andBinaryExpr <exp> (111)
+        on left: 101 102
+        on right: 102 103 104
+    xorBinaryExpr <exp> (112)
+        on left: 103 104
+        on right: 104 105 106
+    orBinaryExpr <exp> (113)
+        on left: 105 106
+        on right: 81 106
+    typespec <typespec> (114)
+        on left: 107
+        on right: 22 26 108 109 110 117 128 132 137
+    typespec_cl <typespec_sb> (115)
+        on left: 108 109
+        on right: 109 119
+    structTypespecField <structts_field> (116)
+        on left: 110
+        on right: 111 112
+    structTypespecField_cl <structts_field_sb> (117)
+        on left: 111 112
+        on right: 112 118
+    primaryTypespec <typespec> (118)
+        on left: 113 114 115 116
+        on right: 120
+    parenTypespec <typespec> (119)
+        on left: 117
+        on right: 114
+    structTypespec <typespec> (120)
+        on left: 118
+        on right: 23 115
+    tupleTypespec <typespec> (121)
+        on left: 119
+        on right: 116
+    postfixTypespec <typespec> (122)
+        on left: 120 121 122
+        on right: 123 124 125
+    ttcall <typespec> (123)
+        on left: 123
+        on right: 121
+    tdot <typespec> (124)
+        on left: 124
+        on right: 122
+    unaryTypespec <typespec> (125)
+        on left: 125 126 127
+        on right: 107 126 127
+    ttarg <tcall_arg> (126)
+        on left: 128 129
+        on right: 130 131
+    ttarg_cl <tcall_arg_sb> (127)
+        on left: 130 131
+        on right: 123 131
+    vtarg <tcall_arg> (128)
+        on left: 132 133
+        on right: 134 135
+    vtarg_cl <tcall_arg_sb> (129)
+        on left: 134 135
+        on right: 69 135
+    vstructExprField <structexp_field> (130)
+        on left: 136
+        on right: 155 156
+    vpatternField <vpattern_field> (131)
+        on left: 137
+        on right: 138 141 149 150
+    lpatternField <lpattern_field> (132)
+        on left: 138 139
+        on right: 142 151 152
+    tpatternField <tpattern_field> (133)
+        on left: 140 141
+        on right: 153 154
+    lpattern <lpattern> (134)
+        on left: 142 143 144
+        on right: 11 63
+    vpattern <vpattern> (135)
+        on left: 145 146
+        on right: 20 21 26
+    tpattern <tpattern> (136)
+        on left: 147 148
+        on right: 21 22 23
+    vpatternField_cl <vpattern_field_sb> (137)
+        on left: 149 150
+        on right: 145 150
+    lpatternField_cl <lpattern_field_sb> (138)
+        on left: 151 152
+        on right: 143 152
+    tpatternField_cl <tpattern_field_sb> (139)
+        on left: 153 154
+        on right: 147 148 154
+    vstructExprField_cl <structexp_field_sb> (140)
+        on left: 155 156
+        on right: 55 156
+
+
+State 0
+
+    0 $accept: • script $end
+
+    "mod"  shift, and go to state 1
+
+    script             go to state 2
+    scriptContent      go to state 3
+    scriptContentStmt  go to state 4
+    moduleStmt         go to state 5
+
+
+State 1
+
+    5 moduleStmt: "mod" • "<val_id>" "{" moduleContent "}"
+
+    "<val_id>"  shift, and go to state 6
+
+
+State 2
+
+    0 $accept: script • $end
+
+    $end  shift, and go to state 7
+
+
+State 3
+
+    1 script: scriptContent •
+    3 scriptContent: scriptContent • scriptContentStmt ";"
+
+    "mod"  shift, and go to state 1
+
+    $default  reduce using rule 1 (script)
+
+    scriptContentStmt  go to state 8
+    moduleStmt         go to state 5
+
+
+State 4
+
+    2 scriptContent: scriptContentStmt • ";"
+
+    ";"  shift, and go to state 9
+
+
+State 5
+
+    4 scriptContentStmt: moduleStmt •
+
+    $default  reduce using rule 4 (scriptContentStmt)
+
+
+State 6
+
+    5 moduleStmt: "mod" "<val_id>" • "{" moduleContent "}"
+
+    "{"  shift, and go to state 10
+
+
+State 7
+
+    0 $accept: script $end •
+
+    $default  accept
+
+
+State 8
+
+    3 scriptContent: scriptContent scriptContentStmt • ";"
+
+    ";"  shift, and go to state 11
+
+
+State 9
+
+    2 scriptContent: scriptContentStmt ";" •
+
+    $default  reduce using rule 2 (scriptContent)
+
+
+State 10
+
+    5 moduleStmt: "mod" "<val_id>" "{" • moduleContent "}"
+
+    "mod"     shift, and go to state 1
+    "import"  shift, and go to state 12
+    "link"    shift, and go to state 13
+    "fn"      shift, and go to state 14
+    "type"    shift, and go to state 15
+    "enum"    shift, and go to state 16
+
+    moduleStmt         go to state 17
+    moduleContent      go to state 18
+    moduleContentStmt  go to state 19
+    defStmt            go to state 20
+    typedefStmt        go to state 21
+    typedefStmt_enum   go to state 22
+    importStmt         go to state 23
+    linkStmt           go to state 24
+
+
+State 11
+
+    3 scriptContent: scriptContent scriptContentStmt ";" •
+
+    $default  reduce using rule 3 (scriptContent)
+
+
+State 12
+
+   24 importStmt: "import" • vid "from" stringl "as" stringl
+
+    "<val_id>"  shift, and go to state 25
+
+    vid  go to state 26
+
+
+State 13
+
+   25 linkStmt: "link" • stringl "{" linkStmtContent "}"
+
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+
+    stringl  go to state 29
+
+
+State 14
+
+   20 defStmt: "fn" • vid vpattern "->" expr
+   21        | "fn" • vid tpattern vpattern "->" expr
+
+    "<val_id>"  shift, and go to state 25
+
+    vid  go to state 30
+
+
+State 15
+
+   22 typedefStmt: "type" • tid tpattern "=" typespec
+
+    "<TypeId>"  shift, and go to state 31
+
+    tid  go to state 32
+
+
+State 16
+
+   23 typedefStmt_enum: "enum" • tid tpattern "=" structTypespec
+
+    "<TypeId>"  shift, and go to state 31
+
+    tid  go to state 33
+
+
+State 17
+
+   19 moduleContentStmt: moduleStmt •
+
+    $default  reduce using rule 19 (moduleContentStmt)
+
+
+State 18
+
+    5 moduleStmt: "mod" "<val_id>" "{" moduleContent • "}"
+    7 moduleContent: moduleContent • moduleContentStmt ";"
+
+    "mod"     shift, and go to state 1
+    "import"  shift, and go to state 12
+    "link"    shift, and go to state 13
+    "fn"      shift, and go to state 14
+    "type"    shift, and go to state 15
+    "enum"    shift, and go to state 16
+    "}"       shift, and go to state 34
+
+    moduleStmt         go to state 17
+    moduleContentStmt  go to state 35
+    defStmt            go to state 20
+    typedefStmt        go to state 21
+    typedefStmt_enum   go to state 22
+    importStmt         go to state 23
+    linkStmt           go to state 24
+
+
+State 19
+
+    6 moduleContent: moduleContentStmt • ";"
+
+    ";"  shift, and go to state 36
+
+
+State 20
+
+   14 moduleContentStmt: defStmt •
+
+    $default  reduce using rule 14 (moduleContentStmt)
+
+
+State 21
+
+   15 moduleContentStmt: typedefStmt •
+
+    $default  reduce using rule 15 (moduleContentStmt)
+
+
+State 22
+
+   16 moduleContentStmt: typedefStmt_enum •
+
+    $default  reduce using rule 16 (moduleContentStmt)
+
+
+State 23
+
+   17 moduleContentStmt: importStmt •
+
+    $default  reduce using rule 17 (moduleContentStmt)
+
+
+State 24
+
+   18 moduleContentStmt: linkStmt •
+
+    $default  reduce using rule 18 (moduleContentStmt)
+
+
+State 25
+
+   30 vid: "<val_id>" •
+
+    $default  reduce using rule 30 (vid)
+
+
+State 26
+
+   24 importStmt: "import" vid • "from" stringl "as" stringl
+
+    "from"  shift, and go to state 37
+
+
+State 27
+
+   33 stringl: "\"dq-string-literal\"" •
+
+    $default  reduce using rule 33 (stringl)
+
+
+State 28
+
+   32 stringl: "'sq-string-literal'" •
+
+    $default  reduce using rule 32 (stringl)
+
+
+State 29
+
+   25 linkStmt: "link" stringl • "{" linkStmtContent "}"
+
+    "{"  shift, and go to state 38
+
+
+State 30
+
+   20 defStmt: "fn" vid • vpattern "->" expr
+   21        | "fn" vid • tpattern vpattern "->" expr
+
+    "("  shift, and go to state 39
+    "["  shift, and go to state 40
+    "<"  shift, and go to state 41
+
+    vpattern  go to state 42
+    tpattern  go to state 43
+
+
+State 31
+
+   29 tid: "<TypeId>" •
+
+    $default  reduce using rule 29 (tid)
+
+
+State 32
+
+   22 typedefStmt: "type" tid • tpattern "=" typespec
+
+    "["  shift, and go to state 40
+    "<"  shift, and go to state 41
+
+    tpattern  go to state 44
+
+
+State 33
+
+   23 typedefStmt_enum: "enum" tid • tpattern "=" structTypespec
+
+    "["  shift, and go to state 40
+    "<"  shift, and go to state 41
+
+    tpattern  go to state 45
+
+
+State 34
+
+    5 moduleStmt: "mod" "<val_id>" "{" moduleContent "}" •
+
+    $default  reduce using rule 5 (moduleStmt)
+
+
+State 35
+
+    7 moduleContent: moduleContent moduleContentStmt • ";"
+
+    ";"  shift, and go to state 46
+
+
+State 36
+
+    6 moduleContent: moduleContentStmt ";" •
+
+    $default  reduce using rule 6 (moduleContent)
+
+
+State 37
+
+   24 importStmt: "import" vid "from" • stringl "as" stringl
+
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+
+    stringl  go to state 47
+
+
+State 38
+
+   25 linkStmt: "link" stringl "{" • linkStmtContent "}"
+
+    "<val_id>"  shift, and go to state 25
+
+    linkStmtItem     go to state 48
+    linkStmtContent  go to state 49
+    vid              go to state 50
+
+
+State 39
+
+  145 vpattern: "(" • vpatternField_cl ")"
+  146         | "(" • ")"
+
+    "<val_id>"  shift, and go to state 25
+    ")"         shift, and go to state 51
+
+    vid               go to state 52
+    vpatternField     go to state 53
+    vpatternField_cl  go to state 54
+
+
+State 40
+
+  147 tpattern: "[" • tpatternField_cl "]"
+
+    "<val_id>"  shift, and go to state 25
+    "<TypeId>"  shift, and go to state 31
+
+    tid               go to state 55
+    vid               go to state 52
+    vpatternField     go to state 56
+    tpatternField     go to state 57
+    tpatternField_cl  go to state 58
+
+
+State 41
+
+  148 tpattern: "<" • tpatternField_cl ">"
+
+    "<val_id>"  shift, and go to state 25
+    "<TypeId>"  shift, and go to state 31
+
+    tid               go to state 55
+    vid               go to state 52
+    vpatternField     go to state 56
+    tpatternField     go to state 57
+    tpatternField_cl  go to state 59
+
+
+State 42
+
+   20 defStmt: "fn" vid vpattern • "->" expr
+
+    "->"  shift, and go to state 60
+
+
+State 43
+
+   21 defStmt: "fn" vid tpattern • vpattern "->" expr
+
+    "("  shift, and go to state 39
+
+    vpattern  go to state 61
+
+
+State 44
+
+   22 typedefStmt: "type" tid tpattern • "=" typespec
+
+    "="  shift, and go to state 62
+
+
+State 45
+
+   23 typedefStmt_enum: "enum" tid tpattern • "=" structTypespec
+
+    "="  shift, and go to state 63
+
+
+State 46
+
+    7 moduleContent: moduleContent moduleContentStmt ";" •
+
+    $default  reduce using rule 7 (moduleContent)
+
+
+State 47
+
+   24 importStmt: "import" vid "from" stringl • "as" stringl
+
+    "as"  shift, and go to state 64
+
+
+State 48
+
+   27 linkStmtContent: linkStmtItem • ";"
+
+    ";"  shift, and go to state 65
+
+
+State 49
+
+   25 linkStmt: "link" stringl "{" linkStmtContent • "}"
+   28 linkStmtContent: linkStmtContent • linkStmtItem ";"
+
+    "<val_id>"  shift, and go to state 25
+    "}"         shift, and go to state 66
+
+    linkStmtItem  go to state 67
+    vid           go to state 50
+
+
+State 50
+
+   26 linkStmtItem: vid • vpattern "->" typespec "from" stringl
+
+    "("  shift, and go to state 39
+
+    vpattern  go to state 68
+
+
+State 51
+
+  146 vpattern: "(" ")" •
+
+    $default  reduce using rule 146 (vpattern)
+
+
+State 52
+
+  137 vpatternField: vid • typespec
+
+    "<TypeId>"  shift, and go to state 31
+    "("         shift, and go to state 69
+    "["         shift, and go to state 70
+    "{"         shift, and go to state 71
+    "^"         shift, and go to state 72
+    "&"         shift, and go to state 73
+
+    tid              go to state 74
+    typespec         go to state 75
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+
+
+State 53
+
+  149 vpatternField_cl: vpatternField •
+
+    $default  reduce using rule 149 (vpatternField_cl)
+
+
+State 54
+
+  145 vpattern: "(" vpatternField_cl • ")"
+  150 vpatternField_cl: vpatternField_cl • "," vpatternField
+
+    ","  shift, and go to state 84
+    ")"  shift, and go to state 85
+
+
+State 55
+
+  140 tpatternField: tid •
+
+    $default  reduce using rule 140 (tpatternField)
+
+
+State 56
+
+  141 tpatternField: vpatternField •
+
+    $default  reduce using rule 141 (tpatternField)
+
+
+State 57
+
+  153 tpatternField_cl: tpatternField •
+
+    $default  reduce using rule 153 (tpatternField_cl)
+
+
+State 58
+
+  147 tpattern: "[" tpatternField_cl • "]"
+  154 tpatternField_cl: tpatternField_cl • "," tpatternField
+
+    ","  shift, and go to state 86
+    "]"  shift, and go to state 87
+
+
+State 59
+
+  148 tpattern: "<" tpatternField_cl • ">"
+  154 tpatternField_cl: tpatternField_cl • "," tpatternField
+
+    ","  shift, and go to state 86
+    ">"  shift, and go to state 88
+
+
+State 60
+
+   20 defStmt: "fn" vid vpattern "->" • expr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    expr            go to state 104
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    binaryExpr      go to state 121
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 125
+    andBinaryExpr   go to state 126
+    xorBinaryExpr   go to state 127
+    orBinaryExpr    go to state 128
+
+
+State 61
+
+   21 defStmt: "fn" vid tpattern vpattern • "->" expr
+
+    "->"  shift, and go to state 129
+
+
+State 62
+
+   22 typedefStmt: "type" tid tpattern "=" • typespec
+
+    "<TypeId>"  shift, and go to state 31
+    "("         shift, and go to state 69
+    "["         shift, and go to state 70
+    "{"         shift, and go to state 71
+    "^"         shift, and go to state 72
+    "&"         shift, and go to state 73
+
+    tid              go to state 74
+    typespec         go to state 130
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+
+
+State 63
+
+   23 typedefStmt_enum: "enum" tid tpattern "=" • structTypespec
+
+    "{"  shift, and go to state 71
+
+    structTypespec  go to state 131
+
+
+State 64
+
+   24 importStmt: "import" vid "from" stringl "as" • stringl
+
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+
+    stringl  go to state 132
+
+
+State 65
+
+   27 linkStmtContent: linkStmtItem ";" •
+
+    $default  reduce using rule 27 (linkStmtContent)
+
+
+State 66
+
+   25 linkStmt: "link" stringl "{" linkStmtContent "}" •
+
+    $default  reduce using rule 25 (linkStmt)
+
+
+State 67
+
+   28 linkStmtContent: linkStmtContent linkStmtItem • ";"
+
+    ";"  shift, and go to state 133
+
+
+State 68
+
+   26 linkStmtItem: vid vpattern • "->" typespec "from" stringl
+
+    "->"  shift, and go to state 134
+
+
+State 69
+
+  117 parenTypespec: "(" • typespec ")"
+
+    "<TypeId>"  shift, and go to state 31
+    "("         shift, and go to state 69
+    "["         shift, and go to state 70
+    "{"         shift, and go to state 71
+    "^"         shift, and go to state 72
+    "&"         shift, and go to state 73
+
+    tid              go to state 74
+    typespec         go to state 135
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+
+
+State 70
+
+  119 tupleTypespec: "[" • typespec_cl "]"
+
+    "<TypeId>"  shift, and go to state 31
+    "("         shift, and go to state 69
+    "["         shift, and go to state 70
+    "{"         shift, and go to state 71
+    "^"         shift, and go to state 72
+    "&"         shift, and go to state 73
+
+    tid              go to state 74
+    typespec         go to state 136
+    typespec_cl      go to state 137
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+
+
+State 71
+
+  118 structTypespec: "{" • structTypespecField_cl "}"
+
+    "<val_id>"  shift, and go to state 25
+
+    vid                     go to state 138
+    structTypespecField     go to state 139
+    structTypespecField_cl  go to state 140
+
+
+State 72
+
+  127 unaryTypespec: "^" • unaryTypespec
+
+    "<TypeId>"  shift, and go to state 31
+    "("         shift, and go to state 69
+    "["         shift, and go to state 70
+    "{"         shift, and go to state 71
+    "^"         shift, and go to state 72
+    "&"         shift, and go to state 73
+
+    tid              go to state 74
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 141
+
+
+State 73
+
+  126 unaryTypespec: "&" • unaryTypespec
+
+    "<TypeId>"  shift, and go to state 31
+    "("         shift, and go to state 69
+    "["         shift, and go to state 70
+    "{"         shift, and go to state 71
+    "^"         shift, and go to state 72
+    "&"         shift, and go to state 73
+
+    tid              go to state 74
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 142
+
+
+State 74
+
+  113 primaryTypespec: tid •
+
+    $default  reduce using rule 113 (primaryTypespec)
+
+
+State 75
+
+  137 vpatternField: vid typespec •
+
+    $default  reduce using rule 137 (vpatternField)
+
+
+State 76
+
+  120 postfixTypespec: primaryTypespec •
+
+    $default  reduce using rule 120 (postfixTypespec)
+
+
+State 77
+
+  114 primaryTypespec: parenTypespec •
+
+    $default  reduce using rule 114 (primaryTypespec)
+
+
+State 78
+
+  115 primaryTypespec: structTypespec •
+
+    $default  reduce using rule 115 (primaryTypespec)
+
+
+State 79
+
+  116 primaryTypespec: tupleTypespec •
+
+    $default  reduce using rule 116 (primaryTypespec)
+
+
+State 80
+
+  123 ttcall: postfixTypespec • "[" ttarg_cl "]"
+  124 tdot: postfixTypespec • "." "<val_id>"
+  125 unaryTypespec: postfixTypespec •
+
+    "."  shift, and go to state 143
+    "["  shift, and go to state 144
+
+    $default  reduce using rule 125 (unaryTypespec)
+
+
+State 81
+
+  121 postfixTypespec: ttcall •
+
+    $default  reduce using rule 121 (postfixTypespec)
+
+
+State 82
+
+  122 postfixTypespec: tdot •
+
+    $default  reduce using rule 122 (postfixTypespec)
+
+
+State 83
+
+  107 typespec: unaryTypespec •
+
+    $default  reduce using rule 107 (typespec)
+
+
+State 84
+
+  150 vpatternField_cl: vpatternField_cl "," • vpatternField
+
+    "<val_id>"  shift, and go to state 25
+
+    vid            go to state 52
+    vpatternField  go to state 145
+
+
+State 85
+
+  145 vpattern: "(" vpatternField_cl ")" •
+
+    $default  reduce using rule 145 (vpattern)
+
+
+State 86
+
+  154 tpatternField_cl: tpatternField_cl "," • tpatternField
+
+    "<val_id>"  shift, and go to state 25
+    "<TypeId>"  shift, and go to state 31
+
+    tid            go to state 55
+    vid            go to state 52
+    vpatternField  go to state 56
+    tpatternField  go to state 146
+
+
+State 87
+
+  147 tpattern: "[" tpatternField_cl "]" •
+
+    $default  reduce using rule 147 (tpattern)
+
+
+State 88
+
+  148 tpattern: "<" tpatternField_cl ">" •
+
+    $default  reduce using rule 148 (tpattern)
+
+
+State 89
+
+   56 ifThenElseExpr: "if" • parenExpr "then" parenExpr
+   57               | "if" • parenExpr "then" parenExpr "else" primaryExpr
+
+    "fn"  shift, and go to state 90
+    "("   shift, and go to state 95
+    "{"   shift, and go to state 96
+
+    parenExpr    go to state 147
+    unitExpr     go to state 106
+    vparenExpr   go to state 108
+    vtupleExpr   go to state 109
+    vstructExpr  go to state 110
+    chainExpr    go to state 112
+    vlambdaExpr  go to state 113
+
+
+State 90
+
+   63 vlambdaExpr: "fn" • lpattern parenExpr
+
+    "<val_id>"  shift, and go to state 25
+    "("         shift, and go to state 148
+
+    vid            go to state 149
+    vpatternField  go to state 150
+    lpatternField  go to state 151
+    lpattern       go to state 152
+
+
+State 91
+
+   80 unaryOp: "not" •
+
+    $default  reduce using rule 80 (unaryOp)
+
+
+State 92
+
+   48 primaryExpr: "42" •
+
+    $default  reduce using rule 48 (primaryExpr)
+
+
+State 93
+
+   49 primaryExpr: "0x2a" •
+
+    $default  reduce using rule 49 (primaryExpr)
+
+
+State 94
+
+   31 floatl: "4.2" •
+
+    $default  reduce using rule 31 (floatl)
+
+
+State 95
+
+   45 unitExpr: "(" • ")"
+   53 vparenExpr: "(" • expr ")"
+   54 vtupleExpr: "(" • expr_cl2 ")"
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    ")"                      shift, and go to state 153
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    expr            go to state 154
+    expr_cl2        go to state 155
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    binaryExpr      go to state 121
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 125
+    andBinaryExpr   go to state 126
+    xorBinaryExpr   go to state 127
+    orBinaryExpr    go to state 128
+
+
+State 96
+
+   55 vstructExpr: "{" • vstructExprField_cl "}"
+   58 chainExpr: "{" • expr "}"
+   59          | "{" • chainPrefix "}"
+   60          | "{" • chainPrefix expr "}"
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "let"                    shift, and go to state 156
+    "set"                    shift, and go to state 157
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    chainPrefixStmt      go to state 158
+    letStmt              go to state 159
+    setStmt              go to state 160
+    discardStmt          go to state 161
+    vid                  go to state 162
+    floatl               go to state 102
+    stringl              go to state 103
+    expr                 go to state 163
+    parenExpr            go to state 105
+    unitExpr             go to state 106
+    primaryExpr          go to state 107
+    vparenExpr           go to state 108
+    vtupleExpr           go to state 109
+    vstructExpr          go to state 110
+    ifThenElseExpr       go to state 111
+    chainExpr            go to state 112
+    chainPrefix          go to state 164
+    vlambdaExpr          go to state 113
+    postfixExpr          go to state 114
+    vtcallExpr           go to state 115
+    vvcallExpr           go to state 116
+    dotNmExpr            go to state 117
+    dotIxExpr            go to state 118
+    unaryExpr            go to state 119
+    unaryOp              go to state 120
+    binaryExpr           go to state 121
+    mulBinaryExpr        go to state 122
+    addBinaryExpr        go to state 123
+    cmpBinaryExpr        go to state 124
+    eqBinaryExpr         go to state 125
+    andBinaryExpr        go to state 126
+    xorBinaryExpr        go to state 127
+    orBinaryExpr         go to state 128
+    vstructExprField     go to state 165
+    vstructExprField_cl  go to state 166
+
+
+State 97
+
+   78 unaryOp: "*" •
+
+    $default  reduce using rule 78 (unaryOp)
+
+
+State 98
+
+   76 unaryOp: "+" •
+
+    $default  reduce using rule 76 (unaryOp)
+
+
+State 99
+
+   77 unaryOp: "-" •
+
+    $default  reduce using rule 77 (unaryOp)
+
+
+State 100
+
+   79 unaryOp: "^" •
+
+    $default  reduce using rule 79 (unaryOp)
+
+
+State 101
+
+   47 primaryExpr: vid •
+
+    $default  reduce using rule 47 (primaryExpr)
+
+
+State 102
+
+   50 primaryExpr: floatl •
+
+    $default  reduce using rule 50 (primaryExpr)
+
+
+State 103
+
+   51 primaryExpr: stringl •
+
+    $default  reduce using rule 51 (primaryExpr)
+
+
+State 104
+
+   20 defStmt: "fn" vid vpattern "->" expr •
+
+    $default  reduce using rule 20 (defStmt)
+
+
+State 105
+
+   46 primaryExpr: parenExpr •
+
+    $default  reduce using rule 46 (primaryExpr)
+
+
+State 106
+
+   39 parenExpr: unitExpr •
+
+    $default  reduce using rule 39 (parenExpr)
+
+
+State 107
+
+   64 postfixExpr: primaryExpr •
+
+    $default  reduce using rule 64 (postfixExpr)
+
+
+State 108
+
+   40 parenExpr: vparenExpr •
+
+    $default  reduce using rule 40 (parenExpr)
+
+
+State 109
+
+   41 parenExpr: vtupleExpr •
+
+    $default  reduce using rule 41 (parenExpr)
+
+
+State 110
+
+   42 parenExpr: vstructExpr •
+
+    $default  reduce using rule 42 (parenExpr)
+
+
+State 111
+
+   52 primaryExpr: ifThenElseExpr •
+
+    $default  reduce using rule 52 (primaryExpr)
+
+
+State 112
+
+   43 parenExpr: chainExpr •
+
+    $default  reduce using rule 43 (parenExpr)
+
+
+State 113
+
+   44 parenExpr: vlambdaExpr •
+
+    $default  reduce using rule 44 (parenExpr)
+
+
+State 114
+
+   69 vtcallExpr: postfixExpr • "[" vtarg_cl "]"
+   70 vvcallExpr: postfixExpr • "(" ")"
+   71           | postfixExpr • "(" expr_cl1 ")"
+   72 dotNmExpr: postfixExpr • "." "<val_id>"
+   73 dotIxExpr: postfixExpr • "." "42"
+   74 unaryExpr: postfixExpr •
+
+    "."  shift, and go to state 167
+    "("  shift, and go to state 168
+    "["  shift, and go to state 169
+
+    $default  reduce using rule 74 (unaryExpr)
+
+
+State 115
+
+   65 postfixExpr: vtcallExpr •
+
+    $default  reduce using rule 65 (postfixExpr)
+
+
+State 116
+
+   66 postfixExpr: vvcallExpr •
+
+    $default  reduce using rule 66 (postfixExpr)
+
+
+State 117
+
+   67 postfixExpr: dotNmExpr •
+
+    $default  reduce using rule 67 (postfixExpr)
+
+
+State 118
+
+   68 postfixExpr: dotIxExpr •
+
+    $default  reduce using rule 68 (postfixExpr)
+
+
+State 119
+
+   85 mulBinaryExpr: unaryExpr •
+
+    $default  reduce using rule 85 (mulBinaryExpr)
+
+
+State 120
+
+   75 unaryExpr: unaryOp • unaryExpr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 170
+    unaryOp         go to state 120
+
+
+State 121
+
+   34 expr: binaryExpr •
+
+    $default  reduce using rule 34 (expr)
+
+
+State 122
+
+   86 mulBinaryExpr: mulBinaryExpr • mulBinaryOp unaryExpr
+   89 addBinaryExpr: mulBinaryExpr •
+
+    "*"  shift, and go to state 171
+    "/"  shift, and go to state 172
+    "%"  shift, and go to state 173
+
+    $default  reduce using rule 89 (addBinaryExpr)
+
+    mulBinaryOp  go to state 174
+
+
+State 123
+
+   90 addBinaryExpr: addBinaryExpr • addBinaryOp mulBinaryExpr
+   95 cmpBinaryExpr: addBinaryExpr •
+
+    "+"  shift, and go to state 175
+    "-"  shift, and go to state 176
+
+    $default  reduce using rule 95 (cmpBinaryExpr)
+
+    addBinaryOp  go to state 177
+
+
+State 124
+
+   96 cmpBinaryExpr: cmpBinaryExpr • cmpBinaryOp addBinaryExpr
+   99 eqBinaryExpr: cmpBinaryExpr •
+
+    "<"   shift, and go to state 178
+    "<="  shift, and go to state 179
+    ">"   shift, and go to state 180
+    ">="  shift, and go to state 181
+
+    $default  reduce using rule 99 (eqBinaryExpr)
+
+    cmpBinaryOp  go to state 182
+
+
+State 125
+
+  100 eqBinaryExpr: eqBinaryExpr • eqBinaryOp cmpBinaryExpr
+  101 andBinaryExpr: eqBinaryExpr •
+
+    "=="  shift, and go to state 183
+    "!="  shift, and go to state 184
+
+    $default  reduce using rule 101 (andBinaryExpr)
+
+    eqBinaryOp  go to state 185
+
+
+State 126
+
+  102 andBinaryExpr: andBinaryExpr • "and" eqBinaryExpr
+  103 xorBinaryExpr: andBinaryExpr •
+
+    "and"  shift, and go to state 186
+
+    $default  reduce using rule 103 (xorBinaryExpr)
+
+
+State 127
+
+  104 xorBinaryExpr: xorBinaryExpr • "xor" andBinaryExpr
+  105 orBinaryExpr: xorBinaryExpr •
+
+    "xor"  shift, and go to state 187
+
+    $default  reduce using rule 105 (orBinaryExpr)
+
+
+State 128
+
+   81 binaryExpr: orBinaryExpr •
+  106 orBinaryExpr: orBinaryExpr • "or" xorBinaryExpr
+
+    "or"  shift, and go to state 188
+
+    $default  reduce using rule 81 (binaryExpr)
+
+
+State 129
+
+   21 defStmt: "fn" vid tpattern vpattern "->" • expr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    expr            go to state 189
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    binaryExpr      go to state 121
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 125
+    andBinaryExpr   go to state 126
+    xorBinaryExpr   go to state 127
+    orBinaryExpr    go to state 128
+
+
+State 130
+
+   22 typedefStmt: "type" tid tpattern "=" typespec •
+
+    $default  reduce using rule 22 (typedefStmt)
+
+
+State 131
+
+   23 typedefStmt_enum: "enum" tid tpattern "=" structTypespec •
+
+    $default  reduce using rule 23 (typedefStmt_enum)
+
+
+State 132
+
+   24 importStmt: "import" vid "from" stringl "as" stringl •
+
+    $default  reduce using rule 24 (importStmt)
+
+
+State 133
+
+   28 linkStmtContent: linkStmtContent linkStmtItem ";" •
+
+    $default  reduce using rule 28 (linkStmtContent)
+
+
+State 134
+
+   26 linkStmtItem: vid vpattern "->" • typespec "from" stringl
+
+    "<TypeId>"  shift, and go to state 31
+    "("         shift, and go to state 69
+    "["         shift, and go to state 70
+    "{"         shift, and go to state 71
+    "^"         shift, and go to state 72
+    "&"         shift, and go to state 73
+
+    tid              go to state 74
+    typespec         go to state 190
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+
+
+State 135
+
+  117 parenTypespec: "(" typespec • ")"
+
+    ")"  shift, and go to state 191
+
+
+State 136
+
+  108 typespec_cl: typespec •
+
+    $default  reduce using rule 108 (typespec_cl)
+
+
+State 137
+
+  109 typespec_cl: typespec_cl • "," typespec
+  119 tupleTypespec: "[" typespec_cl • "]"
+
+    ","  shift, and go to state 192
+    "]"  shift, and go to state 193
+
+
+State 138
+
+  110 structTypespecField: vid • typespec
+
+    "<TypeId>"  shift, and go to state 31
+    "("         shift, and go to state 69
+    "["         shift, and go to state 70
+    "{"         shift, and go to state 71
+    "^"         shift, and go to state 72
+    "&"         shift, and go to state 73
+
+    tid              go to state 74
+    typespec         go to state 194
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+
+
+State 139
+
+  111 structTypespecField_cl: structTypespecField •
+
+    $default  reduce using rule 111 (structTypespecField_cl)
+
+
+State 140
+
+  112 structTypespecField_cl: structTypespecField_cl • "," structTypespecField
+  118 structTypespec: "{" structTypespecField_cl • "}"
+
+    ","  shift, and go to state 195
+    "}"  shift, and go to state 196
+
+
+State 141
+
+  127 unaryTypespec: "^" unaryTypespec •
+
+    $default  reduce using rule 127 (unaryTypespec)
+
+
+State 142
+
+  126 unaryTypespec: "&" unaryTypespec •
+
+    $default  reduce using rule 126 (unaryTypespec)
+
+
+State 143
+
+  124 tdot: postfixTypespec "." • "<val_id>"
+
+    "<val_id>"  shift, and go to state 197
+
+
+State 144
+
+  123 ttcall: postfixTypespec "[" • ttarg_cl "]"
+
+    "<val_id>"               shift, and go to state 25
+    "<TypeId>"               shift, and go to state 31
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 198
+    "["                      shift, and go to state 70
+    "{"                      shift, and go to state 199
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 200
+    "&"                      shift, and go to state 73
+
+    tid              go to state 74
+    vid              go to state 101
+    floatl           go to state 102
+    stringl          go to state 103
+    expr             go to state 201
+    parenExpr        go to state 105
+    unitExpr         go to state 106
+    primaryExpr      go to state 107
+    vparenExpr       go to state 108
+    vtupleExpr       go to state 109
+    vstructExpr      go to state 110
+    ifThenElseExpr   go to state 111
+    chainExpr        go to state 112
+    vlambdaExpr      go to state 113
+    postfixExpr      go to state 114
+    vtcallExpr       go to state 115
+    vvcallExpr       go to state 116
+    dotNmExpr        go to state 117
+    dotIxExpr        go to state 118
+    unaryExpr        go to state 119
+    unaryOp          go to state 120
+    binaryExpr       go to state 121
+    mulBinaryExpr    go to state 122
+    addBinaryExpr    go to state 123
+    cmpBinaryExpr    go to state 124
+    eqBinaryExpr     go to state 125
+    andBinaryExpr    go to state 126
+    xorBinaryExpr    go to state 127
+    orBinaryExpr     go to state 128
+    typespec         go to state 202
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+    ttarg            go to state 203
+    ttarg_cl         go to state 204
+
+
+State 145
+
+  150 vpatternField_cl: vpatternField_cl "," vpatternField •
+
+    $default  reduce using rule 150 (vpatternField_cl)
+
+
+State 146
+
+  154 tpatternField_cl: tpatternField_cl "," tpatternField •
+
+    $default  reduce using rule 154 (tpatternField_cl)
+
+
+State 147
+
+   56 ifThenElseExpr: "if" parenExpr • "then" parenExpr
+   57               | "if" parenExpr • "then" parenExpr "else" primaryExpr
+
+    "then"  shift, and go to state 205
+
+
+State 148
+
+  143 lpattern: "(" • lpatternField_cl ")"
+  144         | "(" • ")"
+
+    "<val_id>"  shift, and go to state 25
+    ")"         shift, and go to state 206
+
+    vid               go to state 149
+    vpatternField     go to state 150
+    lpatternField     go to state 207
+    lpatternField_cl  go to state 208
+
+
+State 149
+
+  137 vpatternField: vid • typespec
+  139 lpatternField: vid •
+
+    "<TypeId>"  shift, and go to state 31
+    "("         shift, and go to state 69
+    "["         shift, and go to state 70
+    "{"         shift, and go to state 71
+    "^"         shift, and go to state 72
+    "&"         shift, and go to state 73
+
+    "("       [reduce using rule 139 (lpatternField)]
+    "{"       [reduce using rule 139 (lpatternField)]
+    $default  reduce using rule 139 (lpatternField)
+
+    tid              go to state 74
+    typespec         go to state 75
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+
+
+State 150
+
+  138 lpatternField: vpatternField •
+
+    $default  reduce using rule 138 (lpatternField)
+
+
+State 151
+
+  142 lpattern: lpatternField •
+
+    $default  reduce using rule 142 (lpattern)
+
+
+State 152
+
+   63 vlambdaExpr: "fn" lpattern • parenExpr
+
+    "fn"  shift, and go to state 90
+    "("   shift, and go to state 95
+    "{"   shift, and go to state 96
+
+    parenExpr    go to state 209
+    unitExpr     go to state 106
+    vparenExpr   go to state 108
+    vtupleExpr   go to state 109
+    vstructExpr  go to state 110
+    chainExpr    go to state 112
+    vlambdaExpr  go to state 113
+
+
+State 153
+
+   45 unitExpr: "(" ")" •
+
+    $default  reduce using rule 45 (unitExpr)
+
+
+State 154
+
+   37 expr_cl2: expr • "," expr
+   53 vparenExpr: "(" expr • ")"
+
+    ","  shift, and go to state 210
+    ")"  shift, and go to state 211
+
+
+State 155
+
+   38 expr_cl2: expr_cl2 • "," expr
+   54 vtupleExpr: "(" expr_cl2 • ")"
+
+    ","  shift, and go to state 212
+    ")"  shift, and go to state 213
+
+
+State 156
+
+   11 letStmt: "let" • lpattern "=" expr
+
+    "<val_id>"  shift, and go to state 25
+    "("         shift, and go to state 148
+
+    vid            go to state 149
+    vpatternField  go to state 150
+    lpatternField  go to state 151
+    lpattern       go to state 214
+
+
+State 157
+
+   12 setStmt: "set" • expr "=" expr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    expr            go to state 215
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    binaryExpr      go to state 121
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 125
+    andBinaryExpr   go to state 126
+    xorBinaryExpr   go to state 127
+    orBinaryExpr    go to state 128
+
+
+State 158
+
+   61 chainPrefix: chainPrefixStmt • ";"
+
+    ";"  shift, and go to state 216
+
+
+State 159
+
+    8 chainPrefixStmt: letStmt •
+
+    $default  reduce using rule 8 (chainPrefixStmt)
+
+
+State 160
+
+    9 chainPrefixStmt: setStmt •
+
+    $default  reduce using rule 9 (chainPrefixStmt)
+
+
+State 161
+
+   10 chainPrefixStmt: discardStmt •
+
+    $default  reduce using rule 10 (chainPrefixStmt)
+
+
+State 162
+
+   47 primaryExpr: vid •
+  136 vstructExprField: vid • "=" expr
+
+    "="  shift, and go to state 217
+
+    $default  reduce using rule 47 (primaryExpr)
+
+
+State 163
+
+   13 discardStmt: expr •
+   58 chainExpr: "{" expr • "}"
+
+    "}"  shift, and go to state 218
+
+    $default  reduce using rule 13 (discardStmt)
+
+
+State 164
+
+   59 chainExpr: "{" chainPrefix • "}"
+   60          | "{" chainPrefix • expr "}"
+   62 chainPrefix: chainPrefix • chainPrefixStmt ";"
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "let"                    shift, and go to state 156
+    "set"                    shift, and go to state 157
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "}"                      shift, and go to state 219
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    chainPrefixStmt  go to state 220
+    letStmt          go to state 159
+    setStmt          go to state 160
+    discardStmt      go to state 161
+    vid              go to state 101
+    floatl           go to state 102
+    stringl          go to state 103
+    expr             go to state 221
+    parenExpr        go to state 105
+    unitExpr         go to state 106
+    primaryExpr      go to state 107
+    vparenExpr       go to state 108
+    vtupleExpr       go to state 109
+    vstructExpr      go to state 110
+    ifThenElseExpr   go to state 111
+    chainExpr        go to state 112
+    vlambdaExpr      go to state 113
+    postfixExpr      go to state 114
+    vtcallExpr       go to state 115
+    vvcallExpr       go to state 116
+    dotNmExpr        go to state 117
+    dotIxExpr        go to state 118
+    unaryExpr        go to state 119
+    unaryOp          go to state 120
+    binaryExpr       go to state 121
+    mulBinaryExpr    go to state 122
+    addBinaryExpr    go to state 123
+    cmpBinaryExpr    go to state 124
+    eqBinaryExpr     go to state 125
+    andBinaryExpr    go to state 126
+    xorBinaryExpr    go to state 127
+    orBinaryExpr     go to state 128
+
+
+State 165
+
+  155 vstructExprField_cl: vstructExprField •
+
+    $default  reduce using rule 155 (vstructExprField_cl)
+
+
+State 166
+
+   55 vstructExpr: "{" vstructExprField_cl • "}"
+  156 vstructExprField_cl: vstructExprField_cl • "," vstructExprField
+
+    ","  shift, and go to state 222
+    "}"  shift, and go to state 223
+
+
+State 167
+
+   72 dotNmExpr: postfixExpr "." • "<val_id>"
+   73 dotIxExpr: postfixExpr "." • "42"
+
+    "<val_id>"  shift, and go to state 224
+    "42"        shift, and go to state 225
+
+
+State 168
+
+   70 vvcallExpr: postfixExpr "(" • ")"
+   71           | postfixExpr "(" • expr_cl1 ")"
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    ")"                      shift, and go to state 226
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    expr            go to state 227
+    expr_cl1        go to state 228
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    binaryExpr      go to state 121
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 125
+    andBinaryExpr   go to state 126
+    xorBinaryExpr   go to state 127
+    orBinaryExpr    go to state 128
+
+
+State 169
+
+   69 vtcallExpr: postfixExpr "[" • vtarg_cl "]"
+
+    "<val_id>"               shift, and go to state 25
+    "<TypeId>"               shift, and go to state 31
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 198
+    "["                      shift, and go to state 70
+    "{"                      shift, and go to state 199
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 200
+    "&"                      shift, and go to state 73
+
+    tid              go to state 74
+    vid              go to state 101
+    floatl           go to state 102
+    stringl          go to state 103
+    expr             go to state 229
+    parenExpr        go to state 105
+    unitExpr         go to state 106
+    primaryExpr      go to state 107
+    vparenExpr       go to state 108
+    vtupleExpr       go to state 109
+    vstructExpr      go to state 110
+    ifThenElseExpr   go to state 111
+    chainExpr        go to state 112
+    vlambdaExpr      go to state 113
+    postfixExpr      go to state 114
+    vtcallExpr       go to state 115
+    vvcallExpr       go to state 116
+    dotNmExpr        go to state 117
+    dotIxExpr        go to state 118
+    unaryExpr        go to state 119
+    unaryOp          go to state 120
+    binaryExpr       go to state 121
+    mulBinaryExpr    go to state 122
+    addBinaryExpr    go to state 123
+    cmpBinaryExpr    go to state 124
+    eqBinaryExpr     go to state 125
+    andBinaryExpr    go to state 126
+    xorBinaryExpr    go to state 127
+    orBinaryExpr     go to state 128
+    typespec         go to state 230
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+    vtarg            go to state 231
+    vtarg_cl         go to state 232
+
+
+State 170
+
+   75 unaryExpr: unaryOp unaryExpr •
+
+    $default  reduce using rule 75 (unaryExpr)
+
+
+State 171
+
+   82 mulBinaryOp: "*" •
+
+    $default  reduce using rule 82 (mulBinaryOp)
+
+
+State 172
+
+   83 mulBinaryOp: "/" •
+
+    $default  reduce using rule 83 (mulBinaryOp)
+
+
+State 173
+
+   84 mulBinaryOp: "%" •
+
+    $default  reduce using rule 84 (mulBinaryOp)
+
+
+State 174
+
+   86 mulBinaryExpr: mulBinaryExpr mulBinaryOp • unaryExpr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 233
+    unaryOp         go to state 120
+
+
+State 175
+
+   87 addBinaryOp: "+" •
+
+    $default  reduce using rule 87 (addBinaryOp)
+
+
+State 176
+
+   88 addBinaryOp: "-" •
+
+    $default  reduce using rule 88 (addBinaryOp)
+
+
+State 177
+
+   90 addBinaryExpr: addBinaryExpr addBinaryOp • mulBinaryExpr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    mulBinaryExpr   go to state 234
+
+
+State 178
+
+   91 cmpBinaryOp: "<" •
+
+    $default  reduce using rule 91 (cmpBinaryOp)
+
+
+State 179
+
+   92 cmpBinaryOp: "<=" •
+
+    $default  reduce using rule 92 (cmpBinaryOp)
+
+
+State 180
+
+   93 cmpBinaryOp: ">" •
+
+    $default  reduce using rule 93 (cmpBinaryOp)
+
+
+State 181
+
+   94 cmpBinaryOp: ">=" •
+
+    $default  reduce using rule 94 (cmpBinaryOp)
+
+
+State 182
+
+   96 cmpBinaryExpr: cmpBinaryExpr cmpBinaryOp • addBinaryExpr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 235
+
+
+State 183
+
+   97 eqBinaryOp: "==" •
+
+    $default  reduce using rule 97 (eqBinaryOp)
+
+
+State 184
+
+   98 eqBinaryOp: "!=" •
+
+    $default  reduce using rule 98 (eqBinaryOp)
+
+
+State 185
+
+  100 eqBinaryExpr: eqBinaryExpr eqBinaryOp • cmpBinaryExpr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 236
+
+
+State 186
+
+  102 andBinaryExpr: andBinaryExpr "and" • eqBinaryExpr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 237
+
+
+State 187
+
+  104 xorBinaryExpr: xorBinaryExpr "xor" • andBinaryExpr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 125
+    andBinaryExpr   go to state 238
+
+
+State 188
+
+  106 orBinaryExpr: orBinaryExpr "or" • xorBinaryExpr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 125
+    andBinaryExpr   go to state 126
+    xorBinaryExpr   go to state 239
+
+
+State 189
+
+   21 defStmt: "fn" vid tpattern vpattern "->" expr •
+
+    $default  reduce using rule 21 (defStmt)
+
+
+State 190
+
+   26 linkStmtItem: vid vpattern "->" typespec • "from" stringl
+
+    "from"  shift, and go to state 240
+
+
+State 191
+
+  117 parenTypespec: "(" typespec ")" •
+
+    $default  reduce using rule 117 (parenTypespec)
+
+
+State 192
+
+  109 typespec_cl: typespec_cl "," • typespec
+
+    "<TypeId>"  shift, and go to state 31
+    "("         shift, and go to state 69
+    "["         shift, and go to state 70
+    "{"         shift, and go to state 71
+    "^"         shift, and go to state 72
+    "&"         shift, and go to state 73
+
+    tid              go to state 74
+    typespec         go to state 241
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+
+
+State 193
+
+  119 tupleTypespec: "[" typespec_cl "]" •
+
+    $default  reduce using rule 119 (tupleTypespec)
+
+
+State 194
+
+  110 structTypespecField: vid typespec •
+
+    $default  reduce using rule 110 (structTypespecField)
+
+
+State 195
+
+  112 structTypespecField_cl: structTypespecField_cl "," • structTypespecField
+
+    "<val_id>"  shift, and go to state 25
+
+    vid                  go to state 138
+    structTypespecField  go to state 242
+
+
+State 196
+
+  118 structTypespec: "{" structTypespecField_cl "}" •
+
+    $default  reduce using rule 118 (structTypespec)
+
+
+State 197
+
+  124 tdot: postfixTypespec "." "<val_id>" •
+
+    $default  reduce using rule 124 (tdot)
+
+
+State 198
+
+   45 unitExpr: "(" • ")"
+   53 vparenExpr: "(" • expr ")"
+   54 vtupleExpr: "(" • expr_cl2 ")"
+  117 parenTypespec: "(" • typespec ")"
+
+    "<val_id>"               shift, and go to state 25
+    "<TypeId>"               shift, and go to state 31
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 198
+    ")"                      shift, and go to state 153
+    "["                      shift, and go to state 70
+    "{"                      shift, and go to state 199
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 200
+    "&"                      shift, and go to state 73
+
+    tid              go to state 74
+    vid              go to state 101
+    floatl           go to state 102
+    stringl          go to state 103
+    expr             go to state 154
+    expr_cl2         go to state 155
+    parenExpr        go to state 105
+    unitExpr         go to state 106
+    primaryExpr      go to state 107
+    vparenExpr       go to state 108
+    vtupleExpr       go to state 109
+    vstructExpr      go to state 110
+    ifThenElseExpr   go to state 111
+    chainExpr        go to state 112
+    vlambdaExpr      go to state 113
+    postfixExpr      go to state 114
+    vtcallExpr       go to state 115
+    vvcallExpr       go to state 116
+    dotNmExpr        go to state 117
+    dotIxExpr        go to state 118
+    unaryExpr        go to state 119
+    unaryOp          go to state 120
+    binaryExpr       go to state 121
+    mulBinaryExpr    go to state 122
+    addBinaryExpr    go to state 123
+    cmpBinaryExpr    go to state 124
+    eqBinaryExpr     go to state 125
+    andBinaryExpr    go to state 126
+    xorBinaryExpr    go to state 127
+    orBinaryExpr     go to state 128
+    typespec         go to state 135
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+
+
+State 199
+
+   55 vstructExpr: "{" • vstructExprField_cl "}"
+   58 chainExpr: "{" • expr "}"
+   59          | "{" • chainPrefix "}"
+   60          | "{" • chainPrefix expr "}"
+  118 structTypespec: "{" • structTypespecField_cl "}"
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "let"                    shift, and go to state 156
+    "set"                    shift, and go to state 157
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    chainPrefixStmt         go to state 158
+    letStmt                 go to state 159
+    setStmt                 go to state 160
+    discardStmt             go to state 161
+    vid                     go to state 243
+    floatl                  go to state 102
+    stringl                 go to state 103
+    expr                    go to state 163
+    parenExpr               go to state 105
+    unitExpr                go to state 106
+    primaryExpr             go to state 107
+    vparenExpr              go to state 108
+    vtupleExpr              go to state 109
+    vstructExpr             go to state 110
+    ifThenElseExpr          go to state 111
+    chainExpr               go to state 112
+    chainPrefix             go to state 164
+    vlambdaExpr             go to state 113
+    postfixExpr             go to state 114
+    vtcallExpr              go to state 115
+    vvcallExpr              go to state 116
+    dotNmExpr               go to state 117
+    dotIxExpr               go to state 118
+    unaryExpr               go to state 119
+    unaryOp                 go to state 120
+    binaryExpr              go to state 121
+    mulBinaryExpr           go to state 122
+    addBinaryExpr           go to state 123
+    cmpBinaryExpr           go to state 124
+    eqBinaryExpr            go to state 125
+    andBinaryExpr           go to state 126
+    xorBinaryExpr           go to state 127
+    orBinaryExpr            go to state 128
+    structTypespecField     go to state 139
+    structTypespecField_cl  go to state 140
+    vstructExprField        go to state 165
+    vstructExprField_cl     go to state 166
+
+
+State 200
+
+   79 unaryOp: "^" •
+  127 unaryTypespec: "^" • unaryTypespec
+
+    "<TypeId>"  shift, and go to state 31
+    "("         shift, and go to state 69
+    "["         shift, and go to state 70
+    "{"         shift, and go to state 71
+    "^"         shift, and go to state 72
+    "&"         shift, and go to state 73
+
+    "("       [reduce using rule 79 (unaryOp)]
+    "{"       [reduce using rule 79 (unaryOp)]
+    "^"       [reduce using rule 79 (unaryOp)]
+    $default  reduce using rule 79 (unaryOp)
+
+    tid              go to state 74
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 141
+
+
+State 201
+
+  129 ttarg: expr •
+
+    $default  reduce using rule 129 (ttarg)
+
+
+State 202
+
+  128 ttarg: typespec •
+
+    $default  reduce using rule 128 (ttarg)
+
+
+State 203
+
+  130 ttarg_cl: ttarg •
+
+    $default  reduce using rule 130 (ttarg_cl)
+
+
+State 204
+
+  123 ttcall: postfixTypespec "[" ttarg_cl • "]"
+  131 ttarg_cl: ttarg_cl • "," ttarg
+
+    ","  shift, and go to state 244
+    "]"  shift, and go to state 245
+
+
+State 205
+
+   56 ifThenElseExpr: "if" parenExpr "then" • parenExpr
+   57               | "if" parenExpr "then" • parenExpr "else" primaryExpr
+
+    "fn"  shift, and go to state 90
+    "("   shift, and go to state 95
+    "{"   shift, and go to state 96
+
+    parenExpr    go to state 246
+    unitExpr     go to state 106
+    vparenExpr   go to state 108
+    vtupleExpr   go to state 109
+    vstructExpr  go to state 110
+    chainExpr    go to state 112
+    vlambdaExpr  go to state 113
+
+
+State 206
+
+  144 lpattern: "(" ")" •
+
+    $default  reduce using rule 144 (lpattern)
+
+
+State 207
+
+  151 lpatternField_cl: lpatternField •
+
+    $default  reduce using rule 151 (lpatternField_cl)
+
+
+State 208
+
+  143 lpattern: "(" lpatternField_cl • ")"
+  152 lpatternField_cl: lpatternField_cl • "," lpatternField
+
+    ","  shift, and go to state 247
+    ")"  shift, and go to state 248
+
+
+State 209
+
+   63 vlambdaExpr: "fn" lpattern parenExpr •
+
+    $default  reduce using rule 63 (vlambdaExpr)
+
+
+State 210
+
+   37 expr_cl2: expr "," • expr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    expr            go to state 249
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    binaryExpr      go to state 121
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 125
+    andBinaryExpr   go to state 126
+    xorBinaryExpr   go to state 127
+    orBinaryExpr    go to state 128
+
+
+State 211
+
+   53 vparenExpr: "(" expr ")" •
+
+    $default  reduce using rule 53 (vparenExpr)
+
+
+State 212
+
+   38 expr_cl2: expr_cl2 "," • expr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    expr            go to state 250
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    binaryExpr      go to state 121
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 125
+    andBinaryExpr   go to state 126
+    xorBinaryExpr   go to state 127
+    orBinaryExpr    go to state 128
+
+
+State 213
+
+   54 vtupleExpr: "(" expr_cl2 ")" •
+
+    $default  reduce using rule 54 (vtupleExpr)
+
+
+State 214
+
+   11 letStmt: "let" lpattern • "=" expr
+
+    "="  shift, and go to state 251
+
+
+State 215
+
+   12 setStmt: "set" expr • "=" expr
+
+    "="  shift, and go to state 252
+
+
+State 216
+
+   61 chainPrefix: chainPrefixStmt ";" •
+
+    $default  reduce using rule 61 (chainPrefix)
+
+
+State 217
+
+  136 vstructExprField: vid "=" • expr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    expr            go to state 253
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    binaryExpr      go to state 121
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 125
+    andBinaryExpr   go to state 126
+    xorBinaryExpr   go to state 127
+    orBinaryExpr    go to state 128
+
+
+State 218
+
+   58 chainExpr: "{" expr "}" •
+
+    $default  reduce using rule 58 (chainExpr)
+
+
+State 219
+
+   59 chainExpr: "{" chainPrefix "}" •
+
+    $default  reduce using rule 59 (chainExpr)
+
+
+State 220
+
+   62 chainPrefix: chainPrefix chainPrefixStmt • ";"
+
+    ";"  shift, and go to state 254
+
+
+State 221
+
+   13 discardStmt: expr •
+   60 chainExpr: "{" chainPrefix expr • "}"
+
+    "}"  shift, and go to state 255
+
+    $default  reduce using rule 13 (discardStmt)
+
+
+State 222
+
+  156 vstructExprField_cl: vstructExprField_cl "," • vstructExprField
+
+    "<val_id>"  shift, and go to state 25
+
+    vid               go to state 256
+    vstructExprField  go to state 257
+
+
+State 223
+
+   55 vstructExpr: "{" vstructExprField_cl "}" •
+
+    $default  reduce using rule 55 (vstructExpr)
+
+
+State 224
+
+   72 dotNmExpr: postfixExpr "." "<val_id>" •
+
+    $default  reduce using rule 72 (dotNmExpr)
+
+
+State 225
+
+   73 dotIxExpr: postfixExpr "." "42" •
+
+    $default  reduce using rule 73 (dotIxExpr)
+
+
+State 226
+
+   70 vvcallExpr: postfixExpr "(" ")" •
+
+    $default  reduce using rule 70 (vvcallExpr)
+
+
+State 227
+
+   35 expr_cl1: expr •
+
+    $default  reduce using rule 35 (expr_cl1)
+
+
+State 228
+
+   36 expr_cl1: expr_cl1 • "," expr
+   71 vvcallExpr: postfixExpr "(" expr_cl1 • ")"
+
+    ","  shift, and go to state 258
+    ")"  shift, and go to state 259
+
+
+State 229
+
+  133 vtarg: expr •
+
+    $default  reduce using rule 133 (vtarg)
+
+
+State 230
+
+  132 vtarg: typespec •
+
+    $default  reduce using rule 132 (vtarg)
+
+
+State 231
+
+  134 vtarg_cl: vtarg •
+
+    $default  reduce using rule 134 (vtarg_cl)
+
+
+State 232
+
+   69 vtcallExpr: postfixExpr "[" vtarg_cl • "]"
+  135 vtarg_cl: vtarg_cl • "," vtarg
+
+    ","  shift, and go to state 260
+    "]"  shift, and go to state 261
+
+
+State 233
+
+   86 mulBinaryExpr: mulBinaryExpr mulBinaryOp unaryExpr •
+
+    $default  reduce using rule 86 (mulBinaryExpr)
+
+
+State 234
+
+   86 mulBinaryExpr: mulBinaryExpr • mulBinaryOp unaryExpr
+   90 addBinaryExpr: addBinaryExpr addBinaryOp mulBinaryExpr •
+
+    "*"  shift, and go to state 171
+    "/"  shift, and go to state 172
+    "%"  shift, and go to state 173
+
+    $default  reduce using rule 90 (addBinaryExpr)
+
+    mulBinaryOp  go to state 174
+
+
+State 235
+
+   90 addBinaryExpr: addBinaryExpr • addBinaryOp mulBinaryExpr
+   96 cmpBinaryExpr: cmpBinaryExpr cmpBinaryOp addBinaryExpr •
+
+    "+"  shift, and go to state 175
+    "-"  shift, and go to state 176
+
+    $default  reduce using rule 96 (cmpBinaryExpr)
+
+    addBinaryOp  go to state 177
+
+
+State 236
+
+   96 cmpBinaryExpr: cmpBinaryExpr • cmpBinaryOp addBinaryExpr
+  100 eqBinaryExpr: eqBinaryExpr eqBinaryOp cmpBinaryExpr •
+
+    "<"   shift, and go to state 178
+    "<="  shift, and go to state 179
+    ">"   shift, and go to state 180
+    ">="  shift, and go to state 181
+
+    $default  reduce using rule 100 (eqBinaryExpr)
+
+    cmpBinaryOp  go to state 182
+
+
+State 237
+
+  100 eqBinaryExpr: eqBinaryExpr • eqBinaryOp cmpBinaryExpr
+  102 andBinaryExpr: andBinaryExpr "and" eqBinaryExpr •
+
+    "=="  shift, and go to state 183
+    "!="  shift, and go to state 184
+
+    $default  reduce using rule 102 (andBinaryExpr)
+
+    eqBinaryOp  go to state 185
+
+
+State 238
+
+  102 andBinaryExpr: andBinaryExpr • "and" eqBinaryExpr
+  104 xorBinaryExpr: xorBinaryExpr "xor" andBinaryExpr •
+
+    "and"  shift, and go to state 186
+
+    $default  reduce using rule 104 (xorBinaryExpr)
+
+
+State 239
+
+  104 xorBinaryExpr: xorBinaryExpr • "xor" andBinaryExpr
+  106 orBinaryExpr: orBinaryExpr "or" xorBinaryExpr •
+
+    "xor"  shift, and go to state 187
+
+    $default  reduce using rule 106 (orBinaryExpr)
+
+
+State 240
+
+   26 linkStmtItem: vid vpattern "->" typespec "from" • stringl
+
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+
+    stringl  go to state 262
+
+
+State 241
+
+  109 typespec_cl: typespec_cl "," typespec •
+
+    $default  reduce using rule 109 (typespec_cl)
+
+
+State 242
+
+  112 structTypespecField_cl: structTypespecField_cl "," structTypespecField •
+
+    $default  reduce using rule 112 (structTypespecField_cl)
+
+
+State 243
+
+   47 primaryExpr: vid •
+  110 structTypespecField: vid • typespec
+  136 vstructExprField: vid • "=" expr
+
+    "<TypeId>"  shift, and go to state 31
+    "("         shift, and go to state 69
+    "["         shift, and go to state 70
+    "{"         shift, and go to state 71
+    "="         shift, and go to state 217
+    "^"         shift, and go to state 72
+    "&"         shift, and go to state 73
+
+    "("       [reduce using rule 47 (primaryExpr)]
+    "["       [reduce using rule 47 (primaryExpr)]
+    $default  reduce using rule 47 (primaryExpr)
+
+    tid              go to state 74
+    typespec         go to state 194
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+
+
+State 244
+
+  131 ttarg_cl: ttarg_cl "," • ttarg
+
+    "<val_id>"               shift, and go to state 25
+    "<TypeId>"               shift, and go to state 31
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 198
+    "["                      shift, and go to state 70
+    "{"                      shift, and go to state 199
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 200
+    "&"                      shift, and go to state 73
+
+    tid              go to state 74
+    vid              go to state 101
+    floatl           go to state 102
+    stringl          go to state 103
+    expr             go to state 201
+    parenExpr        go to state 105
+    unitExpr         go to state 106
+    primaryExpr      go to state 107
+    vparenExpr       go to state 108
+    vtupleExpr       go to state 109
+    vstructExpr      go to state 110
+    ifThenElseExpr   go to state 111
+    chainExpr        go to state 112
+    vlambdaExpr      go to state 113
+    postfixExpr      go to state 114
+    vtcallExpr       go to state 115
+    vvcallExpr       go to state 116
+    dotNmExpr        go to state 117
+    dotIxExpr        go to state 118
+    unaryExpr        go to state 119
+    unaryOp          go to state 120
+    binaryExpr       go to state 121
+    mulBinaryExpr    go to state 122
+    addBinaryExpr    go to state 123
+    cmpBinaryExpr    go to state 124
+    eqBinaryExpr     go to state 125
+    andBinaryExpr    go to state 126
+    xorBinaryExpr    go to state 127
+    orBinaryExpr     go to state 128
+    typespec         go to state 202
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+    ttarg            go to state 263
+
+
+State 245
+
+  123 ttcall: postfixTypespec "[" ttarg_cl "]" •
+
+    $default  reduce using rule 123 (ttcall)
+
+
+State 246
+
+   56 ifThenElseExpr: "if" parenExpr "then" parenExpr •
+   57               | "if" parenExpr "then" parenExpr • "else" primaryExpr
+
+    "else"  shift, and go to state 264
+
+    $default  reduce using rule 56 (ifThenElseExpr)
+
+
+State 247
+
+  152 lpatternField_cl: lpatternField_cl "," • lpatternField
+
+    "<val_id>"  shift, and go to state 25
+
+    vid            go to state 149
+    vpatternField  go to state 150
+    lpatternField  go to state 265
+
+
+State 248
+
+  143 lpattern: "(" lpatternField_cl ")" •
+
+    $default  reduce using rule 143 (lpattern)
+
+
+State 249
+
+   37 expr_cl2: expr "," expr •
+
+    $default  reduce using rule 37 (expr_cl2)
+
+
+State 250
+
+   38 expr_cl2: expr_cl2 "," expr •
+
+    $default  reduce using rule 38 (expr_cl2)
+
+
+State 251
+
+   11 letStmt: "let" lpattern "=" • expr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    expr            go to state 266
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    binaryExpr      go to state 121
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 125
+    andBinaryExpr   go to state 126
+    xorBinaryExpr   go to state 127
+    orBinaryExpr    go to state 128
+
+
+State 252
+
+   12 setStmt: "set" expr "=" • expr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    expr            go to state 267
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    binaryExpr      go to state 121
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 125
+    andBinaryExpr   go to state 126
+    xorBinaryExpr   go to state 127
+    orBinaryExpr    go to state 128
+
+
+State 253
+
+  136 vstructExprField: vid "=" expr •
+
+    $default  reduce using rule 136 (vstructExprField)
+
+
+State 254
+
+   62 chainPrefix: chainPrefix chainPrefixStmt ";" •
+
+    $default  reduce using rule 62 (chainPrefix)
+
+
+State 255
+
+   60 chainExpr: "{" chainPrefix expr "}" •
+
+    $default  reduce using rule 60 (chainExpr)
+
+
+State 256
+
+  136 vstructExprField: vid • "=" expr
+
+    "="  shift, and go to state 217
+
+
+State 257
+
+  156 vstructExprField_cl: vstructExprField_cl "," vstructExprField •
+
+    $default  reduce using rule 156 (vstructExprField_cl)
+
+
+State 258
+
+   36 expr_cl1: expr_cl1 "," • expr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 100
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    expr            go to state 268
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 107
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+    postfixExpr     go to state 114
+    vtcallExpr      go to state 115
+    vvcallExpr      go to state 116
+    dotNmExpr       go to state 117
+    dotIxExpr       go to state 118
+    unaryExpr       go to state 119
+    unaryOp         go to state 120
+    binaryExpr      go to state 121
+    mulBinaryExpr   go to state 122
+    addBinaryExpr   go to state 123
+    cmpBinaryExpr   go to state 124
+    eqBinaryExpr    go to state 125
+    andBinaryExpr   go to state 126
+    xorBinaryExpr   go to state 127
+    orBinaryExpr    go to state 128
+
+
+State 259
+
+   71 vvcallExpr: postfixExpr "(" expr_cl1 ")" •
+
+    $default  reduce using rule 71 (vvcallExpr)
+
+
+State 260
+
+  135 vtarg_cl: vtarg_cl "," • vtarg
+
+    "<val_id>"               shift, and go to state 25
+    "<TypeId>"               shift, and go to state 31
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "not"                    shift, and go to state 91
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 198
+    "["                      shift, and go to state 70
+    "{"                      shift, and go to state 199
+    "*"                      shift, and go to state 97
+    "+"                      shift, and go to state 98
+    "-"                      shift, and go to state 99
+    "^"                      shift, and go to state 200
+    "&"                      shift, and go to state 73
+
+    tid              go to state 74
+    vid              go to state 101
+    floatl           go to state 102
+    stringl          go to state 103
+    expr             go to state 229
+    parenExpr        go to state 105
+    unitExpr         go to state 106
+    primaryExpr      go to state 107
+    vparenExpr       go to state 108
+    vtupleExpr       go to state 109
+    vstructExpr      go to state 110
+    ifThenElseExpr   go to state 111
+    chainExpr        go to state 112
+    vlambdaExpr      go to state 113
+    postfixExpr      go to state 114
+    vtcallExpr       go to state 115
+    vvcallExpr       go to state 116
+    dotNmExpr        go to state 117
+    dotIxExpr        go to state 118
+    unaryExpr        go to state 119
+    unaryOp          go to state 120
+    binaryExpr       go to state 121
+    mulBinaryExpr    go to state 122
+    addBinaryExpr    go to state 123
+    cmpBinaryExpr    go to state 124
+    eqBinaryExpr     go to state 125
+    andBinaryExpr    go to state 126
+    xorBinaryExpr    go to state 127
+    orBinaryExpr     go to state 128
+    typespec         go to state 230
+    primaryTypespec  go to state 76
+    parenTypespec    go to state 77
+    structTypespec   go to state 78
+    tupleTypespec    go to state 79
+    postfixTypespec  go to state 80
+    ttcall           go to state 81
+    tdot             go to state 82
+    unaryTypespec    go to state 83
+    vtarg            go to state 269
+
+
+State 261
+
+   69 vtcallExpr: postfixExpr "[" vtarg_cl "]" •
+
+    $default  reduce using rule 69 (vtcallExpr)
+
+
+State 262
+
+   26 linkStmtItem: vid vpattern "->" typespec "from" stringl •
+
+    $default  reduce using rule 26 (linkStmtItem)
+
+
+State 263
+
+  131 ttarg_cl: ttarg_cl "," ttarg •
+
+    $default  reduce using rule 131 (ttarg_cl)
+
+
+State 264
+
+   57 ifThenElseExpr: "if" parenExpr "then" parenExpr "else" • primaryExpr
+
+    "<val_id>"               shift, and go to state 25
+    "if"                     shift, and go to state 89
+    "fn"                     shift, and go to state 90
+    "42"                     shift, and go to state 92
+    "0x2a"                   shift, and go to state 93
+    "4.2"                    shift, and go to state 94
+    "\"dq-string-literal\""  shift, and go to state 27
+    "'sq-string-literal'"    shift, and go to state 28
+    "("                      shift, and go to state 95
+    "{"                      shift, and go to state 96
+
+    vid             go to state 101
+    floatl          go to state 102
+    stringl         go to state 103
+    parenExpr       go to state 105
+    unitExpr        go to state 106
+    primaryExpr     go to state 270
+    vparenExpr      go to state 108
+    vtupleExpr      go to state 109
+    vstructExpr     go to state 110
+    ifThenElseExpr  go to state 111
+    chainExpr       go to state 112
+    vlambdaExpr     go to state 113
+
+
+State 265
+
+  152 lpatternField_cl: lpatternField_cl "," lpatternField •
+
+    $default  reduce using rule 152 (lpatternField_cl)
+
+
+State 266
+
+   11 letStmt: "let" lpattern "=" expr •
+
+    $default  reduce using rule 11 (letStmt)
+
+
+State 267
+
+   12 setStmt: "set" expr "=" expr •
+
+    $default  reduce using rule 12 (setStmt)
+
+
+State 268
+
+   36 expr_cl1: expr_cl1 "," expr •
+
+    $default  reduce using rule 36 (expr_cl1)
+
+
+State 269
+
+  135 vtarg_cl: vtarg_cl "," vtarg •
+
+    $default  reduce using rule 135 (vtarg_cl)
+
+
+State 270
+
+   57 ifThenElseExpr: "if" parenExpr "then" parenExpr "else" primaryExpr •
+
+    $default  reduce using rule 57 (ifThenElseExpr)

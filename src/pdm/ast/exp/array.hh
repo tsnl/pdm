@@ -9,10 +9,15 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class ArrayExp: public Exp {
+        friend Manager;
+      
       private:
         std::vector<Exp*> m_items;
-      public:
+      
+      protected:
         ArrayExp(source::Loc loc, std::vector<Exp*>&& items)
         : Exp(loc, Kind::ArrayExp),
           m_items(std::move(items)) {}

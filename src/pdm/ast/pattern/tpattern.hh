@@ -8,18 +8,25 @@
 #include "pdm/ast/typespec/typespec.hh"
 
 namespace pdm::ast {
+
+    class Manager;
+
     class TPattern: public Node {
+        friend Manager;
+
       public:
         enum class FieldKind {
             Value,
             Type
         };
         class Field {
+            friend Manager;
+
           private:
             FieldKind m_kind;
             intern::String m_lhs_name;
             Typespec* m_typespec;
-          public:
+          protected:
             Field(FieldKind kind, intern::String name, Typespec* rhs_typespec)
             : m_kind(kind),
               m_lhs_name(name),
@@ -31,17 +38,17 @@ namespace pdm::ast {
         };
 
       private:
-        std::vector<TPattern::Field> m_fields;
-        bool                         m_is_only_captured;
+        std::vector<TPattern::Field*> m_fields;
+        bool                          m_is_only_captured;
 
-      public:
-        TPattern(source::Loc loc, std::vector<Field>&& fields, bool is_only_captured)
+      protected:
+        TPattern(source::Loc loc, std::vector<TPattern::Field*>&& fields, bool is_only_captured)
         : Node(loc, Kind::TPattern),
           m_fields(std::move(fields)),
           m_is_only_captured(is_only_captured) {}
 
       public:
-        std::vector<TPattern::Field> const& fields() const {
+        std::vector<TPattern::Field*> const& fields() const {
             return m_fields;
         }
         bool is_only_captured() const {

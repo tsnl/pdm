@@ -1,0 +1,53 @@
+# typeclass-unions
+# dynamic dispatch for typeclasses: the final piece of the puzzle.
+
+# PROBLEMS:
+# - typeclasses let users define static solutions
+# - but often useful to group items in a typeclass-- disparate datatypes?
+# * want a way to treat diff-typed values in a class as same-- eg., raw ptr.
+
+# SOLUTION: `*Cls` **denotes the discriminated union type of all types in class 'Cls'**
+# - `fn func (v *Cls)` denotes that 'v' is pattern-matched at run-time.
+#   - cf `fn func <T Cls> (v T)`, always resolved at compile-time.
+#   - the compiler can generate a **per-typeclass enum** containing all substitutions
+#     - this special enum can never be exhaustively matched
+#   - note class template args still baked statically
+#     so various instantiations of subclasses are unique enum members
+#     * can we do more to hide this repetition? let's try it out and then see
+# * todo: use 'match' to make sense of this
+# * todo: add '^Cls' support as a class
+# * todo: add back '()' as unit typespec
+# * todo: add '/' typeop vs '.'
+#   - beware namespace conflicts as types gain fields!
+#   - for each case, (typectx/valctx):
+#     - Struct.field_name => (type of field_name in Struct / NA)
+#     - Enum.field_name => (type of field_name in Enum / constructor)
+#     - T[A,B]/X => (type of formal arg 'X' / )
+# * todo: add 'Fn T -> U' typespec; DO NOT omit '->' suffix for default unit return. 
+
+# SCENARIO:
+# - you are binding to a monotype library, e.g. Python TensorFlow
+
+mod py {
+
+    # each 'Object' has a virtual table, or 'VT'
+
+    typecls IObject ![VT IObjectVT] [vt VT] = (Object IAny) in {
+        Object.refcount :: I32;
+    };
+    typecls IObjectVT = (VT IAny) in {
+
+    };
+    
+    typecls IListObject [T IObject] ![VT IListObjectVT[T]] [vt VT] = (IntObject IObject[vt]) in {
+        
+    };
+    typecls IListObjectVT [T IObject] = (VT IObjectVT) in {
+        # THIS DOESN'T WORK UNTIL we figure out how these values are instantiated
+        VT.__len__  :: Fn (^*IListObject) -> ^*IObject;
+        VT.append   :: Fn (^*IListObject, Elem) -> ();
+    };
+
+    # note: figure out how to use 'match' for typeclass-unions
+
+};

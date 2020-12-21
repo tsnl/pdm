@@ -3,8 +3,9 @@
 
 #include <string>
 
-#include <pdm/source/source.hh>
-#include <pdm/ast/node.hh>
+#include "pdm/source/source.hh"
+#include "pdm/ast/node.hh"
+#include "pdm/ast/exp/id.hh"
 
 #include "tv.hh"
 
@@ -44,28 +45,53 @@ namespace pdm::typer {
     // todo: implement various rules to handle each typing case in the language.
     //       each typing should add one or more rules to the typer
 
-    // TypespecRule for (x T) or <T Cls>
-    class TypespecRule: public Rule {
+    // VIdLookupRule and TIdLookupRule
+    class IdLookupRule: public Rule {
+      private:
+        TV* m_defn_tv;
+        TV* m_usage_tv;
+      public:
+        IdLookupRule(ast::Node* id_ast_node, std::string&& why, TV* defn_tv, TV* usage_tv)
+        : Rule(id_ast_node, std::move(why)),
+          m_defn_tv(defn_tv),
+          m_usage_tv(usage_tv) {}
+      public:
+        TV* defn_tv() const { return m_defn_tv; }
+        TV* usage_tv() const { return m_usage_tv; }
+    };
+    class VIdLookupRule: public IdLookupRule {
+      public:
+        VIdLookupRule(ast::Node* vid_ast_node, TV* defn_tv, TV* usage_tv)
+        : IdLookupRule(vid_ast_node, "lookup:vid", defn_tv, usage_tv) {}
+    };
+    class TIdLookupRule: public IdLookupRule {
+      public:
+        TIdLookupRule(ast::Node* tid_ast_node, TV* defn_tv, TV* usage_tv)
+        : IdLookupRule(tid_ast_node, "lookup:tid", defn_tv, usage_tv) {}
+    };
+
+    // PatternTypespecRule for (x T) or <T Cls>
+    class PatternTypespecRule: public Rule {
       private:
         intern::String m_lhs_name;
         TV* m_lhs_tv;
         TV* m_rhs_typespec;
       protected:
-        TypespecRule(ast::Node* ast_node, intern::String lhs_name, TV* lhs_tv, TV* rhs_typespec)
+        PatternTypespecRule(ast::Node* ast_node, intern::String lhs_name, TV* lhs_tv, TV* rhs_typespec)
         : Rule(ast_node, "(" + std::string(lhs_name.content()) + " X)"),
           m_lhs_name(lhs_name), 
           m_lhs_tv(lhs_tv),
           m_rhs_typespec(rhs_typespec) {}
     };
-    class VIdTypespecRule: public TypespecRule {
+    class PatternTypespecRule_VId: public PatternTypespecRule {
       public:
-        VIdTypespecRule(ast::Node* ast_node, intern::String lhs_vid_name, TV* lhs_tv, TV* rhs_typespec)
-        : TypespecRule(ast_node, lhs_vid_name, lhs_tv, rhs_typespec) {}
+        PatternTypespecRule_VId(ast::Node* ast_node, intern::String lhs_vid_name, TV* lhs_tv, TV* rhs_typespec)
+        : PatternTypespecRule(ast_node, lhs_vid_name, lhs_tv, rhs_typespec) {}
     };
-    class TIdTypespecRule: public TypespecRule {
+    class PatternTypespecRule_TId: public PatternTypespecRule {
       public:
-        TIdTypespecRule(ast::Node* ast_node, intern::String lhs_tid_name, TV* lhs_tv, TV* rhs_typespec)
-        : TypespecRule(ast_node, lhs_tid_name, lhs_tv, rhs_typespec) {}
+        PatternTypespecRule_TId(ast::Node* ast_node, intern::String lhs_tid_name, TV* lhs_tv, TV* rhs_typespec)
+        : PatternTypespecRule(ast_node, lhs_tid_name, lhs_tv, rhs_typespec) {}
     };
 
     // AssignRule is used for let, def, type, enum, class, typeclass, module:

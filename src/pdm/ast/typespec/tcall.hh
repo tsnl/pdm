@@ -7,7 +7,11 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class TCallTypespec: public Typespec {
+        friend Manager;
+
       public:
         class Arg {
           private:
@@ -26,10 +30,11 @@ namespace pdm::ast {
         };
 
       private:
-        Typespec*                       m_lhs_called;
-        std::vector<TCallTypespec::Arg> m_args;
-      public:
-        TCallTypespec(source::Loc loc, Typespec* lhs_called, std::vector<TCallTypespec::Arg>&& args)
+        Typespec*                        m_lhs_called;
+        std::vector<TCallTypespec::Arg*> m_args;
+
+      protected:
+        TCallTypespec(source::Loc loc, Typespec* lhs_called, std::vector<TCallTypespec::Arg*>&& args)
         : Typespec(loc, Kind::TCallTypespec),
           m_lhs_called(lhs_called),
           m_args(std::move(args)) {}
@@ -38,7 +43,7 @@ namespace pdm::ast {
         Typespec* lhs_called() const {
             return m_lhs_called;
         }
-        std::vector<TCallTypespec::Arg> const& args() const {
+        std::vector<TCallTypespec::Arg*> const& args() const {
             return m_args;
         }
     };

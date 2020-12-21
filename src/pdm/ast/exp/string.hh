@@ -12,7 +12,11 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class StringExp: public Exp {
+        friend Manager;
+
       private:
         utf8::String m_content;
     

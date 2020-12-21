@@ -8,11 +8,15 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class IdExp: public Exp {
+        friend Manager;
+      
       private:
         intern::String m_name;
     
-      public:
+      protected:
         IdExp(source::Loc loc, intern::String name)
         : Exp(loc, Kind::IdExp),
           m_name(name) {}

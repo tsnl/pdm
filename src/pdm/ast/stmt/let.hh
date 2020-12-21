@@ -8,12 +8,14 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class LetStmt: public Stmt {
       private:
         LPattern* m_lhs_lpattern;
         Exp*      m_rhs_body;
 
-      public:
+      protected:
         LetStmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp)
         : Stmt(loc, Kind::LetStmt),
           m_lhs_lpattern(lhs_lpattern),

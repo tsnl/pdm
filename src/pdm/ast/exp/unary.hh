@@ -7,6 +7,8 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     enum class UnaryOperator {
         Not,
         GetRef, DeRef,
@@ -15,11 +17,13 @@ namespace pdm::ast {
     };
 
     class UnaryExp: public Exp {
+        friend Manager;
+
       private:
         UnaryOperator m_operator;
         Exp*          m_operand;
 
-      public:
+      protected:
         UnaryExp(source::Loc loc, UnaryOperator unary_operator, Exp* operand)
         : Exp(loc, Kind::UnaryExp),
           m_operator(unary_operator),

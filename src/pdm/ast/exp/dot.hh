@@ -11,6 +11,8 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class DotExp: public Exp {
       private:
         Exp* m_lhs;
@@ -27,10 +29,12 @@ namespace pdm::ast {
     };
 
     class DotNameExp: public DotExp {
+        friend Manager;
+
       private:
         intern::String m_rhs_name;
 
-      public:
+      protected:
         DotNameExp(source::Loc loc, Exp* lhs, intern::String rhs_name)
         : DotExp(loc, Kind::DotNameExp, lhs),
           m_rhs_name(rhs_name) {}
@@ -42,10 +46,12 @@ namespace pdm::ast {
     };
 
     class DotIndexExp: public DotExp {
+        friend Manager;
+
       private:
         Exp* m_rhs_exp;
 
-      public:
+      protected:
         DotIndexExp(source::Loc loc, Exp* lhs, Exp* rhs_exp)
         : DotExp(loc, Kind::DotIndexExp, lhs),
           m_rhs_exp(rhs_exp) {}

@@ -15,37 +15,61 @@ namespace pdm::source {
     class Loc {
       private:
         Source* m_source;
-        int m_first_line;
-        int m_first_column;
-        int m_last_line;
-        int m_last_column;
+      
+      // BISON interface:
+      // https://www.gnu.org/software/bison/manual/html_node/User-Defined-Location-Type.html
+      public:
+        source::Pos begin;
+        source::Pos end;
 
       public:
-        Loc(Source* source, int first_line, int first_column, int last_line, int last_column)
-        : m_source(source), 
-          m_first_line(first_line), m_first_column(first_column),
-          m_last_line(last_line), m_last_column(last_column) {}
+        Loc() = default;
 
         Loc(Pos const& first_pos, Pos const& last_pos)
-        : Loc(first_pos.source(), first_pos.line(), first_pos.column(), last_pos.line(), last_pos.column()) {
-            assert(first_pos.source() == last_pos.source() && "Cannot create Loc from Pos with different sources.");
-        }
+        : m_source(nullptr),
+          begin(first_pos),
+          end(last_pos) {}
+
+        explicit Loc(Pos const& only_pos)
+        : Loc(only_pos, only_pos) {}
     
+        Loc(Source* source, int first_line, int first_column, int last_line, int last_column)
+        : Loc({first_line, first_column}, {last_line, last_column}) {
+            this->source(source);
+        }
+
       public:
         Source* source() const {
             return m_source;
         }
         int first_line() const {
-            return m_first_line;
+            return begin.line();
         }
         int first_column() const {
-            return m_first_column;
+            return begin.column();
         }
         int last_line() const {
-            return m_last_line;
+            return end.line();
         }
         int last_column() const {
-            return m_last_column;
+            return end.column();
+        }
+
+      public:
+        void source(Source* source) { 
+            m_source = source;
+        }
+        void first_line(int first_line) { 
+            begin.line(first_line);
+        }
+        void first_column(int first_column) { 
+            begin.column(first_column);
+        }
+        void last_line(int last_line) { 
+            end.line(last_line);
+        }
+        void last_column(int last_column) { 
+            end.column(last_column);
         }
 
       public:

@@ -9,7 +9,11 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class StructTypespec: public Typespec {
+        friend Manager;
+
       public:
         class Field {
           private:
@@ -28,15 +32,15 @@ namespace pdm::ast {
         };
 
       private:
-        std::vector<StructTypespec::Field> m_fields;
+        std::vector<StructTypespec::Field*> m_fields;
         
-      public:
-        StructTypespec(source::Loc loc, std::vector<StructTypespec::Field>&& fields)
+      protected:
+        StructTypespec(source::Loc loc, std::vector<StructTypespec::Field*>&& fields)
         : Typespec(loc, Kind::StructTypespec),
           m_fields(std::move(fields)) {}
 
       public:
-        std::vector<StructTypespec::Field> const& fields() const {
+        std::vector<StructTypespec::Field*> const& fields() const {
             return m_fields;
         }
     };

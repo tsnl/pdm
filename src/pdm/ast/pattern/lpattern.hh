@@ -10,7 +10,11 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class LPattern: public Node {
+        friend Manager;
+
       public:
         enum class FieldKind {
             IdSingleton,
@@ -18,11 +22,12 @@ namespace pdm::ast {
             IdTypespecPair
         };
         class Field {
+            friend Manager;
           private:
             FieldKind       m_kind;
             intern::String  m_lhs_name;
             Typespec*       m_opt_rhs_typespec;
-          public:
+          protected:
             Field(FieldKind kind, intern::String name, Typespec* opt_rhs_typespec = nullptr)
             : m_kind(kind), m_lhs_name(name), m_opt_rhs_typespec(opt_rhs_typespec) {
                 if (opt_rhs_typespec) {
@@ -37,15 +42,17 @@ namespace pdm::ast {
             intern::String lhs_name() const { return m_lhs_name; }
             Typespec* opt_rhs_typespec() const { return m_opt_rhs_typespec; }
         };
+      
       private:
-        std::vector<LPattern::Field> m_fields;
-      public:
-        LPattern(source::Loc loc, std::vector<LPattern::Field>&& fields)
+        std::vector<LPattern::Field*> m_fields;
+      
+      protected:
+        LPattern(source::Loc loc, std::vector<LPattern::Field*>&& fields)
         : Node(loc, Kind::LPattern),
           m_fields(std::move(fields)) {}
       
       public:
-        std::vector<LPattern::Field> const& fields() const {
+        std::vector<LPattern::Field*> const& fields() const {
             return m_fields;
         }
     };

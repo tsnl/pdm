@@ -8,12 +8,16 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class VCallExp: public Exp {
+        friend Manager;
+
       private:
         Exp*              m_lhs_called;
         std::vector<Exp*> m_args;
 
-      public:
+      protected:
         VCallExp(source::Loc loc, Exp* lhs_called, std::vector<Exp*>&& args)
         : Exp(loc, Kind::TCallExp),
           m_lhs_called(lhs_called),

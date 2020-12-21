@@ -10,10 +10,15 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class IdTypespec: public Typespec {
+        friend Manager;
+
       private:
         intern::String m_name;
-      public:
+
+      protected:
         IdTypespec(source::Loc loc, intern::String name)
         : Typespec(loc, Kind::IdTypespec),
           m_name(name) {}

@@ -9,7 +9,11 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class TypeStmt: public Stmt {
+        friend Manager;
+
       private:
         intern::String m_lhs_name;
         Typespec*      m_rhs_typespec;

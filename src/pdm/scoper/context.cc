@@ -1,30 +1,62 @@
 #include "pdm/scoper/context.hh"
+#include "pdm/scoper/frame.hh"
 
 namespace pdm::scoper {
 
     Defn* Context::lookup(intern::String name) {
-        Defn* defn = help_lookup(name);
-        if (defn->kind() == DefnKind::Using) {
-            // todo: invoke lookup_iter on a frame argument for 'using'
+        return lookup_until(name, nullptr);
+    }
+    Defn* Context::lookup_until(intern::String name, Context* opt_until_context) {
+        if (this == opt_until_context) {
             return nullptr;
         }
-        if (defn->kind() == DefnKind::Import) {
-            // todo: invoke lookup_iter on a frame argument for 'import'
-            return nullptr;
+
+        Defn* defn = nullptr; {
+            // 1. shallow defns:
+            defn = help_lookup_shallow(name);
+            if (defn != nullptr) {
+                return defn;
+            }
+
+            // 2. link frame (using)
+            defn = help_lookup_link(name);
+            if (defn != nullptr) {
+                return defn;
+            }
+
+            // 3. all possible parent definitions:
+            defn = help_lookup_parent(name, opt_until_context);
+            if (defn != nullptr) {
+                return defn;
+            }
         }
-        return defn;
+        
+        return nullptr;
     }
 
-    Defn* Context::help_lookup(intern::String name) {
+    Defn* Context::help_lookup_shallow(intern::String name) {
         for (Defn* my_defn: m_defns) {
             if (my_defn->name() == name) {
                 return my_defn;
             }
         }
-        if (m_opt_parent_context) {
-            return m_opt_parent_context->lookup(name);
+        return nullptr;
+    }
+    Defn* Context::help_lookup_link(intern::String name) {
+        if (m_opt_link != nullptr) {
+            Context* first_context = m_opt_link->opt_first_new_context();
+            Context* last_context = m_opt_link->opt_last_context();
+            if (first_context != nullptr && last_context != nullptr) {
+                return last_context->lookup_until(name, first_context);
+            }
         }
         return nullptr;
     }
-
+    Defn* Context::help_lookup_parent(intern::String name, Context* opt_until_context) {
+        if (m_opt_parent_context != nullptr) {
+            return m_opt_parent_context->lookup_until(name, opt_until_context);
+        } else {
+            return nullptr;
+        }
+    }
 }

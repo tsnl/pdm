@@ -3,6 +3,14 @@
 namespace pdm::scoper {
 
     // todo: implement all these scoper overloads ;-;
+    // - pass 1: 'modconst'
+    //   define frames, contexts, and symbols for all 
+    //   modules & consts 
+    //   with metavar TVs
+    // - pass 2: 'lookups'
+    //   - resolve each ID's definition
+    //   - set TV equality using a VIdLookupRule/TIdLookupRule
+    
 
     // scripts:
     bool Scoper::on_visit__script(ast::Script* script, VisitOrder visit_order) {
@@ -14,8 +22,8 @@ namespace pdm::scoper {
     }
 
     // statements:
-    bool Scoper::on_visit__module_stmt(ast::ModuleStmt* node, VisitOrder visit_order) {
-        bool ok = ast::Visitor::on_visit__module_stmt(node, visit_order);
+    bool Scoper::on_visit__mod_stmt(ast::ModStmt* node, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__mod_stmt(node, visit_order);
         // todo: implement Scoper::on_visit__module_stmt
         return ok;
     }
@@ -34,9 +42,9 @@ namespace pdm::scoper {
         // todo: implement Scoper::on_visit__enum_stmt
         return ok;
     }
-    bool Scoper::on_visit__def_stmt(ast::DefStmt* node, VisitOrder visit_order) {
-        bool ok = ast::Visitor::on_visit__def_stmt(node, visit_order);
-        // todo: implement Scoper::on_visit__def_stmt
+    bool Scoper::on_visit__fn_stmt(ast::FnStmt* node, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__fn_stmt(node, visit_order);
+        // todo: implement Scoper::on_visit__fn_stmt
         return ok;
     }
     bool Scoper::on_visit__let_stmt(ast::LetStmt* node, VisitOrder visit_order) {
@@ -190,8 +198,8 @@ namespace pdm::scoper {
         // todo: implement Scoper::on_visit__ptr_typespec
         return ok;
     }
-    bool Scoper::on_visit__func_typespec(ast::FuncTypespec* node, VisitOrder visit_order) {
-        bool ok = ast::Visitor::on_visit__func_typespec(node, visit_order);
+    bool Scoper::on_visit__fn_typespec(ast::FnTypespec* node, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__fn_typespec(node, visit_order);
         // todo: implement Scoper::on_visit__func_typespec
         return ok;
     }
@@ -221,4 +229,9 @@ namespace pdm::scoper {
         return ok;
     }
 
+    // non-syntax
+    bool Scoper::on_visit__builtin_type_stmt(ast::BuiltinTypeStmt* node, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__builtin_type_stmt(node, visit_order);
+        return ok;
+    }
 }

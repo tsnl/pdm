@@ -29,12 +29,12 @@
 
 #include "pdm/ast/stmt/stmt.hh"
 #include "pdm/ast/stmt/const.hh"
-#include "pdm/ast/stmt/def.hh"
+#include "pdm/ast/stmt/fn.hh"
 #include "pdm/ast/stmt/enum.hh"
 #include "pdm/ast/stmt/import.hh"
 #include "pdm/ast/stmt/let.hh"
 #include "pdm/ast/stmt/link.hh"
-#include "pdm/ast/stmt/module.hh"
+#include "pdm/ast/stmt/mod.hh"
 #include "pdm/ast/stmt/type.hh"
 #include "pdm/ast/stmt/typeclass.hh"
 #include "pdm/ast/stmt/builtin_type.hh"
@@ -47,7 +47,7 @@
 #include "pdm/ast/typespec/struct.hh"
 #include "pdm/ast/typespec/tcall.hh"
 #include "pdm/ast/typespec/tuple.hh"
-#include "pdm/ast/typespec/func.hh"
+#include "pdm/ast/typespec/fn.hh"
 #include "pdm/ast/typespec/typespec.hh"
 
 //
@@ -87,7 +87,7 @@ namespace pdm::ast {
         };
 
         // statements:
-        virtual bool on_visit__module_stmt(ModuleStmt* node, VisitOrder visit_order) { 
+        virtual bool on_visit__mod_stmt(ModStmt* node, VisitOrder visit_order) { 
             return true;
         }
         virtual bool on_visit__typeclass_stmt(TypeclassStmt* node, VisitOrder visit_order) { 
@@ -99,7 +99,7 @@ namespace pdm::ast {
         virtual bool on_visit__enum_stmt(EnumStmt* node, VisitOrder visit_order) {
             return true;
         }
-        virtual bool on_visit__def_stmt(DefStmt* node, VisitOrder visit_order) { 
+        virtual bool on_visit__fn_stmt(FnStmt* node, VisitOrder visit_order) { 
             return true;
         }
         virtual bool on_visit__let_stmt(LetStmt* node, VisitOrder visit_order) { 
@@ -195,7 +195,7 @@ namespace pdm::ast {
         virtual bool on_visit__ptr_typespec(PtrTypespec* node, VisitOrder visit_order) {
             return true;
         }
-        virtual bool on_visit__func_typespec(FuncTypespec* node, VisitOrder visit_order) {
+        virtual bool on_visit__fn_typespec(FnTypespec* node, VisitOrder visit_order) {
             return true;
         }
         virtual bool on_visit__t_call_typespec(TCallTypespec* node, VisitOrder visit_order) {
@@ -213,6 +213,8 @@ namespace pdm::ast {
         virtual bool on_visit__struct_typespec(StructTypespec* node, VisitOrder visit_order) {
             return true;
         }
+
+        // non-syntactic elements:
         virtual bool on_visit__builtin_type_stmt(BuiltinTypeStmt* node, VisitOrder visit_order) {
             return true;
         }

@@ -8,11 +8,15 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class IntExp: public Exp {
+        friend Manager;
+      
       private:
         u64 m_value;
     
-      public:
+      protected:
         IntExp(source::Loc loc, u64 value)
         : Exp(loc, Kind::IntExp),
           m_value(value) {}

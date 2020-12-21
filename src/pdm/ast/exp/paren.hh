@@ -8,11 +8,15 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class ParenExp: public Exp {
+        friend Manager;
+
       private:
         Exp* m_nested;
     
-      public:
+      protected:
         ParenExp(source::Loc loc, Exp* nested)
         : Exp(loc, Kind::ParenExp),
           m_nested(nested) {}

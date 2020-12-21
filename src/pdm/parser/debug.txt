@@ -1,0 +1,98 @@
+parser.yy: warning: 2 nonterminals useless in grammar [-Wother]
+parser.yy: warning: 5 rules useless in grammar [-Wother]
+parser.yy:474.1-11: warning: nonterminal useless in grammar: typespec_cl [-Wother]
+  474 | typespec_cl
+      | ^~~~~~~~~~~
+parser.yy:494.1-13: warning: nonterminal useless in grammar: unaryTypespec [-Wother]
+  494 | unaryTypespec
+      | ^~~~~~~~~~~~~
+parser.yy: warning: 3 shift/reduce conflicts [-Wconflicts-sr]
+parser.yy: warning: shift/reduce conflict on token "'<'" [-Wcounterexamples]
+time limit exceeded: 6.000000
+  First example: "'module'" "a vid" "'{'" "'def'" vid vpattern "'->'" postfixExpr • "'<'" vtarg_cl "'>'" "';'" "'}'" "';'" $end
+  Shift derivation
+    $accept
+    ↳ script                                                                                                                                        $end
+      ↳ scriptContent
+        ↳ scriptContentStmt                                                                                                                   "';'"
+          ↳ moduleStmt
+            ↳ "'module'" "a vid" "'{'" moduleContent                                                                                    "'}'"
+                                       ↳ defStmt                                                                                  "';'"
+                                         ↳ "'def'" vid vpattern "'->'" expr
+                                                                       ↳ binaryExpr
+                                                                         ↳ orBinaryExpr
+                                                                           ↳ xorBinaryExpr
+                                                                             ↳ andBinaryExpr
+                                                                               ↳ eqBinaryExpr
+                                                                                 ↳ cmpBinaryExpr
+                                                                                   ↳ addBinaryExpr
+                                                                                     ↳ mulBinaryExpr
+                                                                                       ↳ unaryExpr
+                                                                                         ↳ postfixExpr
+                                                                                           ↳ vtcall
+                                                                                             ↳ postfixExpr • "'<'" vtarg_cl "'>'"
+  Second example: "'module'" "a vid" "'{'" "'def'" vid vpattern "'->'" postfixExpr • "'<'" addBinaryExpr "';'" "'}'" "';'" $end
+  Reduce derivation
+    $accept
+    ↳ script                                                                                                                                             $end
+      ↳ scriptContent
+        ↳ scriptContentStmt                                                                                                                        "';'"
+          ↳ moduleStmt
+            ↳ "'module'" "a vid" "'{'" moduleContent                                                                                         "'}'"
+                                       ↳ moduleContentStmt                                                                             "';'"
+                                         ↳ defStmt
+                                           ↳ "'def'" vid vpattern "'->'" expr
+                                                                         ↳ binaryExpr
+                                                                           ↳ orBinaryExpr
+                                                                             ↳ xorBinaryExpr
+                                                                               ↳ andBinaryExpr
+                                                                                 ↳ eqBinaryExpr
+                                                                                   ↳ cmpBinaryExpr
+                                                                                     ↳ cmpBinaryExpr         cmpBinaryOp addBinaryExpr
+                                                                                       ↳ addBinaryExpr       ↳ "'<'"
+                                                                                         ↳ mulBinaryExpr
+                                                                                           ↳ unaryExpr
+                                                                                             ↳ postfixExpr •
+parser.yy: warning: shift/reduce conflict on token "'>'" [-Wcounterexamples]
+Productions leading up to the conflict state found.  Still finding a possible unifying counterexample...time limit exceeded: 6.000000
+  First example: cmpBinaryExpr • "'>'" "'>'"
+  Shift derivation
+    ttcall
+    ↳ cmpBinaryExpr cmpBinaryOp ttarg_cl "'>'"
+                    ↳ • "'>'"   ↳ ε
+  Second example: postfixTypespec cmpBinaryExpr • "'>'"
+  Reduce derivation
+    ttcall
+    ↳ postfixTypespec ttarg_cl                        "'>'"
+                      ↳ ttarg
+                        ↳ expr
+                          ↳ binaryExpr
+                            ↳ orBinaryExpr
+                              ↳ xorBinaryExpr
+                                ↳ andBinaryExpr
+                                  ↳ eqBinaryExpr
+                                    ↳ cmpBinaryExpr •
+parser.yy: warning: shift/reduce conflict on token "'>'" [-Wcounterexamples]
+Productions leading up to the conflict state found.  Still finding a possible unifying counterexample...time limit exceeded: 6.000000
+  First example: cmpBinaryExpr • "'>'" "'>'"
+  Shift derivation
+    ttcall
+    ↳ cmpBinaryExpr cmpBinaryOp ttarg_cl "'>'"
+                    ↳ • "'>'"   ↳ ttarg
+                                  ↳ expr
+                                    ↳ ε
+  Second example: postfixTypespec eqBinaryExpr eqBinaryOp cmpBinaryExpr • "'>'"
+  Reduce derivation
+    ttcall
+    ↳ postfixTypespec ttarg_cl                                                "'>'"
+                      ↳ ttarg
+                        ↳ expr
+                          ↳ binaryExpr
+                            ↳ orBinaryExpr
+                              ↳ xorBinaryExpr
+                                ↳ andBinaryExpr
+                                  ↳ eqBinaryExpr
+                                    ↳ eqBinaryExpr eqBinaryOp cmpBinaryExpr •
+time limit exceeded: 6.000000
+Productions leading up to the conflict state found.  Still finding a possible unifying counterexample...time limit exceeded: 6.000000
+Productions leading up to the conflict state found.  Still finding a possible unifying counterexample...time limit exceeded: 6.000000

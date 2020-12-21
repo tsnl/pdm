@@ -10,7 +10,7 @@ namespace pdm::ast {
       private:
         std::vector<Typespec*> m_items;
 
-      public:
+      protected:
         TupleTypespec(source::Loc loc, std::vector<Typespec*>&& items)
         : Typespec(loc, Kind::TupleTypespec),
           m_items(std::move(items)) {}

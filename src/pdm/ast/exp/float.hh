@@ -7,11 +7,15 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class FloatExp: public Exp {
+        friend Manager;
+      
       private:
         long double m_value;
     
-      public:
+      protected:
         FloatExp(source::Loc loc, long double value)
         : Exp(loc, Kind::FloatExp),
           m_value(value) {}

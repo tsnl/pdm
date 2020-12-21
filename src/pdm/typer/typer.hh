@@ -183,11 +183,11 @@ namespace pdm::typer {
 
       public:
         void apply_vid_typespec_rule(ast::Node* ast_node, intern::String lhs_name, TV* lhs_tv, TV* rhs_typespec_tv) {
-            typer::VIdTypespecRule* rule = new typer::VIdTypespecRule(ast_node, lhs_name, lhs_tv, rhs_typespec_tv);
+            typer::PatternTypespecRule_VId* rule = new typer::PatternTypespecRule_VId(ast_node, lhs_name, lhs_tv, rhs_typespec_tv);
             m_all_rules.push_back(rule);
         }
         void apply_tid_typespec_rule(ast::Node* ast_node, intern::String lhs_name, TV* lhs_tv, TV* rhs_typespec_tv) {
-            typer::TIdTypespecRule* rule = new typer::TIdTypespecRule(ast_node, lhs_name, lhs_tv, rhs_typespec_tv);
+            typer::PatternTypespecRule_TId* rule = new typer::PatternTypespecRule_TId(ast_node, lhs_name, lhs_tv, rhs_typespec_tv);
             m_all_rules.push_back(rule);
         }
 

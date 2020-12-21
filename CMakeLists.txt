@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(pandemonium)
+project(pandemonium C CXX)
 
 #
 # Adding LLVM and Clang as dependencies:
@@ -18,10 +18,11 @@ message(STATUS "... Using LLVMConfig.cmake in: ${LLVM_DIR}")
 message(STATUS "... Add '/usr/local/Cellar/llvm/10.0.1_1/include/' to your IDE include path list for LLVM C API auto-complete.")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
+set(PDM_LLVM_INSTALL_DIR CACHE PATH "llvm install dir containing headers ('include' dir) with 'llvm', 'clang', etc.")
 
 # todo: change this path for different platforms
 include_directories(
-    "/usr/local/Cellar/llvm/10.0.1_1/include/"
+    "${PDM_LLVM_INSTALL_DIR}/include/"
 )
 include_directories(
     src
@@ -107,6 +108,14 @@ target_link_libraries(pc utf8proc)
 add_library(
     pdm
 
+    src/pdm/ast/manager.cc
+    src/pdm/ast/manager.hh
+    src/pdm/ast/kind.hh
+    src/pdm/ast/node.cc
+    src/pdm/ast/node.hh
+    src/pdm/ast/visitor.cc
+    src/pdm/ast/visitor.hh
+
     src/pdm/ast/exp/array.hh
     src/pdm/ast/exp/binary.hh
     src/pdm/ast/exp/chain.hh
@@ -136,12 +145,12 @@ add_library(
 
     src/pdm/ast/stmt/stmt.hh
     src/pdm/ast/stmt/const.hh
-    src/pdm/ast/stmt/def.hh
+    src/pdm/ast/stmt/fn.hh
     src/pdm/ast/stmt/enum.hh
     src/pdm/ast/stmt/let.hh
     src/pdm/ast/stmt/link.hh
-    src/pdm/ast/stmt/module.cc
-    src/pdm/ast/stmt/module.hh
+    src/pdm/ast/stmt/mod.cc
+    src/pdm/ast/stmt/mod.hh
     src/pdm/ast/stmt/builtin_type.cc
     src/pdm/ast/stmt/builtin_type.hh
     src/pdm/ast/stmt/type.hh
@@ -149,21 +158,13 @@ add_library(
     
     src/pdm/ast/typespec/typespec.hh
     src/pdm/ast/typespec/dot.hh
-    src/pdm/ast/typespec/func.hh
+    src/pdm/ast/typespec/fn.hh
     src/pdm/ast/typespec/id.hh
     src/pdm/ast/typespec/mut.hh
     src/pdm/ast/typespec/ptr.hh
     src/pdm/ast/typespec/struct.hh
     src/pdm/ast/typespec/tcall.hh
     
-    src/pdm/ast/kind.hh
-    src/pdm/ast/manager.cc
-    src/pdm/ast/manager.hh
-    src/pdm/ast/node.cc
-    src/pdm/ast/node.hh
-    src/pdm/ast/visitor.cc
-    src/pdm/ast/visitor.hh
-
     src/pdm/compiler/compiler.cc
     src/pdm/compiler/compiler.hh
     
@@ -186,6 +187,7 @@ add_library(
 
     src/pdm/source/loc.cc
     src/pdm/source/loc.hh
+    src/pdm/source/pos.cc
     src/pdm/source/pos.hh
     src/pdm/source/source.hh
 
@@ -207,6 +209,15 @@ add_library(
     src/pdm/feedback/note.cc
     src/pdm/feedback/note.hh
     src/pdm/feedback/severity.hh
+
+    src/pdm/parser/lexer.cc
+    src/pdm/parser/lexer.hh
+    src/pdm/parser/parser.cc
+    src/pdm/parser/parser.hh
+    src/pdm/parser/parser.tab.cc
+    src/pdm/parser/parser.tab.hh
+    src/pdm/parser/reader.cc
+    src/pdm/parser/reader.hh
 )
 target_link_libraries(pdm intern)
 set_property(TARGET pdm PROPERTY CXX_STANDARD 20)

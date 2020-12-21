@@ -8,12 +8,16 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class EnumStmt: public Stmt {
+        friend Manager;
+
       private:
         intern::String  m_name;
         StructTypespec* m_body_struct_typespec;
       
-      public:
+      protected:
         EnumStmt(source::Loc loc, intern::String name, StructTypespec* body_struct_typespec)
         : Stmt(loc, Kind::EnumStmt),
           m_name(name),

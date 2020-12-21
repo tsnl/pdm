@@ -7,6 +7,8 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     enum class BinaryOperator {
         Mul, Div, Rem,
         Add, Subtract,
@@ -17,12 +19,14 @@ namespace pdm::ast {
     };
 
     class BinaryExp: public Exp {
+        friend Manager;
+
       private:
         BinaryOperator m_operator;
         Exp* m_lhs_operand;
         Exp* m_rhs_operand;
 
-      public:
+      protected:
         BinaryExp(source::Loc loc, BinaryOperator binary_operator, Exp* lhs_operand, Exp* rhs_operand)
         : Exp(loc, Kind::BinaryExp),
           m_operator(binary_operator),

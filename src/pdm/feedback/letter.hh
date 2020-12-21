@@ -25,6 +25,9 @@ namespace pdm::feedback {
           m_more(std::move(more)),
           m_notes(std::move(notes)) {}
 
+        Letter(Severity severity, std::string headline, std::string more)
+        : Letter(severity, std::move(headline), std::move(more), std::move(std::vector<Note*>())) {}
+
       public:
         Severity severity() const {
             return m_severity;

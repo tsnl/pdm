@@ -11,18 +11,37 @@ namespace pdm::source {
 
     class Pos {
       private:
-        Source* m_source;
         int m_line;
         int m_column;
 
       public:
-        Pos(Source* source, int line, int column)
-        : m_source(source), m_line(line), m_column(column) {}
+        Pos(int line, int column)
+        : m_line(line), m_column(column) {}
+
+        Pos(Pos const& other) = default;
+
+        Pos() = default;
 
       public:
-        Source* source() const { return m_source; }
-        int line() const { return m_line; }
-        int column() const { return m_column; }
+        int line() const { 
+            return m_line; 
+        }
+        int column() const { 
+            return m_column; 
+        }
+
+      public:
+        void line(int new_line) {
+            m_line = new_line;
+        }
+        void column(int new_column) {
+            m_column = new_column;
+        }
+
+      public:
+        bool is_valid() const {
+            return m_line >= 0 && m_column >= 0;
+        }
     };
 };
 

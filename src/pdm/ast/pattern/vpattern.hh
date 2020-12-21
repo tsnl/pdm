@@ -9,13 +9,19 @@
 
 namespace pdm::ast {
 
+    class Manager;
+
     class VPattern: public Node {
+        friend Manager;
+
       public:
         class Field {
+            friend Manager;
+
           private:
             intern::String m_lhs_name;
             Typespec*      m_typespec;
-          public:
+          protected:
             Field(intern::String name, Typespec* rhs_typespec)
             : m_lhs_name(name),
               m_typespec(rhs_typespec) {}
@@ -25,15 +31,15 @@ namespace pdm::ast {
         };
       
       private:
-        std::vector<VPattern::Field> m_fields;
+        std::vector<VPattern::Field*> m_fields;
 
-      public:
-        VPattern(source::Loc loc, std::vector<VPattern::Field>&& fields)
+      protected:
+        VPattern(source::Loc loc, std::vector<VPattern::Field*>&& fields)
         : Node(loc, Kind::VPattern),
           m_fields(std::move(fields)) {}
 
       public:
-        std::vector<VPattern::Field> const& fields() const {
+        std::vector<VPattern::Field*> const& fields() const {
             return m_fields;
         }
     };
