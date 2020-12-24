@@ -38,6 +38,10 @@
 #include "pdm/ast/stmt/type.hh"
 #include "pdm/ast/stmt/typeclass.hh"
 #include "pdm/ast/stmt/builtin_type.hh"
+#include "pdm/ast/stmt/discard.hh"
+#include "pdm/ast/stmt/set.hh"
+#include "pdm/ast/stmt/using.hh"
+#include "pdm/ast/stmt/var.hh"
 
 #include "pdm/ast/typespec/typespec.hh"
 #include "pdm/ast/typespec/dot.hh"
@@ -102,16 +106,28 @@ namespace pdm::ast {
         virtual bool on_visit__fn_stmt(FnStmt* node, VisitOrder visit_order) { 
             return true;
         }
+        virtual bool on_visit__const_stmt(ConstStmt* node, VisitOrder visit_order) {
+            return true;
+        }
         virtual bool on_visit__let_stmt(LetStmt* node, VisitOrder visit_order) { 
             return true;
         }
-        virtual bool on_visit__const_stmt(ConstStmt* node, VisitOrder visit_order) {
+        virtual bool on_visit__var_stmt(VarStmt* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__set_stmt(SetStmt* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__discard_stmt(DiscardStmt* node, VisitOrder visit_order) {
             return true;
         }
         virtual bool on_visit__link_stmt(LinkStmt* node, VisitOrder visit_order) {
             return true;
         }
         virtual bool on_visit__import_stmt(ImportStmt* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__using_stmt(UsingStmt* node, VisitOrder visit_order) {
             return true;
         }
 
@@ -167,21 +183,21 @@ namespace pdm::ast {
         virtual bool on_visit__binary_exp(BinaryExp* node, VisitOrder visit_order) {
             return true;
         }
-        virtual bool on_visit__v_call_exp(VCallExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__vcall_exp(VCallExp* node, VisitOrder visit_order) {
             return true;
         }
-        virtual bool on_visit__t_call_exp(TCallExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__tcall_exp(TCallExp* node, VisitOrder visit_order) {
             return true;
         }
         
         // patterns:
-        virtual bool on_visit__v_pattern(VPattern* node, VisitOrder visit_order) {
+        virtual bool on_visit__vpattern(VPattern* node, VisitOrder visit_order) {
             return true;
         }
-        virtual bool on_visit__t_pattern(TPattern* node, VisitOrder visit_order) {
+        virtual bool on_visit__tpattern(TPattern* node, VisitOrder visit_order) {
             return true;
         }
-        virtual bool on_visit__l_pattern(LPattern* node, VisitOrder visit_order) {
+        virtual bool on_visit__lpattern(LPattern* node, VisitOrder visit_order) {
             return true;
         }
 
@@ -198,7 +214,7 @@ namespace pdm::ast {
         virtual bool on_visit__fn_typespec(FnTypespec* node, VisitOrder visit_order) {
             return true;
         }
-        virtual bool on_visit__t_call_typespec(TCallTypespec* node, VisitOrder visit_order) {
+        virtual bool on_visit__tcall_typespec(TCallTypespec* node, VisitOrder visit_order) {
             return true;
         }
         virtual bool on_visit__tuple_typespec(TupleTypespec* node, VisitOrder visit_order) {

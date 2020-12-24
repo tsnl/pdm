@@ -31,13 +31,21 @@ namespace pdm::ast {
     class DotNameExp: public DotExp {
         friend Manager;
 
+      public:
+        enum class RhsHint {
+            LhsStruct,
+            LhsEnum
+        };
+
       private:
-        intern::String m_rhs_name;
+        intern::String      m_rhs_name;
+        DotNameExp::RhsHint m_rhs_hint;
 
       protected:
-        DotNameExp(source::Loc loc, Exp* lhs, intern::String rhs_name)
+        DotNameExp(source::Loc loc, Exp* lhs, intern::String rhs_name, RhsHint rhs_hint)
         : DotExp(loc, Kind::DotNameExp, lhs),
-          m_rhs_name(rhs_name) {}
+          m_rhs_name(rhs_name),
+          m_rhs_hint(rhs_hint) {}
 
       public:
         intern::String rhs_name() const {

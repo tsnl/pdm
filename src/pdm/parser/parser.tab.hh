@@ -45,14 +45,13 @@
 #ifndef YY_YY_PARSER_TAB_HH_INCLUDED
 # define YY_YY_PARSER_TAB_HH_INCLUDED
 // "%code requires" blocks.
-#line 28 "parser.yy"
-
-    #include <stb/stretchy_buffer.h>
+#line 32 "parser.yy"
 
     #include "pdm/core/config.hh"
 
     // todo: include more AST files here:
     #include "pdm/ast/node.hh"
+    #include "pdm/ast/manager.hh"
     #include "pdm/ast/script/script.hh"
     #include "pdm/ast/exp/exp.hh"
     #include "pdm/ast/exp/struct.hh"
@@ -74,7 +73,7 @@
     #include "pdm/source/pos.hh"
     #include "pdm/source/loc.hh"
 
-#line 78 "parser.tab.hh"
+#line 77 "parser.tab.hh"
 
 
 # include <cstdlib> // std::abort
@@ -120,6 +119,11 @@
 # define YY_CONSTEXPR
 #endif
 
+
+#ifndef YY_ASSERT
+# include <cassert>
+# define YY_ASSERT assert
+#endif
 
 
 #ifndef YY_ATTRIBUTE_PURE
@@ -202,9 +206,9 @@
 # define YYDEBUG 1
 #endif
 
-#line 18 "parser.yy"
+#line 22 "parser.yy"
 namespace pdm { namespace parser {
-#line 208 "parser.tab.hh"
+#line 212 "parser.tab.hh"
 
 
 
@@ -214,50 +218,366 @@ namespace pdm { namespace parser {
   {
   public:
 #ifndef YYSTYPE
-    /// Symbol semantic values.
-    union semantic_type
+  /// A buffer to store and retrieve objects.
+  ///
+  /// Sort of a variant, but does not keep track of the nature
+  /// of the stored data, since that knowledge is available
+  /// via the current parser state.
+  class semantic_type
+  {
+  public:
+    /// Type of *this.
+    typedef semantic_type self_type;
+
+    /// Empty construction.
+    semantic_type () YY_NOEXCEPT
+      : yybuffer_ ()
+    {}
+
+    /// Construct and fill.
+    template <typename T>
+    semantic_type (YY_RVREF (T) t)
     {
-#line 85 "parser.yy"
+      YY_ASSERT (sizeof (T) <= size);
+      new (yyas_<T> ()) T (YY_MOVE (t));
+    }
 
-    pdm::parser::TokenInfo token;
-    
-    pdm::ast::Script* script;
-    pdm::ast::Script** script_sb;
-    
-    pdm::ast::Stmt* stmt;
-    pdm::ast::Stmt** stmt_sb;
+#if 201103L <= YY_CPLUSPLUS
+    /// Non copyable.
+    semantic_type (const self_type&) = delete;
+    /// Non copyable.
+    self_type& operator= (const self_type&) = delete;
+#endif
 
-    pdm::ast::Exp* exp;
-    pdm::ast::Exp** exp_sb;
+    /// Destruction, allowed only if empty.
+    ~semantic_type () YY_NOEXCEPT
+    {}
 
-    pdm::ast::UnaryOperator uop;
-    pdm::ast::BinaryOperator bop;
+# if 201103L <= YY_CPLUSPLUS
+    /// Instantiate a \a T in here from \a t.
+    template <typename T, typename... U>
+    T&
+    emplace (U&&... u)
+    {
+      return *new (yyas_<T> ()) T (std::forward <U>(u)...);
+    }
+# else
+    /// Instantiate an empty \a T in here.
+    template <typename T>
+    T&
+    emplace ()
+    {
+      return *new (yyas_<T> ()) T ();
+    }
 
-    pdm::ast::StructExp::Field* structexp_field;
-    pdm::ast::StructExp::Field** structexp_field_sb;
+    /// Instantiate a \a T in here from \a t.
+    template <typename T>
+    T&
+    emplace (const T& t)
+    {
+      return *new (yyas_<T> ()) T (t);
+    }
+# endif
 
-    pdm::ast::Typespec* typespec;
-    pdm::ast::Typespec** typespec_sb;
+    /// Instantiate an empty \a T in here.
+    /// Obsolete, use emplace.
+    template <typename T>
+    T&
+    build ()
+    {
+      return emplace<T> ();
+    }
 
-    pdm::ast::LPattern* lpattern;
-    pdm::ast::VPattern* vpattern;
-    pdm::ast::TPattern* tpattern;
-    pdm::ast::LPattern::Field* lpattern_field;
-    pdm::ast::VPattern::Field* vpattern_field;
-    pdm::ast::TPattern::Field* tpattern_field;
+    /// Instantiate a \a T in here from \a t.
+    /// Obsolete, use emplace.
+    template <typename T>
+    T&
+    build (const T& t)
+    {
+      return emplace<T> (t);
+    }
 
-    pdm::ast::TCallExp::Arg* tcallexp_arg;
-    pdm::ast::TCallExp::Arg** tcallexp_arg_sb;
+    /// Accessor to a built \a T.
+    template <typename T>
+    T&
+    as () YY_NOEXCEPT
+    {
+      return *yyas_<T> ();
+    }
 
-    pdm::ast::TCallTypespec::Arg* tcallts_arg;
-    pdm::ast::TCallTypespec::Arg** tcallts_arg_sb;
+    /// Const accessor to a built \a T (for %printer).
+    template <typename T>
+    const T&
+    as () const YY_NOEXCEPT
+    {
+      return *yyas_<T> ();
+    }
 
-    pdm::ast::StructTypespec::Field* structts_field;
-    pdm::ast::StructTypespec::Field** structts_field_sb;
+    /// Swap the content with \a that, of same type.
+    ///
+    /// Both variants must be built beforehand, because swapping the actual
+    /// data requires reading it (with as()), and this is not possible on
+    /// unconstructed variants: it would require some dynamic testing, which
+    /// should not be the variant's responsibility.
+    /// Swapping between built and (possibly) non-built is done with
+    /// self_type::move ().
+    template <typename T>
+    void
+    swap (self_type& that) YY_NOEXCEPT
+    {
+      std::swap (as<T> (), that.as<T> ());
+    }
 
-#line 259 "parser.tab.hh"
+    /// Move the content of \a that to this.
+    ///
+    /// Destroys \a that.
+    template <typename T>
+    void
+    move (self_type& that)
+    {
+# if 201103L <= YY_CPLUSPLUS
+      emplace<T> (std::move (that.as<T> ()));
+# else
+      emplace<T> ();
+      swap<T> (that);
+# endif
+      that.destroy<T> ();
+    }
 
+# if 201103L <= YY_CPLUSPLUS
+    /// Move the content of \a that to this.
+    template <typename T>
+    void
+    move (self_type&& that)
+    {
+      emplace<T> (std::move (that.as<T> ()));
+      that.destroy<T> ();
+    }
+#endif
+
+    /// Copy the content of \a that to this.
+    template <typename T>
+    void
+    copy (const self_type& that)
+    {
+      emplace<T> (that.as<T> ());
+    }
+
+    /// Destroy the stored \a T.
+    template <typename T>
+    void
+    destroy ()
+    {
+      as<T> ().~T ();
+    }
+
+  private:
+#if YY_CPLUSPLUS < 201103L
+    /// Non copyable.
+    semantic_type (const self_type&);
+    /// Non copyable.
+    self_type& operator= (const self_type&);
+#endif
+
+    /// Accessor to raw memory as \a T.
+    template <typename T>
+    T*
+    yyas_ () YY_NOEXCEPT
+    {
+      void *yyp = yybuffer_.yyraw;
+      return static_cast<T*> (yyp);
+     }
+
+    /// Const accessor to raw memory as \a T.
+    template <typename T>
+    const T*
+    yyas_ () const YY_NOEXCEPT
+    {
+      const void *yyp = yybuffer_.yyraw;
+      return static_cast<const T*> (yyp);
+     }
+
+    /// An auxiliary type to compute the largest semantic type.
+    union union_type
+    {
+      // "42"
+      // "0x2a"
+      // "4.2"
+      // "\"dq-string-literal\""
+      // "'sq-string-literal'"
+      char dummy1[sizeof (TokenInfo)];
+
+      // mulBinaryOp
+      // addBinaryOp
+      // cmpBinaryOp
+      // eqBinaryOp
+      char dummy2[sizeof (pdm::ast::BinaryOperator)];
+
+      // enum_field
+      char dummy3[sizeof (pdm::ast::EnumStmt::Field*)];
+
+      // expr
+      // parenExpr
+      // unitExpr
+      // primaryExpr
+      // int_expr
+      // vparenExpr
+      // vtupleExpr
+      // vstructExpr
+      // ifThenElseExpr
+      // chainExpr
+      // vlambdaExpr
+      // postfixExpr
+      // vtcallExpr
+      // vvcallExpr
+      // dotNmExpr
+      // dotIxExpr
+      // unaryExpr
+      // binaryExpr
+      // mulBinaryExpr
+      // addBinaryExpr
+      // cmpBinaryExpr
+      // eqBinaryExpr
+      // andBinaryExpr
+      // xorBinaryExpr
+      // orBinaryExpr
+      char dummy4[sizeof (pdm::ast::Exp*)];
+
+      // lpattern
+      // lpattern_naked
+      char dummy5[sizeof (pdm::ast::LPattern*)];
+
+      // lpatternField
+      char dummy6[sizeof (pdm::ast::LPattern::Field*)];
+
+      // script
+      char dummy7[sizeof (pdm::ast::Script*)];
+
+      // scriptContentStmt
+      // mod_stmt
+      // chainPrefixStmt
+      // constStmt
+      // letStmt
+      // varStmt
+      // setStmt
+      // discardStmt
+      // moduleContentStmt
+      // fn_stmt
+      // type_stmt
+      // enum_stmt
+      // typeclass_stmt
+      // using_stmt
+      // importStmt
+      char dummy8[sizeof (pdm::ast::Stmt*)];
+
+      // vstructExprField
+      char dummy9[sizeof (pdm::ast::StructExp::Field*)];
+
+      // structTypespecField
+      char dummy10[sizeof (pdm::ast::StructTypespec::Field*)];
+
+      // ttarg
+      // vtarg
+      char dummy11[sizeof (pdm::ast::TArg*)];
+
+      // tpattern
+      char dummy12[sizeof (pdm::ast::TPattern*)];
+
+      // tpatternField
+      char dummy13[sizeof (pdm::ast::TPattern::Field*)];
+
+      // typespec
+      // primaryTypespec
+      // tupleTypespec
+      // mod_prefix_tid
+      // postfixTypespec
+      // ttcall
+      // tdot
+      // unaryTypespec
+      // long_typespec
+      // structTypespec
+      char dummy14[sizeof (pdm::ast::Typespec*)];
+
+      // unaryOp
+      char dummy15[sizeof (pdm::ast::UnaryOperator)];
+
+      // vpattern
+      char dummy16[sizeof (pdm::ast::VPattern*)];
+
+      // vpatternField
+      char dummy17[sizeof (pdm::ast::VPattern::Field*)];
+
+      // "<val_id>"
+      // "<TypeId>"
+      // "<__42__>"
+      // tid
+      // vid
+      // floatl
+      // stringl
+      char dummy18[sizeof (pdm::parser::TokenInfo)];
+
+      // enum_field_pl
+      // unprefixed_enum_field_pl
+      char dummy19[sizeof (std::vector<pdm::ast::EnumStmt::Field*>)];
+
+      // expr_cl1
+      // expr_cl2
+      // expr_sl
+      char dummy20[sizeof (std::vector<pdm::ast::Exp*>)];
+
+      // lpatternField_cl
+      char dummy21[sizeof (std::vector<pdm::ast::LPattern::Field*>)];
+
+      // scriptContent
+      char dummy22[sizeof (std::vector<pdm::ast::Script*>)];
+
+      // moduleContent
+      // chainPrefix
+      char dummy23[sizeof (std::vector<pdm::ast::Stmt*>)];
+
+      // stringls
+      char dummy24[sizeof (std::vector<pdm::ast::StringExp::Piece*>)];
+
+      // vstructExprField_cl
+      char dummy25[sizeof (std::vector<pdm::ast::StructExp::Field*>)];
+
+      // structTypespecField_cl
+      char dummy26[sizeof (std::vector<pdm::ast::StructTypespec::Field*>)];
+
+      // ttarg_cl
+      // vtarg_cl
+      char dummy27[sizeof (std::vector<pdm::ast::TArg*>)];
+
+      // tpattern_seq
+      char dummy28[sizeof (std::vector<pdm::ast::TPattern*>)];
+
+      // tpatternField_cl
+      char dummy29[sizeof (std::vector<pdm::ast::TPattern::Field*>)];
+
+      // typespec_cl1
+      // typespec_cl2
+      char dummy30[sizeof (std::vector<pdm::ast::Typespec*>)];
+
+      // vpatternField_cl
+      char dummy31[sizeof (std::vector<pdm::ast::VPattern::Field*>)];
+
+      // mod_prefix
+      char dummy32[sizeof (std::vector<pdm::intern::String>)];
     };
+
+    /// The size of the largest semantic type.
+    enum { size = sizeof (union_type) };
+
+    /// A buffer to store semantic values.
+    union
+    {
+      /// Strongest alignment constraints.
+      long double yyalign_me;
+      /// A buffer large enough to store any of the semantic values.
+      char yyraw[size];
+    } yybuffer_;
+  };
+
 #else
     typedef YYSTYPE semantic_type;
 #endif
@@ -291,63 +611,65 @@ namespace pdm { namespace parser {
     YYEOF = 0,                     // "end of file"
     YYerror = 256,                 // error
     YYUNDEF = 257,                 // "invalid token"
-    TK_VID = 258,                  // "<val_id>"
-    TK_TID = 259,                  // "<TypeId>"
-    TK_HOLE = 260,                 // "<__42__>"
-    TK_KW_USING = 261,             // "using"
-    TK_KW_MOD = 262,               // "mod"
-    TK_KW_IF = 263,                // "if"
-    TK_KW_THEN = 264,              // "then"
-    TK_KW_ELSE = 265,              // "else"
-    TK_KW_MATCH = 266,             // "match"
-    TK_KW_WITH = 267,              // "with"
-    TK_KW_IMPORT = 268,            // "import"
-    TK_KW_LINK = 269,              // "link"
-    TK_KW_FROM = 270,              // "from"
-    TK_KW_AS = 271,                // "as"
-    TK_KW_LET = 272,               // "let"
-    TK_KW_SET = 273,               // "set"
-    TK_KW_FN = 274,                // "fn"
-    TK_KW_TYPE = 275,              // "type"
-    TK_KW_ENUM = 276,              // "enum"
-    TK_KW_AND = 277,               // "and"
-    TK_KW_XOR = 278,               // "xor"
-    TK_KW_OR = 279,                // "or"
-    TK_KW_NOT = 280,               // "not"
-    TK_DINT_LIT = 281,             // "42"
-    TK_XINT_LIT = 282,             // "0x2a"
-    TK_FLOAT_LIT = 283,            // "4.2"
-    TK_DQSTRING_LIT = 284,         // "\"dq-string-literal\""
-    TK_SQSTRING_LIT = 285,         // "'sq-string-literal'"
-    TK_DOT = 286,                  // "."
-    TK_COLON = 287,                // ":"
-    TK_COMMA = 288,                // ","
-    TK_SEMICOLON = 289,            // ";"
-    TK_DBL_COLON = 290,            // "::"
-    TK_LPAREN = 291,               // "("
-    TK_RPAREN = 292,               // ")"
-    TK_LSQBRK = 293,               // "["
-    TK_RSQBRK = 294,               // "]"
-    TK_LCYBRK = 295,               // "{"
-    TK_RCYBRK = 296,               // "}"
-    TK_ARROW = 297,                // "->"
-    TK_ASTERISK = 298,             // "*"
-    TK_FSLASH = 299,               // "/"
-    TK_PERCENT = 300,              // "%"
-    TK_PLUS = 301,                 // "+"
-    TK_MINUS = 302,                // "-"
-    TK_LTHAN = 303,                // "<"
-    TK_LETHAN = 304,               // "<="
-    TK_GTHAN = 305,                // ">"
-    TK_GETHAN = 306,               // ">="
-    TK_BIND = 307,                 // "="
-    TK_EQUALS = 308,               // "=="
-    TK_NEQUALS = 309,              // "!="
-    TK_CARET = 310,                // "^"
-    TK_AMPERSAND = 311,            // "&"
-    TK_EXCLAIM = 312,              // "!"
-    TK_EOS = 313,                  // "EOS"
-    TK_NULL = 314                  // "<null>"
+    VID = 258,                     // "<val_id>"
+    TID = 259,                     // "<TypeId>"
+    HOLE = 260,                    // "<__42__>"
+    KW_USING = 261,                // "using"
+    KW_MOD = 262,                  // "mod"
+    KW_IF = 263,                   // "if"
+    KW_THEN = 264,                 // "then"
+    KW_ELSE = 265,                 // "else"
+    KW_MATCH = 266,                // "match"
+    KW_WITH = 267,                 // "with"
+    KW_IMPORT = 268,               // "import"
+    KW_FROM = 269,                 // "from"
+    KW_CONST = 270,                // "const"
+    KW_LET = 271,                  // "let"
+    KW_VAR = 272,                  // "var"
+    KW_SET = 273,                  // "set"
+    KW_FN = 274,                   // "fn"
+    KW_TYPE = 275,                 // "type"
+    KW_ENUM = 276,                 // "enum"
+    KW_AND = 277,                  // "and"
+    KW_XOR = 278,                  // "xor"
+    KW_OR = 279,                   // "or"
+    KW_NOT = 280,                  // "not"
+    KW_TYPECLASS = 281,            // "typeclass"
+    DINT_LIT = 282,                // "42"
+    XINT_LIT = 283,                // "0x2a"
+    FLOAT_LIT = 284,               // "4.2"
+    DQSTRING_LIT = 285,            // "\"dq-string-literal\""
+    SQSTRING_LIT = 286,            // "'sq-string-literal'"
+    DOT = 287,                     // "."
+    COLON = 288,                   // ":"
+    COMMA = 289,                   // ","
+    SEMICOLON = 290,               // ";"
+    DBL_COLON = 291,               // "::"
+    LPAREN = 292,                  // "("
+    RPAREN = 293,                  // ")"
+    LSQBRK = 294,                  // "["
+    RSQBRK = 295,                  // "]"
+    LCYBRK = 296,                  // "{"
+    RCYBRK = 297,                  // "}"
+    ARROW = 298,                   // "->"
+    ASTERISK = 299,                // "*"
+    FSLASH = 300,                  // "/"
+    PERCENT = 301,                 // "%"
+    PLUS = 302,                    // "+"
+    MINUS = 303,                   // "-"
+    LTHAN = 304,                   // "<"
+    LETHAN = 305,                  // "<="
+    GTHAN = 306,                   // ">"
+    GETHAN = 307,                  // ">="
+    BIND = 308,                    // "="
+    EQUALS = 309,                  // "=="
+    NEQUALS = 310,                 // "!="
+    CARET = 311,                   // "^"
+    AMPERSAND = 312,               // "&"
+    EXCLAIM = 313,                 // "!"
+    PIPE = 314,                    // "|"
+    EOS = 315,                     // "EOS"
+    NONE = 316                     // "<null>"
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -364,149 +686,163 @@ namespace pdm { namespace parser {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 60, ///< Number of tokens.
+        YYNTOKENS = 62, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
         S_YYUNDEF = 2,                           // "invalid token"
-        S_TK_VID = 3,                            // "<val_id>"
-        S_TK_TID = 4,                            // "<TypeId>"
-        S_TK_HOLE = 5,                           // "<__42__>"
-        S_TK_KW_USING = 6,                       // "using"
-        S_TK_KW_MOD = 7,                         // "mod"
-        S_TK_KW_IF = 8,                          // "if"
-        S_TK_KW_THEN = 9,                        // "then"
-        S_TK_KW_ELSE = 10,                       // "else"
-        S_TK_KW_MATCH = 11,                      // "match"
-        S_TK_KW_WITH = 12,                       // "with"
-        S_TK_KW_IMPORT = 13,                     // "import"
-        S_TK_KW_LINK = 14,                       // "link"
-        S_TK_KW_FROM = 15,                       // "from"
-        S_TK_KW_AS = 16,                         // "as"
-        S_TK_KW_LET = 17,                        // "let"
-        S_TK_KW_SET = 18,                        // "set"
-        S_TK_KW_FN = 19,                         // "fn"
-        S_TK_KW_TYPE = 20,                       // "type"
-        S_TK_KW_ENUM = 21,                       // "enum"
-        S_TK_KW_AND = 22,                        // "and"
-        S_TK_KW_XOR = 23,                        // "xor"
-        S_TK_KW_OR = 24,                         // "or"
-        S_TK_KW_NOT = 25,                        // "not"
-        S_TK_DINT_LIT = 26,                      // "42"
-        S_TK_XINT_LIT = 27,                      // "0x2a"
-        S_TK_FLOAT_LIT = 28,                     // "4.2"
-        S_TK_DQSTRING_LIT = 29,                  // "\"dq-string-literal\""
-        S_TK_SQSTRING_LIT = 30,                  // "'sq-string-literal'"
-        S_TK_DOT = 31,                           // "."
-        S_TK_COLON = 32,                         // ":"
-        S_TK_COMMA = 33,                         // ","
-        S_TK_SEMICOLON = 34,                     // ";"
-        S_TK_DBL_COLON = 35,                     // "::"
-        S_TK_LPAREN = 36,                        // "("
-        S_TK_RPAREN = 37,                        // ")"
-        S_TK_LSQBRK = 38,                        // "["
-        S_TK_RSQBRK = 39,                        // "]"
-        S_TK_LCYBRK = 40,                        // "{"
-        S_TK_RCYBRK = 41,                        // "}"
-        S_TK_ARROW = 42,                         // "->"
-        S_TK_ASTERISK = 43,                      // "*"
-        S_TK_FSLASH = 44,                        // "/"
-        S_TK_PERCENT = 45,                       // "%"
-        S_TK_PLUS = 46,                          // "+"
-        S_TK_MINUS = 47,                         // "-"
-        S_TK_LTHAN = 48,                         // "<"
-        S_TK_LETHAN = 49,                        // "<="
-        S_TK_GTHAN = 50,                         // ">"
-        S_TK_GETHAN = 51,                        // ">="
-        S_TK_BIND = 52,                          // "="
-        S_TK_EQUALS = 53,                        // "=="
-        S_TK_NEQUALS = 54,                       // "!="
-        S_TK_CARET = 55,                         // "^"
-        S_TK_AMPERSAND = 56,                     // "&"
-        S_TK_EXCLAIM = 57,                       // "!"
-        S_TK_EOS = 58,                           // "EOS"
-        S_TK_NULL = 59,                          // "<null>"
-        S_YYACCEPT = 60,                         // $accept
-        S_script = 61,                           // script
-        S_scriptContent = 62,                    // scriptContent
-        S_scriptContentStmt = 63,                // scriptContentStmt
-        S_moduleStmt = 64,                       // moduleStmt
-        S_moduleContent = 65,                    // moduleContent
-        S_chainPrefixStmt = 66,                  // chainPrefixStmt
-        S_letStmt = 67,                          // letStmt
-        S_setStmt = 68,                          // setStmt
-        S_discardStmt = 69,                      // discardStmt
-        S_moduleContentStmt = 70,                // moduleContentStmt
-        S_defStmt = 71,                          // defStmt
-        S_typedefStmt = 72,                      // typedefStmt
-        S_typedefStmt_enum = 73,                 // typedefStmt_enum
-        S_importStmt = 74,                       // importStmt
-        S_linkStmt = 75,                         // linkStmt
-        S_linkStmtItem = 76,                     // linkStmtItem
-        S_linkStmtContent = 77,                  // linkStmtContent
-        S_tid = 78,                              // tid
-        S_vid = 79,                              // vid
-        S_floatl = 80,                           // floatl
-        S_stringl = 81,                          // stringl
-        S_expr = 82,                             // expr
-        S_expr_cl1 = 83,                         // expr_cl1
-        S_expr_cl2 = 84,                         // expr_cl2
-        S_parenExpr = 85,                        // parenExpr
-        S_unitExpr = 86,                         // unitExpr
-        S_primaryExpr = 87,                      // primaryExpr
-        S_vparenExpr = 88,                       // vparenExpr
-        S_vtupleExpr = 89,                       // vtupleExpr
-        S_vstructExpr = 90,                      // vstructExpr
-        S_ifThenElseExpr = 91,                   // ifThenElseExpr
-        S_chainExpr = 92,                        // chainExpr
-        S_chainPrefix = 93,                      // chainPrefix
-        S_vlambdaExpr = 94,                      // vlambdaExpr
-        S_postfixExpr = 95,                      // postfixExpr
-        S_vtcallExpr = 96,                       // vtcallExpr
-        S_vvcallExpr = 97,                       // vvcallExpr
-        S_dotNmExpr = 98,                        // dotNmExpr
-        S_dotIxExpr = 99,                        // dotIxExpr
-        S_unaryExpr = 100,                       // unaryExpr
-        S_unaryOp = 101,                         // unaryOp
-        S_binaryExpr = 102,                      // binaryExpr
-        S_mulBinaryOp = 103,                     // mulBinaryOp
-        S_mulBinaryExpr = 104,                   // mulBinaryExpr
-        S_addBinaryOp = 105,                     // addBinaryOp
-        S_addBinaryExpr = 106,                   // addBinaryExpr
-        S_cmpBinaryOp = 107,                     // cmpBinaryOp
-        S_cmpBinaryExpr = 108,                   // cmpBinaryExpr
-        S_eqBinaryOp = 109,                      // eqBinaryOp
-        S_eqBinaryExpr = 110,                    // eqBinaryExpr
-        S_andBinaryExpr = 111,                   // andBinaryExpr
-        S_xorBinaryExpr = 112,                   // xorBinaryExpr
-        S_orBinaryExpr = 113,                    // orBinaryExpr
-        S_typespec = 114,                        // typespec
-        S_typespec_cl = 115,                     // typespec_cl
-        S_structTypespecField = 116,             // structTypespecField
-        S_structTypespecField_cl = 117,          // structTypespecField_cl
-        S_primaryTypespec = 118,                 // primaryTypespec
-        S_parenTypespec = 119,                   // parenTypespec
-        S_structTypespec = 120,                  // structTypespec
-        S_tupleTypespec = 121,                   // tupleTypespec
-        S_postfixTypespec = 122,                 // postfixTypespec
-        S_ttcall = 123,                          // ttcall
-        S_tdot = 124,                            // tdot
-        S_unaryTypespec = 125,                   // unaryTypespec
-        S_ttarg = 126,                           // ttarg
-        S_ttarg_cl = 127,                        // ttarg_cl
-        S_vtarg = 128,                           // vtarg
-        S_vtarg_cl = 129,                        // vtarg_cl
-        S_vstructExprField = 130,                // vstructExprField
-        S_vpatternField = 131,                   // vpatternField
-        S_lpatternField = 132,                   // lpatternField
-        S_tpatternField = 133,                   // tpatternField
-        S_lpattern = 134,                        // lpattern
-        S_vpattern = 135,                        // vpattern
-        S_tpattern = 136,                        // tpattern
-        S_vpatternField_cl = 137,                // vpatternField_cl
-        S_lpatternField_cl = 138,                // lpatternField_cl
-        S_tpatternField_cl = 139,                // tpatternField_cl
-        S_vstructExprField_cl = 140              // vstructExprField_cl
+        S_VID = 3,                               // "<val_id>"
+        S_TID = 4,                               // "<TypeId>"
+        S_HOLE = 5,                              // "<__42__>"
+        S_KW_USING = 6,                          // "using"
+        S_KW_MOD = 7,                            // "mod"
+        S_KW_IF = 8,                             // "if"
+        S_KW_THEN = 9,                           // "then"
+        S_KW_ELSE = 10,                          // "else"
+        S_KW_MATCH = 11,                         // "match"
+        S_KW_WITH = 12,                          // "with"
+        S_KW_IMPORT = 13,                        // "import"
+        S_KW_FROM = 14,                          // "from"
+        S_KW_CONST = 15,                         // "const"
+        S_KW_LET = 16,                           // "let"
+        S_KW_VAR = 17,                           // "var"
+        S_KW_SET = 18,                           // "set"
+        S_KW_FN = 19,                            // "fn"
+        S_KW_TYPE = 20,                          // "type"
+        S_KW_ENUM = 21,                          // "enum"
+        S_KW_AND = 22,                           // "and"
+        S_KW_XOR = 23,                           // "xor"
+        S_KW_OR = 24,                            // "or"
+        S_KW_NOT = 25,                           // "not"
+        S_KW_TYPECLASS = 26,                     // "typeclass"
+        S_DINT_LIT = 27,                         // "42"
+        S_XINT_LIT = 28,                         // "0x2a"
+        S_FLOAT_LIT = 29,                        // "4.2"
+        S_DQSTRING_LIT = 30,                     // "\"dq-string-literal\""
+        S_SQSTRING_LIT = 31,                     // "'sq-string-literal'"
+        S_DOT = 32,                              // "."
+        S_COLON = 33,                            // ":"
+        S_COMMA = 34,                            // ","
+        S_SEMICOLON = 35,                        // ";"
+        S_DBL_COLON = 36,                        // "::"
+        S_LPAREN = 37,                           // "("
+        S_RPAREN = 38,                           // ")"
+        S_LSQBRK = 39,                           // "["
+        S_RSQBRK = 40,                           // "]"
+        S_LCYBRK = 41,                           // "{"
+        S_RCYBRK = 42,                           // "}"
+        S_ARROW = 43,                            // "->"
+        S_ASTERISK = 44,                         // "*"
+        S_FSLASH = 45,                           // "/"
+        S_PERCENT = 46,                          // "%"
+        S_PLUS = 47,                             // "+"
+        S_MINUS = 48,                            // "-"
+        S_LTHAN = 49,                            // "<"
+        S_LETHAN = 50,                           // "<="
+        S_GTHAN = 51,                            // ">"
+        S_GETHAN = 52,                           // ">="
+        S_BIND = 53,                             // "="
+        S_EQUALS = 54,                           // "=="
+        S_NEQUALS = 55,                          // "!="
+        S_CARET = 56,                            // "^"
+        S_AMPERSAND = 57,                        // "&"
+        S_EXCLAIM = 58,                          // "!"
+        S_PIPE = 59,                             // "|"
+        S_EOS = 60,                              // "EOS"
+        S_NONE = 61,                             // "<null>"
+        S_YYACCEPT = 62,                         // $accept
+        S_script = 63,                           // script
+        S_scriptContent = 64,                    // scriptContent
+        S_scriptContentStmt = 65,                // scriptContentStmt
+        S_mod_stmt = 66,                         // mod_stmt
+        S_moduleContent = 67,                    // moduleContent
+        S_chainPrefixStmt = 68,                  // chainPrefixStmt
+        S_constStmt = 69,                        // constStmt
+        S_letStmt = 70,                          // letStmt
+        S_varStmt = 71,                          // varStmt
+        S_setStmt = 72,                          // setStmt
+        S_discardStmt = 73,                      // discardStmt
+        S_moduleContentStmt = 74,                // moduleContentStmt
+        S_fn_stmt = 75,                          // fn_stmt
+        S_type_stmt = 76,                        // type_stmt
+        S_enum_stmt = 77,                        // enum_stmt
+        S_enum_field_pl = 78,                    // enum_field_pl
+        S_unprefixed_enum_field_pl = 79,         // unprefixed_enum_field_pl
+        S_enum_field = 80,                       // enum_field
+        S_typeclass_stmt = 81,                   // typeclass_stmt
+        S_using_stmt = 82,                       // using_stmt
+        S_importStmt = 83,                       // importStmt
+        S_tid = 84,                              // tid
+        S_vid = 85,                              // vid
+        S_floatl = 86,                           // floatl
+        S_stringl = 87,                          // stringl
+        S_expr = 88,                             // expr
+        S_expr_cl1 = 89,                         // expr_cl1
+        S_expr_cl2 = 90,                         // expr_cl2
+        S_expr_sl = 91,                          // expr_sl
+        S_parenExpr = 92,                        // parenExpr
+        S_unitExpr = 93,                         // unitExpr
+        S_primaryExpr = 94,                      // primaryExpr
+        S_int_expr = 95,                         // int_expr
+        S_stringls = 96,                         // stringls
+        S_vparenExpr = 97,                       // vparenExpr
+        S_vtupleExpr = 98,                       // vtupleExpr
+        S_vstructExpr = 99,                      // vstructExpr
+        S_ifThenElseExpr = 100,                  // ifThenElseExpr
+        S_chainExpr = 101,                       // chainExpr
+        S_chainPrefix = 102,                     // chainPrefix
+        S_vlambdaExpr = 103,                     // vlambdaExpr
+        S_postfixExpr = 104,                     // postfixExpr
+        S_vtcallExpr = 105,                      // vtcallExpr
+        S_vvcallExpr = 106,                      // vvcallExpr
+        S_dotNmExpr = 107,                       // dotNmExpr
+        S_dotIxExpr = 108,                       // dotIxExpr
+        S_unaryExpr = 109,                       // unaryExpr
+        S_unaryOp = 110,                         // unaryOp
+        S_binaryExpr = 111,                      // binaryExpr
+        S_mulBinaryOp = 112,                     // mulBinaryOp
+        S_mulBinaryExpr = 113,                   // mulBinaryExpr
+        S_addBinaryOp = 114,                     // addBinaryOp
+        S_addBinaryExpr = 115,                   // addBinaryExpr
+        S_cmpBinaryOp = 116,                     // cmpBinaryOp
+        S_cmpBinaryExpr = 117,                   // cmpBinaryExpr
+        S_eqBinaryOp = 118,                      // eqBinaryOp
+        S_eqBinaryExpr = 119,                    // eqBinaryExpr
+        S_andBinaryExpr = 120,                   // andBinaryExpr
+        S_xorBinaryExpr = 121,                   // xorBinaryExpr
+        S_orBinaryExpr = 122,                    // orBinaryExpr
+        S_typespec = 123,                        // typespec
+        S_typespec_cl1 = 124,                    // typespec_cl1
+        S_typespec_cl2 = 125,                    // typespec_cl2
+        S_structTypespecField = 126,             // structTypespecField
+        S_structTypespecField_cl = 127,          // structTypespecField_cl
+        S_primaryTypespec = 128,                 // primaryTypespec
+        S_tupleTypespec = 129,                   // tupleTypespec
+        S_mod_prefix_tid = 130,                  // mod_prefix_tid
+        S_mod_prefix = 131,                      // mod_prefix
+        S_postfixTypespec = 132,                 // postfixTypespec
+        S_ttcall = 133,                          // ttcall
+        S_tdot = 134,                            // tdot
+        S_unaryTypespec = 135,                   // unaryTypespec
+        S_long_typespec = 136,                   // long_typespec
+        S_structTypespec = 137,                  // structTypespec
+        S_ttarg = 138,                           // ttarg
+        S_ttarg_cl = 139,                        // ttarg_cl
+        S_vtarg = 140,                           // vtarg
+        S_vtarg_cl = 141,                        // vtarg_cl
+        S_vstructExprField = 142,                // vstructExprField
+        S_vpatternField = 143,                   // vpatternField
+        S_lpatternField = 144,                   // lpatternField
+        S_tpatternField = 145,                   // tpatternField
+        S_lpattern = 146,                        // lpattern
+        S_lpattern_naked = 147,                  // lpattern_naked
+        S_vpattern = 148,                        // vpattern
+        S_tpattern = 149,                        // tpattern
+        S_vpatternField_cl = 150,                // vpatternField_cl
+        S_lpatternField_cl = 151,                // lpatternField_cl
+        S_tpatternField_cl = 152,                // tpatternField_cl
+        S_vstructExprField_cl = 153,             // vstructExprField_cl
+        S_tpattern_seq = 154                     // tpattern_seq
       };
     };
 
@@ -538,21 +874,645 @@ namespace pdm { namespace parser {
       /// Move constructor.
       basic_symbol (basic_symbol&& that)
         : Base (std::move (that))
-        , value (std::move (that.value))
+        , value ()
         , location (std::move (that.location))
-      {}
+      {
+        switch (this->kind ())
+    {
+      case symbol_kind::S_DINT_LIT: // "42"
+      case symbol_kind::S_XINT_LIT: // "0x2a"
+      case symbol_kind::S_FLOAT_LIT: // "4.2"
+      case symbol_kind::S_DQSTRING_LIT: // "\"dq-string-literal\""
+      case symbol_kind::S_SQSTRING_LIT: // "'sq-string-literal'"
+        value.move< TokenInfo > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_mulBinaryOp: // mulBinaryOp
+      case symbol_kind::S_addBinaryOp: // addBinaryOp
+      case symbol_kind::S_cmpBinaryOp: // cmpBinaryOp
+      case symbol_kind::S_eqBinaryOp: // eqBinaryOp
+        value.move< pdm::ast::BinaryOperator > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_enum_field: // enum_field
+        value.move< pdm::ast::EnumStmt::Field* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_expr: // expr
+      case symbol_kind::S_parenExpr: // parenExpr
+      case symbol_kind::S_unitExpr: // unitExpr
+      case symbol_kind::S_primaryExpr: // primaryExpr
+      case symbol_kind::S_int_expr: // int_expr
+      case symbol_kind::S_vparenExpr: // vparenExpr
+      case symbol_kind::S_vtupleExpr: // vtupleExpr
+      case symbol_kind::S_vstructExpr: // vstructExpr
+      case symbol_kind::S_ifThenElseExpr: // ifThenElseExpr
+      case symbol_kind::S_chainExpr: // chainExpr
+      case symbol_kind::S_vlambdaExpr: // vlambdaExpr
+      case symbol_kind::S_postfixExpr: // postfixExpr
+      case symbol_kind::S_vtcallExpr: // vtcallExpr
+      case symbol_kind::S_vvcallExpr: // vvcallExpr
+      case symbol_kind::S_dotNmExpr: // dotNmExpr
+      case symbol_kind::S_dotIxExpr: // dotIxExpr
+      case symbol_kind::S_unaryExpr: // unaryExpr
+      case symbol_kind::S_binaryExpr: // binaryExpr
+      case symbol_kind::S_mulBinaryExpr: // mulBinaryExpr
+      case symbol_kind::S_addBinaryExpr: // addBinaryExpr
+      case symbol_kind::S_cmpBinaryExpr: // cmpBinaryExpr
+      case symbol_kind::S_eqBinaryExpr: // eqBinaryExpr
+      case symbol_kind::S_andBinaryExpr: // andBinaryExpr
+      case symbol_kind::S_xorBinaryExpr: // xorBinaryExpr
+      case symbol_kind::S_orBinaryExpr: // orBinaryExpr
+        value.move< pdm::ast::Exp* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_lpattern: // lpattern
+      case symbol_kind::S_lpattern_naked: // lpattern_naked
+        value.move< pdm::ast::LPattern* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_lpatternField: // lpatternField
+        value.move< pdm::ast::LPattern::Field* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_script: // script
+        value.move< pdm::ast::Script* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_scriptContentStmt: // scriptContentStmt
+      case symbol_kind::S_mod_stmt: // mod_stmt
+      case symbol_kind::S_chainPrefixStmt: // chainPrefixStmt
+      case symbol_kind::S_constStmt: // constStmt
+      case symbol_kind::S_letStmt: // letStmt
+      case symbol_kind::S_varStmt: // varStmt
+      case symbol_kind::S_setStmt: // setStmt
+      case symbol_kind::S_discardStmt: // discardStmt
+      case symbol_kind::S_moduleContentStmt: // moduleContentStmt
+      case symbol_kind::S_fn_stmt: // fn_stmt
+      case symbol_kind::S_type_stmt: // type_stmt
+      case symbol_kind::S_enum_stmt: // enum_stmt
+      case symbol_kind::S_typeclass_stmt: // typeclass_stmt
+      case symbol_kind::S_using_stmt: // using_stmt
+      case symbol_kind::S_importStmt: // importStmt
+        value.move< pdm::ast::Stmt* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_vstructExprField: // vstructExprField
+        value.move< pdm::ast::StructExp::Field* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_structTypespecField: // structTypespecField
+        value.move< pdm::ast::StructTypespec::Field* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_ttarg: // ttarg
+      case symbol_kind::S_vtarg: // vtarg
+        value.move< pdm::ast::TArg* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_tpattern: // tpattern
+        value.move< pdm::ast::TPattern* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_tpatternField: // tpatternField
+        value.move< pdm::ast::TPattern::Field* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_typespec: // typespec
+      case symbol_kind::S_primaryTypespec: // primaryTypespec
+      case symbol_kind::S_tupleTypespec: // tupleTypespec
+      case symbol_kind::S_mod_prefix_tid: // mod_prefix_tid
+      case symbol_kind::S_postfixTypespec: // postfixTypespec
+      case symbol_kind::S_ttcall: // ttcall
+      case symbol_kind::S_tdot: // tdot
+      case symbol_kind::S_unaryTypespec: // unaryTypespec
+      case symbol_kind::S_long_typespec: // long_typespec
+      case symbol_kind::S_structTypespec: // structTypespec
+        value.move< pdm::ast::Typespec* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_unaryOp: // unaryOp
+        value.move< pdm::ast::UnaryOperator > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_vpattern: // vpattern
+        value.move< pdm::ast::VPattern* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_vpatternField: // vpatternField
+        value.move< pdm::ast::VPattern::Field* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_VID: // "<val_id>"
+      case symbol_kind::S_TID: // "<TypeId>"
+      case symbol_kind::S_HOLE: // "<__42__>"
+      case symbol_kind::S_tid: // tid
+      case symbol_kind::S_vid: // vid
+      case symbol_kind::S_floatl: // floatl
+      case symbol_kind::S_stringl: // stringl
+        value.move< pdm::parser::TokenInfo > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_enum_field_pl: // enum_field_pl
+      case symbol_kind::S_unprefixed_enum_field_pl: // unprefixed_enum_field_pl
+        value.move< std::vector<pdm::ast::EnumStmt::Field*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_expr_cl1: // expr_cl1
+      case symbol_kind::S_expr_cl2: // expr_cl2
+      case symbol_kind::S_expr_sl: // expr_sl
+        value.move< std::vector<pdm::ast::Exp*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_lpatternField_cl: // lpatternField_cl
+        value.move< std::vector<pdm::ast::LPattern::Field*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_scriptContent: // scriptContent
+        value.move< std::vector<pdm::ast::Script*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_moduleContent: // moduleContent
+      case symbol_kind::S_chainPrefix: // chainPrefix
+        value.move< std::vector<pdm::ast::Stmt*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_stringls: // stringls
+        value.move< std::vector<pdm::ast::StringExp::Piece*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_vstructExprField_cl: // vstructExprField_cl
+        value.move< std::vector<pdm::ast::StructExp::Field*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_structTypespecField_cl: // structTypespecField_cl
+        value.move< std::vector<pdm::ast::StructTypespec::Field*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_ttarg_cl: // ttarg_cl
+      case symbol_kind::S_vtarg_cl: // vtarg_cl
+        value.move< std::vector<pdm::ast::TArg*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_tpattern_seq: // tpattern_seq
+        value.move< std::vector<pdm::ast::TPattern*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_tpatternField_cl: // tpatternField_cl
+        value.move< std::vector<pdm::ast::TPattern::Field*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_typespec_cl1: // typespec_cl1
+      case symbol_kind::S_typespec_cl2: // typespec_cl2
+        value.move< std::vector<pdm::ast::Typespec*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_vpatternField_cl: // vpatternField_cl
+        value.move< std::vector<pdm::ast::VPattern::Field*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_mod_prefix: // mod_prefix
+        value.move< std::vector<pdm::intern::String> > (std::move (that.value));
+        break;
+
+      default:
+        break;
+    }
+
+      }
 #endif
 
       /// Copy constructor.
       basic_symbol (const basic_symbol& that);
-      /// Constructor for valueless symbols.
-      basic_symbol (typename Base::kind_type t,
-                    YY_MOVE_REF (location_type) l);
 
-      /// Constructor for symbols with semantic value.
-      basic_symbol (typename Base::kind_type t,
-                    YY_RVREF (semantic_type) v,
-                    YY_RVREF (location_type) l);
+      /// Constructor for valueless symbols, and symbols from each type.
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, location_type&& l)
+        : Base (t)
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const location_type& l)
+        : Base (t)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, TokenInfo&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const TokenInfo& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::BinaryOperator&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::BinaryOperator& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::EnumStmt::Field*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::EnumStmt::Field*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::Exp*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::Exp*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::LPattern*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::LPattern*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::LPattern::Field*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::LPattern::Field*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::Script*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::Script*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::Stmt*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::Stmt*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::StructExp::Field*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::StructExp::Field*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::StructTypespec::Field*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::StructTypespec::Field*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::TArg*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::TArg*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::TPattern*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::TPattern*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::TPattern::Field*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::TPattern::Field*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::Typespec*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::Typespec*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::UnaryOperator&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::UnaryOperator& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::VPattern*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::VPattern*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::VPattern::Field*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::VPattern::Field*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::parser::TokenInfo&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::parser::TokenInfo& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::EnumStmt::Field*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::EnumStmt::Field*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::Exp*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::Exp*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::LPattern::Field*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::LPattern::Field*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::Script*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::Script*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::Stmt*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::Stmt*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::StringExp::Piece*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::StringExp::Piece*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::StructExp::Field*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::StructExp::Field*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::StructTypespec::Field*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::StructTypespec::Field*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::TArg*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::TArg*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::TPattern*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::TPattern*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::TPattern::Field*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::TPattern::Field*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::Typespec*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::Typespec*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::VPattern::Field*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::VPattern::Field*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::intern::String>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::intern::String>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
 
       /// Destroy the symbol.
       ~basic_symbol ()
@@ -563,6 +1523,219 @@ namespace pdm { namespace parser {
       /// Destroy contents, and record that is empty.
       void clear ()
       {
+        // User destructor.
+        symbol_kind_type yykind = this->kind ();
+        basic_symbol<Base>& yysym = *this;
+        (void) yysym;
+        switch (yykind)
+        {
+       default:
+          break;
+        }
+
+        // Value type destructor.
+switch (yykind)
+    {
+      case symbol_kind::S_DINT_LIT: // "42"
+      case symbol_kind::S_XINT_LIT: // "0x2a"
+      case symbol_kind::S_FLOAT_LIT: // "4.2"
+      case symbol_kind::S_DQSTRING_LIT: // "\"dq-string-literal\""
+      case symbol_kind::S_SQSTRING_LIT: // "'sq-string-literal'"
+        value.template destroy< TokenInfo > ();
+        break;
+
+      case symbol_kind::S_mulBinaryOp: // mulBinaryOp
+      case symbol_kind::S_addBinaryOp: // addBinaryOp
+      case symbol_kind::S_cmpBinaryOp: // cmpBinaryOp
+      case symbol_kind::S_eqBinaryOp: // eqBinaryOp
+        value.template destroy< pdm::ast::BinaryOperator > ();
+        break;
+
+      case symbol_kind::S_enum_field: // enum_field
+        value.template destroy< pdm::ast::EnumStmt::Field* > ();
+        break;
+
+      case symbol_kind::S_expr: // expr
+      case symbol_kind::S_parenExpr: // parenExpr
+      case symbol_kind::S_unitExpr: // unitExpr
+      case symbol_kind::S_primaryExpr: // primaryExpr
+      case symbol_kind::S_int_expr: // int_expr
+      case symbol_kind::S_vparenExpr: // vparenExpr
+      case symbol_kind::S_vtupleExpr: // vtupleExpr
+      case symbol_kind::S_vstructExpr: // vstructExpr
+      case symbol_kind::S_ifThenElseExpr: // ifThenElseExpr
+      case symbol_kind::S_chainExpr: // chainExpr
+      case symbol_kind::S_vlambdaExpr: // vlambdaExpr
+      case symbol_kind::S_postfixExpr: // postfixExpr
+      case symbol_kind::S_vtcallExpr: // vtcallExpr
+      case symbol_kind::S_vvcallExpr: // vvcallExpr
+      case symbol_kind::S_dotNmExpr: // dotNmExpr
+      case symbol_kind::S_dotIxExpr: // dotIxExpr
+      case symbol_kind::S_unaryExpr: // unaryExpr
+      case symbol_kind::S_binaryExpr: // binaryExpr
+      case symbol_kind::S_mulBinaryExpr: // mulBinaryExpr
+      case symbol_kind::S_addBinaryExpr: // addBinaryExpr
+      case symbol_kind::S_cmpBinaryExpr: // cmpBinaryExpr
+      case symbol_kind::S_eqBinaryExpr: // eqBinaryExpr
+      case symbol_kind::S_andBinaryExpr: // andBinaryExpr
+      case symbol_kind::S_xorBinaryExpr: // xorBinaryExpr
+      case symbol_kind::S_orBinaryExpr: // orBinaryExpr
+        value.template destroy< pdm::ast::Exp* > ();
+        break;
+
+      case symbol_kind::S_lpattern: // lpattern
+      case symbol_kind::S_lpattern_naked: // lpattern_naked
+        value.template destroy< pdm::ast::LPattern* > ();
+        break;
+
+      case symbol_kind::S_lpatternField: // lpatternField
+        value.template destroy< pdm::ast::LPattern::Field* > ();
+        break;
+
+      case symbol_kind::S_script: // script
+        value.template destroy< pdm::ast::Script* > ();
+        break;
+
+      case symbol_kind::S_scriptContentStmt: // scriptContentStmt
+      case symbol_kind::S_mod_stmt: // mod_stmt
+      case symbol_kind::S_chainPrefixStmt: // chainPrefixStmt
+      case symbol_kind::S_constStmt: // constStmt
+      case symbol_kind::S_letStmt: // letStmt
+      case symbol_kind::S_varStmt: // varStmt
+      case symbol_kind::S_setStmt: // setStmt
+      case symbol_kind::S_discardStmt: // discardStmt
+      case symbol_kind::S_moduleContentStmt: // moduleContentStmt
+      case symbol_kind::S_fn_stmt: // fn_stmt
+      case symbol_kind::S_type_stmt: // type_stmt
+      case symbol_kind::S_enum_stmt: // enum_stmt
+      case symbol_kind::S_typeclass_stmt: // typeclass_stmt
+      case symbol_kind::S_using_stmt: // using_stmt
+      case symbol_kind::S_importStmt: // importStmt
+        value.template destroy< pdm::ast::Stmt* > ();
+        break;
+
+      case symbol_kind::S_vstructExprField: // vstructExprField
+        value.template destroy< pdm::ast::StructExp::Field* > ();
+        break;
+
+      case symbol_kind::S_structTypespecField: // structTypespecField
+        value.template destroy< pdm::ast::StructTypespec::Field* > ();
+        break;
+
+      case symbol_kind::S_ttarg: // ttarg
+      case symbol_kind::S_vtarg: // vtarg
+        value.template destroy< pdm::ast::TArg* > ();
+        break;
+
+      case symbol_kind::S_tpattern: // tpattern
+        value.template destroy< pdm::ast::TPattern* > ();
+        break;
+
+      case symbol_kind::S_tpatternField: // tpatternField
+        value.template destroy< pdm::ast::TPattern::Field* > ();
+        break;
+
+      case symbol_kind::S_typespec: // typespec
+      case symbol_kind::S_primaryTypespec: // primaryTypespec
+      case symbol_kind::S_tupleTypespec: // tupleTypespec
+      case symbol_kind::S_mod_prefix_tid: // mod_prefix_tid
+      case symbol_kind::S_postfixTypespec: // postfixTypespec
+      case symbol_kind::S_ttcall: // ttcall
+      case symbol_kind::S_tdot: // tdot
+      case symbol_kind::S_unaryTypespec: // unaryTypespec
+      case symbol_kind::S_long_typespec: // long_typespec
+      case symbol_kind::S_structTypespec: // structTypespec
+        value.template destroy< pdm::ast::Typespec* > ();
+        break;
+
+      case symbol_kind::S_unaryOp: // unaryOp
+        value.template destroy< pdm::ast::UnaryOperator > ();
+        break;
+
+      case symbol_kind::S_vpattern: // vpattern
+        value.template destroy< pdm::ast::VPattern* > ();
+        break;
+
+      case symbol_kind::S_vpatternField: // vpatternField
+        value.template destroy< pdm::ast::VPattern::Field* > ();
+        break;
+
+      case symbol_kind::S_VID: // "<val_id>"
+      case symbol_kind::S_TID: // "<TypeId>"
+      case symbol_kind::S_HOLE: // "<__42__>"
+      case symbol_kind::S_tid: // tid
+      case symbol_kind::S_vid: // vid
+      case symbol_kind::S_floatl: // floatl
+      case symbol_kind::S_stringl: // stringl
+        value.template destroy< pdm::parser::TokenInfo > ();
+        break;
+
+      case symbol_kind::S_enum_field_pl: // enum_field_pl
+      case symbol_kind::S_unprefixed_enum_field_pl: // unprefixed_enum_field_pl
+        value.template destroy< std::vector<pdm::ast::EnumStmt::Field*> > ();
+        break;
+
+      case symbol_kind::S_expr_cl1: // expr_cl1
+      case symbol_kind::S_expr_cl2: // expr_cl2
+      case symbol_kind::S_expr_sl: // expr_sl
+        value.template destroy< std::vector<pdm::ast::Exp*> > ();
+        break;
+
+      case symbol_kind::S_lpatternField_cl: // lpatternField_cl
+        value.template destroy< std::vector<pdm::ast::LPattern::Field*> > ();
+        break;
+
+      case symbol_kind::S_scriptContent: // scriptContent
+        value.template destroy< std::vector<pdm::ast::Script*> > ();
+        break;
+
+      case symbol_kind::S_moduleContent: // moduleContent
+      case symbol_kind::S_chainPrefix: // chainPrefix
+        value.template destroy< std::vector<pdm::ast::Stmt*> > ();
+        break;
+
+      case symbol_kind::S_stringls: // stringls
+        value.template destroy< std::vector<pdm::ast::StringExp::Piece*> > ();
+        break;
+
+      case symbol_kind::S_vstructExprField_cl: // vstructExprField_cl
+        value.template destroy< std::vector<pdm::ast::StructExp::Field*> > ();
+        break;
+
+      case symbol_kind::S_structTypespecField_cl: // structTypespecField_cl
+        value.template destroy< std::vector<pdm::ast::StructTypespec::Field*> > ();
+        break;
+
+      case symbol_kind::S_ttarg_cl: // ttarg_cl
+      case symbol_kind::S_vtarg_cl: // vtarg_cl
+        value.template destroy< std::vector<pdm::ast::TArg*> > ();
+        break;
+
+      case symbol_kind::S_tpattern_seq: // tpattern_seq
+        value.template destroy< std::vector<pdm::ast::TPattern*> > ();
+        break;
+
+      case symbol_kind::S_tpatternField_cl: // tpatternField_cl
+        value.template destroy< std::vector<pdm::ast::TPattern::Field*> > ();
+        break;
+
+      case symbol_kind::S_typespec_cl1: // typespec_cl1
+      case symbol_kind::S_typespec_cl2: // typespec_cl2
+        value.template destroy< std::vector<pdm::ast::Typespec*> > ();
+        break;
+
+      case symbol_kind::S_vpatternField_cl: // vpatternField_cl
+        value.template destroy< std::vector<pdm::ast::VPattern::Field*> > ();
+        break;
+
+      case symbol_kind::S_mod_prefix: // mod_prefix
+        value.template destroy< std::vector<pdm::intern::String> > ();
+        break;
+
+      default:
+        break;
+    }
+
         Base::clear ();
       }
 
@@ -640,10 +1813,57 @@ namespace pdm { namespace parser {
 
     /// "External" symbols: returned by the scanner.
     struct symbol_type : basic_symbol<by_kind>
-    {};
+    {
+      /// Superclass.
+      typedef basic_symbol<by_kind> super_type;
+
+      /// Empty symbol.
+      symbol_type () {}
+
+      /// Constructor for valueless symbols, and symbols from each type.
+#if 201103L <= YY_CPLUSPLUS
+      symbol_type (int tok, location_type l)
+        : super_type(token_type (tok), std::move (l))
+      {
+        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_LET || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_TYPE || tok == token::KW_ENUM || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::EOS || tok == token::NONE);
+      }
+#else
+      symbol_type (int tok, const location_type& l)
+        : super_type(token_type (tok), l)
+      {
+        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_LET || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_TYPE || tok == token::KW_ENUM || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::EOS || tok == token::NONE);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      symbol_type (int tok, TokenInfo v, location_type l)
+        : super_type(token_type (tok), std::move (v), std::move (l))
+      {
+        YY_ASSERT (tok == token::DINT_LIT || tok == token::XINT_LIT || tok == token::FLOAT_LIT || tok == token::DQSTRING_LIT || tok == token::SQSTRING_LIT);
+      }
+#else
+      symbol_type (int tok, const TokenInfo& v, const location_type& l)
+        : super_type(token_type (tok), v, l)
+      {
+        YY_ASSERT (tok == token::DINT_LIT || tok == token::XINT_LIT || tok == token::FLOAT_LIT || tok == token::DQSTRING_LIT || tok == token::SQSTRING_LIT);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      symbol_type (int tok, pdm::parser::TokenInfo v, location_type l)
+        : super_type(token_type (tok), std::move (v), std::move (l))
+      {
+        YY_ASSERT (tok == token::VID || tok == token::TID || tok == token::HOLE);
+      }
+#else
+      symbol_type (int tok, const pdm::parser::TokenInfo& v, const location_type& l)
+        : super_type(token_type (tok), v, l)
+      {
+        YY_ASSERT (tok == token::VID || tok == token::TID || tok == token::HOLE);
+      }
+#endif
+    };
 
     /// Build a parser object.
-    parser (pdm::source::Source* source_yyarg, pdm::parser::Lexer* lexer_yyarg, pdm::ast::Script** outp_yyarg);
+    parser (pdm::source::Source* source_yyarg, pdm::parser::Lexer* lexer_yyarg, pdm::ast::Manager* mgr_yyarg, pdm::ast::Script** returnp_yyarg);
     virtual ~parser ();
 
 #if 201103L <= YY_CPLUSPLUS
@@ -690,6 +1910,937 @@ namespace pdm { namespace parser {
 #endif // #if YYDEBUG || 0
 
 
+    // Implementation of make_symbol for each symbol type.
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_YYEOF (location_type l)
+      {
+        return symbol_type (token::YYEOF, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_YYEOF (const location_type& l)
+      {
+        return symbol_type (token::YYEOF, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_YYerror (location_type l)
+      {
+        return symbol_type (token::YYerror, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_YYerror (const location_type& l)
+      {
+        return symbol_type (token::YYerror, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_YYUNDEF (location_type l)
+      {
+        return symbol_type (token::YYUNDEF, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_YYUNDEF (const location_type& l)
+      {
+        return symbol_type (token::YYUNDEF, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_VID (pdm::parser::TokenInfo v, location_type l)
+      {
+        return symbol_type (token::VID, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_VID (const pdm::parser::TokenInfo& v, const location_type& l)
+      {
+        return symbol_type (token::VID, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_TID (pdm::parser::TokenInfo v, location_type l)
+      {
+        return symbol_type (token::TID, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_TID (const pdm::parser::TokenInfo& v, const location_type& l)
+      {
+        return symbol_type (token::TID, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_HOLE (pdm::parser::TokenInfo v, location_type l)
+      {
+        return symbol_type (token::HOLE, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_HOLE (const pdm::parser::TokenInfo& v, const location_type& l)
+      {
+        return symbol_type (token::HOLE, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_USING (location_type l)
+      {
+        return symbol_type (token::KW_USING, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_USING (const location_type& l)
+      {
+        return symbol_type (token::KW_USING, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_MOD (location_type l)
+      {
+        return symbol_type (token::KW_MOD, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_MOD (const location_type& l)
+      {
+        return symbol_type (token::KW_MOD, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_IF (location_type l)
+      {
+        return symbol_type (token::KW_IF, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_IF (const location_type& l)
+      {
+        return symbol_type (token::KW_IF, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_THEN (location_type l)
+      {
+        return symbol_type (token::KW_THEN, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_THEN (const location_type& l)
+      {
+        return symbol_type (token::KW_THEN, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_ELSE (location_type l)
+      {
+        return symbol_type (token::KW_ELSE, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_ELSE (const location_type& l)
+      {
+        return symbol_type (token::KW_ELSE, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_MATCH (location_type l)
+      {
+        return symbol_type (token::KW_MATCH, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_MATCH (const location_type& l)
+      {
+        return symbol_type (token::KW_MATCH, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_WITH (location_type l)
+      {
+        return symbol_type (token::KW_WITH, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_WITH (const location_type& l)
+      {
+        return symbol_type (token::KW_WITH, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_IMPORT (location_type l)
+      {
+        return symbol_type (token::KW_IMPORT, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_IMPORT (const location_type& l)
+      {
+        return symbol_type (token::KW_IMPORT, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_FROM (location_type l)
+      {
+        return symbol_type (token::KW_FROM, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_FROM (const location_type& l)
+      {
+        return symbol_type (token::KW_FROM, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_CONST (location_type l)
+      {
+        return symbol_type (token::KW_CONST, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_CONST (const location_type& l)
+      {
+        return symbol_type (token::KW_CONST, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_LET (location_type l)
+      {
+        return symbol_type (token::KW_LET, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_LET (const location_type& l)
+      {
+        return symbol_type (token::KW_LET, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_VAR (location_type l)
+      {
+        return symbol_type (token::KW_VAR, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_VAR (const location_type& l)
+      {
+        return symbol_type (token::KW_VAR, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_SET (location_type l)
+      {
+        return symbol_type (token::KW_SET, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_SET (const location_type& l)
+      {
+        return symbol_type (token::KW_SET, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_FN (location_type l)
+      {
+        return symbol_type (token::KW_FN, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_FN (const location_type& l)
+      {
+        return symbol_type (token::KW_FN, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_TYPE (location_type l)
+      {
+        return symbol_type (token::KW_TYPE, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_TYPE (const location_type& l)
+      {
+        return symbol_type (token::KW_TYPE, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_ENUM (location_type l)
+      {
+        return symbol_type (token::KW_ENUM, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_ENUM (const location_type& l)
+      {
+        return symbol_type (token::KW_ENUM, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_AND (location_type l)
+      {
+        return symbol_type (token::KW_AND, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_AND (const location_type& l)
+      {
+        return symbol_type (token::KW_AND, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_XOR (location_type l)
+      {
+        return symbol_type (token::KW_XOR, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_XOR (const location_type& l)
+      {
+        return symbol_type (token::KW_XOR, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_OR (location_type l)
+      {
+        return symbol_type (token::KW_OR, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_OR (const location_type& l)
+      {
+        return symbol_type (token::KW_OR, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_NOT (location_type l)
+      {
+        return symbol_type (token::KW_NOT, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_NOT (const location_type& l)
+      {
+        return symbol_type (token::KW_NOT, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_TYPECLASS (location_type l)
+      {
+        return symbol_type (token::KW_TYPECLASS, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_TYPECLASS (const location_type& l)
+      {
+        return symbol_type (token::KW_TYPECLASS, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DINT_LIT (TokenInfo v, location_type l)
+      {
+        return symbol_type (token::DINT_LIT, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_DINT_LIT (const TokenInfo& v, const location_type& l)
+      {
+        return symbol_type (token::DINT_LIT, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_XINT_LIT (TokenInfo v, location_type l)
+      {
+        return symbol_type (token::XINT_LIT, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_XINT_LIT (const TokenInfo& v, const location_type& l)
+      {
+        return symbol_type (token::XINT_LIT, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_FLOAT_LIT (TokenInfo v, location_type l)
+      {
+        return symbol_type (token::FLOAT_LIT, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_FLOAT_LIT (const TokenInfo& v, const location_type& l)
+      {
+        return symbol_type (token::FLOAT_LIT, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DQSTRING_LIT (TokenInfo v, location_type l)
+      {
+        return symbol_type (token::DQSTRING_LIT, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_DQSTRING_LIT (const TokenInfo& v, const location_type& l)
+      {
+        return symbol_type (token::DQSTRING_LIT, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_SQSTRING_LIT (TokenInfo v, location_type l)
+      {
+        return symbol_type (token::SQSTRING_LIT, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_SQSTRING_LIT (const TokenInfo& v, const location_type& l)
+      {
+        return symbol_type (token::SQSTRING_LIT, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DOT (location_type l)
+      {
+        return symbol_type (token::DOT, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_DOT (const location_type& l)
+      {
+        return symbol_type (token::DOT, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_COLON (location_type l)
+      {
+        return symbol_type (token::COLON, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_COLON (const location_type& l)
+      {
+        return symbol_type (token::COLON, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_COMMA (location_type l)
+      {
+        return symbol_type (token::COMMA, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_COMMA (const location_type& l)
+      {
+        return symbol_type (token::COMMA, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_SEMICOLON (location_type l)
+      {
+        return symbol_type (token::SEMICOLON, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_SEMICOLON (const location_type& l)
+      {
+        return symbol_type (token::SEMICOLON, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DBL_COLON (location_type l)
+      {
+        return symbol_type (token::DBL_COLON, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_DBL_COLON (const location_type& l)
+      {
+        return symbol_type (token::DBL_COLON, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LPAREN (location_type l)
+      {
+        return symbol_type (token::LPAREN, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LPAREN (const location_type& l)
+      {
+        return symbol_type (token::LPAREN, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_RPAREN (location_type l)
+      {
+        return symbol_type (token::RPAREN, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_RPAREN (const location_type& l)
+      {
+        return symbol_type (token::RPAREN, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LSQBRK (location_type l)
+      {
+        return symbol_type (token::LSQBRK, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LSQBRK (const location_type& l)
+      {
+        return symbol_type (token::LSQBRK, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_RSQBRK (location_type l)
+      {
+        return symbol_type (token::RSQBRK, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_RSQBRK (const location_type& l)
+      {
+        return symbol_type (token::RSQBRK, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LCYBRK (location_type l)
+      {
+        return symbol_type (token::LCYBRK, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LCYBRK (const location_type& l)
+      {
+        return symbol_type (token::LCYBRK, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_RCYBRK (location_type l)
+      {
+        return symbol_type (token::RCYBRK, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_RCYBRK (const location_type& l)
+      {
+        return symbol_type (token::RCYBRK, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ARROW (location_type l)
+      {
+        return symbol_type (token::ARROW, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_ARROW (const location_type& l)
+      {
+        return symbol_type (token::ARROW, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ASTERISK (location_type l)
+      {
+        return symbol_type (token::ASTERISK, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_ASTERISK (const location_type& l)
+      {
+        return symbol_type (token::ASTERISK, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_FSLASH (location_type l)
+      {
+        return symbol_type (token::FSLASH, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_FSLASH (const location_type& l)
+      {
+        return symbol_type (token::FSLASH, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_PERCENT (location_type l)
+      {
+        return symbol_type (token::PERCENT, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_PERCENT (const location_type& l)
+      {
+        return symbol_type (token::PERCENT, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_PLUS (location_type l)
+      {
+        return symbol_type (token::PLUS, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_PLUS (const location_type& l)
+      {
+        return symbol_type (token::PLUS, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_MINUS (location_type l)
+      {
+        return symbol_type (token::MINUS, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_MINUS (const location_type& l)
+      {
+        return symbol_type (token::MINUS, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LTHAN (location_type l)
+      {
+        return symbol_type (token::LTHAN, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LTHAN (const location_type& l)
+      {
+        return symbol_type (token::LTHAN, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LETHAN (location_type l)
+      {
+        return symbol_type (token::LETHAN, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LETHAN (const location_type& l)
+      {
+        return symbol_type (token::LETHAN, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_GTHAN (location_type l)
+      {
+        return symbol_type (token::GTHAN, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_GTHAN (const location_type& l)
+      {
+        return symbol_type (token::GTHAN, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_GETHAN (location_type l)
+      {
+        return symbol_type (token::GETHAN, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_GETHAN (const location_type& l)
+      {
+        return symbol_type (token::GETHAN, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_BIND (location_type l)
+      {
+        return symbol_type (token::BIND, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_BIND (const location_type& l)
+      {
+        return symbol_type (token::BIND, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_EQUALS (location_type l)
+      {
+        return symbol_type (token::EQUALS, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_EQUALS (const location_type& l)
+      {
+        return symbol_type (token::EQUALS, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_NEQUALS (location_type l)
+      {
+        return symbol_type (token::NEQUALS, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_NEQUALS (const location_type& l)
+      {
+        return symbol_type (token::NEQUALS, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_CARET (location_type l)
+      {
+        return symbol_type (token::CARET, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_CARET (const location_type& l)
+      {
+        return symbol_type (token::CARET, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_AMPERSAND (location_type l)
+      {
+        return symbol_type (token::AMPERSAND, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_AMPERSAND (const location_type& l)
+      {
+        return symbol_type (token::AMPERSAND, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_EXCLAIM (location_type l)
+      {
+        return symbol_type (token::EXCLAIM, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_EXCLAIM (const location_type& l)
+      {
+        return symbol_type (token::EXCLAIM, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_PIPE (location_type l)
+      {
+        return symbol_type (token::PIPE, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_PIPE (const location_type& l)
+      {
+        return symbol_type (token::PIPE, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_EOS (location_type l)
+      {
+        return symbol_type (token::EOS, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_EOS (const location_type& l)
+      {
+        return symbol_type (token::EOS, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_NONE (location_type l)
+      {
+        return symbol_type (token::NONE, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_NONE (const location_type& l)
+      {
+        return symbol_type (token::NONE, l);
+      }
+#endif
 
 
   private:
@@ -717,7 +2868,7 @@ namespace pdm { namespace parser {
     /// \param yyvalue   the value to check
     static bool yy_table_value_is_error_ (int yyvalue);
 
-    static const short yypact_ninf_;
+    static const signed char yypact_ninf_;
     static const signed char yytable_ninf_;
 
     /// Convert a scanner token kind \a t to a symbol kind.
@@ -994,8 +3145,8 @@ namespace pdm { namespace parser {
     /// Constants.
     enum
     {
-      yylast_ = 424,     ///< Last index in yytable_.
-      yynnts_ = 81,  ///< Number of nonterminal symbols.
+      yylast_ = 619,     ///< Last index in yytable_.
+      yynnts_ = 93,  ///< Number of nonterminal symbols.
       yyfinal_ = 7 ///< Termination state number.
     };
 
@@ -1003,23 +3154,24 @@ namespace pdm { namespace parser {
     // User arguments.
     pdm::source::Source* source;
     pdm::parser::Lexer* lexer;
-    pdm::ast::Script** outp;
+    pdm::ast::Manager* mgr;
+    pdm::ast::Script** returnp;
 
   };
 
 
-#line 18 "parser.yy"
+#line 22 "parser.yy"
 } } // pdm::parser
-#line 1014 "parser.tab.hh"
+#line 3166 "parser.tab.hh"
 
 
 // "%code provides" blocks.
-#line 208 "parser.yy"
+#line 209 "parser.yy"
 
     int yylex(pdm::parser::TokenInfo *lvalp, pdm::source::Loc *llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
     void yyerror(pdm::source::Loc* llocp, char const* message, pdm::source::Source* source, pdm::parser::Lexer* lexer);
 
-#line 1023 "parser.tab.hh"
+#line 3175 "parser.tab.hh"
 
 
 #endif // !YY_YY_PARSER_TAB_HH_INCLUDED

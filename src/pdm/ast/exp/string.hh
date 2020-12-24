@@ -17,6 +17,20 @@ namespace pdm::ast {
     class StringExp: public Exp {
         friend Manager;
 
+      public:
+        class Piece {
+            friend Manager;
+          
+          private:
+            source::Loc  m_loc;
+            utf8::String m_content;
+
+          protected:
+            Piece(source::Loc loc, utf8::String content)
+            : m_loc(loc),
+              m_content(content) {}
+        };
+
       private:
         utf8::String m_content;
     

@@ -28,8 +28,7 @@ namespace pdm::utf8 {
             other.m_data = nullptr;
             other.m_count = 0;
         }
-        String(String const& other) = delete;
-
+        
         String(Char* mov_buf, size_t count) 
         : m_data(mov_buf), m_count(count) {}
         
@@ -39,11 +38,16 @@ namespace pdm::utf8 {
             memcpy(m_data, ro_buf, m_count * sizeof(Char));
         }
 
+        String(String const& other)
+        : String(other.const_data(), other.size()) {}
+
         String(char const* ro_buf) 
         : String(reinterpret_cast<Char const*>(ro_buf), strlen(ro_buf)) {}
 
         ~String() {
-            delete[] m_data;
+            if (m_data != nullptr) {
+                delete[] m_data;
+            }
         }
 
       public:

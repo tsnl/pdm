@@ -67,20 +67,20 @@ namespace pdm::scoper {
         virtual bool on_visit__dot_name_exp(ast::DotNameExp* node, VisitOrder visit_order) override;
         virtual bool on_visit__unary_exp(ast::UnaryExp* node, VisitOrder visit_order) override;
         virtual bool on_visit__binary_exp(ast::BinaryExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__v_call_exp(ast::VCallExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__t_call_exp(ast::TCallExp* node, VisitOrder visit_order) override;
+        virtual bool on_visit__vcall_exp(ast::VCallExp* node, VisitOrder visit_order) override;
+        virtual bool on_visit__tcall_exp(ast::TCallExp* node, VisitOrder visit_order) override;
         
         // patterns:
-        virtual bool on_visit__v_pattern(ast::VPattern* node, VisitOrder visit_order) override;
-        virtual bool on_visit__t_pattern(ast::TPattern* node, VisitOrder visit_order) override;
-        virtual bool on_visit__l_pattern(ast::LPattern* node, VisitOrder visit_order) override;
+        virtual bool on_visit__vpattern(ast::VPattern* node, VisitOrder visit_order) override;
+        virtual bool on_visit__tpattern(ast::TPattern* node, VisitOrder visit_order) override;
+        virtual bool on_visit__lpattern(ast::LPattern* node, VisitOrder visit_order) override;
 
         // typespecs:
         virtual bool on_visit__id_typespec(ast::IdTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__mut_typespec(ast::MutTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__ptr_typespec(ast::PtrTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__fn_typespec(ast::FnTypespec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__t_call_typespec(ast::TCallTypespec* node, VisitOrder visit_order) override;
+        virtual bool on_visit__tcall_typespec(ast::TCallTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__tuple_typespec(ast::TupleTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__dot_name_typespec_type_prefix(ast::DotNameTypespec_TypePrefix* node, VisitOrder visit_order) override;
         virtual bool on_visit__dot_name_typespec_mod_prefix(ast::DotNameTypespec_ModPrefix* node, VisitOrder visit_order) override;

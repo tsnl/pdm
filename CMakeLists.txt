@@ -145,17 +145,22 @@ add_library(
 
     src/pdm/ast/stmt/stmt.hh
     src/pdm/ast/stmt/const.hh
+    src/pdm/ast/stmt/discard.hh
     src/pdm/ast/stmt/fn.hh
     src/pdm/ast/stmt/enum.hh
     src/pdm/ast/stmt/let.hh
     src/pdm/ast/stmt/link.hh
+    src/pdm/ast/stmt/using.hh
     src/pdm/ast/stmt/mod.cc
     src/pdm/ast/stmt/mod.hh
+    src/pdm/ast/stmt/set.hh
     src/pdm/ast/stmt/builtin_type.cc
     src/pdm/ast/stmt/builtin_type.hh
     src/pdm/ast/stmt/type.hh
     src/pdm/ast/stmt/typeclass.hh
     
+    src/pdm/ast/targ/targ.hh
+
     src/pdm/ast/typespec/typespec.hh
     src/pdm/ast/typespec/dot.hh
     src/pdm/ast/typespec/fn.hh

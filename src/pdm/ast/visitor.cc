@@ -25,13 +25,6 @@ namespace pdm::ast {
             // statements:
             //
 
-            case Kind::LetStmt:
-            {
-                LetStmt* let_stmt = dynamic_cast<LetStmt*>(node);
-                ok = visit(let_stmt->lhs_lpattern()) && ok;
-                ok = visit(let_stmt->rhs_exp()) && ok;
-                break;
-            }
             case Kind::ConstStmt:
             {
                 ConstStmt* const_stmt = dynamic_cast<ConstStmt*>(node);
@@ -39,6 +32,21 @@ namespace pdm::ast {
                 ok = visit(const_stmt->rhs_exp()) && ok;
                 break;
             }
+            case Kind::LetStmt:
+            {
+                LetStmt* let_stmt = dynamic_cast<LetStmt*>(node);
+                ok = visit(let_stmt->lhs_lpattern()) && ok;
+                ok = visit(let_stmt->rhs_exp()) && ok;
+                break;
+            }
+            case Kind::VarStmt:
+            {
+                VarStmt* var_stmt = dynamic_cast<VarStmt*>(node);
+                ok = visit(var_stmt->lhs_lpattern()) && ok;
+                ok = visit(var_stmt->rhs_exp()) && ok;
+                break;
+            }
+
             case Kind::FnStmt:
             {
                 FnStmt* fn_stmt = dynamic_cast<FnStmt*>(node);
@@ -66,25 +74,13 @@ namespace pdm::ast {
             case Kind::TypeclassStmt:
             {
                 TypeclassStmt* typeclass_stmt = dynamic_cast<TypeclassStmt*>(node);
+                
+                ok = visit(typeclass_stmt->candidate_typespec()) && ok;
                 for (TPattern* tpattern: typeclass_stmt->tpatterns()) {
                     ok = visit(tpattern) && ok;
                 }
-                for (TypeclassStmt::Field* field: typeclass_stmt->fields()) {
-                    switch (field->kind()) {
-                        case TypeclassStmt::FieldKind::Exp:
-                        {
-                            TypeclassStmt::ExpField* exp_field = dynamic_cast<TypeclassStmt::ExpField*>(field);
-                            ok = visit(exp_field->const_exp()) && ok;
-                            break;
-                        }
-                        case TypeclassStmt::FieldKind::Fun:
-                        {
-                            TypeclassStmt::FunField* fun_field = dynamic_cast<TypeclassStmt::FunField*>(field);
-                            ok = visit(fun_field->lhs_pattern()) && ok;
-                            ok = visit(fun_field->rhs_body()) && ok;
-                            break;
-                        }
-                    }
+                for (Exp* condition: typeclass_stmt->conditions()) {
+                    ok = visit(condition) && ok;
                 }
                 break;
             }
@@ -169,7 +165,7 @@ namespace pdm::ast {
             case Kind::LambdaExp:
             {
                 LambdaExp* lambda_exp = dynamic_cast<LambdaExp*>(node);
-                ok = visit(lambda_exp->lhs_vpattern()) && ok;
+                ok = visit(lambda_exp->lhs_lpattern()) && ok;
                 ok = visit(lambda_exp->body()) && ok;
                 break;
             }
@@ -221,7 +217,7 @@ namespace pdm::ast {
             {
                 TCallExp* tcall_exp = dynamic_cast<TCallExp*>(node);
                 ok = visit(tcall_exp->lhs_called()) && ok;
-                for (TCallExp::Arg* arg: tcall_exp->args()) {
+                for (TArg* arg: tcall_exp->args()) {
                     ok = visit(arg->node()) && ok;
                 }
                 break;
@@ -298,7 +294,7 @@ namespace pdm::ast {
             {
                 TCallTypespec* tcall_typespec = dynamic_cast<TCallTypespec*>(node);
                 ok = visit(tcall_typespec->lhs_called()) && ok;
-                for (TCallTypespec::Arg* arg: tcall_typespec->args()) {
+                for (TArg* arg: tcall_typespec->args()) {
                     ok = visit(arg->node()) && ok;
                 }
                 break;
@@ -361,6 +357,14 @@ namespace pdm::ast {
             case Kind::ConstStmt:
             {
                 return on_visit__const_stmt(dynamic_cast<ConstStmt*>(node), visit_order);
+            }
+            case Kind::DiscardStmt:
+            {
+                return on_visit__discard_stmt(dynamic_cast<DiscardStmt*>(node), visit_order);
+            }
+            case Kind::SetStmt:
+            {
+                return on_visit__set_stmt(dynamic_cast<SetStmt*>(node), visit_order);
             }
             case Kind::FnStmt:
             {
@@ -458,11 +462,11 @@ namespace pdm::ast {
             }
             case Kind::VCallExp:
             {
-                return on_visit__v_call_exp(dynamic_cast<VCallExp*>(node), visit_order);
+                return on_visit__vcall_exp(dynamic_cast<VCallExp*>(node), visit_order);
             } 
             case Kind::TCallExp:
             {
-                return on_visit__t_call_exp(dynamic_cast<TCallExp*>(node), visit_order);
+                return on_visit__tcall_exp(dynamic_cast<TCallExp*>(node), visit_order);
             }
             case Kind::TypeQueryExp:
             {
@@ -472,15 +476,15 @@ namespace pdm::ast {
             // patterns:
             case Kind::VPattern:
             {
-                return on_visit__v_pattern(dynamic_cast<VPattern*>(node), visit_order);
+                return on_visit__vpattern(dynamic_cast<VPattern*>(node), visit_order);
             }
             case Kind::TPattern:
             {
-                return on_visit__t_pattern(dynamic_cast<TPattern*>(node), visit_order);
+                return on_visit__tpattern(dynamic_cast<TPattern*>(node), visit_order);
             }
             case Kind::LPattern:
             {
-                return on_visit__l_pattern(dynamic_cast<LPattern*>(node), visit_order);
+                return on_visit__lpattern(dynamic_cast<LPattern*>(node), visit_order);
             }
 
             // typespecs:
@@ -502,7 +506,7 @@ namespace pdm::ast {
             }
             case Kind::TCallTypespec:
             {
-                return on_visit__t_call_typespec(dynamic_cast<TCallTypespec*>(node), visit_order);
+                return on_visit__tcall_typespec(dynamic_cast<TCallTypespec*>(node), visit_order);
             }
             case Kind::TupleTypespec:
             {

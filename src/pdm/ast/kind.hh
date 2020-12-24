@@ -9,8 +9,11 @@ namespace pdm::ast {
         
         // statements:
         BuiltinTypeStmt,    // non-syntactic
-        LetStmt,
+        DiscardStmt,
         ConstStmt,
+        LetStmt,
+        VarStmt,
+        SetStmt,
         FnStmt,
         TypeStmt,
         EnumStmt,
@@ -18,6 +21,7 @@ namespace pdm::ast {
         ModStmt,
         LinkStmt,
         ImportStmt,
+        UsingStmt,
 
         // expressions:
         UnitExp, 

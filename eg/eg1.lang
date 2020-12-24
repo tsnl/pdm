@@ -86,7 +86,7 @@ mod dict {
 
 mod events {
     enum Color =
-    | Rgba Tuple[U8,U8,U8,U8] 
+    | Rgba Tuple[U8,U8,U8,U8]
     | Hsva Tuple[U8,U8,U8,U8]
     | Name String
     | None
@@ -121,6 +121,7 @@ mod events {
 #
 
 mod greeting {
+    
     fn new_cstr () -> CString {
         let len = 12;
         let buf = heap.alloc(Char)[len];

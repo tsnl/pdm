@@ -13,6 +13,38 @@ namespace pdm::ast {
     class EnumStmt: public Stmt {
         friend Manager;
 
+      public:
+        class Field {
+            friend Manager;
+
+          private:
+            intern::String              m_name;
+            std::vector<ast::Typespec*> m_typespecs;
+            bool                        m_has_explicit_typespecs;
+            
+          protected:
+            Field(intern::String name)
+            : m_name(name),
+              m_typespecs(),
+              m_has_explicit_typespecs(false) {}
+
+            Field(intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs)
+            : m_name(name),
+              m_typespecs(std::move(typespecs)),
+              m_has_explicit_typespecs(has_explicit_typespecs) {}
+
+          public:
+            intern::String name() const {
+                return m_name;
+            }
+            std::vector<ast::Typespec*> const& typespecs() const {
+                return m_typespecs;
+            }
+            bool has_explicit_typespecs() const {
+                return m_has_explicit_typespecs;
+            }
+        };
+
       private:
         intern::String  m_name;
         StructTypespec* m_body_struct_typespec;

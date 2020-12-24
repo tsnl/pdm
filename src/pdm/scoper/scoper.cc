@@ -154,30 +154,30 @@ namespace pdm::scoper {
         // todo: implement Scoper::on_visit__binary_exp
         return ok;
     }
-    bool Scoper::on_visit__v_call_exp(ast::VCallExp* node, VisitOrder visit_order) {
-        bool ok = ast::Visitor::on_visit__v_call_exp(node, visit_order);
+    bool Scoper::on_visit__vcall_exp(ast::VCallExp* node, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__vcall_exp(node, visit_order);
         // todo: implement Scoper::on_visit__v_call_exp
         return ok;
     }
-    bool Scoper::on_visit__t_call_exp(ast::TCallExp* node, VisitOrder visit_order) {
-        bool ok = ast::Visitor::on_visit__t_call_exp(node, visit_order);
+    bool Scoper::on_visit__tcall_exp(ast::TCallExp* node, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__tcall_exp(node, visit_order);
         // todo: implement Scoper::on_visit__t_call_exp
         return ok;
     }
     
     // patterns:
-    bool Scoper::on_visit__v_pattern(ast::VPattern* node, VisitOrder visit_order) {
-        bool ok = ast::Visitor::on_visit__v_pattern(node, visit_order);
+    bool Scoper::on_visit__vpattern(ast::VPattern* node, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__vpattern(node, visit_order);
         // todo: implement Scoper::on_visit__v_pattern
         return ok;
     }
-    bool Scoper::on_visit__t_pattern(ast::TPattern* node, VisitOrder visit_order) {
-        bool ok = ast::Visitor::on_visit__t_pattern(node, visit_order);
+    bool Scoper::on_visit__tpattern(ast::TPattern* node, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__tpattern(node, visit_order);
         // todo: implement Scoper::on_visit__t_pattern
         return ok;
     }
-    bool Scoper::on_visit__l_pattern(ast::LPattern* node, VisitOrder visit_order) {
-        bool ok = ast::Visitor::on_visit__l_pattern(node, visit_order);
+    bool Scoper::on_visit__lpattern(ast::LPattern* node, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__lpattern(node, visit_order);
         // todo: implement Scoper::on_visit__l_pattern
         return ok;
     }
@@ -203,8 +203,8 @@ namespace pdm::scoper {
         // todo: implement Scoper::on_visit__func_typespec
         return ok;
     }
-    bool Scoper::on_visit__t_call_typespec(ast::TCallTypespec* node, VisitOrder visit_order) {
-        bool ok = ast::Visitor::on_visit__t_call_typespec(node, visit_order);
+    bool Scoper::on_visit__tcall_typespec(ast::TCallTypespec* node, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__tcall_typespec(node, visit_order);
         // todo: implement Scoper::on_visit__t_call_typespec
         return ok;
     }

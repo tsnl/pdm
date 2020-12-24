@@ -29,6 +29,8 @@ extern "C" {
 // #include "source.h"
 // #include "useful.h"
 
+using Tk = pdm::parser::parser::token_kind_type;
+
 // 
 // Helpers (1):
 //
@@ -51,11 +53,12 @@ namespace pdm::parser::aux {
         intern::String with_intstr;
         intern::String return_intstr;
         intern::String discard_intstr;
-        intern::String link_intstr;
         intern::String fn_intstr;
         intern::String let_intstr;
+        intern::String var_intstr;
+        intern::String const_intstr;
         intern::String and_intstr;
-        intern::String x_or_intstr;
+        intern::String xor_intstr;
         intern::String or_intstr;
         intern::String not_intstr;
         intern::String set_intstr;
@@ -63,7 +66,7 @@ namespace pdm::parser::aux {
         intern::String enum_intstr;
         intern::String mod_intstr;
         intern::String from_intstr;
-        intern::String as_intstr;
+        intern::String typeclass_intstr;
 
         Keywords() {
             intern::String::ensure_init();
@@ -79,11 +82,12 @@ namespace pdm::parser::aux {
             with_intstr = "with";
             return_intstr = "return";
             discard_intstr = "discard";
-            link_intstr = "link";
             fn_intstr = "fn";
             let_intstr = "let";
+            var_intstr = "var";
+            const_intstr = "const";
             and_intstr = "and";
-            x_or_intstr = "xor";
+            xor_intstr = "xor";
             or_intstr = "or";
             not_intstr = "not";
             set_intstr = "set";
@@ -91,7 +95,7 @@ namespace pdm::parser::aux {
             enum_intstr = "enum";
             mod_intstr = "mod";
             from_intstr = "from";
-            as_intstr = "as";
+            typeclass_intstr = "typeclass";
         }
     };
 
@@ -158,9 +162,9 @@ namespace pdm::parser::aux {
             skipWhitespace(source);
         }
 
-        // If at EOF, returning yy::parser::token::token_kind_type::TK_EOS (not yy::parser::token::token_kind_type::TK_NULL!) to indicate the end of this token stream.
+        // If at EOF, returning Tk::EOS (not Tk::NONE!) to indicate the end of this token stream.
         if (source->at_eof()) {
-            return yy::parser::token::token_kind_type::TK_EOS;
+            return Tk::EOS;
         }
 
         //
@@ -176,7 +180,7 @@ namespace pdm::parser::aux {
         //
 
         TokenKind outKind = lexOneSimpleToken(source);
-        if (outKind == yy::parser::token::token_kind_type::TK_NULL) {
+        if (outKind == Tk::NONE) {
             // must be a more complex token...
 
             int firstChar = source->read_head();
@@ -197,7 +201,7 @@ namespace pdm::parser::aux {
             }
 
             // Error: unknown token kind.
-            // Offer feedback with location, RETURN EARLY with yy::parser::token::token_kind_type::TK_NULL
+            // Offer feedback with location, RETURN EARLY with Tk::NONE
             else {
                 std::vector<feedback::Note*> notes; {
                     notes.reserve(1);
@@ -216,7 +220,7 @@ namespace pdm::parser::aux {
                     std::move(notes)
                 );
                 feedback::post(letter);
-                return yy::parser::token::token_kind_type::TK_NULL;
+                return Tk::NONE;
             }
         }
 
@@ -228,7 +232,7 @@ namespace pdm::parser::aux {
 
     TokenKind lexOneSimpleToken(Reader* source) {
         TokenKind tk = helpLexOneSimpleToken(source);
-        // if (tk != yy::parser::token::token_kind_type::TK_NULL) {
+        // if (tk != Tk::NONE) {
         //     source->advance_head();
         // }
         return tk;
@@ -240,112 +244,112 @@ namespace pdm::parser::aux {
             case '.':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_DOT;
+                    return Tk::DOT;
                 }
                 break;
             }
             case ',':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_COMMA;
+                    return Tk::COMMA;
                 }
                 break;
             }
             case ';':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_SEMICOLON;
+                    return Tk::SEMICOLON;
                 }
                 break;
             }
             case '(':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_LPAREN;
+                    return Tk::LPAREN;
                 }
                 break;
             }
             case ')':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_RPAREN;
+                    return Tk::RPAREN;
                 }
                 break;
             }
             case '[':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_LSQBRK;
+                    return Tk::LSQBRK;
                 }
                 break;
             }
             case ']':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_RSQBRK;
+                    return Tk::RSQBRK;
                 }
                 break;
             }
             case '{':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_LCYBRK;
+                    return Tk::LCYBRK;
                 }
                 break;
             }
             case '}':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_RCYBRK;
+                    return Tk::RCYBRK;
                 }
                 break;
             }
             case '*':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_ASTERISK;
+                    return Tk::ASTERISK;
                 }
                 break;
             }
             case '/':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_FSLASH;
+                    return Tk::FSLASH;
                 }
                 break;
             }
             case '%':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_PERCENT;
+                    return Tk::PERCENT;
                 }
                 break;
             }
             case '+':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_PLUS;
+                    return Tk::PLUS;
                 }
                 break;
             }
             case '^':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_CARET;
+                    return Tk::CARET;
                 }
                 break;
             }
             case '&':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_KW_AND;
+                    return Tk::AMPERSAND;
                 }
                 break;
             }
             case '|':
             {
                 if (source->advance_head()) {
-                    return yy::parser::token::token_kind_type::TK_KW_OR;
+                    return Tk::PIPE;
                 }
                 break;
             }
@@ -354,9 +358,9 @@ namespace pdm::parser::aux {
             {
                 if (source->advance_head()) {
                     if (source->read_head() == '=' && source->advance_head()) {
-                        return yy::parser::token::token_kind_type::TK_EQUALS;
+                        return Tk::EQUALS;
                     }
-                    return yy::parser::token::token_kind_type::TK_BIND;
+                    return Tk::BIND;
                 }
                 break;
             }
@@ -364,9 +368,9 @@ namespace pdm::parser::aux {
             {
                 if (source->advance_head()) {
                     if (source->read_head() == ':' && source->advance_head()) {
-                        return yy::parser::token::token_kind_type::TK_DBL_COLON;
+                        return Tk::DBL_COLON;
                     }
-                    return yy::parser::token::token_kind_type::TK_COLON;
+                    return Tk::COLON;
                 }
                 break;
             }
@@ -374,9 +378,9 @@ namespace pdm::parser::aux {
             {
                 if (source->advance_head()) {
                     if (source->read_head() == '=' && source->advance_head()) {
-                        return yy::parser::token::token_kind_type::TK_NEQUALS;
+                        return Tk::NEQUALS;
                     }
-                    return yy::parser::token::token_kind_type::TK_EXCLAIM;
+                    return Tk::EXCLAIM;
                 }
                 break;
             }
@@ -384,9 +388,9 @@ namespace pdm::parser::aux {
             {
                 if (source->advance_head()) {
                     if (source->read_head() == '>' && source->advance_head()) {
-                        return yy::parser::token::token_kind_type::TK_ARROW;
+                        return Tk::ARROW;
                     }
-                    return yy::parser::token::token_kind_type::TK_MINUS;
+                    return Tk::MINUS;
                 }
                 break;
             }
@@ -394,9 +398,9 @@ namespace pdm::parser::aux {
             {
                 if (source->advance_head()) {
                     if (source->read_head() == '=' && source->advance_head()) {
-                        return yy::parser::token::token_kind_type::TK_LETHAN;
+                        return Tk::LETHAN;
                     }
-                    return yy::parser::token::token_kind_type::TK_LTHAN;
+                    return Tk::LTHAN;
                 }
                 break;
             }
@@ -404,9 +408,9 @@ namespace pdm::parser::aux {
             {
                 if (source->advance_head()) {
                     if (source->read_head() == '=' && source->advance_head()) {
-                        return yy::parser::token::token_kind_type::TK_GETHAN;
+                        return Tk::GETHAN;
                     }
-                    return yy::parser::token::token_kind_type::TK_GTHAN;
+                    return Tk::GTHAN;
                 }
                 break;
             }
@@ -415,12 +419,12 @@ namespace pdm::parser::aux {
                 break;
             }
         }
-        return yy::parser::token::token_kind_type::TK_NULL;
+        return Tk::NONE;
     }
     TokenKind lexOneNumber(Reader* source, TokenInfo* optInfoP) {
         TokenInfo prefixTokenInfo;
         TokenKind prefixTokenKind = lexOneIntChunk(source, &prefixTokenInfo, 0);
-        if (prefixTokenKind == yy::parser::token::token_kind_type::TK_DINT_LIT) {
+        if (prefixTokenKind == Tk::DINT_LIT) {
             if (source->read_head() == '.' && source->advance_head()) {
                 // float
                 TokenInfo suffixTokenInfo;
@@ -438,7 +442,7 @@ namespace pdm::parser::aux {
                         optInfoP->Float = value;
                     }
                 }
-                return yy::parser::token::token_kind_type::TK_FLOAT_LIT;
+                return Tk::FLOAT_LIT;
             
             }
         }
@@ -449,14 +453,14 @@ namespace pdm::parser::aux {
     }
     TokenKind lexOneIntChunk(Reader* source, TokenInfo* optInfoP, int noPrefix) {
         // Checking for a hex prefix:
-        TokenKind tokenKind = yy::parser::token::token_kind_type::TK_DINT_LIT;
+        TokenKind tokenKind = Tk::DINT_LIT;
         if (!noPrefix) {
             if (source->read_head() == '0') {
                 if (source->advance_head()) {
                     if (source->read_head() == 'x') {
                         // 0x hex prefix detected.
                         source->advance_head();
-                        tokenKind = yy::parser::token::token_kind_type::TK_XINT_LIT;
+                        tokenKind = Tk::XINT_LIT;
                     }
                 }
             }
@@ -467,13 +471,13 @@ namespace pdm::parser::aux {
             char intChar = source->read_head();
             if (intChar == '_') {
                 continue;
-            } else if (tokenKind == yy::parser::token::token_kind_type::TK_DINT_LIT) {
+            } else if (tokenKind == Tk::DINT_LIT) {
                 if (isdigit(intChar)) {
                     value = (10*value) + (intChar - '0');
                 } else {
                     break;
                 }
-            } else if (tokenKind == yy::parser::token::token_kind_type::TK_XINT_LIT) {
+            } else if (tokenKind == Tk::XINT_LIT) {
                 if (isxdigit(intChar)) {
                     if      (intChar == 'a' || intChar == 'A') { value = (16*value) + (10); }
                     else if (intChar == 'b' || intChar == 'B') { value = (16*value) + (11); }
@@ -535,32 +539,33 @@ namespace pdm::parser::aux {
                 std::move(std::string("Please use a shorter identifier fragment instead.")),
                 std::move(notes)
             ));
-            return yy::parser::token::token_kind_type::TK_NULL;
+            return Tk::NONE;
         }
         charBuf[index] = '\0';
 
         // Looking up charBuf as a keyword or symbol:
         intern::String intstr = charBuf;
-        if (intstr == keywords.using_intstr) { return yy::parser::token::token_kind_type::TK_KW_USING; }
-        if (intstr == keywords.import_intstr) { return yy::parser::token::token_kind_type::TK_KW_IMPORT; }
-        if (intstr == keywords.if_intstr) { return yy::parser::token::token_kind_type::TK_KW_IF; }
-        if (intstr == keywords.then_intstr) { return yy::parser::token::token_kind_type::TK_KW_THEN; }
-        if (intstr == keywords.else_intstr) { return yy::parser::token::token_kind_type::TK_KW_ELSE; }
-        if (intstr == keywords.match_intstr) { return yy::parser::token::token_kind_type::TK_KW_MATCH; }
-        if (intstr == keywords.with_intstr) { return yy::parser::token::token_kind_type::TK_KW_WITH; }
-        if (intstr == keywords.link_intstr) { return yy::parser::token::token_kind_type::TK_KW_LINK; }
-        if (intstr == keywords.fn_intstr) { return yy::parser::token::token_kind_type::TK_KW_FN; }
-        if (intstr == keywords.let_intstr) { return yy::parser::token::token_kind_type::TK_KW_LET; }
-        if (intstr == keywords.and_intstr) { return yy::parser::token::token_kind_type::TK_KW_AND; }
-        if (intstr == keywords.x_or_intstr) { return yy::parser::token::token_kind_type::TK_KW_XOR; }
-        if (intstr == keywords.or_intstr) { return yy::parser::token::token_kind_type::TK_KW_OR; }
-        if (intstr == keywords.not_intstr) { return yy::parser::token::token_kind_type::TK_KW_NOT; }
-        if (intstr == keywords.set_intstr) { return yy::parser::token::token_kind_type::TK_KW_SET; }
-        if (intstr == keywords.type_intstr) { return yy::parser::token::token_kind_type::TK_KW_TYPE; }
-        if (intstr == keywords.enum_intstr) { return yy::parser::token::token_kind_type::TK_KW_ENUM; }
-        if (intstr == keywords.mod_intstr) { return yy::parser::token::token_kind_type::TK_KW_MOD; }
-        if (intstr == keywords.from_intstr) { return yy::parser::token::token_kind_type::TK_KW_FROM; }
-        if (intstr == keywords.as_intstr) { return yy::parser::token::token_kind_type::TK_KW_AS; }
+        if (intstr == keywords.using_intstr) { return Tk::KW_USING; }
+        if (intstr == keywords.import_intstr) { return Tk::KW_IMPORT; }
+        if (intstr == keywords.if_intstr) { return Tk::KW_IF; }
+        if (intstr == keywords.then_intstr) { return Tk::KW_THEN; }
+        if (intstr == keywords.else_intstr) { return Tk::KW_ELSE; }
+        if (intstr == keywords.match_intstr) { return Tk::KW_MATCH; }
+        if (intstr == keywords.with_intstr) { return Tk::KW_WITH; }
+        if (intstr == keywords.fn_intstr) { return Tk::KW_FN; }
+        if (intstr == keywords.const_intstr) { return Tk::KW_CONST; }
+        if (intstr == keywords.let_intstr) { return Tk::KW_LET; }
+        if (intstr == keywords.var_intstr) { return Tk::KW_VAR; }
+        if (intstr == keywords.and_intstr) { return Tk::KW_AND; }
+        if (intstr == keywords.xor_intstr) { return Tk::KW_XOR; }
+        if (intstr == keywords.or_intstr) { return Tk::KW_OR; }
+        if (intstr == keywords.not_intstr) { return Tk::KW_NOT; }
+        if (intstr == keywords.set_intstr) { return Tk::KW_SET; }
+        if (intstr == keywords.type_intstr) { return Tk::KW_TYPE; }
+        if (intstr == keywords.enum_intstr) { return Tk::KW_ENUM; }
+        if (intstr == keywords.typeclass_intstr) { return Tk::KW_TYPECLASS; }
+        if (intstr == keywords.mod_intstr) { return Tk::KW_MOD; }
+        if (intstr == keywords.from_intstr) { return Tk::KW_FROM; }
         else {
             infoP->ID_intstr = intstr;
             return getIdTextKind(charBuf);
@@ -571,9 +576,9 @@ namespace pdm::parser::aux {
         int quoteChar = source->read_head();
         TokenKind tokenKind;
         if (quoteChar == '"') {
-            tokenKind = yy::parser::token::token_kind_type::TK_DQSTRING_LIT;
+            tokenKind = Tk::DQSTRING_LIT;
         } else if (quoteChar == '\'') { 
-            tokenKind = yy::parser::token::token_kind_type::TK_SQSTRING_LIT;
+            tokenKind = Tk::SQSTRING_LIT;
         } else if (DEBUG) {
             assert(0 && "Invalid quote character.");
         }
@@ -653,7 +658,7 @@ namespace pdm::parser::aux {
                 std::move("Before EOF, expected quotechar: <" + std::string(1,quoteChar) + ">"),
                 std::move(notes)
             ));
-            return yy::parser::token::token_kind_type::TK_NULL;
+            return Tk::NONE;
         }
         source->advance_head();
         infoP->String_utf8string = new utf8::String(sb.strdup());
@@ -689,11 +694,11 @@ namespace pdm::parser::aux {
 
     int getIdTextKind(char const* idText) {
         if (*idText == '\0') {
-            return yy::parser::token::token_kind_type::TK_HOLE;
+            return Tk::HOLE;
         } else if (isupper(*idText)) {
-            return yy::parser::token::token_kind_type::TK_TID;
+            return Tk::TID;
         } else if (islower(*idText)) {
-            return yy::parser::token::token_kind_type::TK_VID;
+            return Tk::VID;
         } else {
             return getIdTextKind(idText+1);
         }
@@ -724,11 +729,11 @@ namespace pdm::parser::aux {
         source::Loc tok_loc = source::Loc::none;
         for (;;) {
             TokenKind kind = aux::LexOneToken(source, &tok_info, &tok_loc);
-            if (kind == yy::parser::token::token_kind_type::TK_NULL) {
+            if (kind == Tk::NONE) {
                 printf("Terminated with TK_NULL\n");
                 break;
             }
-            if (kind == yy::parser::token::token_kind_type::TK_EOS) {
+            if (kind == Tk::EOS) {
                 printf("Terminated with TK_EOS\n");
                 break;
             }
@@ -744,220 +749,220 @@ namespace pdm::parser::aux {
         char info[MAX_INFO_LEN] = {'\0'};
         switch (tk)
         {
-            case yy::parser::token::token_kind_type::TK_DOT:
+            case Tk::DOT:
             {
                 name = ".";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_COMMA:
+            case Tk::COMMA:
             {
                 name = ",";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_COLON:
+            case Tk::COLON:
             {
                 name = ":";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_LPAREN:
+            case Tk::LPAREN:
             {
                 name = "(";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_RPAREN:
+            case Tk::RPAREN:
             {
                 name = ")";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_LSQBRK:
+            case Tk::LSQBRK:
             {
                 name = "[";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_RSQBRK:
+            case Tk::RSQBRK:
             {
                 name = "]";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_LCYBRK:
+            case Tk::LCYBRK:
             {
                 name = "{";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_RCYBRK:
+            case Tk::RCYBRK:
             {
                 name = "}";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_SEMICOLON:
+            case Tk::SEMICOLON:
             {
                 name = ";";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_ASTERISK:
+            case Tk::ASTERISK:
             {
                 name = "*";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_FSLASH:
+            case Tk::FSLASH:
             {
                 name = "/";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_PERCENT:
+            case Tk::PERCENT:
             {
                 name = "%";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_PLUS:
+            case Tk::PLUS:
             {
                 name = "+";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_MINUS:
+            case Tk::MINUS:
             {
                 name = "-";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_CARET:
+            case Tk::CARET:
             {
                 name = "^";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_EXCLAIM:
+            case Tk::EXCLAIM:
             {
                 name = "!";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_BIND:
+            case Tk::BIND:
             {
                 name = "=";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_EQUALS:
+            case Tk::EQUALS:
             {
                 name = "==";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_NEQUALS:
+            case Tk::NEQUALS:
             {
                 name = "!=";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_USING:
+            case Tk::KW_USING:
             {
                 name = "using";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_MOD:
+            case Tk::KW_MOD:
             {
                 name = "mod";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_FN:
+            case Tk::KW_FN:
             {
                 name = "fn";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_LINK:
-            {
-                name = "link";
-                break;
-            }
-            case yy::parser::token::token_kind_type::TK_KW_IMPORT:
+            case Tk::KW_IMPORT:
             {
                 name = "import";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_IF:
+            case Tk::KW_IF:
             {
                 name = "if";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_THEN:
+            case Tk::KW_THEN:
             {
                 name = "then";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_ELSE:
+            case Tk::KW_ELSE:
             {
                 name = "else";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_MATCH:
+            case Tk::KW_MATCH:
             {
                 name = "match";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_AND:
+            case Tk::KW_AND:
             {
                 name = "and";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_XOR:
+            case Tk::KW_XOR:
             {
                 name = "xor";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_OR:
+            case Tk::KW_OR:
             {
                 name = "or";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_NOT:
+            case Tk::KW_NOT:
             {
                 name = "not";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_LET:
+            case Tk::KW_LET:
             {
                 name = "let";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_SET:
+            case Tk::KW_VAR:
+            {
+                name = "var";
+                break;
+            }
+            case Tk::KW_CONST:
+            {
+                name = "const";
+                break;
+            }
+            case Tk::KW_SET:
             {
                 name = "set";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_FROM:
+            case Tk::KW_FROM:
             {
                 name = "from";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_AS:
-            {
-                name = "as";
-                break;
-            }
-            case yy::parser::token::token_kind_type::TK_KW_TYPE:
+            case Tk::KW_TYPE:
             {
                 name = "type";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_KW_ENUM:
+            case Tk::KW_ENUM:
             {
                 name = "enum";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_DINT_LIT:
+            case Tk::DINT_LIT:
             {
                 name = "<d-int>";
                 snprintf(info, MAX_INFO_LEN, "%zd", ti->Int);
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_XINT_LIT:
+            case Tk::XINT_LIT:
             {
                 name = "<x-int>";
                 snprintf(info, MAX_INFO_LEN, "%zd", ti->Int);
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_FLOAT_LIT:
+            case Tk::FLOAT_LIT:
             {
                 name = "<float>";
                 snprintf(info, MAX_INFO_LEN, "%Lf", ti->Float);
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_DQSTRING_LIT:
+            case Tk::DQSTRING_LIT:
             {
                 name = "<text>";
                 info[0] = '"';
@@ -969,7 +974,7 @@ namespace pdm::parser::aux {
                 info[index+1] = '"';
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_SQSTRING_LIT:
+            case Tk::SQSTRING_LIT:
             {
                 name = "<text>";
                 info[0] = '\'';
@@ -981,31 +986,31 @@ namespace pdm::parser::aux {
                 info[index+1] = '\'';
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_VID:
+            case Tk::VID:
             {
                 name = "<vid>";
                 snprintf(info, MAX_INFO_LEN, "%s", ti->ID_intstr.content());
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_TID:
+            case Tk::TID:
             {
                 name = "<tid>";
                 snprintf(info, MAX_INFO_LEN, "%s", ti->ID_intstr.content());
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_ARROW:
+            case Tk::ARROW:
             {
                 name = "->";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_NULL:
+            case Tk::NONE:
             {
-                name = "<NULL>";
+                name = "<NONE>";
                 break;
             }
-            case yy::parser::token::token_kind_type::TK_EOS:
+            case Tk::EOS:
             {
-                name = "<EOF>";
+                name = "<EOS>";
                 break;
             }
             default:

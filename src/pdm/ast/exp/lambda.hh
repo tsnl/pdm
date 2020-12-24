@@ -4,28 +4,30 @@
 #include "pdm/ast/kind.hh"
 #include "pdm/source/loc.hh"
 #include "pdm/ast/exp/exp.hh"
-#include "pdm/ast/pattern/vpattern.hh"
 
 namespace pdm::ast {
-
     class Manager;
+    class LPattern;
+}
+
+namespace pdm::ast {
 
     class LambdaExp: public Exp {
         friend Manager;
 
       private:
-        VPattern* m_lhs_vpattern;
+        LPattern* m_lhs_lpattern;
         Exp*      m_body;
     
       protected:
-        LambdaExp(source::Loc loc, VPattern* lhs_vpattern, Exp* body)
+        LambdaExp(source::Loc loc, LPattern* lhs_lpattern, Exp* body)
         : Exp(loc, Kind::LambdaExp),
-          m_lhs_vpattern(lhs_vpattern),
+          m_lhs_lpattern(lhs_lpattern),
           m_body(body) {}
       
       public:
-        VPattern* lhs_vpattern() const {
-            return m_lhs_vpattern;
+        LPattern* lhs_lpattern() const {
+            return m_lhs_lpattern;
         }
         Exp* body() const {
             return m_body;

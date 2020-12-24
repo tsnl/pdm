@@ -12,6 +12,7 @@ namespace pdm::ast {
       private:
         LPattern* m_lhs_lpattern;
         Exp*      m_rhs_exp;
+
       public:
         ConstStmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp)
         : Stmt(loc, Kind::ConstStmt),

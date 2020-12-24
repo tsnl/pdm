@@ -10,6 +10,10 @@
  *     https://www.gnu.org/software/bison/manual/html_node/Pure-Calling.html
  */
 
+/* see this on using C++ variants for Bison:
+ *   https://www.gnu.org/software/bison/manual/html_node/A-Simple-C_002b_002b-Example.html
+ */
+
 %require "3.2"
 
 %language "C++"
@@ -19,19 +23,18 @@
 
 // %glr-parser
 // %define lr.type lalr
-%define lr.type ielr
+// %define lr.type ielr
 // %define lr.type canonical-lr
 // %define api.pure true
 
 // we want 'ast.h' and 'extra-tokens.h' in the header
 // https://stackoverflow.com/questions/47726404/how-to-put-header-file-to-tab-h-in-bison
 %code requires {
-    #include <stb/stretchy_buffer.h>
-
     #include "pdm/core/config.hh"
 
     // todo: include more AST files here:
     #include "pdm/ast/node.hh"
+    #include "pdm/ast/manager.hh"
     #include "pdm/ast/script/script.hh"
     #include "pdm/ast/exp/exp.hh"
     #include "pdm/ast/exp/struct.hh"
@@ -63,225 +66,225 @@
 %param {pdm::source::Source* source}
 %param {pdm::parser::Lexer* lexer}
 
-// adding an output ptr param to the parser:
-%parse-param {pdm::ast::Script** outp}
+// adding an AST manager ptr param to the parser:
+%parse-param {pdm::ast::Manager* mgr}
 
-// see: https://www.gnu.org/software/bison/manual/html_node/Value-Type.html
-// #define YYSTYPE TokenInfo
-// %define api.value.type {TokenInfo}
-// todo: fix this type with a union of...
-// 1. TokenInfo
-// 2. AstNode*
-// 3. AstNode** (sb)
-// or use
-// %code requires { 
-//     #define YYSTYPE TokenInfo
-// }
+// adding an output ptr param to the parser:
+%parse-param {pdm::ast::Script** returnp}
 
 //
 // Union:
 //
 
-%union {
-    pdm::parser::TokenInfo token;
+%define api.value.type variant
+
+// %union {
+//     pdm::parser::TokenInfo token;
     
-    pdm::ast::Script* script;
-    pdm::ast::Script** script_sb;
+//     pdm::ast::Script* script;
+//     pdm::ast::Script** script_sb;
     
-    pdm::ast::Stmt* stmt;
-    pdm::ast::Stmt** stmt_sb;
+//     pdm::ast::Stmt* stmt;
+//     pdm::ast::Stmt** stmt_sb;
 
-    pdm::ast::Exp* exp;
-    pdm::ast::Exp** exp_sb;
+//     pdm::ast::Exp* exp;
+//     pdm::ast::Exp** exp_sb;
 
-    pdm::ast::UnaryOperator uop;
-    pdm::ast::BinaryOperator bop;
+//     pdm::ast::UnaryOperator uop;
+//     pdm::ast::BinaryOperator bop;
 
-    pdm::ast::StructExp::Field* structexp_field;
-    pdm::ast::StructExp::Field** structexp_field_sb;
+//     pdm::ast::StructExp::Field* structexp_field;
+//     pdm::ast::StructExp::Field** structexp_field_sb;
 
-    pdm::ast::Typespec* typespec;
-    pdm::ast::Typespec** typespec_sb;
+//     pdm::ast::Typespec* typespec;
+//     pdm::ast::Typespec** typespec_sb;
 
-    pdm::ast::LPattern* lpattern;
-    pdm::ast::VPattern* vpattern;
-    pdm::ast::TPattern* tpattern;
-    pdm::ast::LPattern::Field* lpattern_field;
-    pdm::ast::VPattern::Field* vpattern_field;
-    pdm::ast::TPattern::Field* tpattern_field;
+//     pdm::ast::LPattern* lpattern;
+//     pdm::ast::VPattern* vpattern;
+//     pdm::ast::TPattern* tpattern;
+//     pdm::ast::LPattern::Field* lpattern_field;
+//     pdm::ast::VPattern::Field* vpattern_field;
+//     pdm::ast::TPattern::Field* tpattern_field;
 
-    pdm::ast::TCallExp::Arg* tcallexp_arg;
-    pdm::ast::TCallExp::Arg** tcallexp_arg_sb;
+//     pdm::ast::TArg* tcallexp_arg;
+//     pdm::ast::TArg** tcallexp_arg_sb;
 
-    pdm::ast::TCallTypespec::Arg* tcallts_arg;
-    pdm::ast::TCallTypespec::Arg** tcallts_arg_sb;
+//     pdm::ast::TArg* tcallts_arg;
+//     pdm::ast::TArg** tcallts_arg_sb;
 
-    pdm::ast::StructTypespec::Field* structts_field;
-    pdm::ast::StructTypespec::Field** structts_field_sb;
-}
+//     pdm::ast::StructTypespec::Field* structts_field;
+//     pdm::ast::StructTypespec::Field** structts_field_sb;
+// }
 
 //
 // File Nonterminals:
 //
 
-%type <script> script
-%type <script_sb> scriptContent
-%type <stmt> scriptContentStmt
+%type <pdm::ast::Script*> script
+%type <std::vector<pdm::ast::Script*>> scriptContent
+%type <pdm::ast::Stmt*> scriptContentStmt
 
-%type <stmt> moduleStmt
-%type <stmt_sb> moduleContent
+%type <pdm::ast::Stmt*> mod_stmt
+%type <std::vector<pdm::ast::Stmt*>> moduleContent
 
 //
 // Stmt:
 //
 
-%type <stmt> moduleContentStmt
-%type <stmt> chainPrefixStmt letStmt setStmt discardStmt
-%type <stmt> importStmt
+%type <pdm::ast::Stmt*> moduleContentStmt
+%type <pdm::ast::Stmt*> chainPrefixStmt constStmt letStmt varStmt setStmt discardStmt
+%type <pdm::ast::Stmt*> importStmt
+%type <pdm::ast::Stmt*> using_stmt
+%type <pdm::ast::Stmt*> fn_stmt
+%type <pdm::ast::Stmt*> type_stmt enum_stmt typeclass_stmt
+%type <pdm::ast::EnumStmt::Field*> enum_field
+%type <std::vector<pdm::ast::EnumStmt::Field*>> unprefixed_enum_field_pl enum_field_pl
 
-%type <stmt> typedefStmt_enum typedefStmt defStmt
-
-%type <stmt> linkStmt linkStmtItem
-%type <stmt_sb> linkStmtContent
+/* %type <pdm::ast::Stmt*> linkStmt linkStmtItem */
+/* %type <std::vector<pdm::ast::Stmt*>> linkStmtContent */
 
 //
 // Shared:
 //
 
-%type <token> tid vid floatl stringl
+%type <pdm::parser::TokenInfo> tid vid floatl stringl
 
 //
 // Expression Nonterminals:
 //
 
-%type <exp> expr
-%type <exp_sb> expr_cl1
-%type <exp_sb> expr_cl2
+%type <pdm::ast::Exp*> expr
+%type <std::vector<pdm::ast::Exp*>> expr_cl1 expr_cl2 expr_sl
 
-%type <exp> parenExpr unitExpr
-%type <exp> primaryExpr 
-%type <exp> vparenExpr vtupleExpr vstructExpr
-%type <exp> ifThenElseExpr chainExpr vlambdaExpr
-%type <stmt_sb> chainPrefix
-%type <exp> unaryExpr
-%type <uop> unaryOp
+%type <pdm::ast::Exp*> parenExpr unitExpr int_expr
+%type <pdm::ast::Exp*> primaryExpr 
+%type <std::vector<pdm::ast::StringExp::Piece*>> stringls
+%type <pdm::ast::Exp*> vparenExpr vtupleExpr vstructExpr
+%type <pdm::ast::Exp*> ifThenElseExpr chainExpr vlambdaExpr
+%type <std::vector<pdm::ast::Stmt*>> chainPrefix
+%type <pdm::ast::Exp*> unaryExpr
+%type <pdm::ast::UnaryOperator> unaryOp
 
-%type <exp> postfixExpr 
-%type <exp> vtcallExpr vvcallExpr
-%type <exp> dotNmExpr dotIxExpr
+%type <pdm::ast::Exp*> postfixExpr 
+%type <pdm::ast::Exp*> vtcallExpr vvcallExpr
+%type <pdm::ast::Exp*> dotNmExpr dotIxExpr
 
-%type <exp> binaryExpr 
-%type <exp> mulBinaryExpr addBinaryExpr cmpBinaryExpr eqBinaryExpr andBinaryExpr xorBinaryExpr orBinaryExpr
-%type <bop> mulBinaryOp addBinaryOp cmpBinaryOp eqBinaryOp
+%type <pdm::ast::Exp*> binaryExpr 
+%type <pdm::ast::Exp*> mulBinaryExpr addBinaryExpr cmpBinaryExpr eqBinaryExpr andBinaryExpr xorBinaryExpr orBinaryExpr
+%type <pdm::ast::BinaryOperator> mulBinaryOp addBinaryOp cmpBinaryOp eqBinaryOp
 
-%type <structexp_field> vstructExprField
-%type <structexp_field_sb> vstructExprField_cl
+%type <pdm::ast::StructExp::Field*> vstructExprField
+%type <std::vector<pdm::ast::StructExp::Field*>> vstructExprField_cl
 
 //
 // Typespec Nonterminals:
 //
 
-%type <typespec> typespec
-%type <typespec> primaryTypespec parenTypespec tupleTypespec structTypespec
-%type <typespec> postfixTypespec ttcall tdot
-%type <typespec> unaryTypespec
-%type <typespec_sb> typespec_cl
-%type <structts_field> structTypespecField
-%type <structts_field_sb> structTypespecField_cl
+%type <pdm::ast::Typespec*> typespec long_typespec
+%type <pdm::ast::Typespec*> primaryTypespec tupleTypespec structTypespec mod_prefix_tid
+%type <std::vector<pdm::intern::String>> mod_prefix
+%type <pdm::ast::Typespec*> postfixTypespec ttcall tdot
+%type <pdm::ast::Typespec*> unaryTypespec
+%type <std::vector<pdm::ast::Typespec*>> typespec_cl1 typespec_cl2
+%type <pdm::ast::StructTypespec::Field*> structTypespecField
+%type <std::vector<pdm::ast::StructTypespec::Field*>> structTypespecField_cl
 
 //
 // Pattern Nonterminals:
 //
 
-%type <lpattern> lpattern 
-%type <vpattern> vpattern 
-%type <tpattern> tpattern
-%type <vpattern_field> vpatternField 
-%type <lpattern_field> lpatternField
-%type <tpattern_field> tpatternField
-%type <vpattern_field_sb> vpatternField_cl 
-%type <lpattern_field_sb> lpatternField_cl 
-%type <tpattern_field_sb> tpatternField_cl
-%type <tcall_arg> ttarg vtarg
-%type <tcall_arg_sb> ttarg_cl vtarg_cl
+%type <pdm::ast::LPattern*> lpattern lpattern_naked
+%type <pdm::ast::VPattern*> vpattern 
+%type <pdm::ast::TPattern*> tpattern
+%type <pdm::ast::VPattern::Field*> vpatternField 
+%type <pdm::ast::LPattern::Field*> lpatternField
+%type <pdm::ast::TPattern::Field*> tpatternField
+%type <std::vector<pdm::ast::VPattern::Field*>> vpatternField_cl 
+%type <std::vector<pdm::ast::LPattern::Field*>> lpatternField_cl 
+%type <std::vector<pdm::ast::TPattern::Field*>> tpatternField_cl
+%type <pdm::ast::TArg*> ttarg vtarg
+%type <std::vector<pdm::ast::TArg*>> ttarg_cl vtarg_cl
+%type <std::vector<pdm::ast::TPattern*>> tpattern_seq
 
 %code provides {
     int yylex(pdm::parser::TokenInfo *lvalp, pdm::source::Loc *llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
     void yyerror(pdm::source::Loc* llocp, char const* message, pdm::source::Source* source, pdm::parser::Lexer* lexer);
 }
 
-%token <pdm::parser::TokenInfo> TK_VID   "<val_id>"
-%token <pdm::parser::TokenInfo> TK_TID   "<TypeId>"
-%token <pdm::parser::TokenInfo> TK_HOLE  "<__42__>"
+%token <pdm::parser::TokenInfo> VID   "<val_id>"
+%token <pdm::parser::TokenInfo> TID   "<TypeId>"
+%token <pdm::parser::TokenInfo> HOLE  "<__42__>"
 
-%token TK_KW_USING "using"
-%token TK_KW_MOD "mod"
-%token TK_KW_IF "if" 
-%token TK_KW_THEN "then"
-%token TK_KW_ELSE "else"
-%token TK_KW_MATCH "match"
-%token TK_KW_WITH "with"
-%token TK_KW_IMPORT "import"
-%token TK_KW_LINK "link"
-%token TK_KW_FROM "from"
-%token TK_KW_AS "as"
-%token TK_KW_LET "let" 
-%token TK_KW_SET "set" 
-%token TK_KW_FN "fn" 
-%token TK_KW_TYPE "type" 
-%token TK_KW_ENUM "enum"
-%token TK_KW_AND "and" 
-%token TK_KW_XOR "xor" 
-%token TK_KW_OR "or" 
-%token TK_KW_NOT "not"
+%token KW_USING "using"
+%token KW_MOD "mod"
+%token KW_IF "if" 
+%token KW_THEN "then"
+%token KW_ELSE "else"
+%token KW_MATCH "match"
+%token KW_WITH "with"
+%token KW_IMPORT "import"
+%token KW_FROM "from"
+%token KW_CONST "const"
+%token KW_LET "let" 
+%token KW_VAR "var"
+%token KW_SET "set" 
+%token KW_FN "fn" 
+%token KW_TYPE "type" 
+%token KW_ENUM "enum"
+%token KW_AND "and" 
+%token KW_XOR "xor" 
+%token KW_OR "or" 
+%token KW_NOT "not"
+%token KW_TYPECLASS "typeclass"
 
-%token <token> TK_DINT_LIT "42"
-%token <token> TK_XINT_LIT "0x2a"
-%token <token> TK_FLOAT_LIT "4.2"
-%token <token> TK_DQSTRING_LIT "\"dq-string-literal\""
-%token <token> TK_SQSTRING_LIT "'sq-string-literal'"
+%token <TokenInfo> DINT_LIT "42"
+%token <TokenInfo> XINT_LIT "0x2a"
+%token <TokenInfo> FLOAT_LIT "4.2"
+%token <TokenInfo> DQSTRING_LIT "\"dq-string-literal\""
+%token <TokenInfo> SQSTRING_LIT "'sq-string-literal'"
 
-%token TK_DOT       "."
-%token TK_COLON     ":"
-%token TK_COMMA     ","
-%token TK_SEMICOLON ";"
-%token TK_DBL_COLON "::"
-%token TK_LPAREN    "("
-%token TK_RPAREN    ")"
-%token TK_LSQBRK    "["
-%token TK_RSQBRK    "]"
-%token TK_LCYBRK    "{"
-%token TK_RCYBRK    "}"
-%token TK_ARROW     "->"
-%token TK_ASTERISK  "*"
-%token TK_FSLASH    "/"
-%token TK_PERCENT   "%"
-%token TK_PLUS      "+"
-%token TK_MINUS     "-"
-%token TK_LTHAN     "<"
-%token TK_LETHAN    "<="
-%token TK_GTHAN     ">"
-%token TK_GETHAN    ">="
-%token TK_BIND      "="
-%token TK_EQUALS    "=="
-%token TK_NEQUALS   "!="
-%token TK_CARET     "^"
-%token TK_AMPERSAND "&"
-%token TK_EXCLAIM   "!"
-%token TK_EOS       "EOS"
+%token DOT       "."
+%token COLON     ":"
+%token COMMA     ","
+%token SEMICOLON ";"
+%token DBL_COLON "::"
+%token LPAREN    "("
+%token RPAREN    ")"
+%token LSQBRK    "["
+%token RSQBRK    "]"
+%token LCYBRK    "{"
+%token RCYBRK    "}"
+%token ARROW     "->"
+%token ASTERISK  "*"
+%token FSLASH    "/"
+%token PERCENT   "%"
+%token PLUS      "+"
+%token MINUS     "-"
+%token LTHAN     "<"
+%token LETHAN    "<="
+%token GTHAN     ">"
+%token GETHAN    ">="
+%token BIND      "="
+%token EQUALS    "=="
+%token NEQUALS   "!="
+%token CARET     "^"
+%token AMPERSAND "&"
+%token EXCLAIM   "!"
+%token PIPE      "|"
+%token EOS       "EOS"
 
-%token TK_NULL      "<null>"
+%token NONE      "<null>"
 
 /* Added tokens:
- * TK_KW_YIELD -> TK_KW_DISCARD 
- * TK_NOT -> TK_KW_NOT
- * -> TK_EXCLAIM
- * -> TK_KW_SET
- * -> TK_KW_MODULE
- * -> TK_KW_FROM
- * -> TK_KW_AS
- * -> TK_KW_TYPE
- * -> TK_KW_ENUM
+ * KW_YIELD -> KW_DISCARD 
+ * NOT -> KW_NOT
+ * -> EXCLAIM
+ * -> KW_SET
+ * -> KW_MODULE
+ * -> KW_FROM
+ * -> KW_AS
+ * -> KW_TYPE
+ * -> KW_ENUM
  */
 
 %start script;
@@ -295,26 +298,26 @@
  */
 
 script
-    : scriptContent { $$ = NewAstScriptWithModulesSb(@$, source, $1); *outp = $$; }
+    : scriptContent { $$ = mgr->new_script(source, @$, std::move($1)); *returnp = $$; }
     ;
 scriptContent
-    : scriptContentStmt               TK_SEMICOLON     { $$ = NULL; sb_push($$,$1); }
-    | scriptContent scriptContentStmt TK_SEMICOLON     { $$ = $1; sb_push($$,$2); }
+    : scriptContentStmt               SEMICOLON     { $$.push_back($1); }
+    | scriptContent scriptContentStmt SEMICOLON     { $$ = std::move($1); $$.push_back($2); }
     ;
 scriptContentStmt
-    : moduleStmt    { $$ = $1; }
+    : mod_stmt
     ;
 
 /*
  * Modules:
  */
 
-moduleStmt
-    : TK_KW_MOD TK_VID TK_LCYBRK moduleContent TK_RCYBRK    { $$ = NewAstModuleStmtWithStmtSb(@$, $2.ID_symbolID, $4); }
+mod_stmt
+    : KW_MOD VID LCYBRK moduleContent RCYBRK    { $$ = mgr->new_mod_stmt(@$, $2.ID_intstr, std::move($4)); }
     ;
 moduleContent
-    : moduleContentStmt TK_SEMICOLON                   { $$ = NULL; sb_push($$, $1); }
-    | moduleContent moduleContentStmt TK_SEMICOLON     { $$ = $1; sb_push($$, $2); }
+    : moduleContentStmt SEMICOLON                   { $$.push_back($1); }
+    | moduleContent moduleContentStmt SEMICOLON     { $$ = std::move($1); $$.push_back($2); }
     ;
 
 /*
@@ -322,211 +325,252 @@ moduleContent
  */
 
 chainPrefixStmt
-    : letStmt       { $$ = $1; }
-    | setStmt       { $$ = $1; }
-    | discardStmt   { $$ = $1; }
+    : constStmt
+    | letStmt
+    | varStmt
+    | setStmt
+    | discardStmt
+    ;
+constStmt
+    : KW_CONST lpattern_naked BIND expr { $$ = mgr->new_const_stmt(@$, $2, $4); }
     ;
 letStmt
-    : TK_KW_LET lpattern TK_BIND expr   { $$ = NewAstLetStmt(@$, $2, $4); }
+    : KW_LET lpattern_naked BIND expr   { $$ = mgr->new_let_stmt(@$, $2, $4); }
+    ;
+varStmt
+    : KW_VAR lpattern_naked BIND expr   { $$ = mgr->new_var_stmt(@$, $2, $4); }
     ;
 setStmt
-    : TK_KW_SET expr TK_BIND expr   { $$ = NewAstSetStmt(@$, $2, $4); }
+    : KW_SET expr BIND expr   { $$ = mgr->new_set_stmt(@$, $2, $4); }
     ; 
 discardStmt
-    : expr    { $$ = NewAstDiscardStmt(@$, $1); }
+    : expr    { $$ = mgr->new_discard_stmt(@$, $1); }
     ;
 
 moduleContentStmt
-    : defStmt               { $$ = $1; }
-    | typedefStmt           { $$ = $1; }
-    | typedefStmt_enum      { $$ = $1; }
-    | importStmt            { $$ = $1; }
-    | linkStmt              { $$ = $1; }
-    | moduleStmt            { $$ = $1; }
+    : fn_stmt
+    | type_stmt
+    | enum_stmt
+    | typeclass_stmt
+    | importStmt
+    | mod_stmt
+    | using_stmt
     ;
-defStmt
-    : TK_KW_FN vid          vpattern TK_ARROW expr   { $$ = NewAstDefStmt(@$, $2.ID_symbolID, NULL, $3, $5); }
-    | TK_KW_FN vid tpattern vpattern TK_ARROW expr   { $$ = NewAstDefStmt(@$, $2.ID_symbolID, $3,   $4, $6); }
+fn_stmt
+    : KW_FN vid              vpattern ARROW typespec BIND parenExpr   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move({}), $3, $5, $7); }
+    | KW_FN vid tpattern_seq vpattern ARROW typespec BIND parenExpr   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move($3), $4, $6, $8); }
+    | KW_FN vid              vpattern                BIND parenExpr   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move({}), $3, nullptr, $5); }
+    | KW_FN vid tpattern_seq vpattern                BIND parenExpr   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move($3), $4, nullptr, $6); }
     ;
-typedefStmt
-    : TK_KW_TYPE tid tpattern TK_BIND typespec   { $$ = NewAstTypedefStmt(@$, $2.ID_symbolID, $3, $5); }
+type_stmt
+    : KW_TYPE tid              BIND long_typespec   { $$ = mgr->new_type_stmt(@$, $2.ID_intstr, std::move({}), $4); }
+    | KW_TYPE tid tpattern_seq BIND long_typespec   { $$ = mgr->new_type_stmt(@$, $2.ID_intstr, std::move($3), $5); }
     ;
-typedefStmt_enum
-    : TK_KW_ENUM tid tpattern TK_BIND structTypespec  { $$ = NewAstTypedefEnumStmt(@$, $2.ID_symbolID, $3, $5); }
+enum_stmt
+    : KW_ENUM tid enum_field_pl     { $$ = mgr->new_enum_stmt(@$, $2.ID_intstr, std::move($3)); }
+    ;
+enum_field_pl
+    : PIPE unprefixed_enum_field_pl { $$ = std::move($2); }
+    | unprefixed_enum_field_pl      { $$ = std::move($1); }
+    ;
+unprefixed_enum_field_pl
+    : enum_field                                { $$.push_back($1); }
+    | unprefixed_enum_field_pl PIPE enum_field  { $$ = std::move($1); $$.push_back($3); }
+    ;
+enum_field
+    : tid                            { $$ = mgr->new_enum_stmt_field($1.ID_intstr, std::move({}), false); }
+    | tid LPAREN RPAREN              { $$ = mgr->new_enum_stmt_field($1.ID_intstr, std::move({}), true); }
+    | tid LPAREN typespec_cl1 RPAREN { $$ = mgr->new_enum_stmt_field($1.ID_intstr, std::move($3), true); }
+    ;
+typeclass_stmt
+    : KW_TYPECLASS tid LTHAN tid typespec GTHAN              BIND LCYBRK expr_sl RCYBRK { 
+        $$ = mgr->new_typeclass_stmt(@$, $2.ID_intstr, $4.ID_intstr, $5, std::move({}), std::move($9)); 
+      }
+    | KW_TYPECLASS tid LTHAN tid typespec GTHAN tpattern_seq BIND LCYBRK expr_sl RCYBRK { 
+        $$ = mgr->new_typeclass_stmt(@$, $2.ID_intstr, $4.ID_intstr, $5, std::move($7), std::move($10)); 
+      }
+    ;
+
+using_stmt
+    : KW_USING parenExpr { $$ = mgr->new_using_stmt(@$, $2); }
     ;
 
 importStmt
-    : TK_KW_IMPORT vid TK_KW_FROM stringl TK_KW_AS stringl  { $$ = NewAstImportStmt(@$, $2.ID_symbolID, $4.String_utf8string, $6.String_utf8string); }
-    ;
-
-linkStmt
-    : TK_KW_LINK stringl TK_LCYBRK linkStmtContent TK_RCYBRK   { $$ = NewAstLinkStmt(@$, $2.String_utf8string, $4); }
-    ;
-linkStmtItem
-    : vid vpattern TK_ARROW typespec TK_KW_FROM stringl     { $$ = NewAstLinkStmtItem(@$, $1.ID_symbolID, $2, NewAstType2Val(@4,$4), $6.String_utf8string); }
-    ;
-linkStmtContent
-    : linkStmtItem TK_SEMICOLON                     { $$.push_back($1); }
-    | linkStmtContent linkStmtItem TK_SEMICOLON     { $$ = $1; $$.push_back($2); }
+    : KW_IMPORT vid KW_FROM expr KW_TYPE expr    { $$ = mgr->new_import_stmt(@$, $2.ID_intstr, $4, $6); }
     ;
 
 /*
- * Shared:
+ * Shared tokens:
  */
 
-tid: TK_TID     { $$ = $1; };
-vid: TK_VID     { $$ = $1; };
+tid: TID;
+vid: VID;
 floatl
-    : TK_FLOAT_LIT  { $$ = $1; }
+    : FLOAT_LIT
     ;
 stringl
-    : TK_SQSTRING_LIT   { $$ = $1; }
-    | TK_DQSTRING_LIT   { $$ = $1; }
+    : SQSTRING_LIT
+    | DQSTRING_LIT
     ;
 
 /*
  * Expressions:
  */
 
-expr: binaryExpr    { $$ = $1; }
+expr: binaryExpr
     ;
 expr_cl1
-    : expr                      { $$ = NULL; sb_push(($$),$1); }
-    | expr_cl1 TK_COMMA expr    { $$ = $1; sb_push(($$),$3); }
+    : expr                   { $$.push_back($1); }
+    | expr_cl1 COMMA expr    { $$ = std::move($1); $$.push_back($3); }
     ;
 expr_cl2
-    : expr TK_COMMA expr        { $$ = NULL; sb_push($$,$1); sb_push($$,$3); }
-    | expr_cl2 TK_COMMA expr    { $$ = $1; sb_push($$,$3); }
+    : expr COMMA expr        { $$.reserve(2); $$.push_back($1); $$.push_back($3); }
+    | expr_cl2 COMMA expr    { $$ = std::move($1); $$.push_back($3); }
+    ;
+expr_sl
+    : expr SEMICOLON         { $$.push_back($1); }
+    | expr_sl expr SEMICOLON { $$ = std::move($1); $$.push_back($2); }
     ;
 
 parenExpr
-    : unitExpr      { $$ = $1; }
-    | vparenExpr    { $$ = $1; }
-    | vtupleExpr    { $$ = $1; }
-    | vstructExpr   { $$ = $1; }
-    | chainExpr     { $$ = $1; }
-    | vlambdaExpr   { $$ = $1; }
+    : unitExpr
+    | vparenExpr
+    | vtupleExpr
+    | vstructExpr
+    | chainExpr
     ;
 unitExpr
-    : TK_LPAREN TK_RPAREN
+    : LPAREN RPAREN
+    | LCYBRK RCYBRK
     ;
 primaryExpr
-    : parenExpr      { $$ = $1; }
-    | vid            { $$ = NewAstVID(@$, $1.ID_symbolID); }
-    | TK_DINT_LIT    { $$ = NewAstIntLiteral(@$, $1.Int, 10); }
-    | TK_XINT_LIT    { $$ = NewAstIntLiteral(@$, $1.Int, 16); }
-    | floatl         { $$ = NewAstFloatLiteral(@$, $1.Float); }
-    | stringl        { $$ = NewAstStringLiteral(@$, $1.String_utf8string); }
-    | ifThenElseExpr { $$ = $1; }
+    : parenExpr
+    | vid            { $$ = mgr->new_id_exp(@$, $1.ID_intstr); }
+    | int_expr
+    | floatl         { $$ = mgr->new_float_exp(@$, $1.Float); }
+    | stringls       { $$ = mgr->new_string_exp(@$, std::move($1)); }
+    | ifThenElseExpr
+    | vlambdaExpr
+    ;
+int_expr
+    : DINT_LIT  { $$ = mgr->new_int_exp(@$, $1.Int, IntExp::Base::Dec); }
+    | XINT_LIT  { $$ = mgr->new_int_exp(@$, $1.Int, IntExp::Base::Hex); }
+    ;
+stringls
+    : stringl           { $$.emplace_back(@1, *$1.String_utf8string); }
+    | stringls stringl  { $$ = std::move($1); $$.emplace_back(@2, $2.String_utf8string); }
     ;
 vparenExpr
-    : TK_LPAREN expr TK_RPAREN  { $$ = NewAstVParen(@$, $2); }
+    : LPAREN expr RPAREN  { $$ = mgr->new_paren_exp(@$, $2); }
     ;
 vtupleExpr
-    : TK_LPAREN expr_cl2  TK_RPAREN     { $$ = NewAstVTupleWithFieldsSb(@$, $2); }
+    : LPAREN expr COMMA RPAREN     { $$ = mgr->new_tuple_exp(@$, std::move(std::vector(1,$2))); }
+    | LPAREN expr_cl2   RPAREN     { $$ = mgr->new_tuple_exp(@$, std::move($2)); }
     ;
 vstructExpr
-    : TK_LCYBRK vstructExprField_cl TK_RCYBRK     { $$ = NewAstVStructWithFieldsSb(@$, $2); }
+    : LCYBRK vstructExprField_cl RCYBRK     { $$ = mgr->new_struct_exp(@$, std::move($2)); }
     ;
 ifThenElseExpr
-    : TK_KW_IF parenExpr TK_KW_THEN parenExpr                        { $$ = NewAstIte(@$, $2, $4, NULL); }
-    | TK_KW_IF parenExpr TK_KW_THEN parenExpr TK_KW_ELSE primaryExpr { $$ = NewAstIte(@$, $2, $4, $6); }
+    : KW_IF parenExpr KW_THEN parenExpr                      { $$ = mgr->new_if_exp(@$, $2, $4, nullptr); }
+    | KW_IF parenExpr KW_THEN parenExpr KW_ELSE primaryExpr  { $$ = mgr->new_if_exp(@$, $2, $4, $6); }
     ;
 chainExpr
-    : TK_LCYBRK expr             TK_RCYBRK      { $$ = NewAstChainWith(@$, NULL, $2); }
-    | TK_LCYBRK chainPrefix      TK_RCYBRK      { $$ = NewAstChainWith(@$, $2, NULL); }
-    | TK_LCYBRK chainPrefix expr TK_RCYBRK      { $$ = NewAstChainWith(@$, $2, $3); }
+    : LCYBRK expr             RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move({}), $2); }
+    | LCYBRK chainPrefix      RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move($2), nullptr); }
+    | LCYBRK chainPrefix expr RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move($2), $3); }
     ;
 chainPrefix
-    : chainPrefixStmt             TK_SEMICOLON  { $$ = NULL; sb_push(($$),$1); }
-    | chainPrefix chainPrefixStmt TK_SEMICOLON  { $$ = $1; sb_push(($$),$2); }
+    : chainPrefixStmt             SEMICOLON  { $$.push_back($1); }
+    | chainPrefix chainPrefixStmt SEMICOLON  { $$ = std::move($1); $$.push_back($2); }
     ;
 vlambdaExpr
-    : TK_KW_FN lpattern parenExpr   { $$ = NULL; }
+    : KW_FN lpattern BIND parenExpr   { $$ = mgr->new_lambda_exp(@$, $2, $4); }
     ;
 
 postfixExpr
-    : primaryExpr   { $$ = $1; }
-    | vtcallExpr    { $$ = $1; }
-    | vvcallExpr    { $$ = $1; }
-    | dotNmExpr     { $$ = $1; }
-    | dotIxExpr     { $$ = $1; }
+    : primaryExpr
+    | vtcallExpr
+    | vvcallExpr
+    | dotNmExpr
+    | dotIxExpr
     ;
 vtcallExpr
-    : postfixExpr TK_LSQBRK vtarg_cl TK_RSQBRK  { $$ = NewAstTCallWithArgsSb(@$, $1, $3); }
+    : postfixExpr LSQBRK vtarg_cl RSQBRK  { $$ = mgr->new_tcall_exp(@$, $1, std::move($3)); }
     ;
 vvcallExpr
-    : postfixExpr TK_LPAREN TK_RPAREN           { $$ = NewAstVCallWithArgsSb(@$, $1, NULL); }
-    | postfixExpr TK_LPAREN expr_cl1 TK_RPAREN   { $$ = NewAstVCallWithArgsSb(@$, $1, $3); }
+    : postfixExpr LPAREN RPAREN            { $$ = mgr->new_vcall_exp(@$, $1, std::move(std::vector<ast::Exp*>{})); }
+    | postfixExpr LPAREN expr_cl1 RPAREN   { $$ = mgr->new_vcall_exp(@$, $1, std::move($3)); }
     ;
 dotNmExpr
-    : postfixExpr TK_DOT TK_VID         { $$ = NewAstDotName(@$, $1, $3.ID_symbolID); }
+    : postfixExpr DOT VID   { $$ = mgr->new_dot_name_exp(@$, $1, $3.ID_intstr, ast::DotNameExp::RhsHint::LhsStruct); }
+    | postfixExpr DOT TID   { $$ = mgr->new_dot_name_exp(@$, $1, $3.ID_intstr, ast::DotNameExp::RhsHint::LhsEnum); }
     ;
 dotIxExpr
-    : postfixExpr TK_DOT TK_DINT_LIT    { $$ = NewAstDotIndex(@$, $1, $3.Int); }
+    : postfixExpr DOT        int_expr       { $$ = mgr->new_dot_index_exp(@$, $1, $3); }
+    | postfixExpr DOT LPAREN expr RPAREN    { $$ = mgr->new_dot_index_exp(@$, $1, $4); }
     ;
 
 unaryExpr
-    : postfixExpr           { $$ = $1; }
-    | unaryOp unaryExpr     { $$ = NewAstUnary(@$, $1, $2); }
+    : postfixExpr
+    | unaryOp unaryExpr     { $$ = mgr->new_unary_exp(@$, $1, $2); }
     ;
 unaryOp
-    : TK_PLUS       { $$ = UOP_PLUS; }
-    | TK_MINUS      { $$ = UOP_MINUS; }
-    | TK_ASTERISK   { $$ = UOP_DEREF; }
-    | TK_CARET      { $$ = UOP_GETREF; }
-    | TK_KW_NOT     { $$ = UOP_NOT; }
+    : PLUS       { $$ = ast::UnaryOperator::Plus; }
+    | MINUS      { $$ = ast::UnaryOperator::Minus; }
+    | ASTERISK   { $$ = ast::UnaryOperator::DeRef; }
+    | CARET      { $$ = ast::UnaryOperator::GetRef; }
+    | KW_NOT     { $$ = ast::UnaryOperator::Not; }
     ;
 
 binaryExpr
-    : orBinaryExpr  { $$ = $1; }
+    : orBinaryExpr
     ;
 mulBinaryOp
-    : TK_ASTERISK   { $$ = BOP_MUL; }
-    | TK_FSLASH     { $$ = BOP_DIV; }
-    | TK_PERCENT    { $$ = BOP_REM; }
+    : ASTERISK   { $$ = ast::BinaryOperator::Mul; }
+    | FSLASH     { $$ = ast::BinaryOperator::Div; }
+    | PERCENT    { $$ = ast::BinaryOperator::Rem; }
     ;
 mulBinaryExpr
-    : unaryExpr                             { $$ = $1; }
-    | mulBinaryExpr mulBinaryOp unaryExpr   { $$ = NewAstBinary(@$, $2, $1, $3); }
+    : unaryExpr
+    | mulBinaryExpr mulBinaryOp unaryExpr   { $$ = mgr->new_binary_exp(@$, $2, $1, $3); }
     ;
 addBinaryOp
-    : TK_PLUS   { $$ = BOP_ADD; }
-    | TK_MINUS  { $$ = BOP_SUBTRACT; }
+    : PLUS   { $$ = ast::BinaryOperator::Add; }
+    | MINUS  { $$ = ast::BinaryOperator::Subtract; }
     ;
 addBinaryExpr
-    : mulBinaryExpr                             { $$ = $1; }
-    | addBinaryExpr addBinaryOp mulBinaryExpr   { $$ = NewAstBinary(@$, $2, $1, $3); }
+    : mulBinaryExpr
+    | addBinaryExpr addBinaryOp mulBinaryExpr   { $$ = mgr->new_binary_exp(@$, $2, $1, $3); }
     ;
 cmpBinaryOp
-    : TK_LTHAN      { $$ = BOP_LTHAN; }
-    | TK_LETHAN     { $$ = BOP_LETHAN; }
-    | TK_GTHAN      { $$ = BOP_GTHAN; }
-    | TK_GETHAN     { $$ = BOP_GETHAN; }
+    : LTHAN     { $$ = BOP_LTHAN; }
+    | LETHAN    { $$ = BOP_LETHAN; }
+    | GTHAN     { $$ = BOP_GTHAN; }
+    | GETHAN    { $$ = BOP_GETHAN; }
     ;
 cmpBinaryExpr
-    : addBinaryExpr                             { $$ = $1; }
-    | cmpBinaryExpr cmpBinaryOp addBinaryExpr   { $$ = NewAstBinary(@$, $2, $1, $3); }
+    : addBinaryExpr
+    | cmpBinaryExpr cmpBinaryOp addBinaryExpr   { $$ = mgr->new_binary_exp(@$, $2, $1, $3); }
     ;
 eqBinaryOp
-    : TK_EQUALS     { $$ = BOP_EQUALS; }
-    | TK_NEQUALS    { $$ = BOP_NEQUALS; }
+    : EQUALS     { $$ = BOP_EQUALS; }
+    | NEQUALS    { $$ = BOP_NEQUALS; }
     ;
 eqBinaryExpr
-    : cmpBinaryExpr                         { $$ = $1; }
-    | eqBinaryExpr eqBinaryOp cmpBinaryExpr { $$ = NewAstBinary(@$, $2, $1, $3); }
+    : cmpBinaryExpr
+    | eqBinaryExpr eqBinaryOp cmpBinaryExpr { $$ = mgr->new_binary_exp(@$, $2, $1, $3); }
     ;
 andBinaryExpr
-    : eqBinaryExpr                          { $$ = $1; }
-    | andBinaryExpr TK_KW_AND eqBinaryExpr  { $$ = NewAstBinary(@$, BOP_AND, $1, $3); }
+    : eqBinaryExpr
+    | andBinaryExpr KW_AND eqBinaryExpr  { $$ = mgr->new_binary_exp(@$, BOP_AND, $1, $3); }
     ;
 xorBinaryExpr
-    : andBinaryExpr                         { $$ = $1; }
-    | xorBinaryExpr TK_KW_XOR andBinaryExpr { $$ = NewAstBinary(@$, BOP_XOR, $1, $3); }
+    : andBinaryExpr
+    | xorBinaryExpr KW_XOR andBinaryExpr { $$ = mgr->new_binary_exp(@$, BOP_XOR, $1, $3); }
     ;
 orBinaryExpr
-    : xorBinaryExpr                         { $$ = $1; }
-    | orBinaryExpr TK_KW_OR xorBinaryExpr   { $$ = NewAstBinary(@$, BOP_OR, $1, $3); }
+    : xorBinaryExpr
+    | orBinaryExpr KW_OR xorBinaryExpr   { $$ = mgr->new_binary_exp(@$, BOP_OR, $1, $3); }
     ;
 
 /*
@@ -534,72 +578,83 @@ orBinaryExpr
  */
 
 typespec
-    : unaryTypespec  { $$ = $1; }
+    : unaryTypespec
     ;
-typespec_cl
-    : typespec                      { $$ = NULL; sb_push($$,$1); }
-    | typespec_cl TK_COMMA typespec { $$ = $1; sb_push($$,$3); }
+typespec_cl1
+    : typespec                    { $$.push_back($1); }
+    | typespec_cl1 COMMA typespec { $$ = std::move($1); $$.push_back($3); }
+    ;
+typespec_cl2
+    : typespec COMMA typespec     { $$.reserve(2); $$.push_back($1); $$.push_back($3); }
+    | typespec_cl2 COMMA typespec { $$ = std::move($1); $$.push_back($3); }
     ;
 
 structTypespecField
-    : vid typespec
+    : vid typespec                { $$ = mgr->new_struct_typespec_field(@$, $1.ID_intstr, $2); }
     ;
 structTypespecField_cl
-    : structTypespecField
-    | structTypespecField_cl TK_COMMA structTypespecField
+    : structTypespecField                               { $$.push_back($1); }
+    | structTypespecField_cl COMMA structTypespecField  { $$ = std::move($1); $$.push_back($3); }
     ;
 
 primaryTypespec
-    : tid               { $$ = NewAstTID(@$, $1.ID_symbolID); }
-    | parenTypespec     { $$ = $1; }
-    | structTypespec    { $$ = $1; }
-    | tupleTypespec     { $$ = $1; }
-    ;
-parenTypespec
-    : TK_LPAREN typespec TK_RPAREN
-    ;
-structTypespec
-    : TK_LCYBRK structTypespecField_cl TK_RCYBRK
+    : tid               { $$ = mgr->new_id_typespec(@$, $1.ID_intstr); }
+    | tupleTypespec
+    | mod_prefix_tid
     ;
 tupleTypespec
-    : TK_LSQBRK typespec_cl TK_RSQBRK
+    : LPAREN typespec COMMA RPAREN  { $$ = mgr->new_tuple_typespec(@$, std::move(std::vector(1,$2))); }
+    | LPAREN typespec_cl2   RPAREN  { $$ = mgr->new_tuple_typespec(@$, std::move($2)); }
+    ;
+mod_prefix_tid
+    : mod_prefix tid        { $$ = mgr->new_dot_name_typespec_with_mod_prefix(@$, std::move($1), $2.ID_intstr); }
+    ;
+mod_prefix
+    : vid DOT               { $$.push_back($1.ID_intstr); }
+    | mod_prefix vid DOT    { $$ = std::move($1); }
     ;
 
 postfixTypespec
-    : primaryTypespec  { $$ = $1; }
+    : primaryTypespec
     | ttcall
     | tdot
     ;
 ttcall
-    : postfixTypespec TK_LSQBRK ttarg_cl TK_RSQBRK  { $$ = NewAstTCallWithArgsSb(@$, $1, $3); }
+    : postfixTypespec LSQBRK ttarg_cl RSQBRK  { $$ = mgr->new_tcall_typespec(@$, $1, std::move($3)); }
     ;
-tdot: postfixTypespec TK_DOT TK_VID
+tdot: postfixTypespec DOT VID   { $$ = mgr->new_dot_name_typespec_with_type_prefix(@$, $1, $3.ID_intstr); }
     ;
 
 unaryTypespec
-    : postfixTypespec               { $$ = $1; }
-    | TK_AMPERSAND unaryTypespec    { $$ = NewAstTMut(@$,$2); }
-    | TK_CARET     unaryTypespec    { $$ = NewAstTPtr(@$,$2); }
+    : postfixTypespec
+    | AMPERSAND unaryTypespec    { $$ = mgr->new_ptr_typespec(@$,$2); }
     ;
 
-/* type contexts' targs (template args): values have Val2Type wrappers */
+long_typespec
+    : unaryTypespec
+    | structTypespec
+    ;
+structTypespec
+    : LCYBRK structTypespecField_cl RCYBRK  { $$ = mgr->new_struct_typespec(@$, std::move($2)); }
+    ;
+
 ttarg
-    : typespec  { $$ = $1; }
+    : typespec  { $$ = mgr->new_targ(@$, ) }
     | expr      { $$ = NewAstVal2Type(@$,$1); }
     ;
 ttarg_cl
     : ttarg                     { $$ = NULL; sb_push($$,$1); }
-    | ttarg_cl TK_COMMA ttarg   { $$ = $1; sb_push($$,$3); }
+    | ttarg_cl COMMA ttarg   { $$ = $1; sb_push($$,$3); }
     ;
 
 /* value contexts' targs (template args): typespecs have Type2Val wrappers */
 vtarg
     : typespec { $$ = NewAstType2Val(@$,$1); }
-    | expr     { $$ = $1; }
+    | expr
     ;
 vtarg_cl
     : vtarg                     { $$ = NULL; sb_push($$,$1); }
-    | vtarg_cl TK_COMMA vtarg   { $$ = $1; sb_push($$,$3); }
+    | vtarg_cl COMMA vtarg   { $$ = $1; sb_push($$,$3); }
     ;
 
 /*
@@ -607,48 +662,57 @@ vtarg_cl
  */
 
 vstructExprField
-    : vid TK_BIND expr { $$ = NewAstField(@$, $1.ID_symbolID, $3); }
+    : vid BIND expr { $$ = mgr->new_struct_exp_field(@$, $1.ID_intstr, $3); }
     ;
 vpatternField
-    : vid typespec { $$ = NewAstField(@$, $1.ID_symbolID, NewAstType2Val(@2,$2)); }
+    : vid typespec { $$ = mgr->new_vpattern_field(@$, $1.ID_intstr, $2); }
     ;
 lpatternField
-    : vpatternField { $$ = $1; }
-    | vid           { $$ = NewAstField(@$, $1.ID_symbolID, NULL); }
+    : vid typespec  { $$ = mgr->new_lpattern_field(@$, ast::LPattern::FieldKind::IdTypespecPair, $1.ID_intstr, $2); }
+    | vid           { $$ = mgr->new_lpattern_field(@$, ast::LPattern::FieldKind::IdSingleton, $1.ID_intstr); }
     ;
 tpatternField
-    : tid           { $$ = NewAstField(@$, $1.ID_symbolID, NULL); }
-    | vpatternField { $$ = $1; }
+    : vid typespec  { $$ = mgr->new_tpattern_field(@$, ast::TPattern::FieldKind::Val, $1.ID_intstr, $2); }
+    | tid typespec  { $$ = mgr->new_tpattern_field(@$, ast::TPattern::FieldKind::Type, $1.ID_intstr, $2); }
     ;
+
 lpattern
-    : lpatternField                         { $$ = NewAstVPatternSingleton(@$,$1); }
-    | TK_LPAREN lpatternField_cl TK_RPAREN  { $$ = NewAstVPatternWithFieldsSb(@$,$2); }
-    | TK_LPAREN TK_RPAREN                   { $$ = NewAstVPatternWithFieldsSb(@$,NULL); }
+    : LPAREN lpatternField_cl RPAREN  { $$ = mgr->new_lpattern(@$, std::move($2)); }
+    | LPAREN RPAREN                   { $$ = mgr->new_lpattern(@$, std::move(std::vector<ast::LPattern::Field*>{})); }
+    ;
+lpattern_naked
+    : lpatternField                   { $$ = mgr->new_lpattern(@$, std::move(std::vector<ast::LPattern::Field*>{1,$1})); }
+    | lpattern
     ;
 vpattern
-    : TK_LPAREN vpatternField_cl TK_RPAREN  { $$ = NewAstVPatternWithFieldsSb(@$,$2); }
-    | TK_LPAREN TK_RPAREN                   { $$ = NewAstVPatternWithFieldsSb(@$,NULL); }
+    : LPAREN vpatternField_cl RPAREN  { $$ = mgr->new_vpattern(@$, std::move($2)); }
+    | LPAREN RPAREN                   { $$ = mgr->new_vpattern(@$, std::move(std::vector<ast::VPattern::Field*>{})); }
     ;
 tpattern
-    : TK_LSQBRK tpatternField_cl TK_RSQBRK  { $$ = NewAstVPatternWithFieldsSb(@$,$2); }
-    | TK_LTHAN  tpatternField_cl TK_GTHAN   { $$ = NewAstVPatternWithFieldsSb(@$,$2); }
+    :         LSQBRK tpatternField_cl RSQBRK  { $$ = mgr->new_tpattern(@$, std::move($2), false); }
+    | EXCLAIM LSQBRK tpatternField_cl RSQBRK  { $$ = mgr->new_tpattern(@$, std::move(std::vector<ast::TPattern::Field*>{}), true); }
     ;
 
 vpatternField_cl
-    : vpatternField                             { $$ = NULL; sb_push($$,$1); }
-    | vpatternField_cl TK_COMMA vpatternField   { $$ = $1; sb_push($$,$3); }
+    : vpatternField                          { $$.push_back($1); }
+    | vpatternField_cl COMMA vpatternField   { $$ = std::move($1); $$.push_back($3); }
     ;
 lpatternField_cl
-    : lpatternField                             { $$ = NULL; sb_push($$,$1); }
-    | lpatternField_cl TK_COMMA lpatternField   { $$ = $1; sb_push($$,$3); }
+    : lpatternField                          { $$.push_back($1); }
+    | lpatternField_cl COMMA lpatternField   { $$ = std::move($1); $$.push_back($3); }
     ;
 tpatternField_cl
-    : tpatternField                             { $$ = NULL; sb_push($$,$1); }
-    | tpatternField_cl TK_COMMA tpatternField   { $$ = $1; sb_push($$,$3); }
+    : tpatternField                          { $$.push_back($1); }
+    | tpatternField_cl COMMA tpatternField   { $$ = std::move($1); $$.push_back($3); }
     ;
 vstructExprField_cl
-    : vstructExprField                              { $$ = NULL; sb_push($$,$1); }
-    | vstructExprField_cl TK_COMMA vstructExprField { $$ = $1; sb_push($$,$3); }
+    : vstructExprField                              { $$.push_back($1); }
+    | vstructExprField_cl COMMA vstructExprField    { $$ = std::move($1); $$.push_back($3); }
+    ;
+
+tpattern_seq
+    : tpattern               { $$.push_back($1); }
+    | tpattern_seq tpattern  { $$ = std::move($1); $$.push_back($2); }
     ;
 
 %%
@@ -673,35 +737,50 @@ RawAstNode* ParseScript(Source* source) {
     }
 }
 
+
+ast::Script* parse_script(ast::Manager* manager, source::Source* source) {
+    Lexer lexer;
+    if (!lexer.setup(source)) {
+        return nullptr;
+    }
+
+    ast::Script* out = nullptr;
+    int result = yyparse(source, &lexer, manager, &out);
+    if (result == 0) {
+        return out;
+    } else {
+        return nullptr;
+    }
+}
+
 // int yylex (YYSTYPE *lvalp) {
 //     /* TODO: Put value onto Bison stack. */
-//     return TK_NULL;
+//     return NULL;
 // }
 
-int yylex(YYSTYPE* lvalp, YYLTYPE* llocp, source::Source* source, parser::Lexer* lexer) {
+int yylex(TokenInfo* info, source::Loc* llocp, source::Source* source, parser::Lexer* lexer) {
     // see:
     // https://www.gnu.org/software/bison/manual/html_node/Calling-Convention.html
-
-    TokenInfo* info = &lvalp->token;
     
     llocp->source(source);
     int tk = lexer->lex_one_token(info, llocp);
-    
+    llocp->source(source);
+
     if (pdm::DEBUG) {
-        DebugPrintToken("YYLEX:", tk, info, llocp);
+        // DebugPrintToken("YYLEX:", tk, info, llocp);
     }
-    if (tk == TK_EOS) {
+    if (tk == EOS) {
         return YYEOF;
     } else {
         return tk;
     }
 }
 
-void yyerror(YYLTYPE* llocp, Source* source, AstNode** outp, char const* message) {
-    Loc loc = FirstLocOfSpan(*llocp);
-    FeedbackNote* note = CreateFeedbackNote("here...", loc, NULL);
-    PostFeedback(
-        FBK_ERROR, note,
-        "Parser error: %s", message
-    );
-}
+// void yyerror(YYLTYPE* llocp, Source* source, ast::* returnp, char const* message) {
+//     Loc loc = FirstLocOfSpan(*llocp);
+//     FeedbackNote* note = CreateFeedbackNote("here...", loc, NULL);
+//     PostFeedback(
+//         FBK_ERROR, note,
+//         "Parser error: %s", message
+//     );
+// }

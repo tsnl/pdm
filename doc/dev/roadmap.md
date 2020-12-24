@@ -1,5 +1,93 @@
 # Roadmap
 
+## Dec 23
+
+While porting the grammar, I've made the following revisions. This allows 
+the grammar to parse without ambiguity.
+
+Syntax are the tools to access our analysis. Syntax determines how 
+powerful the language is.
+
+**NOTE (dec 23)**
+
+**Part 1: how do we interface with C without adopting its type semantics?**
+- extern/link statements breaks indentation correlating with namespacing.
+- C linking breaks module namespacing, makes it difficult to nest symbols.
+- if we use `extern <emodname> <etype>` statement and `link` statement as 
+  below, support for guaranteed const 'if' elision will allow custom 'link'
+  args per-platform.
+      ```
+      extern sdl "C" {
+          link {
+              include: {
+                  "SDL2/SDL.h"
+              },
+              source: {},
+              static_libs: {},
+              dynamic_libs: {}
+          };
+
+          type Event from "SDL_Event";
+
+          fn init (flags U32) -> U32 from "SDL_Init";
+      }
+      ```
+- **IMPORTANT: prefices when emitting**
+  each C library can be built to LLVM IR using Clang.
+  If we add the emit all PDM with a `_P` prefix, then no linker conflicts
+  will occur unless linked C libraries are in conflict (since native PDM symbols
+  are additionally prefixed by their full module ancestry).
+  See Wikipedia on [Name Mangling](https://en.wikipedia.org/wiki/Name_mangling#Simple_example)
+  **Thus, PDM exists in a subset of the global C namespace and are linker-safe.**
+- Furthermore, aliased links
+- **this need not be supported just yet**, and need not be for some time. However, this allows
+  us to perform another, more consequential change.
+
+**Part 2: breaking free**
+- **now treat ptr as mut**, makes a lot of sense!
+- use `&` as typespec operator, `^` and `*` as value operators => no parser conflicts.
+- always pass by value for immut, **enable link** `T` pbv with `T const*` in C ABI (see above).
+  - so `f(char const*)` links with `a[n](Array[Char,n])`-- **type-safe re-interpretation of C**
+  - so `f(char const*)` also links with `b(Char)`
+  - **and 'a,b' now present a factored, type-safe interface written by a human without any**
+    **manual definitions!**
+- replace `let &x = 42` with `var x = 13` statement
+  - `let` stores as rvalue ref; i.e., **cannot take ptr to 'let' IDs** (HENCE will not mutate)
+  - `var` stores as lvalue ref; i.e., **can take ptr to 'var' IDs**
+  - for the performance-minded,
+    - `var` explicitly&always pushes&stores a copy of rhs to the stack.
+    - `let` _may_ be pushed (depending on register allocation), but since it has the _opportunity_ 
+      to be promoted to register operations, much faster.
+    - obviously fat 'let' statements must be stored by pointer, but this depends on pointer width
+      and is an implementation detail. e.g. `let x Array[I64,_] = [1,2,3,4,5,6,7,8,9,10]`.
+      What matters is that in either case, we offer options for optimization 'var' would not 
+      without worrying about immutability.
+  - don't need to explain difference between const and immutable to users-- less mental baggage.
+  - since `set` lhs accepts a pointer, `var` is its natural counterpart, connoting mutability.
+  - 'var' is fundamentally different since it guarantees memory allocation.
+    'let' separate from 'var/set' allows the user to do work before storing independent of 
+    syntax constraints.
+- **suppose you want to pass an immutable ref/ptr rather than a value to an object.**
+  - the _C ABI_ (not even the compiler) does it anyway...
+  - you introduce aliasing issues which makes optimization worse
+  - instead, pass by value and return, or use a mutable reference-- i.e., the standard proposed
+    pointers.
+  - **FP + pointers makes perfect sense from the CPU's perspective: memory beyond its**
+    **state wall, must be accessed by load/store**
+- changes made:
+  - delete 'mut' monad typespec
+  - delete '&x' lpattern variant
+  - create 'var' statement
+    - create shared base class with 'var', 'let', 'const': 'BindStmt'
+
+**Part 3:** Revised typeclasses
+- remove function typeclass fields.
+- defer type refinement for the future as an orthogonal feature. we're spoiled for choice in 
+  runtime typing options (classical oop (Java), trait/impl, typestates, refinements), so punt.
+
+
+## Dec 21 (and earlier, mostly stable)
+
 **WIP (dec 21):** Parser WIP
 - todo: finish adding compiler hooks so `import(i_path, i_type)` works as in Python, hitting a cache.
 - wip: porting old C lexer to C++ (mostly done)

@@ -18,7 +18,6 @@ namespace pdm::ast {
       public:
         enum class FieldKind {
             IdSingleton,
-            MutIdSingleton,
             IdTypespecPair
         };
         class Field {

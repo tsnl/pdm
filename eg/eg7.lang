@@ -76,7 +76,7 @@ mod vec {
 mod scalar {
     # instances of types in scalar.Impl contain functions
     # satisfying 'scalar' properties.
-    typeclass Impl(I Any) [S Any] = {
+    typeclass Impl <I Any> [S Any] = {
         I.on_add      :: (left S, right S) -> S;
         I.on_multiply :: (left S, right S) -> S;
 

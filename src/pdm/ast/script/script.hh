@@ -1,11 +1,14 @@
 #ifndef INCLUDED_PDM_AST_SCRIPT_SCRIPT_HH
 #define INCLUDED_PDM_AST_SCRIPT_SCRIPT_HH
 
+#include <vector>
+
 #include <pdm/ast/node.hh>
 #include <pdm/source/source.hh>
 
 namespace pdm::ast {
     class Manager;
+    class Stmt;
 }
 
 namespace pdm::ast {
@@ -14,22 +17,21 @@ namespace pdm::ast {
         friend Manager;
 
       private:
-        source::Source* m_source;
+        source::Source*    m_source;
+        std::vector<Stmt*> m_stmts;
 
       protected:
-        Script(source::Source* source)
-        : Node(source::Loc::none, Kind::Script),
-          m_source(source) {}
-    
-        Script()
-        : Script(nullptr) {}
+        Script(source::Source* source, source::Loc loc, std::vector<Stmt*> stmts)
+        : Node(loc, Kind::Script),
+          m_source(source),
+          m_stmts(stmts) {}
 
       public:
         source::Source* source() const {
             return m_source;
         }
-        void source(source::Source* source) {
-            m_source = source;
+        std::vector<Stmt*> const& stmts() const {
+            return m_stmts;
         }
     };
 
