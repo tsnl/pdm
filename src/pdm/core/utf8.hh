@@ -14,6 +14,9 @@ namespace pdm::utf8 {
     class StringBuilder;
 
     class String {
+        friend String operator+ (String&& s1, String&& s2);
+        friend String operator+ (String const& s1, String const& s2);
+
       private:
         Char*  m_data;
         size_t m_count;
@@ -89,6 +92,37 @@ namespace pdm::utf8 {
             return String(static_cast<Char const*>(m_chars.data()), m_chars.size());
         }
     };
+
+    inline String operator+ (String&& s1, String&& s2) {
+        // allocating a sum string:
+        size_t ss_size = s1.size() + s2.size();
+        Char* ss_buf = new Char[ss_size];
+        String ss {ss_buf, ss_size};
+
+        // copying bytes from s1, then s2:
+        memcpy(ss.data() + 0,         s1.const_data(), s1.size());
+        memcpy(ss.data() + s1.size(), s2.const_data(), s2.size());
+
+        // (move) freeing s1, s2
+        if (s1.data()) { delete[] s1.data(); s1.m_data = nullptr; s1.m_count = 0; }
+        if (s2.data()) { delete[] s2.data(); s2.m_data = nullptr; s2.m_count = 0; }
+        
+        // returning 'ss'
+        return ss;
+    }
+
+    inline String operator+ (String const& s1, String const& s2) {
+        // allocating a sum string:
+        size_t ss_size = s1.size() + s2.size();
+        Char* ss_buf = new Char[ss_size];
+
+        // copying bytes from s1, then s2:
+        memcpy(ss_buf + 0,         s1.const_data(), s1.size());
+        memcpy(ss_buf + s1.size(), s2.const_data(), s2.size());
+      
+        // returning 'ss':
+        return {ss_buf, ss_size};
+    }
 }
 
 #endif  // INCLUDED_PDM_CORE_UNICODER_H

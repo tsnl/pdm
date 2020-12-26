@@ -29,8 +29,6 @@ extern "C" {
 // #include "source.h"
 // #include "useful.h"
 
-using Tk = pdm::parser::parser::token_kind_type;
-
 // 
 // Helpers (1):
 //
@@ -571,7 +569,7 @@ namespace pdm::parser::aux {
             return getIdTextKind(charBuf);
         }
     }
-    static TokenKind lexOneString(Reader* source, TokenInfo* infoP, source::Pos const& firstPos) {
+    TokenKind lexOneString(Reader* source, TokenInfo* infoP, source::Pos const& firstPos) {
         // reading the first character, i.e., the quote character:
         int quoteChar = source->read_head();
         TokenKind tokenKind;

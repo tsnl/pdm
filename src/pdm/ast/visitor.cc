@@ -25,13 +25,19 @@ namespace pdm::ast {
             // statements:
             //
 
+            case Kind::DiscardStmt:
+            {
+                DiscardStmt* discard_stmt = dynamic_cast<DiscardStmt*>(node);
+                ok = visit(discard_stmt->discarded_exp()) && ok;
+                break;
+            }
             case Kind::ConstStmt:
             {
                 ConstStmt* const_stmt = dynamic_cast<ConstStmt*>(node);
                 ok = visit(const_stmt->lhs_lpattern()) && ok;
                 ok = visit(const_stmt->rhs_exp()) && ok;
                 break;
-            }
+            } 
             case Kind::LetStmt:
             {
                 LetStmt* let_stmt = dynamic_cast<LetStmt*>(node);
@@ -46,7 +52,13 @@ namespace pdm::ast {
                 ok = visit(var_stmt->rhs_exp()) && ok;
                 break;
             }
-
+            case Kind::SetStmt:
+            {
+                SetStmt* set_stmt = dynamic_cast<SetStmt*>(node);
+                ok = visit(set_stmt->lhs_exp()) && ok;
+                ok = visit(set_stmt->rhs_exp()) && ok;
+                break;
+            }
             case Kind::FnStmt:
             {
                 FnStmt* fn_stmt = dynamic_cast<FnStmt*>(node);
@@ -63,7 +75,7 @@ namespace pdm::ast {
             case Kind::TypeStmt:
             {
                 TypeStmt* type_stmt = dynamic_cast<TypeStmt*>(node);
-                ok = visit(type_stmt->rhs_typespec()) && ok;
+                ok = visit(type_stmt->opt_rhs_typespec()) && ok;
                 break;
             }
             case Kind::EnumStmt:
@@ -92,20 +104,21 @@ namespace pdm::ast {
                 }
                 break;
             }
-            case Kind::LinkStmt:
+            case Kind::ExternStmt:
             {
-                LinkStmt* link_stmt = dynamic_cast<LinkStmt*>(node);
-                ok = visit(link_stmt->linkage_name_exp()) && ok;
-                ok = visit(link_stmt->linked_file_array_exp()) && ok;
-                for (LinkStmt::Item const& item: link_stmt->items()) {
-                    ok = visit(item.src_name()) && ok;
-                }
+                ExternStmt* extern_stmt = dynamic_cast<ExternStmt*>(node);
+                ok = visit(extern_stmt->link_arg()) && ok;
                 break;
             }
             case Kind::ImportStmt:
             {
                 ImportStmt* import_stmt = dynamic_cast<ImportStmt*>(node);
-                ok = visit(import_stmt->imported_from_exp()) && ok;
+                break;
+            }
+            case Kind::UsingStmt:
+            {
+                UsingStmt* using_stmt = dynamic_cast<UsingStmt*>(node);
+                ok = visit(using_stmt->used_exp()) && ok;
                 break;
             }
 
@@ -124,7 +137,7 @@ namespace pdm::ast {
             case Kind::ParenExp:
             {
                 ParenExp* paren_exp = dynamic_cast<ParenExp*>(node);
-                ok = visit(paren_exp->nested()) && ok;
+                ok = visit(paren_exp->nested_exp()) && ok;
                 break;
             }
             case Kind::ArrayExp:
@@ -165,8 +178,8 @@ namespace pdm::ast {
             case Kind::LambdaExp:
             {
                 LambdaExp* lambda_exp = dynamic_cast<LambdaExp*>(node);
-                ok = visit(lambda_exp->lhs_lpattern()) && ok;
-                ok = visit(lambda_exp->body()) && ok;
+                ok = visit(lambda_exp->lhs_vpattern()) && ok;
+                ok = visit(lambda_exp->rhs_body()) && ok;
                 break;
             }
             case Kind::IfExp:
@@ -271,16 +284,10 @@ namespace pdm::ast {
             {
                 break;
             }
-            case Kind::MutTypespec:
-            {
-                MutTypespec* mut_typespec = dynamic_cast<MutTypespec*>(node);
-                ok = visit(mut_typespec->mutatee()) && ok;
-                break;
-            }
             case Kind::PtrTypespec:
             {
                 PtrTypespec* ptr_typespec = dynamic_cast<PtrTypespec*>(node);
-                ok = visit(ptr_typespec->pointee()) && ok;
+                ok = visit(ptr_typespec->pointee_typespec()) && ok;
                 break;
             }
             case Kind::FnTypespec:
@@ -321,6 +328,12 @@ namespace pdm::ast {
                 }
                 break;
             }
+            case Kind::ParenTypespec:
+            {
+                ParenTypespec* paren_typespec = dynamic_cast<ParenTypespec*>(node);
+                ok = visit(paren_typespec->nested_typespec()) && ok;
+                break;
+            }
 
             //
             // non-syntactic elements:
@@ -331,8 +344,6 @@ namespace pdm::ast {
             {
                 break;
             }
-
-
         }
 
         ok = on_visit(node, VisitOrder::Post) && ok;
@@ -350,17 +361,21 @@ namespace pdm::ast {
             }
 
             // statements:
-            case Kind::LetStmt:
+            case Kind::DiscardStmt:
             {
-                return on_visit__let_stmt(dynamic_cast<LetStmt*>(node), visit_order);
-            }
+                return on_visit__discard_stmt(dynamic_cast<DiscardStmt*>(node), visit_order);
+            } 
             case Kind::ConstStmt:
             {
                 return on_visit__const_stmt(dynamic_cast<ConstStmt*>(node), visit_order);
             }
-            case Kind::DiscardStmt:
+            case Kind::LetStmt:
             {
-                return on_visit__discard_stmt(dynamic_cast<DiscardStmt*>(node), visit_order);
+                return on_visit__let_stmt(dynamic_cast<LetStmt*>(node), visit_order);
+            }
+            case Kind::VarStmt:
+            {
+                return on_visit__var_stmt(dynamic_cast<VarStmt*>(node), visit_order);
             }
             case Kind::SetStmt:
             {
@@ -386,13 +401,17 @@ namespace pdm::ast {
             {
                 return on_visit__mod_stmt(dynamic_cast<ModStmt*>(node), visit_order);
             }
-            case Kind::LinkStmt:
+            case Kind::ExternStmt:
             {
-                return on_visit__link_stmt(dynamic_cast<LinkStmt*>(node), visit_order);
+                return on_visit__extern_stmt(dynamic_cast<ExternStmt*>(node), visit_order);
             }
             case Kind::ImportStmt:
             {
                 return on_visit__import_stmt(dynamic_cast<ImportStmt*>(node), visit_order);
+            }
+            case Kind::UsingStmt:
+            {
+                return on_visit__using_stmt(dynamic_cast<UsingStmt*>(node), visit_order);
             }
 
             // expressions:
@@ -492,10 +511,6 @@ namespace pdm::ast {
             {
                 return on_visit__id_typespec(dynamic_cast<IdTypespec*>(node), visit_order);
             }
-            case Kind::MutTypespec:
-            {
-                return on_visit__mut_typespec(dynamic_cast<MutTypespec*>(node), visit_order);
-            }
             case Kind::PtrTypespec:
             {
                 return on_visit__ptr_typespec(dynamic_cast<PtrTypespec*>(node), visit_order);
@@ -524,11 +539,21 @@ namespace pdm::ast {
             {
                 return on_visit__struct_typespec(dynamic_cast<StructTypespec*>(node), visit_order);
             }
+            case Kind::ParenTypespec:
+            {
+                return on_visit__paren_typespec(dynamic_cast<ParenTypespec*>(node), visit_order);
+            }
 
             // non-syntactic elements:
             case Kind::BuiltinTypeStmt:
             {
                 return on_visit__builtin_type_stmt(dynamic_cast<BuiltinTypeStmt*>(node), visit_order);
+            }
+
+            // meta elements:
+            case Kind::__Count:
+            {
+                return false;
             }
         }
     }

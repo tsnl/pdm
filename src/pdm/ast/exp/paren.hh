@@ -22,7 +22,7 @@ namespace pdm::ast {
           m_nested(nested) {}
       
       public:
-        Exp* nested() const {
+        Exp* nested_exp() const {
             return m_nested;
         }
     };

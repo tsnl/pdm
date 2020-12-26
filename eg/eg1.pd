@@ -6,12 +6,13 @@
 # Circles:
 #
 
+import fib type "package/git" from "https://github.com/tsnl/fib.pdmpkg";
+
 mod circle {
     type Circle = {
         center Tuple[F32,F32],
         radius Tuple[F32]
     };
-
     fn circumference (circle Circle) -> F32 = {
         let tau = {
             let pi = 3.14159;

@@ -34,12 +34,13 @@
 #include "stmt/fn.hh"
 #include "stmt/import.hh"
 #include "stmt/let.hh"
-#include "stmt/link.hh"
+#include "stmt/extern.hh"
 #include "stmt/mod.hh"
 #include "stmt/set.hh"
 #include "stmt/type.hh"
 #include "stmt/typeclass.hh"
 #include "stmt/using.hh"
+#include "stmt/var.hh"
 
 #include "targ/targ.hh"
 
@@ -47,7 +48,7 @@
 #include "typespec/dot.hh"
 #include "typespec/fn.hh"
 #include "typespec/id.hh"
-#include "typespec/mut.hh"
+#include "typespec/paren.hh"
 #include "typespec/ptr.hh"
 #include "typespec/struct.hh"
 #include "typespec/tcall.hh"
@@ -90,7 +91,7 @@ namespace pdm::ast {
     class EnumStmt;
     class ImportStmt;
     class LetStmt;
-    class LinkStmt;
+    class ExternStmt;
     class ModuleStmt;
     class TypeStmt;
     class TypeclassStmt;
@@ -110,14 +111,15 @@ namespace pdm::ast {
         BinaryExp* new_binary_exp(source::Loc loc, BinaryOperator binary_operator, Exp* lhs_operand, Exp* rhs_operand);
         ChainExp* new_chain_exp(source::Loc loc, std::vector<Stmt*>&& prefix, Exp* suffix = nullptr);
         DotNameExp* new_dot_name_exp(source::Loc loc, Exp* lhs, intern::String rhs_name, DotNameExp::RhsHint rhs_hint);
-        DotIndexExp* new_dot_index_exp(source::Loc loc, Exp* lhs, Exp* rhs_exp);
+        DotIndexExp* new_dot_index_exp(source::Loc loc, Exp* lhs, Exp* rhs_exp, DotIndexExp::RhsHint rhs_hint);
         FloatExp* new_float_exp(source::Loc loc, long double value);
         IdExp* new_id_exp(source::Loc loc, intern::String name);
         IfExp* new_if_exp(source::Loc loc, Exp* cond_exp, Exp* then_exp, Exp* else_exp);
         IntExp* new_int_exp(source::Loc loc, u64 value, IntExp::Base base);
-        LambdaExp* new_lambda_exp(source::Loc loc, LPattern* lhs_lpattern, Exp* body);
+        LambdaExp* new_lambda_exp(source::Loc loc, VPattern* lhs_lpattern, Exp* body);
         ParenExp* new_paren_exp(source::Loc loc, Exp* nested);
-        StringExp* new_string_exp(source::Loc loc, std::vector<StringExp::Piece*>&& content);
+        StringExp* new_string_exp(source::Loc loc, utf8::String content, StringExp::QuoteKind quote_kind);
+        StringExp* new_string_exp(source::Loc loc, std::vector<StringExp::Piece>&& content);
         StructExp* new_struct_exp(source::Loc loc, std::vector<StructExp::Field*>&& fields);
         TCallExp* new_tcall_exp(source::Loc loc, Exp* lhs_called, std::vector<TArg*>&& args);
         TupleExp* new_tuple_exp(source::Loc loc, std::vector<Exp*>&& items);
@@ -126,9 +128,7 @@ namespace pdm::ast {
         UnitExp* new_unit_exp(source::Loc loc);
         VCallExp* new_vcall_exp(source::Loc loc, Exp* lhs_called, std::vector<Exp*>&& args);
         StructExp::Field* new_struct_exp_field(source::Loc loc, intern::String name, Exp* value);
-        TArg* new_tcall_exp_typespec_arg(source::Loc loc, Typespec* typespec);
-        TArg* new_tcall_exp_exp_arg(source::Loc loc, Exp* exp);
-
+        
         LPattern* new_lpattern(source::Loc loc, std::vector<LPattern::Field*>&& fields);
         TPattern* new_tpattern(source::Loc loc, std::vector<TPattern::Field*>&& fields, bool is_only_captured);
         VPattern* new_vpattern(source::Loc loc, std::vector<VPattern::Field*>&& fields);
@@ -140,11 +140,12 @@ namespace pdm::ast {
         ConstStmt* new_const_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
         DiscardStmt* new_discard_stmt(source::Loc loc, Exp* exp);
         LetStmt* new_let_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
+        VarStmt* new_var_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
         SetStmt* new_set_stmt(source::Loc loc, Exp* lhs, Exp* rhs);
         
-        ImportStmt* new_import_stmt(source::Loc loc, intern::String imported_name, Exp* imported_from_exp, Exp* imported_type_exp);
+        ImportStmt* new_import_stmt(source::Loc loc, intern::String imported_name, utf8::String imported_from_exp, utf8::String imported_type_exp);
         UsingStmt* new_using_stmt(source::Loc loc, Exp* used_exp);
-        LinkStmt* new_link_stmt(source::Loc loc, Exp* linkage_name_exp, Exp* linked_file_array_exp, std::vector<LinkStmt::Item>&& items);
+        ExternStmt* new_extern_stmt(source::Loc loc, intern::String ext_mod_name, Exp* link_arg);
         ModStmt* new_mod_stmt(source::Loc loc, intern::String module_name, std::vector<Stmt*>&& defns);
         FnStmt* new_fn_stmt(
             source::Loc loc,
@@ -155,32 +156,23 @@ namespace pdm::ast {
             Exp* body
         );
         TypeStmt* new_type_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, Typespec* rhs_typespec);
-        // todo: EnumStmt and TypeclassStmt need much more work.
         EnumStmt* new_enum_stmt(source::Loc loc, intern::String name, std::vector<EnumStmt::Field*>&& fields);
-        TypeclassStmt* new_typeclass_stmt(
-            source::Loc loc,
-            intern::String lhs_name,
-            intern::String candidate_name,
-            Typespec* candidate_typespec,
-            std::vector<TPattern*>&& tpatterns,
-            std::vector<Exp*>&& conditions
-        );
+        TypeclassStmt* new_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, Typespec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<Exp*>&& conditions);
         EnumStmt::Field* new_enum_stmt_field(intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs);
         
         DotNameTypespec_TypePrefix* new_dot_name_typespec_with_type_prefix(source::Loc loc, Typespec* lhs_typespec, intern::String rhs_name);
         DotNameTypespec_ModPrefix* new_dot_name_typespec_with_mod_prefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name);
         FnTypespec* new_fn_typespec(source::Loc loc, VPattern* lhs_vpattern, Typespec* rhs_typespec);
         IdTypespec* new_id_typespec(source::Loc loc, intern::String name);
-        // MutTypespec* new_mut_typespec(source::Loc loc, Typespec* mutatee);     // deprecated
-        PtrTypespec* new_ptr_typespec(source::Loc loc, Typespec* pointee);
+        ParenTypespec* new_paren_typespec(source::Loc loc, Typespec* nested_typespec);
+        PtrTypespec* new_ptr_typespec(source::Loc loc, Typespec* pointee_typespec);
         StructTypespec* new_struct_typespec(source::Loc loc, std::vector<StructTypespec::Field*>&& fields);
         TCallTypespec* new_tcall_typespec(source::Loc loc, Typespec* lhs_called, std::vector<TArg*>&& args);
         TupleTypespec* new_tuple_typespec(source::Loc loc, std::vector<Typespec*>&& items);
         StructTypespec::Field* new_struct_typespec_field(source::Loc loc, intern::String name, Typespec* typespec);
-        TArg* new_tcall_typespec_typespec_arg(source::Loc loc, Typespec* typespec);
-        TArg* new_tcall_typespec_exp_arg(source::Loc loc, Exp* exp);
 
-        // todo: add 'tcall_typespec_exp_arg' and '_type_arg'
+        TArg* new_targ_exp(source::Loc loc, Exp* exp);
+        TArg* new_targ_typespec(source::Loc loc, Typespec* typespec);
 
       public:
         typer::Typer* typer() const {

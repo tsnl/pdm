@@ -33,7 +33,7 @@
 #include "pdm/ast/stmt/enum.hh"
 #include "pdm/ast/stmt/import.hh"
 #include "pdm/ast/stmt/let.hh"
-#include "pdm/ast/stmt/link.hh"
+#include "pdm/ast/stmt/extern.hh"
 #include "pdm/ast/stmt/mod.hh"
 #include "pdm/ast/stmt/type.hh"
 #include "pdm/ast/stmt/typeclass.hh"
@@ -46,13 +46,13 @@
 #include "pdm/ast/typespec/typespec.hh"
 #include "pdm/ast/typespec/dot.hh"
 #include "pdm/ast/typespec/id.hh"
-#include "pdm/ast/typespec/mut.hh"
 #include "pdm/ast/typespec/ptr.hh"
 #include "pdm/ast/typespec/struct.hh"
 #include "pdm/ast/typespec/tcall.hh"
 #include "pdm/ast/typespec/tuple.hh"
 #include "pdm/ast/typespec/fn.hh"
 #include "pdm/ast/typespec/typespec.hh"
+#include "pdm/ast/typespec/paren.hh"
 
 //
 // implementations:
@@ -121,7 +121,7 @@ namespace pdm::ast {
         virtual bool on_visit__discard_stmt(DiscardStmt* node, VisitOrder visit_order) {
             return true;
         }
-        virtual bool on_visit__link_stmt(LinkStmt* node, VisitOrder visit_order) {
+        virtual bool on_visit__extern_stmt(ExternStmt* node, VisitOrder visit_order) {
             return true;
         }
         virtual bool on_visit__import_stmt(ImportStmt* node, VisitOrder visit_order) {
@@ -205,9 +205,6 @@ namespace pdm::ast {
         virtual bool on_visit__id_typespec(IdTypespec* node, VisitOrder visit_order) {
             return true;
         }
-        virtual bool on_visit__mut_typespec(MutTypespec* node, VisitOrder visit_order) {
-            return true;
-        }
         virtual bool on_visit__ptr_typespec(PtrTypespec* node, VisitOrder visit_order) {
             return true;
         }
@@ -227,6 +224,9 @@ namespace pdm::ast {
             return true;
         }
         virtual bool on_visit__struct_typespec(StructTypespec* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__paren_typespec(ParenTypespec* node, VisitOrder visit_order) {
             return true;
         }
 

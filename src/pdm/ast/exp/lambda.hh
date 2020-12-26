@@ -7,7 +7,7 @@
 
 namespace pdm::ast {
     class Manager;
-    class LPattern;
+    class VPattern;
 }
 
 namespace pdm::ast {
@@ -16,20 +16,20 @@ namespace pdm::ast {
         friend Manager;
 
       private:
-        LPattern* m_lhs_lpattern;
+        VPattern* m_lhs_vpattern;
         Exp*      m_body;
     
       protected:
-        LambdaExp(source::Loc loc, LPattern* lhs_lpattern, Exp* body)
+        LambdaExp(source::Loc loc, VPattern* lhs_vpattern, Exp* body)
         : Exp(loc, Kind::LambdaExp),
-          m_lhs_lpattern(lhs_lpattern),
+          m_lhs_vpattern(lhs_vpattern),
           m_body(body) {}
       
       public:
-        LPattern* lhs_lpattern() const {
-            return m_lhs_lpattern;
+        VPattern* lhs_vpattern() const {
+            return m_lhs_vpattern;
         }
-        Exp* body() const {
+        Exp* rhs_body() const {
             return m_body;
         }
     };

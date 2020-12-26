@@ -1,6 +1,8 @@
 #ifndef INCLUDED_PDM_AST_STMT_ENUM_HH
 #define INCLUDED_PDM_AST_STMT_ENUM_HH
 
+#include <vector>
+
 #include "pdm/core/intern.hh"
 #include "pdm/source/loc.hh"
 #include "pdm/ast/stmt/stmt.hh"
@@ -18,18 +20,21 @@ namespace pdm::ast {
             friend Manager;
 
           private:
+            source::Loc                 m_loc;
             intern::String              m_name;
             std::vector<ast::Typespec*> m_typespecs;
             bool                        m_has_explicit_typespecs;
             
           protected:
-            Field(intern::String name)
-            : m_name(name),
+            Field(source::Loc loc, intern::String name)
+            : m_loc(loc),
+              m_name(name),
               m_typespecs(),
               m_has_explicit_typespecs(false) {}
 
-            Field(intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs)
-            : m_name(name),
+            Field(source::Loc loc, intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs)
+            : m_loc(loc),
+              m_name(name),
               m_typespecs(std::move(typespecs)),
               m_has_explicit_typespecs(has_explicit_typespecs) {}
 
@@ -46,21 +51,21 @@ namespace pdm::ast {
         };
 
       private:
-        intern::String  m_name;
-        StructTypespec* m_body_struct_typespec;
+        intern::String   m_name;
+        std::vector<EnumStmt::Field*> m_fields;
       
       protected:
-        EnumStmt(source::Loc loc, intern::String name, StructTypespec* body_struct_typespec)
+        EnumStmt(source::Loc loc, intern::String name, std::vector<EnumStmt::Field*>&& fields)
         : Stmt(loc, Kind::EnumStmt),
           m_name(name),
-          m_body_struct_typespec(body_struct_typespec) {}
+          m_fields(std::move(fields)) {}
       
       public:
         intern::String name() const {
             return m_name;
         }
-        StructTypespec* body_struct_typespec() const {
-            return m_body_struct_typespec;
+        std::vector<EnumStmt::Field*> const& fields() const {
+            return m_fields;
         }
     };
 

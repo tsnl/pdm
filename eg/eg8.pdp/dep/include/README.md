@@ -1,0 +1,1 @@
+This directory contains C headers to be linked by PDM.

@@ -8,7 +8,7 @@
 
 namespace pdm::ast {
     class Manager;
-    class Expr;
+    class Exp;
 }
 
 namespace pdm::ast {
@@ -17,13 +17,22 @@ namespace pdm::ast {
         friend Manager;
       
       private:
-        ast::Expr* m_lhs;
-        ast::Expr* m_rhs;
+        ast::Exp* m_lhs_exp;
+        ast::Exp* m_rhs_exp;
 
       protected:
-        SetStmt(source::Loc loc, ast::Expr* lhs, ast::Expr* rhs)
+        SetStmt(source::Loc loc, ast::Exp* lhs_exp, ast::Exp* rhs_exp)
         : Stmt(loc, Kind::SetStmt),
-          m_lhs(lhs), m_rhs(rhs) {}
+          m_lhs_exp(lhs_exp), 
+          m_rhs_exp(rhs_exp) {}
+
+      public:
+        ast::Exp* lhs_exp() const {
+            return m_lhs_exp;
+        }
+        ast::Exp* rhs_exp() const {
+            return m_rhs_exp;
+        }
     };
 
 }

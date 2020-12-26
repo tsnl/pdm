@@ -135,11 +135,11 @@ add_library(
     src/pdm/ast/exp/unary.hh
     src/pdm/ast/exp/unit.hh
     src/pdm/ast/exp/vcall.hh
-    
+
     src/pdm/ast/pattern/lpattern.hh
     src/pdm/ast/pattern/tpattern.hh
     src/pdm/ast/pattern/vpattern.hh
-    
+
     src/pdm/ast/script/script.cc
     src/pdm/ast/script/script.hh
 
@@ -148,8 +148,8 @@ add_library(
     src/pdm/ast/stmt/discard.hh
     src/pdm/ast/stmt/fn.hh
     src/pdm/ast/stmt/enum.hh
+    src/pdm/ast/stmt/extern.hh
     src/pdm/ast/stmt/let.hh
-    src/pdm/ast/stmt/link.hh
     src/pdm/ast/stmt/using.hh
     src/pdm/ast/stmt/mod.cc
     src/pdm/ast/stmt/mod.hh
@@ -158,21 +158,20 @@ add_library(
     src/pdm/ast/stmt/builtin_type.hh
     src/pdm/ast/stmt/type.hh
     src/pdm/ast/stmt/typeclass.hh
-    
+
     src/pdm/ast/targ/targ.hh
 
     src/pdm/ast/typespec/typespec.hh
     src/pdm/ast/typespec/dot.hh
     src/pdm/ast/typespec/fn.hh
     src/pdm/ast/typespec/id.hh
-    src/pdm/ast/typespec/mut.hh
     src/pdm/ast/typespec/ptr.hh
     src/pdm/ast/typespec/struct.hh
     src/pdm/ast/typespec/tcall.hh
-    
+
     src/pdm/compiler/compiler.cc
     src/pdm/compiler/compiler.hh
-    
+
     src/pdm/core/integer.hh
     src/pdm/core/intern.cc
     src/pdm/core/intern.hh
@@ -223,6 +222,8 @@ add_library(
     src/pdm/parser/parser.tab.hh
     src/pdm/parser/reader.cc
     src/pdm/parser/reader.hh
+
+    src/pdm/printer/printer.hh
 )
 target_link_libraries(pdm intern)
 set_property(TARGET pdm PROPERTY CXX_STANDARD 20)

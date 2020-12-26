@@ -24,7 +24,7 @@ namespace pdm::ast {
           m_pointee(pointee) {}
       
       public:
-        Typespec* pointee() const {
+        Typespec* pointee_typespec() const {
             return m_pointee;
         }
     };

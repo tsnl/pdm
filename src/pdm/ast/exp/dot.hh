@@ -14,6 +14,8 @@ namespace pdm::ast {
     class Manager;
 
     class DotExp: public Exp {
+        friend Manager;
+
       private:
         Exp* m_lhs;
       
@@ -34,7 +36,9 @@ namespace pdm::ast {
       public:
         enum class RhsHint {
             LhsStruct,
-            LhsEnum
+            LhsStructPtr,
+            LhsEnum,
+            LhsEnumPtr
         };
 
       private:
@@ -56,17 +60,28 @@ namespace pdm::ast {
     class DotIndexExp: public DotExp {
         friend Manager;
 
+      public:
+        enum class RhsHint {
+            LhsNotPtr,
+            LhsPtr
+        };
+
       private:
-        Exp* m_rhs_exp;
+        Exp*    m_rhs_exp;
+        RhsHint m_rhs_hint;
 
       protected:
-        DotIndexExp(source::Loc loc, Exp* lhs, Exp* rhs_exp)
+        DotIndexExp(source::Loc loc, Exp* lhs, Exp* rhs_exp, RhsHint rhs_hint)
         : DotExp(loc, Kind::DotIndexExp, lhs),
-          m_rhs_exp(rhs_exp) {}
+          m_rhs_exp(rhs_exp),
+          m_rhs_hint(rhs_hint) {}
 
       public:
         Exp* rhs_exp() const {
             return m_rhs_exp;
+        }
+        RhsHint rhs_hint() const {
+            return m_rhs_hint;
         }
     };
 

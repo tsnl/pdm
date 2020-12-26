@@ -12,7 +12,8 @@ namespace pdm::intern {
 
     String::Manager String::s_manager;
 
-    String::Manager::Manager(): m_strings_repository(nullptr) {}
+    String::Manager::Manager()
+    : m_strings_repository(nullptr) {}
 
     void String::Manager::ensure_init() {
         if (m_strings_repository == nullptr) {
@@ -21,7 +22,9 @@ namespace pdm::intern {
     }
 
     String::Manager::~Manager() {
-        strings_free(s_manager.m_strings_repository);
+        if (s_manager.m_strings_repository != nullptr) {
+            strings_free(s_manager.m_strings_repository);
+        }
         s_manager.m_strings_repository = nullptr;
     }
 

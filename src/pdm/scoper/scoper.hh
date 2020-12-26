@@ -46,7 +46,7 @@ namespace pdm::scoper {
         virtual bool on_visit__fn_stmt(ast::FnStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__let_stmt(ast::LetStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__const_stmt(ast::ConstStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__link_stmt(ast::LinkStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__extern_stmt(ast::ExternStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__import_stmt(ast::ImportStmt* node, VisitOrder visit_order) override;
 
         // expressions:
@@ -77,7 +77,6 @@ namespace pdm::scoper {
 
         // typespecs:
         virtual bool on_visit__id_typespec(ast::IdTypespec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__mut_typespec(ast::MutTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__ptr_typespec(ast::PtrTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__fn_typespec(ast::FnTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__tcall_typespec(ast::TCallTypespec* node, VisitOrder visit_order) override;

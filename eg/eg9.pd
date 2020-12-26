@@ -1,0 +1,7 @@
+mod type_query_exps {
+    const hello = F32 :< F64;
+
+    const world = fn (x F32) {
+
+    }
+};

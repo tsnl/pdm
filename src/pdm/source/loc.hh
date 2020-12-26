@@ -74,10 +74,17 @@ namespace pdm::source {
 
       public:
         void print(std::ostream& out) const;
-
+        
       public:
         static Loc none;
     };
+
+    inline std::ostream& operator<<(std::ostream& out, Loc loc);
+
+    inline std::ostream& operator<<(std::ostream& out, Loc loc) {
+        loc.print(out);
+        return out;
+    }
 
 }   // namespace pdm::source
 

@@ -22,6 +22,14 @@ namespace pdm::ast {
 
       public:
         BuiltinTypeStmt(std::string&& desc, typer::TV* tv);
+
+      public:
+        std::string const& desc() const {
+            return m_desc;
+        }
+        typer::TV* tv() const {
+            return m_tv;
+        }
     };
 
 }

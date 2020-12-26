@@ -19,7 +19,7 @@ namespace pdm::ast {
         EnumStmt,
         TypeclassStmt,
         ModStmt,
-        LinkStmt,
+        ExternStmt,
         ImportStmt,
         UsingStmt,
 
@@ -43,14 +43,21 @@ namespace pdm::ast {
 
         // typespecs:
         IdTypespec,
-        MutTypespec, PtrTypespec,
+        ParenTypespec, PtrTypespec,
         FnTypespec, TCallTypespec,
         DotNameTypespec_TypePrefix, DotNameTypespec_ModPrefix,
         TupleTypespec, StructTypespec,
+
+        // total count:
+        __Count
     };
 
-    // dependencies: 
-    // - visitor.hh
+    // dependencies (updated when 'Kind' changed)
+    // - ast/*/*.hh: add a class corresponding to this Kind
+    // - visitor.hh: add a visit method/delegate
+    // - kind.cc: update names IN ORDER
+
+    char const* kind_as_text(Kind kind);
 
 }   // namespace pdm::ast
 

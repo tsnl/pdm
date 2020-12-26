@@ -20,6 +20,11 @@ namespace pdm::ast {
         DiscardStmt(source::Loc loc, Exp* exp)
         : Stmt(loc, Kind::DiscardStmt),
           m_exp(exp) {}
+
+      public:
+        Exp* discarded_exp() const {
+            return m_exp;
+        }
     };
 
 }

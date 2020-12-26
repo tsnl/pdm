@@ -1,0 +1,1 @@
+This dir should contain static C libraries to be linked as external dependencies.

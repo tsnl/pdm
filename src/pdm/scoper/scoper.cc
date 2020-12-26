@@ -57,8 +57,8 @@ namespace pdm::scoper {
         // todo: implement Scoper::on_visit__const_stmt
         return ok;
     }
-    bool Scoper::on_visit__link_stmt(ast::LinkStmt* node, VisitOrder visit_order) {
-        bool ok = ast::Visitor::on_visit__link_stmt(node, visit_order);
+    bool Scoper::on_visit__extern_stmt(ast::ExternStmt* node, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__extern_stmt(node, visit_order);
         // todo: implement Scoper::on_visit__link_stmt
         return ok;
     }
@@ -186,11 +186,6 @@ namespace pdm::scoper {
     bool Scoper::on_visit__id_typespec(ast::IdTypespec* node, VisitOrder visit_order) {
         bool ok = ast::Visitor::on_visit__id_typespec(node, visit_order);
         // todo: implement Scoper::on_visit__id_typespec
-        return ok;
-    }
-    bool Scoper::on_visit__mut_typespec(ast::MutTypespec* node, VisitOrder visit_order) {
-        bool ok = ast::Visitor::on_visit__mut_typespec(node, visit_order);
-        // todo: implement Scoper::on_visit__mut_typespec
         return ok;
     }
     bool Scoper::on_visit__ptr_typespec(ast::PtrTypespec* node, VisitOrder visit_order) {

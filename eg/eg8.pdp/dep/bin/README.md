@@ -1,0 +1,1 @@
+This dir should contain shared libraries to be linked as external dependencies.

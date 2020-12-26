@@ -11,23 +11,26 @@ namespace pdm::ast {
 
     class ImportStmt: public Stmt {
       private:
-        intern::String  m_imported_name;
-        Exp*            m_imported_from_exp;
-        Exp*            m_imported_type_exp;
+        intern::String m_imported_name;
+        utf8::String   m_imported_from;
+        utf8::String   m_imported_type;
 
       protected:
-        ImportStmt(source::Loc loc, intern::String imported_name, Exp* imported_from_exp, Exp* imported_type_exp)
+        ImportStmt(source::Loc loc, intern::String imported_name, utf8::String imported_from, utf8::String imported_type)
         : Stmt(loc, Kind::ImportStmt),
           m_imported_name(imported_name),
-          m_imported_from_exp(imported_from_exp),
-          m_imported_type_exp(imported_type_exp) {}
+          m_imported_from(imported_from),
+          m_imported_type(imported_type) {}
       
       public:
         intern::String imported_name() const {
             return m_imported_name;
         }
-        Exp* imported_from_exp() const {
-            return m_imported_from_exp;
+        utf8::String const& imported_from_str() const {
+            return m_imported_from;
+        }
+        utf8::String const& imported_type_str() const {
+            return m_imported_type;
         }
     };
 

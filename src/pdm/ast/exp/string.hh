@@ -18,30 +18,76 @@ namespace pdm::ast {
         friend Manager;
 
       public:
+        enum class QuoteKind {
+            SingleQuote,
+            DoubleQuote
+        };
+
+      public:
         class Piece {
             friend Manager;
           
           private:
             source::Loc  m_loc;
             utf8::String m_content;
+            QuoteKind    m_quote_kind;
 
-          protected:
-            Piece(source::Loc loc, utf8::String content)
+          public:
+            Piece(source::Loc loc, utf8::String content, QuoteKind quote_kind)
             : m_loc(loc),
-              m_content(content) {}
+              m_content(content),
+              m_quote_kind(quote_kind) {}
+
+          public:
+            source::Loc loc() const {
+                return m_loc;
+            }
+            utf8::String content() const {
+                return m_content;
+            }
+          
+          public:
+            QuoteKind quote_kind() const {
+                return m_quote_kind;
+            }
+            int quote_char() const {
+                switch (quote_kind()) {
+                    case QuoteKind::SingleQuote: return '\'';
+                    case QuoteKind::DoubleQuote: return '"';
+                }
+            }
         };
 
       private:
-        utf8::String m_content;
-    
-      public:
-        StringExp(source::Loc loc, utf8::String content)
-        : Exp(loc, Kind::StringExp),
-          m_content(std::move(content)) {}
+        std::vector<StringExp::Piece> m_pieces;
+        utf8::String                  m_content;
+        QuoteKind                     m_quote_kind;
 
       public:
+        StringExp(source::Loc loc, std::vector<StringExp::Piece>&& pieces, QuoteKind quote_kind)
+        : Exp(loc, Kind::StringExp),
+          m_pieces(std::move(pieces)),
+          m_content(std::move(_content_from_pieces(m_pieces))),
+          m_quote_kind(quote_kind) {}
+
+        StringExp(source::Loc loc, utf8::String content, QuoteKind quote_kind)
+        : StringExp(loc, std::move(std::vector<Piece>{1,Piece{loc,content,quote_kind}}), quote_kind) {}
+
+      public:
+        std::vector<StringExp::Piece> const& pieces() const {
+            return m_pieces;
+        }
         utf8::String const& content() const {
             return m_content;
+        }
+
+      private:
+        static utf8::String&& _content_from_pieces(std::vector<StringExp::Piece> const& pieces) {
+            utf8::StringBuilder content_sb;
+            for (StringExp::Piece piece: pieces) {
+                content_sb.append_str(piece.content());
+            }
+            return std::move(content_sb.strdup());
         }
     };
 

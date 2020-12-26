@@ -51,6 +51,10 @@ namespace pdm::ast {
           m_fields(std::move(fields)) {}
       
       public:
+        bool is_singleton_pattern() const {
+            return m_fields.size() == 1;
+        }
+
         std::vector<LPattern::Field*> const& fields() const {
             return m_fields;
         }

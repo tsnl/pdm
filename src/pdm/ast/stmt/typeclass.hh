@@ -22,7 +22,7 @@ namespace pdm::ast {
         friend Manager;
 
       private:
-        intern::String          m_lhs_name;
+        intern::String          m_typeclass_name;
         intern::String          m_candidate_name;
         Typespec*               m_candidate_typespec;
         std::vector<TPattern*>  m_tpatterns;
@@ -31,22 +31,22 @@ namespace pdm::ast {
       public:
         TypeclassStmt(
             source::Loc loc, 
-            intern::String lhs_name,
+            intern::String typeclass_name,
             intern::String candidate_name,
             Typespec* candidate_typespec,
             std::vector<TPattern*>&& tpatterns,
             std::vector<Exp*>&& conditions
         )
         : Stmt(loc, Kind::TypeStmt),
-          m_lhs_name(lhs_name),
+          m_typeclass_name(typeclass_name),
           m_candidate_name(candidate_name),
           m_candidate_typespec(candidate_typespec),
           m_tpatterns(std::move(tpatterns)),
           m_conditions(std::move(conditions)) {}
       
       public:
-        intern::String lhs_name() const {
-            return m_lhs_name;
+        intern::String typeclass_name() const {
+            return m_typeclass_name;
         }
         intern::String candidate_name() const {
             return m_candidate_name;
