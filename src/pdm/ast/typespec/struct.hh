@@ -17,12 +17,19 @@ namespace pdm::ast {
       public:
         class Field {
           private:
+            source::Loc    m_loc;
             intern::String m_lhs_name;
             Typespec*      m_rhs_typespec;
+          
           public:
-            Field(intern::String name, Typespec* typespec)
-            : m_lhs_name(name), m_rhs_typespec(typespec) {}
+            Field(source::Loc loc, intern::String name, Typespec* typespec)
+            : m_loc(loc),
+              m_lhs_name(name), m_rhs_typespec(typespec) {}
+          
           public:
+            source::Loc const& loc() const {
+                return m_loc;
+            }
             intern::String lhs_name() const {
                 return m_lhs_name;
             }

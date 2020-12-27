@@ -8,6 +8,7 @@
 #include "pdm/ast/script/script.hh"
 #include "pdm/feedback/feedback.hh"
 #include "pdm/feedback/letter.hh"
+#include "pdm/parser/parser.hh"
 
 namespace pdm::compiler {
 
@@ -22,10 +23,10 @@ namespace pdm::compiler {
             return script_it->second;
         }
 
-        if (type == "fs/file") {
+        if (type == "pdm.script") {
             std::string abs_from_path = key.import_from_path.native();
             source::Source* source = new source::Source(std::move(abs_from_path));
-            ast::Script* script = nullptr;
+            ast::Script* script = parser::parse_script(&m_manager, source);
 
             // todo: load, scan, parse, ...
             // - run reader + lexer + parser, module_dispatcher, and type_initializer.
@@ -45,7 +46,23 @@ namespace pdm::compiler {
             return nullptr;
         }
     }
-    bool Compiler::typecheck() {
+
+    bool Compiler::import_all() {
+        // importing the entry point:
+        std::string entry_point_path = m_entry_point_path;
+        std::string import_type = "pdm.script";
+        if (!import(std::move(entry_point_path), std::move(import_type))) {
+            return false;
+        }
+
+        // todo: running until all dispatched dependencies are empty.
+        // since each module's dd only runs on first import, this always halts for finite
+        // number of imports.
+
+        // all ok!
+        return true;
+    }
+    bool Compiler::typecheck_all() {
         // todo: actually solve a typer here...
         return false;
     }

@@ -1,5 +1,108 @@
 # Roadmap
 
+## Dec 27
+
+We've overshot the Christmas deadline, but work continues regardless.
+The key is to push 'linking' away for now, since it is complicated, and hence intimidating.
+However, we know how to generate LLVM IR and/or WASM, so I'll **punt on sound dependencies for now**
+
+Thus, **imports are resolved before all else, then 'extern' is const-evaled**
+
+Here's a modified example from eg8:
+```
+match (__platform) {
+    PLATFORM.Llvm -> {
+        extern csdl from {
+            lang: "c",
+            headers: [
+                "./include/SDL.h"
+            ],
+            header_dirs: [
+                "./include/"
+            ],
+            sources: [],
+            static_libs: [
+                "./dep/lib/SDL2/SDL2_main.lib",
+                "./dep/lib/SDL2/SDL2.lib"
+            ],
+            copied_dynamic_libs: [
+                "./dep/bin/SDL2.dll"
+            ],
+            shared_dynamic_libs: [
+                if __operating_system == OS.Win32 then {
+                    "OpenGL32.dll"
+                } else if __operating_system == OS.Linux then {
+                    "OpenGL.so"
+                } else {
+                    "OpenGL"
+                }
+            ],
+        };
+    }
+    PLATFORM.Wasm -> {
+        extern csdl from {
+            lang: "js",
+            # ...
+        }
+    }
+}
+```
+
+# language-based bindings can then be provided by linking against this external module.
+# note that templates can be used, and that multiple symbols can link against the same definition using
+# type translation (T const* -> T, T const -> T, etc...)
+mod sdl {
+    fn init(flags I32) -> I32
+    from csdl "SDL_Init";
+
+    type Event from csdl "SDL_Event";
+};
+```
+
+... in retrospect, maybe just **'linker'**
+
+This simplifies...
+- C dependency management: 
+
+  just import a C/C++ header, and we'll read declarations, leave linking for later.
+
+
+- Output restricted to LLVM and WASM, and just one output module per compilation,
+  so whole program optimization performed in PDM-land, and dynamic libs must be 
+  **checked against.**
+  - add **top-level** `if const (...) then (...) else (...)` to support conditional
+    imports.
+  - add **PLATFORM** flag to allow selective 'extern' statements
+  - 'extern' to JS as well as C, so WASM and LLVM parity is achieved.
+
+This enables the following factorization:
+- **libpdm**: core library
+- **compiler**:
+  1. accepts an entry point `pdm` file
+  2. emits ONE .ll file and/or ONE .wasm file-- compiler output
+- (pdm.bartender):
+  1. accepts input (+ reads `pdm_order_history.json`) to config and link C, C++ 
+     libraries, or more generally configure builds, interactively.
+     - constantly test configs to check for errors
+  2. invokes `pdmc` to produce LLVM IR or WASM output
+  3. invokes 3rd party applications like `clang` and `emcc` to produce finished executable.
+
+This enables the following philosophical changes:
+- Haxe profits greatly from being a source-to-source language, and it's great at what it does.
+- Rather than build on underlying platforms, instead allow such source-compilation to modern-native
+  formats: LLVM and WASM.
+- Crucially, punting interop with other ecosystems until linking lets us **use 'headers' for typing**
+  and _then_ worry about linking.
+  
+Note this produces the following pattern in directory structures:
+- for web, keep native JS code in-tree; for desktop, keep native C code in-tree. 
+
+  One-tree, multi-platform.
+  
+  parallel implementations in different languages or differentiated modules: all ok!
+- bartender is a better tool to specify linking per-platform:
+
+
 ## Dec 23
 
 While porting the grammar, I've made the following revisions. This allows 

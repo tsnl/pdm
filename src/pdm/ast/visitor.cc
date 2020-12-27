@@ -231,7 +231,7 @@ namespace pdm::ast {
                 TCallExp* tcall_exp = dynamic_cast<TCallExp*>(node);
                 ok = visit(tcall_exp->lhs_called()) && ok;
                 for (TArg* arg: tcall_exp->args()) {
-                    ok = visit(arg->node()) && ok;
+                    ok = visit(arg) && ok;
                 }
                 break;
             }
@@ -302,7 +302,7 @@ namespace pdm::ast {
                 TCallTypespec* tcall_typespec = dynamic_cast<TCallTypespec*>(node);
                 ok = visit(tcall_typespec->lhs_called()) && ok;
                 for (TArg* arg: tcall_typespec->args()) {
-                    ok = visit(arg->node()) && ok;
+                    ok = visit(arg) && ok;
                 }
                 break;
             }
@@ -336,12 +336,32 @@ namespace pdm::ast {
             }
 
             //
+            // shared/templates:
+            //
+
+            case Kind::TArg:
+            {
+                TArg* targ = dynamic_cast<TArg*>(node);
+                ok = visit(targ->arg_node()) && ok;
+                break;
+            }
+
+            //
             // non-syntactic elements:
             // (never parsed, only compiler-created)
             //
 
             case Kind::BuiltinTypeStmt:
             {
+                break;
+            }
+
+            //
+            // invalid enum entries:
+            //
+            case Kind::__Count:
+            {
+                ok = false;
                 break;
             }
         }
@@ -542,6 +562,12 @@ namespace pdm::ast {
             case Kind::ParenTypespec:
             {
                 return on_visit__paren_typespec(dynamic_cast<ParenTypespec*>(node), visit_order);
+            }
+
+            // templates/shared:
+            case Kind::TArg:
+            {
+                return on_visit__targ(dynamic_cast<TArg*>(node), visit_order);
             }
 
             // non-syntactic elements:

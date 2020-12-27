@@ -371,9 +371,9 @@ unprefixed_enum_field_pl
     | unprefixed_enum_field_pl PIPE enum_field  { $$ = std::move($1); $$.push_back($3); }
     ;
 enum_field
-    : tid                            { $$ = mgr->new_enum_stmt_field($1.ID_intstr, std::move(std::vector<ast::Typespec*>{}), false); }
-    | tid LPAREN RPAREN              { $$ = mgr->new_enum_stmt_field($1.ID_intstr, std::move(std::vector<ast::Typespec*>{}), true); }
-    | tid LPAREN typespec_cl1 RPAREN { $$ = mgr->new_enum_stmt_field($1.ID_intstr, std::move($3), true); }
+    : tid                            { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move(std::vector<ast::Typespec*>{}), false); }
+    | tid LPAREN RPAREN              { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move(std::vector<ast::Typespec*>{}), true); }
+    | tid LPAREN typespec_cl1 RPAREN { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move($3), true); }
     ;
 typeclass_stmt
     : KW_TYPECLASS tid LTHAN tid typespec GTHAN              BIND LCYBRK expr_sl RCYBRK { 
@@ -738,7 +738,7 @@ tpattern_seq
 
 %%
 
-#include <stdio.h>
+#include <iostream>
 
 // #include "lexer.h"
 
@@ -775,6 +775,11 @@ namespace pdm::parser {
         } else {
             return nullptr;
         }
+    }
+
+    void parser::error(source::Loc const& loc, std::string const& message) {
+        // todo: post feedback here
+        std::cout << "YACC error: " << message << " at " << loc;
     }
 
 }

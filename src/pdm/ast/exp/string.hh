@@ -61,17 +61,15 @@ namespace pdm::ast {
       private:
         std::vector<StringExp::Piece> m_pieces;
         utf8::String                  m_content;
-        QuoteKind                     m_quote_kind;
 
       public:
-        StringExp(source::Loc loc, std::vector<StringExp::Piece>&& pieces, QuoteKind quote_kind)
+        StringExp(source::Loc loc, std::vector<StringExp::Piece>&& pieces)
         : Exp(loc, Kind::StringExp),
           m_pieces(std::move(pieces)),
-          m_content(std::move(_content_from_pieces(m_pieces))),
-          m_quote_kind(quote_kind) {}
+          m_content(std::move(_content_from_pieces(m_pieces))) {}
 
         StringExp(source::Loc loc, utf8::String content, QuoteKind quote_kind)
-        : StringExp(loc, std::move(std::vector<Piece>{1,Piece{loc,content,quote_kind}}), quote_kind) {}
+        : StringExp(loc, std::move(std::vector<Piece>{1,Piece{loc,content,quote_kind}})) {}
 
       public:
         std::vector<StringExp::Piece> const& pieces() const {

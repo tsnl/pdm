@@ -11,7 +11,8 @@ namespace pdm::ast {
         : Node(loc, kind) {}
 
       protected:
-        virtual bool is_const_evaluable() const;
+        // todo: implement 'is_const_evaluable' for all 'exp's
+        // virtual bool is_const_evaluable() const;
     };
 
 }

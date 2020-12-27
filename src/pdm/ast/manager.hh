@@ -1,6 +1,9 @@
 #ifndef INCLUDED_PDM_AST_MANAGER_HH
 #define INCLUDED_PDM_AST_MANAGER_HH
 
+#include "pdm/core/integer.hh"
+#include "pdm/core/units.hh"
+
 #include "script/script.hh"
 
 #include "exp/exp.hh"
@@ -54,55 +57,35 @@
 #include "typespec/tcall.hh"
 #include "typespec/tuple.hh"
 
+
 namespace pdm::typer {
     class Typer;
 }
 
 namespace pdm::ast {
 
-    class ArrayExp;
-    class BinaryExp;
-    class ChainExp;
-    class DotNameExp;
-    class DotIndexExp;
-    class IdExp;
-    class IfExp;
-    class IntExp;
-    class LambdaExp;
-    class ParenExp;
-    class StringExp;
-    class StructExp;
-    class TCallExp;
-    class TupleExp;
-    class TypeQueryExp;
-    class UnaryExp;
-    class UnitExp;
-    class VCallExp;
-
-    class LPattern;
-    class TPattern;
-    class VPattern;
-
-    class Script;
-
-    class BuiltinTypeStmt;
-    class ConstStmt;
-    class FnStmt;
-    class EnumStmt;
-    class ImportStmt;
-    class LetStmt;
-    class ExternStmt;
-    class ModuleStmt;
-    class TypeStmt;
-    class TypeclassStmt;
-
     class Manager {
       private:
         typer::Typer* m_typer;
+        u8*           m_pool;
+        size_t        m_pool_size_in_bytes;
+        size_t        m_pool_used_in_bytes;
 
       public:
-        Manager(typer::Typer* typer)
-        : m_typer(typer) {}
+        Manager(typer::Typer* typer, size_t pool_size_in_bytes = megabytes_in_bytes(64));
+        ~Manager();
+
+      private:
+        u8* alloc(size_t alloc_size_in_bytes) {
+            u8* ptr = m_pool + m_pool_used_in_bytes;
+            m_pool_used_in_bytes += alloc_size_in_bytes;
+            return ptr;
+        }
+
+        template <typename R, typename... Ts>
+        R* emplace(Ts&&... args) {
+            return new(alloc(sizeof(R))) R(std::forward<Ts>(args)...);
+        }
 
       public:
         Script* new_script(source::Source* source, source::Loc loc, std::vector<Stmt*>&& stmts);
@@ -158,7 +141,7 @@ namespace pdm::ast {
         TypeStmt* new_type_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, Typespec* rhs_typespec);
         EnumStmt* new_enum_stmt(source::Loc loc, intern::String name, std::vector<EnumStmt::Field*>&& fields);
         TypeclassStmt* new_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, Typespec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<Exp*>&& conditions);
-        EnumStmt::Field* new_enum_stmt_field(intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs);
+        EnumStmt::Field* new_enum_stmt_field(source::Loc loc, intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs);
         
         DotNameTypespec_TypePrefix* new_dot_name_typespec_with_type_prefix(source::Loc loc, Typespec* lhs_typespec, intern::String rhs_name);
         DotNameTypespec_ModPrefix* new_dot_name_typespec_with_mod_prefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name);

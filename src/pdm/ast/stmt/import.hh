@@ -6,10 +6,13 @@
 #include "pdm/ast/exp/exp.hh"
 
 namespace pdm::ast {
-
     class Manager;
+}
 
+namespace pdm::ast {
     class ImportStmt: public Stmt {
+        friend Manager;
+
       private:
         intern::String m_imported_name;
         utf8::String   m_imported_from;

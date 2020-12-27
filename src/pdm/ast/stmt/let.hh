@@ -10,7 +10,13 @@ namespace pdm::ast {
 
     class Manager;
 
+}
+
+namespace pdm::ast {
+
     class LetStmt: public Stmt {
+        friend Manager;
+
       private:
         LPattern* m_lhs_lpattern;
         Exp*      m_rhs_body;

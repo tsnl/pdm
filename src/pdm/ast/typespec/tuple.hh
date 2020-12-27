@@ -5,8 +5,14 @@
 #include "pdm/ast/typespec/typespec.hh"
 
 namespace pdm::ast {
+    class Manager;
+}
+
+namespace pdm::ast {
 
     class TupleTypespec: public Typespec {
+        friend Manager;
+
       private:
         std::vector<Typespec*> m_items;
 

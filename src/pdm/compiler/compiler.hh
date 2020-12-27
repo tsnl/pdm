@@ -62,11 +62,12 @@ namespace pdm::compiler {
           m_root_frame(&m_typer),
           m_scoper(&m_typer, &m_root_frame) {}
 
-      public:
+      private:
         ast::Script* import(std::string&& from_path, std::string&& type);
 
       public:
-        bool typecheck();
+        bool import_all();
+        bool typecheck_all();
 
       public:
         std::string abspath(std::string&& str) const;

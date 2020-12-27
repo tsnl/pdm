@@ -19,15 +19,26 @@ namespace pdm::ast {
             friend Manager;
 
           private:
+            source::Loc    m_loc;
             intern::String m_lhs_name;
             Typespec*      m_typespec;
+
           protected:
-            Field(intern::String name, Typespec* rhs_typespec)
-            : m_lhs_name(name),
+            Field(source::Loc loc, intern::String name, Typespec* rhs_typespec)
+            : m_loc(loc),
+              m_lhs_name(name),
               m_typespec(rhs_typespec) {}
+
           public:
-            intern::String lhs_name() const { return m_lhs_name; }
-            Typespec* rhs_typespec() const { return m_typespec; }
+            source::Loc const& loc() const {
+                return m_loc;
+            }
+            intern::String lhs_name() const {
+                return m_lhs_name;
+            }
+            Typespec* rhs_typespec() const {
+                return m_typespec;
+            }
         };
       
       private:

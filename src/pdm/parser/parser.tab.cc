@@ -2226,19 +2226,19 @@ namespace pdm { namespace parser {
 
   case 38: // enum_field: tid
 #line 374 "parser.yy"
-                                     { yylhs.value.as < pdm::ast::EnumStmt::Field* > () = mgr->new_enum_stmt_field(yystack_[0].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::Typespec*>{}), false); }
+                                     { yylhs.value.as < pdm::ast::EnumStmt::Field* > () = mgr->new_enum_stmt_field(yylhs.location, yystack_[0].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::Typespec*>{}), false); }
 #line 2231 "parser.tab.cc"
     break;
 
   case 39: // enum_field: tid "(" ")"
 #line 375 "parser.yy"
-                                     { yylhs.value.as < pdm::ast::EnumStmt::Field* > () = mgr->new_enum_stmt_field(yystack_[2].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::Typespec*>{}), true); }
+                                     { yylhs.value.as < pdm::ast::EnumStmt::Field* > () = mgr->new_enum_stmt_field(yylhs.location, yystack_[2].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::Typespec*>{}), true); }
 #line 2237 "parser.tab.cc"
     break;
 
   case 40: // enum_field: tid "(" typespec_cl1 ")"
 #line 376 "parser.yy"
-                                     { yylhs.value.as < pdm::ast::EnumStmt::Field* > () = mgr->new_enum_stmt_field(yystack_[3].value.as < TokenInfo > ().ID_intstr, std::move(yystack_[1].value.as < std::vector<pdm::ast::Typespec*> > ()), true); }
+                                     { yylhs.value.as < pdm::ast::EnumStmt::Field* > () = mgr->new_enum_stmt_field(yylhs.location, yystack_[3].value.as < TokenInfo > ().ID_intstr, std::move(yystack_[1].value.as < std::vector<pdm::ast::Typespec*> > ()), true); }
 #line 2243 "parser.tab.cc"
     break;
 
@@ -3937,7 +3937,7 @@ namespace pdm { namespace parser {
 #line 739 "parser.yy"
 
 
-#include <stdio.h>
+#include <iostream>
 
 // #include "lexer.h"
 
@@ -3974,6 +3974,11 @@ namespace pdm::parser {
         } else {
             return nullptr;
         }
+    }
+
+    void parser::error(source::Loc const& loc, std::string const& message) {
+        // todo: post feedback here
+        std::cout << "YACC error: " << message << " at " << loc;
     }
 
 }

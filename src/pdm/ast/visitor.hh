@@ -54,6 +54,8 @@
 #include "pdm/ast/typespec/typespec.hh"
 #include "pdm/ast/typespec/paren.hh"
 
+#include "pdm/ast/targ/targ.hh"
+
 //
 // implementations:
 //
@@ -227,6 +229,11 @@ namespace pdm::ast {
             return true;
         }
         virtual bool on_visit__paren_typespec(ParenTypespec* node, VisitOrder visit_order) {
+            return true;
+        }
+
+        // templates/shared:
+        virtual bool on_visit__targ(TArg* node, VisitOrder visit_order) {
             return true;
         }
 

@@ -48,6 +48,9 @@ namespace pdm::ast {
         DotNameTypespec_TypePrefix, DotNameTypespec_ModPrefix,
         TupleTypespec, StructTypespec,
 
+        // shared, templates:
+        TArg,
+
         // total count:
         __Count
     };

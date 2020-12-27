@@ -7,7 +7,7 @@
 
 namespace pdm::parser {
 
-    ast::Script* parse_script(source::Source* source);
+    ast::Script* parse_script(ast::Manager* manager, source::Source* source);
 
 }
 

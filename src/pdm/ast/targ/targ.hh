@@ -1,6 +1,8 @@
 #ifndef INCLUDED_PDM_AST_TARG_TARG_HH
 #define INCLUDED_PDM_AST_TARG_TARG_HH
 
+#include "pdm/ast/node.hh"
+
 namespace pdm::ast {
 
     enum class TArgKind {
@@ -8,7 +10,7 @@ namespace pdm::ast {
         Typespec
     };
     
-    class TArg {
+    class TArg: public Node {
         friend Manager;
 
       private:
@@ -16,19 +18,20 @@ namespace pdm::ast {
         TArgKind m_arg_kind;
 
       private:
-        TArg(Node* node, TArgKind arg_kind)
-        : m_node(node), m_arg_kind(arg_kind) {}
+        TArg(source::Loc loc, Node* ref_node, TArgKind arg_kind)
+        : Node(loc, Kind::TArg),
+          m_node(ref_node), m_arg_kind(arg_kind) {}
         
       protected:
-        TArg(Exp* exp)
-        : TArg(exp, TArgKind::Exp) {}
+        TArg(source::Loc loc, Exp* exp)
+        : TArg(loc, exp, TArgKind::Exp) {}
 
-        TArg(Typespec* typespec)
-        : TArg(typespec, TArgKind::Typespec) {}
+        TArg(source::Loc loc, Typespec* typespec)
+        : TArg(loc, typespec, TArgKind::Typespec) {}
 
       // getters:  
       public:
-        Node* node() const {
+        Node* arg_node() const {
             return m_node;
         }
         TArgKind arg_kind() const {

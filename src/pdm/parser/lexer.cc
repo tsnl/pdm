@@ -129,8 +129,8 @@ namespace pdm::parser::aux {
     static TokenKind helpLexOneSimpleToken(Reader* source);
     static TokenKind lexOneNumber(Reader* source, TokenInfo* info);
     static TokenKind lexOneIntChunk(Reader* source, TokenInfo* info, int noPrefix);
-    static TokenKind lexOneIdOrKeyword(Reader* source, TokenInfo* info, source::Pos& firstPos);
-    static TokenKind lexOneString(Reader* source, TokenInfo* info, source::Pos& firstPos);
+    static TokenKind lexOneIdOrKeyword(Reader* source, TokenInfo* info, source::Pos const& firstPos);
+    static TokenKind lexOneString(Reader* source, TokenInfo* infoP, source::Pos const& firstPos);
     inline static void skipWhitespace(Reader* source);
 
     inline static bool isFirstIdChar(char ch);

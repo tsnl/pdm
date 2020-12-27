@@ -1,0 +1,6 @@
+mod hello {
+    def main() -> I32 {
+        0
+    };
+};
+

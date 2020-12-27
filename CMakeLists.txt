@@ -177,6 +177,7 @@ add_library(
     src/pdm/core/intern.hh
     src/pdm/core/utf8.cc
     src/pdm/core/utf8.hh
+    src/pdm/core/units.hh
 
     src/pdm/scoper/context.cc
     src/pdm/scoper/context.hh
@@ -216,7 +217,6 @@ add_library(
 
     src/pdm/parser/lexer.cc
     src/pdm/parser/lexer.hh
-    src/pdm/parser/parser.cc
     src/pdm/parser/parser.hh
     src/pdm/parser/parser.tab.cc
     src/pdm/parser/parser.tab.hh
@@ -225,16 +225,16 @@ add_library(
 
     src/pdm/printer/printer.hh
 )
-target_link_libraries(pdm intern)
+target_link_libraries(pdm intern utf8proc)
 set_property(TARGET pdm PROPERTY CXX_STANDARD 20)
 
 add_executable(
-    pdm_cli
-    src/pdm_cli/main.cc
-    src/pdm_cli/typer_demo.cc
-    src/pdm_cli/typer_demo.hh
-    src/pdm_cli/feedback_demo.cc
-    src/pdm_cli/feedback_demo.hh
+    pdm_sandbox
+    src/pdm_sandbox/main.cc
+    src/pdm_sandbox/typer_demo.cc
+    src/pdm_sandbox/typer_demo.hh
+    src/pdm_sandbox/feedback_demo.cc
+    src/pdm_sandbox/feedback_demo.hh
 )
-target_link_libraries(pdm_cli pdm)
-set_property(TARGET pdm_cli PROPERTY CXX_STANDARD 20)
+target_link_libraries(pdm_sandbox pdm)
+set_property(TARGET pdm_sandbox PROPERTY CXX_STANDARD 20)
