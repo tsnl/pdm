@@ -32,7 +32,6 @@
 #include "pdm/ast/stmt/fn.hh"
 #include "pdm/ast/stmt/enum.hh"
 #include "pdm/ast/stmt/import.hh"
-#include "pdm/ast/stmt/let.hh"
 #include "pdm/ast/stmt/extern.hh"
 #include "pdm/ast/stmt/mod.hh"
 #include "pdm/ast/stmt/type.hh"
@@ -42,11 +41,11 @@
 #include "pdm/ast/stmt/set.hh"
 #include "pdm/ast/stmt/using.hh"
 #include "pdm/ast/stmt/var.hh"
+#include "pdm/ast/stmt/val.hh"
 
 #include "pdm/ast/typespec/typespec.hh"
 #include "pdm/ast/typespec/dot.hh"
 #include "pdm/ast/typespec/id.hh"
-#include "pdm/ast/typespec/ptr.hh"
 #include "pdm/ast/typespec/struct.hh"
 #include "pdm/ast/typespec/tcall.hh"
 #include "pdm/ast/typespec/tuple.hh"
@@ -54,7 +53,8 @@
 #include "pdm/ast/typespec/typespec.hh"
 #include "pdm/ast/typespec/paren.hh"
 
-#include "pdm/ast/targ/targ.hh"
+#include "pdm/ast/arg/targ.hh"
+#include "pdm/ast/arg/varg.hh"
 
 //
 // implementations:
@@ -111,7 +111,7 @@ namespace pdm::ast {
         virtual bool on_visit__const_stmt(ConstStmt* node, VisitOrder visit_order) {
             return true;
         }
-        virtual bool on_visit__let_stmt(LetStmt* node, VisitOrder visit_order) { 
+        virtual bool on_visit__val_stmt(ValStmt* node, VisitOrder visit_order) { 
             return true;
         }
         virtual bool on_visit__var_stmt(VarStmt* node, VisitOrder visit_order) {
@@ -207,9 +207,6 @@ namespace pdm::ast {
         virtual bool on_visit__id_typespec(IdTypespec* node, VisitOrder visit_order) {
             return true;
         }
-        virtual bool on_visit__ptr_typespec(PtrTypespec* node, VisitOrder visit_order) {
-            return true;
-        }
         virtual bool on_visit__fn_typespec(FnTypespec* node, VisitOrder visit_order) {
             return true;
         }
@@ -234,6 +231,9 @@ namespace pdm::ast {
 
         // templates/shared:
         virtual bool on_visit__targ(TArg* node, VisitOrder visit_order) {
+            return true;
+        }
+        virtual bool on_visit__varg(VArg* node, VisitOrder visit_order) {
             return true;
         }
 

@@ -77,6 +77,7 @@ namespace pdm::scoper {
 
         // shadow creates a new child context
         // * must accept new 'frame' param since frames pushed/popped
+        // note that 'this' can be a nullptr!
         Context* shadow(ContextKind context_kind, Frame* frame) {
             return new Context(context_kind, frame, this);
         }

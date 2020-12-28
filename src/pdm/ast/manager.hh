@@ -36,23 +36,23 @@
 #include "stmt/enum.hh"
 #include "stmt/fn.hh"
 #include "stmt/import.hh"
-#include "stmt/let.hh"
 #include "stmt/extern.hh"
 #include "stmt/mod.hh"
 #include "stmt/set.hh"
 #include "stmt/type.hh"
 #include "stmt/typeclass.hh"
 #include "stmt/using.hh"
+#include "stmt/val.hh"
 #include "stmt/var.hh"
 
-#include "targ/targ.hh"
+#include "arg/targ.hh"
+#include "arg/varg.hh"
 
 #include "typespec/typespec.hh"
 #include "typespec/dot.hh"
 #include "typespec/fn.hh"
 #include "typespec/id.hh"
 #include "typespec/paren.hh"
-#include "typespec/ptr.hh"
 #include "typespec/struct.hh"
 #include "typespec/tcall.hh"
 #include "typespec/tuple.hh"
@@ -109,7 +109,7 @@ namespace pdm::ast {
         TypeQueryExp* new_type_query_exp(source::Loc loc, TypeQueryKind kind, Typespec* lhs_typespec, Typespec* rhs_typespec);
         UnaryExp* new_unary_exp(source::Loc loc, UnaryOperator unary_operator, Exp* operand);
         UnitExp* new_unit_exp(source::Loc loc);
-        VCallExp* new_vcall_exp(source::Loc loc, Exp* lhs_called, std::vector<Exp*>&& args);
+        VCallExp* new_vcall_exp(source::Loc loc, Exp* lhs_called, std::vector<VArg*>&& args);
         StructExp::Field* new_struct_exp_field(source::Loc loc, intern::String name, Exp* value);
         
         LPattern* new_lpattern(source::Loc loc, std::vector<LPattern::Field*>&& fields);
@@ -117,12 +117,12 @@ namespace pdm::ast {
         VPattern* new_vpattern(source::Loc loc, std::vector<VPattern::Field*>&& fields);
         LPattern::Field* new_lpattern_field(source::Loc loc, LPattern::FieldKind kind, intern::String name, Typespec* opt_rhs_typespec = nullptr);
         TPattern::Field* new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, Typespec* rhs_typespec);
-        VPattern::Field* new_vpattern_field(source::Loc loc, intern::String name, Typespec* rhs_typespec);
+        VPattern::Field* new_vpattern_field(source::Loc loc, intern::String name, Typespec* rhs_typespec, VArgKind varg_kind);
 
         BuiltinTypeStmt* new_builtin_type_stmt(std::string&& desc, typer::TV* tv);
         ConstStmt* new_const_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
         DiscardStmt* new_discard_stmt(source::Loc loc, Exp* exp);
-        LetStmt* new_let_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
+        ValStmt* new_val_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
         VarStmt* new_var_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
         SetStmt* new_set_stmt(source::Loc loc, Exp* lhs, Exp* rhs);
         
@@ -148,7 +148,6 @@ namespace pdm::ast {
         FnTypespec* new_fn_typespec(source::Loc loc, VPattern* lhs_vpattern, Typespec* rhs_typespec);
         IdTypespec* new_id_typespec(source::Loc loc, intern::String name);
         ParenTypespec* new_paren_typespec(source::Loc loc, Typespec* nested_typespec);
-        PtrTypespec* new_ptr_typespec(source::Loc loc, Typespec* pointee_typespec);
         StructTypespec* new_struct_typespec(source::Loc loc, std::vector<StructTypespec::Field*>&& fields);
         TCallTypespec* new_tcall_typespec(source::Loc loc, Typespec* lhs_called, std::vector<TArg*>&& args);
         TupleTypespec* new_tuple_typespec(source::Loc loc, std::vector<Typespec*>&& items);
@@ -156,6 +155,7 @@ namespace pdm::ast {
 
         TArg* new_targ_exp(source::Loc loc, Exp* exp);
         TArg* new_targ_typespec(source::Loc loc, Typespec* typespec);
+        VArg* new_varg(source::Loc, Exp* exp, VArgKind varg_kind);
 
       public:
         typer::Typer* typer() const {

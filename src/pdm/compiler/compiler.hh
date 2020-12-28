@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include <filesystem>
+#include <vector>
 
 #include "pdm/core/intern.hh"
 #include "pdm/ast/manager.hh"
@@ -44,33 +45,51 @@ namespace pdm::compiler {
     // 'Compiler' instances transform input files into output files.
     class Compiler {
       private:
-        std::filesystem::path m_cwd;
-        std::filesystem::path m_entry_point_path;
-        aux::ImportMap m_cached_imports;
+        std::filesystem::path     m_cwd;
+        std::filesystem::path     m_entry_point_path;
+        aux::ImportMap            m_cached_imports;
+        std::vector<ast::Script*> m_all_scripts;
         
-        typer::Typer m_typer;
-        ast::Manager m_manager;
+        typer::Typer      m_typer;
+        ast::Manager      m_manager;
         scoper::RootFrame m_root_frame;
-        scoper::Scoper m_scoper;
+        scoper::Scoper    m_scoper;
 
       public:
         Compiler(std::string&& cwd, std::string&& entry_point_path)
         : m_cwd(std::move(cwd)),
           m_entry_point_path(abspath(std::move(entry_point_path))),
+          m_cached_imports(),
+          m_all_scripts(),
           m_typer(),
           m_manager(&m_typer),
           m_root_frame(&m_typer),
-          m_scoper(&m_typer, &m_root_frame) {}
+          m_scoper(&m_typer, &m_root_frame) {
+            m_all_scripts.reserve(8);
+        }
 
       private:
-        ast::Script* import(std::string&& from_path, std::string&& type);
+        ast::Script* import(std::string const& from_path, std::string const& type, std::string const& reason);
+        ast::Script* help_import_script_1(std::string const& from_path, std::string const& type);
+        void         help_import_script_2(ast::Script* script);
 
       public:
         bool import_all();
         bool typecheck_all();
 
       public:
-        std::string abspath(std::string&& str) const;
+        std::string abspath(std::string const& str) const;
+
+      public:
+        typer::Typer* typer() {
+            return &m_typer;
+        }
+        ast::Manager* ast_manager() {
+            return &m_manager;
+        }
+        std::vector<ast::Script*> const& all_scripts() const {
+            return m_all_scripts;
+        }
     };
 
 }

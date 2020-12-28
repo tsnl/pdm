@@ -1,7 +1,11 @@
-#ifndef INCLUDED_PDM_AST_TARG_TARG_HH
-#define INCLUDED_PDM_AST_TARG_TARG_HH
+#ifndef INCLUDED_PDM_AST_ARG_TARG_HH
+#define INCLUDED_PDM_AST_ARG_TARG_HH
 
 #include "pdm/ast/node.hh"
+
+namespace pdm::ast {
+    class Friend;
+}
 
 namespace pdm::ast {
 
@@ -50,4 +54,4 @@ namespace pdm::ast {
 
 }
 
-#endif  // INCLUDED_PDM_AST_TARG_TARG_HH
+#endif  // INCLUDED_PDM_AST_ARG_TARG_HH

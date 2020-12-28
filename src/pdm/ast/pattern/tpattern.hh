@@ -8,8 +8,10 @@
 #include "pdm/ast/typespec/typespec.hh"
 
 namespace pdm::ast {
-
     class Manager;
+}
+
+namespace pdm::ast {
 
     class TPattern: public Node {
         friend Manager;
@@ -42,7 +44,7 @@ namespace pdm::ast {
             FieldKind kind() const { 
                 return m_kind; 
             }
-            intern::String name() const {
+            intern::String lhs_name() const {
                 return m_lhs_name; 
             }
             Typespec* rhs_typespec() const {

@@ -4,17 +4,12 @@
 #include <vector>
 
 #include "pdm/ast/kind.hh"
-#include "pdm/ast/targ/targ.hh"
-#include "pdm/ast/exp/exp.hh"
-#include "pdm/ast/typespec/typespec.hh"
 
 namespace pdm::ast {
-
     class Manager;
     class Exp;
     class Typespec;
     class TArg;
-
 }
 
 namespace pdm::ast {

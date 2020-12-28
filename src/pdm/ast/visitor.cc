@@ -38,11 +38,11 @@ namespace pdm::ast {
                 ok = visit(const_stmt->rhs_exp()) && ok;
                 break;
             } 
-            case Kind::LetStmt:
+            case Kind::ValStmt:
             {
-                LetStmt* let_stmt = dynamic_cast<LetStmt*>(node);
-                ok = visit(let_stmt->lhs_lpattern()) && ok;
-                ok = visit(let_stmt->rhs_exp()) && ok;
+                ValStmt* val_stmt = dynamic_cast<ValStmt*>(node);
+                ok = visit(val_stmt->lhs_lpattern()) && ok;
+                ok = visit(val_stmt->rhs_exp()) && ok;
                 break;
             }
             case Kind::VarStmt:
@@ -221,7 +221,7 @@ namespace pdm::ast {
             {
                 VCallExp* vcall_exp = dynamic_cast<VCallExp*>(node);
                 ok = visit(vcall_exp->lhs_called()) && ok;
-                for (Exp* arg: vcall_exp->args()) {
+                for (VArg* arg: vcall_exp->args()) {
                     ok = visit(arg) && ok;
                 }
                 break;
@@ -284,12 +284,6 @@ namespace pdm::ast {
             {
                 break;
             }
-            case Kind::PtrTypespec:
-            {
-                PtrTypespec* ptr_typespec = dynamic_cast<PtrTypespec*>(node);
-                ok = visit(ptr_typespec->pointee_typespec()) && ok;
-                break;
-            }
             case Kind::FnTypespec:
             {
                 FnTypespec* fn_typespec = dynamic_cast<FnTypespec*>(node);
@@ -345,6 +339,12 @@ namespace pdm::ast {
                 ok = visit(targ->arg_node()) && ok;
                 break;
             }
+            case Kind::VArg:
+            {
+                VArg* varg = dynamic_cast<VArg*>(node);
+                ok = visit(varg->arg_exp()) && ok;
+                break;
+            }
 
             //
             // non-syntactic elements:
@@ -389,9 +389,9 @@ namespace pdm::ast {
             {
                 return on_visit__const_stmt(dynamic_cast<ConstStmt*>(node), visit_order);
             }
-            case Kind::LetStmt:
+            case Kind::ValStmt:
             {
-                return on_visit__let_stmt(dynamic_cast<LetStmt*>(node), visit_order);
+                return on_visit__val_stmt(dynamic_cast<ValStmt*>(node), visit_order);
             }
             case Kind::VarStmt:
             {
@@ -531,10 +531,6 @@ namespace pdm::ast {
             {
                 return on_visit__id_typespec(dynamic_cast<IdTypespec*>(node), visit_order);
             }
-            case Kind::PtrTypespec:
-            {
-                return on_visit__ptr_typespec(dynamic_cast<PtrTypespec*>(node), visit_order);
-            }
             case Kind::FnTypespec:
             {
                 return on_visit__fn_typespec(dynamic_cast<FnTypespec*>(node), visit_order);
@@ -568,6 +564,10 @@ namespace pdm::ast {
             case Kind::TArg:
             {
                 return on_visit__targ(dynamic_cast<TArg*>(node), visit_order);
+            }
+            case Kind::VArg:
+            {
+                return on_visit__varg(dynamic_cast<VArg*>(node), visit_order);
             }
 
             // non-syntactic elements:

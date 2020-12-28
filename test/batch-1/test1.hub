@@ -1,0 +1,65 @@
+#
+# Fibonacci implementation(s):
+#
+
+mod dp {
+    def fib (n Int32) -> Int32 {
+        fib_iter(n, 0, 0, 0)
+    };
+    def fib_iter (n Int32, i Int32, at_im1 Int32, at_im2 Int32) Int32 = {
+        if (n < 0) then {
+            -1
+        } else if (n == 0) then {
+            0
+        } else if (n == 1) then {
+            1
+        } else {
+            let at_im3 Int32 = at_im1 + at_im2;
+            if (i == n) then {
+                at_im3
+            } else {
+                fib_iter(
+                    n,
+                    i+1,
+                    at_im2,
+                    at_im3
+                )
+            }
+        }
+    };
+    def print_fibonacci_table_until (n Int32, ascend_not_descend Bool) Unit = {
+        let result Int32 = fib(n);
+        if (n != 0) then {
+            # if printing in ascending order, then print all prior fibonaccis
+            # before fib(n):
+            if (ascend_not_descend) then {
+                print_fibonacci_table_until(n-1, Bool(1));
+            };
+
+            # printing fib(n) on one line
+            print.string("fibonacci(\0");
+            print.Int32(n);
+            print.string(") = \0");
+            print.Int32(fib(n));
+            print.line();
+
+            # if printing in descending order, then pring all prior fibonaccis
+            # after fib(n)
+            if (not ascend_not_descend) then {
+                print_fibonacci_table_until(n-1, Bool(0));
+            };
+        };
+    };
+};
+
+mod test {
+    def test_1 () Int32 = {
+        let n Int32 = 40;
+        print.string("FIBONACCI PRINTER until \0");
+        print.Int32(n);
+        print.line();
+
+        dp.print_fibonacci_table_until(n, Bool(1));
+        0
+    };
+};

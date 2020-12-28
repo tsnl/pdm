@@ -12,11 +12,22 @@
 
 namespace pdm::compiler {
 
-    ast::Script* Compiler::import(std::string&& from_path, std::string&& type) {
-        aux::Key key {
-            abspath(std::move(from_path)), 
-            std::move(type)
-        };
+    ast::Script* Compiler::import(std::string const& from_path, std::string const& type, std::string const& reason) {
+        ast::Script* script = help_import_script_1(from_path, type);
+        if (script == nullptr) {
+            feedback::post(new feedback::Letter(
+                feedback::Severity::Error,
+                "Failed to load source file \"" + from_path + "\" of type \"" + type + "\"",
+                "Required for import '" + reason + "'"
+            ));
+            return nullptr;
+        } else {
+            return script;
+        }
+    }
+
+    ast::Script* Compiler::help_import_script_1(std::string const& from_path, std::string const& type) {
+        aux::Key key {abspath(from_path), type};
 
         aux::ImportMap::iterator script_it = m_cached_imports.find(key);
         if (script_it != m_cached_imports.end()) {
@@ -27,33 +38,34 @@ namespace pdm::compiler {
             std::string abs_from_path = key.import_from_path.native();
             source::Source* source = new source::Source(std::move(abs_from_path));
             ast::Script* script = parser::parse_script(&m_manager, source);
-
-            // todo: load, scan, parse, ...
-            // - run reader + lexer + parser, module_dispatcher, and type_initializer.
-            //   - halt if any fail
-            //   - note that 'module' IDs are lookup-ed by scoper, so...
-            //      1. imported modules need to be in-memory first (cf dependency_dispatcher)
-            //      2. all analysis post-import (i.e., from 'typecheck') is global
-            
-            return m_cached_imports[key] = script;
+            if (script == nullptr) {
+                return nullptr;
+            } else {
+                help_import_script_2(script);
+                return m_cached_imports[key] = script;
+            }
         } else {
             // posting feedback: invalid 'type'
             feedback::post(new feedback::Letter(
                 feedback::Severity::Error, 
-                "Invalid type: <?>", 
-                "abspath: " + key.import_from_path.native()
+                "Invalid type: " + type, 
+                "abspath: \"" + key.import_from_path.native() + "\""
             ));
             return nullptr;
         }
     }
 
+    void Compiler::help_import_script_2(ast::Script* script) {
+        // todo: finish processing this script
+    }
+
     bool Compiler::import_all() {
         // importing the entry point:
-        std::string entry_point_path = m_entry_point_path;
-        std::string import_type = "pdm.script";
-        if (!import(std::move(entry_point_path), std::move(import_type))) {
+        ast::Script* entry_point_script = import(m_entry_point_path, "pdm.script", "entry point");
+        if (entry_point_script == nullptr) {
             return false;
         }
+        m_all_scripts.push_back(entry_point_script);
 
         // todo: running until all dispatched dependencies are empty.
         // since each module's dd only runs on first import, this always halts for finite
@@ -67,7 +79,7 @@ namespace pdm::compiler {
         return false;
     }
 
-    std::string Compiler::abspath(std::string&& rel_path) const {
+    std::string Compiler::abspath(std::string const& rel_path) const {
         return m_cwd / rel_path;
     }
 }

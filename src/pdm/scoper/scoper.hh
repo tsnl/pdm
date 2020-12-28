@@ -44,7 +44,7 @@ namespace pdm::scoper {
         virtual bool on_visit__type_stmt(ast::TypeStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__enum_stmt(ast::EnumStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__fn_stmt(ast::FnStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__let_stmt(ast::LetStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__val_stmt(ast::ValStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__const_stmt(ast::ConstStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__extern_stmt(ast::ExternStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__import_stmt(ast::ImportStmt* node, VisitOrder visit_order) override;
@@ -77,13 +77,16 @@ namespace pdm::scoper {
 
         // typespecs:
         virtual bool on_visit__id_typespec(ast::IdTypespec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__ptr_typespec(ast::PtrTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__fn_typespec(ast::FnTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__tcall_typespec(ast::TCallTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__tuple_typespec(ast::TupleTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__dot_name_typespec_type_prefix(ast::DotNameTypespec_TypePrefix* node, VisitOrder visit_order) override;
         virtual bool on_visit__dot_name_typespec_mod_prefix(ast::DotNameTypespec_ModPrefix* node, VisitOrder visit_order) override;
         virtual bool on_visit__struct_typespec(ast::StructTypespec* node, VisitOrder visit_order) override;
+
+        // args:
+        virtual bool on_visit__targ(ast::TArg* targ, VisitOrder visit_order) override;
+        virtual bool on_visit__varg(ast::VArg* varg, VisitOrder visit_order) override;
 
         // non-syntax:
         virtual bool on_visit__builtin_type_stmt(ast::BuiltinTypeStmt* node, VisitOrder visit_order) override;

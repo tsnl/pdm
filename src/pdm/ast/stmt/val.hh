@@ -14,7 +14,7 @@ namespace pdm::ast {
 
 namespace pdm::ast {
 
-    class LetStmt: public Stmt {
+    class ValStmt: public Stmt {
         friend Manager;
 
       private:
@@ -22,8 +22,8 @@ namespace pdm::ast {
         Exp*      m_rhs_body;
 
       protected:
-        LetStmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp)
-        : Stmt(loc, Kind::LetStmt),
+        ValStmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp)
+        : Stmt(loc, Kind::ValStmt),
           m_lhs_lpattern(lhs_lpattern),
           m_rhs_body(rhs_exp) {}
       

@@ -32,7 +32,9 @@ namespace pdm::feedback {
             }
         }
         out << headline() << std::endl;
-        out << "  " << more() << std::endl;
+        if (!more().empty()) {
+            out << "  " << more() << std::endl;
+        }
         for (Note* note: m_notes) {
             note->print(out, "    ");
         }

@@ -2,6 +2,9 @@
 #include <filesystem>
 
 #include "pdm/compiler/compiler.hh"
+#include "pdm/feedback/feedback.hh"
+
+#include "pdm/printer/printer.hh"
 
 // #include "typer_demo.hh"
 // #include "feedback_demo.hh"
@@ -19,11 +22,23 @@ int main(int argc, char const* argv[]) {
             std::move(entry_point_path)
         };
         if (!compiler.import_all()) {
-            std::cout << "A fatal error was found while loading source files." << std::endl;
+            std::cout << "A fatal error occurred while loading source files." << std::endl;
+            pdm::feedback::print_all(std::cout);
             return 1;
         }
+
+        // debug only
+        bool const print_scripts = true;
+        if (print_scripts) {
+            for (pdm::ast::Script* script: compiler.all_scripts()) {
+                pdm::printer::Printer printer{std::cout};
+                printer.print_node(script);
+            }
+        }
+
         if (!compiler.typecheck_all()) {
-            std::cout << "A fatal typechecking error was found while loading source files." << std::endl;
+            std::cout << "A fatal typechecking occurred." << std::endl;
+            pdm::feedback::print_all(std::cout);
             return 1;
         }
 

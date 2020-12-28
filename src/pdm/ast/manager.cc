@@ -76,7 +76,7 @@ namespace pdm::ast {
     UnitExp* Manager::new_unit_exp(source::Loc loc) {
         return emplace<UnitExp>(loc);
     }
-    VCallExp* Manager::new_vcall_exp(source::Loc loc, Exp* lhs_called, std::vector<Exp*>&& args) {
+    VCallExp* Manager::new_vcall_exp(source::Loc loc, Exp* lhs_called, std::vector<VArg*>&& args) {
         return emplace<VCallExp>(loc, lhs_called, std::move(args));
     }
     StructExp::Field* Manager::new_struct_exp_field(source::Loc loc, intern::String name, Exp* value) {
@@ -98,8 +98,8 @@ namespace pdm::ast {
     TPattern::Field* Manager::new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, Typespec* rhs_typespec) {
         return emplace<TPattern::Field>(loc, kind, name, rhs_typespec);
     }
-    VPattern::Field* Manager::new_vpattern_field(source::Loc loc, intern::String name, Typespec* rhs_typespec) {
-        return emplace<VPattern::Field>(loc, name, rhs_typespec);
+    VPattern::Field* Manager::new_vpattern_field(source::Loc loc, intern::String name, Typespec* rhs_typespec, VArgKind varg_kind) {
+        return emplace<VPattern::Field>(loc, name, rhs_typespec, varg_kind);
     }
 
     BuiltinTypeStmt* Manager::new_builtin_type_stmt(std::string&& desc, typer::TV* tv) {
@@ -111,8 +111,8 @@ namespace pdm::ast {
     DiscardStmt* Manager::new_discard_stmt(source::Loc loc, Exp* exp) {
         return emplace<DiscardStmt>(loc, exp);
     }
-    LetStmt* Manager::new_let_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp) {
-        return emplace<LetStmt>(loc, lhs_lpattern, rhs_exp);
+    ValStmt* Manager::new_val_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp) {
+        return emplace<ValStmt>(loc, lhs_lpattern, rhs_exp);
     }
     VarStmt* Manager::new_var_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp) {
         return emplace<VarStmt>(loc, lhs_lpattern, rhs_exp);
@@ -164,9 +164,6 @@ namespace pdm::ast {
     ParenTypespec* Manager::new_paren_typespec(source::Loc loc, Typespec* nested_typespec) {
         return emplace<ParenTypespec>(loc, nested_typespec);
     }
-    PtrTypespec* Manager::new_ptr_typespec(source::Loc loc, Typespec* pointee_typespec) {
-        return emplace<PtrTypespec>(loc, pointee_typespec);
-    }
     StructTypespec* Manager::new_struct_typespec(source::Loc loc, std::vector<StructTypespec::Field*>&& fields) {
         return emplace<StructTypespec>(loc, std::move(fields));
     }
@@ -185,5 +182,8 @@ namespace pdm::ast {
     }
     TArg* Manager::new_targ_typespec(source::Loc loc, Typespec* typespec) {
         return emplace<TArg>(loc, typespec);
+    }
+    VArg* Manager::new_varg(source::Loc loc, Exp* exp, VArgKind varg_kind) {
+        return emplace<VArg>(loc, exp, varg_kind);
     }
 }

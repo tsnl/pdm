@@ -13,22 +13,22 @@ namespace pdm::scoper {
             help_define_builtin_type("String", typer()->get_string_tv());
             help_define_builtin_type("TypeInfo", typer()->get_type_info_tv());
 
-            help_define_builtin_type("U1", typer()->get_u1_tv());
-            help_define_builtin_type("U8", typer()->get_u8_tv());
-            help_define_builtin_type("U16", typer()->get_u16_tv());
-            help_define_builtin_type("U32", typer()->get_u32_tv());
-            help_define_builtin_type("U64", typer()->get_u64_tv());
-            help_define_builtin_type("U128", typer()->get_u128_tv());
+            help_define_builtin_type("Bool", typer()->get_u1_tv());
+            help_define_builtin_type("UInt8", typer()->get_u8_tv());
+            help_define_builtin_type("UInt16", typer()->get_u16_tv());
+            help_define_builtin_type("UInt32", typer()->get_u32_tv());
+            help_define_builtin_type("UInt64", typer()->get_u64_tv());
+            help_define_builtin_type("UInt128", typer()->get_u128_tv());
 
-            help_define_builtin_type("I8", typer()->get_i8_tv());
-            help_define_builtin_type("I16", typer()->get_i16_tv());
-            help_define_builtin_type("I32", typer()->get_i32_tv());
-            help_define_builtin_type("I64", typer()->get_i64_tv());
-            help_define_builtin_type("I128", typer()->get_i128_tv());
+            help_define_builtin_type("Int8", typer()->get_i8_tv());
+            help_define_builtin_type("Int16", typer()->get_i16_tv());
+            help_define_builtin_type("Int32", typer()->get_i32_tv());
+            help_define_builtin_type("Int64", typer()->get_i64_tv());
+            help_define_builtin_type("Int128", typer()->get_i128_tv());
 
-            help_define_builtin_type("F16", typer()->get_f16_tv());
-            help_define_builtin_type("F32", typer()->get_f32_tv());
-            help_define_builtin_type("F64", typer()->get_f64_tv());
+            help_define_builtin_type("Float16", typer()->get_f16_tv());
+            help_define_builtin_type("Float32", typer()->get_f32_tv());
+            help_define_builtin_type("Float64", typer()->get_f64_tv());
         }
     }
 

@@ -11,7 +11,7 @@ namespace pdm::ast {
         BuiltinTypeStmt,    // non-syntactic
         DiscardStmt,
         ConstStmt,
-        LetStmt,
+        ValStmt,
         VarStmt,
         SetStmt,
         FnStmt,
@@ -43,13 +43,13 @@ namespace pdm::ast {
 
         // typespecs:
         IdTypespec,
-        ParenTypespec, PtrTypespec,
+        ParenTypespec,
         FnTypespec, TCallTypespec,
         DotNameTypespec_TypePrefix, DotNameTypespec_ModPrefix,
         TupleTypespec, StructTypespec,
 
         // shared, templates:
-        TArg,
+        TArg, VArg,
 
         // total count:
         __Count

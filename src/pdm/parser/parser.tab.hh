@@ -73,7 +73,12 @@
     #include "pdm/source/pos.hh"
     #include "pdm/source/loc.hh"
 
-#line 77 "parser.tab.hh"
+    #include "pdm/feedback/feedback.hh"
+    #include "pdm/feedback/note.hh"
+    #include "pdm/feedback/severity.hh"
+    #include "pdm/feedback/letter.hh"
+
+#line 82 "parser.tab.hh"
 
 
 # include <cstdlib> // std::abort
@@ -208,7 +213,7 @@
 
 #line 33 "parser.yy"
 namespace pdm { namespace parser {
-#line 212 "parser.tab.hh"
+#line 217 "parser.tab.hh"
 
 
 
@@ -414,40 +419,40 @@ namespace pdm { namespace parser {
       // stringl
       char dummy1[sizeof (TokenInfo)];
 
-      // mulBinaryOp
-      // addBinaryOp
-      // cmpBinaryOp
-      // eqBinaryOp
+      // mul_binary_op
+      // add_binary_op
+      // cmp_binary_op
+      // eq_binary_op
       char dummy2[sizeof (pdm::ast::BinaryOperator)];
 
       // enum_field
       char dummy3[sizeof (pdm::ast::EnumStmt::Field*)];
 
       // expr
-      // parenExpr
-      // unitExpr
-      // vparenExpr
+      // bracketed_exp
+      // unit_exp
+      // paren_exp
       // vtupleExpr
       // vstructExpr
-      // primaryExpr
+      // primary_exp
       // int_expr
-      // ifThenElseExpr
-      // chainExpr
-      // vlambdaExpr
-      // postfixExpr
+      // if_exp
+      // chain_exp
+      // lambda_exp
+      // postfix_exp
       // tcall_exp
       // vcall_exp
       // dot_name_exp
-      // dotIxExpr
-      // unaryExpr
-      // binaryExpr
-      // mulBinaryExpr
-      // addBinaryExpr
-      // cmpBinaryExpr
-      // eqBinaryExpr
-      // andBinaryExpr
-      // xorBinaryExpr
-      // orBinaryExpr
+      // dot_index_exp
+      // unary_exp
+      // binary_exp
+      // mul_binary_exp
+      // add_binary_exp
+      // cmp_binary_exp
+      // eq_binary_exp
+      // and_binary_exp
+      // xor_binary_exp
+      // or_binary_exp
       // type_query_exp
       char dummy4[sizeof (pdm::ast::Exp*)];
 
@@ -455,7 +460,7 @@ namespace pdm { namespace parser {
       // lpattern_naked
       char dummy5[sizeof (pdm::ast::LPattern*)];
 
-      // lpatternField
+      // lpattern_field
       char dummy6[sizeof (pdm::ast::LPattern::Field*)];
 
       // script
@@ -463,12 +468,12 @@ namespace pdm { namespace parser {
 
       // scriptContentStmt
       // mod_stmt
-      // chainPrefixStmt
-      // constStmt
-      // letStmt
-      // varStmt
-      // setStmt
-      // discardStmt
+      // chain_prefix_stmt
+      // const_stmt
+      // val_stmt
+      // var_stmt
+      // set_stmt
+      // discard_stmt
       // moduleContentStmt
       // fn_stmt
       // type_stmt
@@ -479,93 +484,96 @@ namespace pdm { namespace parser {
       // extern_stmt
       char dummy8[sizeof (pdm::ast::Stmt*)];
 
-      // vstructExprField
+      // struct_exp_field
       char dummy9[sizeof (pdm::ast::StructExp::Field*)];
 
-      // structTypespecField
+      // struct_typespec_field
       char dummy10[sizeof (pdm::ast::StructTypespec::Field*)];
 
-      // ttarg
-      // vtarg
+      // targ
       char dummy11[sizeof (pdm::ast::TArg*)];
 
       // tpattern
       char dummy12[sizeof (pdm::ast::TPattern*)];
 
-      // tpatternField
+      // tpattern_field
       char dummy13[sizeof (pdm::ast::TPattern::Field*)];
 
       // type_query_op
       char dummy14[sizeof (pdm::ast::TypeQueryKind)];
 
       // typespec
-      // primaryTypespec
-      // parenTypespec
-      // tupleTypespec
+      // primary_typespec
+      // paren_typespec
+      // tuple_typespec
       // mod_prefix_tid
       // fn_typespec
-      // postfixTypespec
-      // ttcall
-      // tdot
-      // unaryTypespec
+      // postfix_typespec
+      // tcall_typespec
+      // dot_typespec
+      // unary_typespec
       // long_typespec
-      // structTypespec
+      // struct_typespec
       char dummy15[sizeof (pdm::ast::Typespec*)];
 
-      // unaryOp
+      // unary_op
       char dummy16[sizeof (pdm::ast::UnaryOperator)];
 
-      // vpattern
-      char dummy17[sizeof (pdm::ast::VPattern*)];
+      // varg
+      char dummy17[sizeof (pdm::ast::VArg*)];
 
-      // vpatternField
-      char dummy18[sizeof (pdm::ast::VPattern::Field*)];
+      // vpattern
+      char dummy18[sizeof (pdm::ast::VPattern*)];
+
+      // vpattern_field
+      char dummy19[sizeof (pdm::ast::VPattern::Field*)];
 
       // enum_field_pl
       // unprefixed_enum_field_pl
-      char dummy19[sizeof (std::vector<pdm::ast::EnumStmt::Field*>)];
+      char dummy20[sizeof (std::vector<pdm::ast::EnumStmt::Field*>)];
 
-      // expr_cl1
       // expr_cl2
       // expr_sl
-      char dummy20[sizeof (std::vector<pdm::ast::Exp*>)];
+      char dummy21[sizeof (std::vector<pdm::ast::Exp*>)];
 
-      // lpatternField_cl
-      char dummy21[sizeof (std::vector<pdm::ast::LPattern::Field*>)];
+      // lpattern_field_cl
+      char dummy22[sizeof (std::vector<pdm::ast::LPattern::Field*>)];
 
       // scriptContent
       // moduleContent
-      // chainPrefix
-      char dummy22[sizeof (std::vector<pdm::ast::Stmt*>)];
+      // chain_prefix
+      char dummy23[sizeof (std::vector<pdm::ast::Stmt*>)];
 
       // stringls
-      char dummy23[sizeof (std::vector<pdm::ast::StringExp::Piece>)];
+      char dummy24[sizeof (std::vector<pdm::ast::StringExp::Piece>)];
 
-      // vstructExprField_cl
-      char dummy24[sizeof (std::vector<pdm::ast::StructExp::Field*>)];
+      // struct_exp_field_cl
+      char dummy25[sizeof (std::vector<pdm::ast::StructExp::Field*>)];
 
-      // structTypespecField_cl
-      char dummy25[sizeof (std::vector<pdm::ast::StructTypespec::Field*>)];
+      // struct_typespec_field_cl
+      char dummy26[sizeof (std::vector<pdm::ast::StructTypespec::Field*>)];
 
-      // ttarg_cl
-      // vtarg_cl
-      char dummy26[sizeof (std::vector<pdm::ast::TArg*>)];
+      // targ_cl
+      char dummy27[sizeof (std::vector<pdm::ast::TArg*>)];
 
       // tpattern_seq
-      char dummy27[sizeof (std::vector<pdm::ast::TPattern*>)];
+      char dummy28[sizeof (std::vector<pdm::ast::TPattern*>)];
 
-      // tpatternField_cl
-      char dummy28[sizeof (std::vector<pdm::ast::TPattern::Field*>)];
+      // tpattern_field_cl
+      char dummy29[sizeof (std::vector<pdm::ast::TPattern::Field*>)];
 
       // typespec_cl1
       // typespec_cl2
-      char dummy29[sizeof (std::vector<pdm::ast::Typespec*>)];
+      char dummy30[sizeof (std::vector<pdm::ast::Typespec*>)];
 
-      // vpatternField_cl
-      char dummy30[sizeof (std::vector<pdm::ast::VPattern::Field*>)];
+      // varg_cl
+      char dummy31[sizeof (std::vector<pdm::ast::VArg*>)];
+
+      // vpattern_field_cl
+      char dummy32[sizeof (std::vector<pdm::ast::VPattern::Field*>)];
 
       // mod_prefix
-      char dummy31[sizeof (std::vector<pdm::intern::String>)];
+      char dummy33[sizeof (std::vector<pdm::intern::String>)];
     };
 
     /// The size of the largest semantic type.
@@ -628,7 +636,7 @@ namespace pdm { namespace parser {
     KW_EXTERN = 269,               // "extern"
     KW_FROM = 270,                 // "from"
     KW_CONST = 271,                // "const"
-    KW_LET = 272,                  // "let"
+    KW_VAL = 272,                  // "val"
     KW_VAR = 273,                  // "var"
     KW_SET = 274,                  // "set"
     KW_FN = 275,                   // "fn"
@@ -640,43 +648,45 @@ namespace pdm { namespace parser {
     KW_OR = 281,                   // "or"
     KW_NOT = 282,                  // "not"
     KW_TYPECLASS = 283,            // "typeclass"
-    DINT_LIT = 284,                // "42"
-    XINT_LIT = 285,                // "0x2a"
-    FLOAT_LIT = 286,               // "4.2"
-    DQSTRING_LIT = 287,            // "\"dq-string-literal\""
-    SQSTRING_LIT = 288,            // "'sq-string-literal'"
-    DOT = 289,                     // "."
-    COLON = 290,                   // ":"
-    COMMA = 291,                   // ","
-    SEMICOLON = 292,               // ";"
-    DBL_COLON = 293,               // "::"
-    LPAREN = 294,                  // "("
-    RPAREN = 295,                  // ")"
-    LSQBRK = 296,                  // "["
-    RSQBRK = 297,                  // "]"
-    LCYBRK = 298,                  // "{"
-    RCYBRK = 299,                  // "}"
-    ARROW = 300,                   // "->"
-    ASTERISK = 301,                // "*"
-    FSLASH = 302,                  // "/"
-    PERCENT = 303,                 // "%"
-    PLUS = 304,                    // "+"
-    MINUS = 305,                   // "-"
-    LTHAN = 306,                   // "<"
-    LETHAN = 307,                  // "<="
-    GTHAN = 308,                   // ">"
-    GETHAN = 309,                  // ">="
-    BIND = 310,                    // "="
-    EQUALS = 311,                  // "=="
-    NEQUALS = 312,                 // "!="
-    CARET = 313,                   // "^"
-    AMPERSAND = 314,               // "&"
-    EXCLAIM = 315,                 // "!"
-    PIPE = 316,                    // "|"
-    EOS = 317,                     // "EOS"
-    COLON_LTHAN = 318,             // ":<"
-    GTHAN_COLON = 319,             // ">:"
-    NONE = 320                     // "<null>"
+    KW_OUT = 284,                  // "out"
+    KW_INOUT = 285,                // "inout"
+    DINT_LIT = 286,                // "42"
+    XINT_LIT = 287,                // "0x2a"
+    FLOAT_LIT = 288,               // "4.2"
+    DQSTRING_LIT = 289,            // "\"dq-string-literal\""
+    SQSTRING_LIT = 290,            // "'sq-string-literal'"
+    DOT = 291,                     // "."
+    COLON = 292,                   // ":"
+    COMMA = 293,                   // ","
+    SEMICOLON = 294,               // ";"
+    DBL_COLON = 295,               // "::"
+    LPAREN = 296,                  // "("
+    RPAREN = 297,                  // ")"
+    LSQBRK = 298,                  // "["
+    RSQBRK = 299,                  // "]"
+    LCYBRK = 300,                  // "{"
+    RCYBRK = 301,                  // "}"
+    ARROW = 302,                   // "->"
+    ASTERISK = 303,                // "*"
+    FSLASH = 304,                  // "/"
+    PERCENT = 305,                 // "%"
+    PLUS = 306,                    // "+"
+    MINUS = 307,                   // "-"
+    LTHAN = 308,                   // "<"
+    LETHAN = 309,                  // "<="
+    GTHAN = 310,                   // ">"
+    GETHAN = 311,                  // ">="
+    BIND = 312,                    // "="
+    EQUALS = 313,                  // "=="
+    NEQUALS = 314,                 // "!="
+    CARET = 315,                   // "^"
+    AMPERSAND = 316,               // "&"
+    EXCLAIM = 317,                 // "!"
+    PIPE = 318,                    // "|"
+    EOS = 319,                     // "EOS"
+    COLON_LTHAN = 320,             // ":<"
+    GTHAN_COLON = 321,             // ">:"
+    NONE = 322                     // "<null>"
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -693,7 +703,7 @@ namespace pdm { namespace parser {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 66, ///< Number of tokens.
+        YYNTOKENS = 68, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -712,7 +722,7 @@ namespace pdm { namespace parser {
         S_KW_EXTERN = 14,                        // "extern"
         S_KW_FROM = 15,                          // "from"
         S_KW_CONST = 16,                         // "const"
-        S_KW_LET = 17,                           // "let"
+        S_KW_VAL = 17,                           // "val"
         S_KW_VAR = 18,                           // "var"
         S_KW_SET = 19,                           // "set"
         S_KW_FN = 20,                            // "fn"
@@ -724,141 +734,142 @@ namespace pdm { namespace parser {
         S_KW_OR = 26,                            // "or"
         S_KW_NOT = 27,                           // "not"
         S_KW_TYPECLASS = 28,                     // "typeclass"
-        S_DINT_LIT = 29,                         // "42"
-        S_XINT_LIT = 30,                         // "0x2a"
-        S_FLOAT_LIT = 31,                        // "4.2"
-        S_DQSTRING_LIT = 32,                     // "\"dq-string-literal\""
-        S_SQSTRING_LIT = 33,                     // "'sq-string-literal'"
-        S_DOT = 34,                              // "."
-        S_COLON = 35,                            // ":"
-        S_COMMA = 36,                            // ","
-        S_SEMICOLON = 37,                        // ";"
-        S_DBL_COLON = 38,                        // "::"
-        S_LPAREN = 39,                           // "("
-        S_RPAREN = 40,                           // ")"
-        S_LSQBRK = 41,                           // "["
-        S_RSQBRK = 42,                           // "]"
-        S_LCYBRK = 43,                           // "{"
-        S_RCYBRK = 44,                           // "}"
-        S_ARROW = 45,                            // "->"
-        S_ASTERISK = 46,                         // "*"
-        S_FSLASH = 47,                           // "/"
-        S_PERCENT = 48,                          // "%"
-        S_PLUS = 49,                             // "+"
-        S_MINUS = 50,                            // "-"
-        S_LTHAN = 51,                            // "<"
-        S_LETHAN = 52,                           // "<="
-        S_GTHAN = 53,                            // ">"
-        S_GETHAN = 54,                           // ">="
-        S_BIND = 55,                             // "="
-        S_EQUALS = 56,                           // "=="
-        S_NEQUALS = 57,                          // "!="
-        S_CARET = 58,                            // "^"
-        S_AMPERSAND = 59,                        // "&"
-        S_EXCLAIM = 60,                          // "!"
-        S_PIPE = 61,                             // "|"
-        S_EOS = 62,                              // "EOS"
-        S_COLON_LTHAN = 63,                      // ":<"
-        S_GTHAN_COLON = 64,                      // ">:"
-        S_NONE = 65,                             // "<null>"
-        S_YYACCEPT = 66,                         // $accept
-        S_script = 67,                           // script
-        S_scriptContent = 68,                    // scriptContent
-        S_scriptContentStmt = 69,                // scriptContentStmt
-        S_mod_stmt = 70,                         // mod_stmt
-        S_moduleContent = 71,                    // moduleContent
-        S_chainPrefixStmt = 72,                  // chainPrefixStmt
-        S_constStmt = 73,                        // constStmt
-        S_letStmt = 74,                          // letStmt
-        S_varStmt = 75,                          // varStmt
-        S_setStmt = 76,                          // setStmt
-        S_discardStmt = 77,                      // discardStmt
-        S_moduleContentStmt = 78,                // moduleContentStmt
-        S_fn_stmt = 79,                          // fn_stmt
-        S_type_stmt = 80,                        // type_stmt
-        S_enum_stmt = 81,                        // enum_stmt
-        S_enum_field_pl = 82,                    // enum_field_pl
-        S_unprefixed_enum_field_pl = 83,         // unprefixed_enum_field_pl
-        S_enum_field = 84,                       // enum_field
-        S_typeclass_stmt = 85,                   // typeclass_stmt
-        S_using_stmt = 86,                       // using_stmt
-        S_importStmt = 87,                       // importStmt
-        S_extern_stmt = 88,                      // extern_stmt
-        S_tid = 89,                              // tid
-        S_vid = 90,                              // vid
-        S_floatl = 91,                           // floatl
-        S_stringl = 92,                          // stringl
-        S_expr = 93,                             // expr
-        S_expr_cl1 = 94,                         // expr_cl1
-        S_expr_cl2 = 95,                         // expr_cl2
-        S_expr_sl = 96,                          // expr_sl
-        S_parenExpr = 97,                        // parenExpr
-        S_unitExpr = 98,                         // unitExpr
-        S_vparenExpr = 99,                       // vparenExpr
-        S_vtupleExpr = 100,                      // vtupleExpr
-        S_vstructExpr = 101,                     // vstructExpr
-        S_primaryExpr = 102,                     // primaryExpr
-        S_int_expr = 103,                        // int_expr
-        S_stringls = 104,                        // stringls
-        S_ifThenElseExpr = 105,                  // ifThenElseExpr
-        S_chainExpr = 106,                       // chainExpr
-        S_chainPrefix = 107,                     // chainPrefix
-        S_vlambdaExpr = 108,                     // vlambdaExpr
-        S_postfixExpr = 109,                     // postfixExpr
-        S_tcall_exp = 110,                       // tcall_exp
-        S_vcall_exp = 111,                       // vcall_exp
-        S_dot_name_exp = 112,                    // dot_name_exp
-        S_dotIxExpr = 113,                       // dotIxExpr
-        S_unaryExpr = 114,                       // unaryExpr
-        S_unaryOp = 115,                         // unaryOp
-        S_binaryExpr = 116,                      // binaryExpr
-        S_mulBinaryOp = 117,                     // mulBinaryOp
-        S_mulBinaryExpr = 118,                   // mulBinaryExpr
-        S_addBinaryOp = 119,                     // addBinaryOp
-        S_addBinaryExpr = 120,                   // addBinaryExpr
-        S_cmpBinaryOp = 121,                     // cmpBinaryOp
-        S_cmpBinaryExpr = 122,                   // cmpBinaryExpr
-        S_eqBinaryOp = 123,                      // eqBinaryOp
-        S_eqBinaryExpr = 124,                    // eqBinaryExpr
-        S_andBinaryExpr = 125,                   // andBinaryExpr
-        S_xorBinaryExpr = 126,                   // xorBinaryExpr
-        S_orBinaryExpr = 127,                    // orBinaryExpr
-        S_type_query_exp = 128,                  // type_query_exp
-        S_type_query_op = 129,                   // type_query_op
-        S_typespec = 130,                        // typespec
-        S_typespec_cl1 = 131,                    // typespec_cl1
-        S_typespec_cl2 = 132,                    // typespec_cl2
-        S_structTypespecField = 133,             // structTypespecField
-        S_structTypespecField_cl = 134,          // structTypespecField_cl
-        S_primaryTypespec = 135,                 // primaryTypespec
-        S_parenTypespec = 136,                   // parenTypespec
-        S_tupleTypespec = 137,                   // tupleTypespec
-        S_mod_prefix_tid = 138,                  // mod_prefix_tid
-        S_mod_prefix = 139,                      // mod_prefix
-        S_fn_typespec = 140,                     // fn_typespec
-        S_postfixTypespec = 141,                 // postfixTypespec
-        S_ttcall = 142,                          // ttcall
-        S_tdot = 143,                            // tdot
-        S_unaryTypespec = 144,                   // unaryTypespec
-        S_long_typespec = 145,                   // long_typespec
-        S_structTypespec = 146,                  // structTypespec
-        S_ttarg = 147,                           // ttarg
-        S_ttarg_cl = 148,                        // ttarg_cl
-        S_vtarg = 149,                           // vtarg
-        S_vtarg_cl = 150,                        // vtarg_cl
-        S_vstructExprField = 151,                // vstructExprField
-        S_vpatternField = 152,                   // vpatternField
-        S_lpatternField = 153,                   // lpatternField
-        S_tpatternField = 154,                   // tpatternField
-        S_lpattern = 155,                        // lpattern
-        S_lpattern_naked = 156,                  // lpattern_naked
-        S_vpattern = 157,                        // vpattern
-        S_tpattern = 158,                        // tpattern
-        S_vpatternField_cl = 159,                // vpatternField_cl
-        S_lpatternField_cl = 160,                // lpatternField_cl
-        S_tpatternField_cl = 161,                // tpatternField_cl
-        S_vstructExprField_cl = 162,             // vstructExprField_cl
-        S_tpattern_seq = 163                     // tpattern_seq
+        S_KW_OUT = 29,                           // "out"
+        S_KW_INOUT = 30,                         // "inout"
+        S_DINT_LIT = 31,                         // "42"
+        S_XINT_LIT = 32,                         // "0x2a"
+        S_FLOAT_LIT = 33,                        // "4.2"
+        S_DQSTRING_LIT = 34,                     // "\"dq-string-literal\""
+        S_SQSTRING_LIT = 35,                     // "'sq-string-literal'"
+        S_DOT = 36,                              // "."
+        S_COLON = 37,                            // ":"
+        S_COMMA = 38,                            // ","
+        S_SEMICOLON = 39,                        // ";"
+        S_DBL_COLON = 40,                        // "::"
+        S_LPAREN = 41,                           // "("
+        S_RPAREN = 42,                           // ")"
+        S_LSQBRK = 43,                           // "["
+        S_RSQBRK = 44,                           // "]"
+        S_LCYBRK = 45,                           // "{"
+        S_RCYBRK = 46,                           // "}"
+        S_ARROW = 47,                            // "->"
+        S_ASTERISK = 48,                         // "*"
+        S_FSLASH = 49,                           // "/"
+        S_PERCENT = 50,                          // "%"
+        S_PLUS = 51,                             // "+"
+        S_MINUS = 52,                            // "-"
+        S_LTHAN = 53,                            // "<"
+        S_LETHAN = 54,                           // "<="
+        S_GTHAN = 55,                            // ">"
+        S_GETHAN = 56,                           // ">="
+        S_BIND = 57,                             // "="
+        S_EQUALS = 58,                           // "=="
+        S_NEQUALS = 59,                          // "!="
+        S_CARET = 60,                            // "^"
+        S_AMPERSAND = 61,                        // "&"
+        S_EXCLAIM = 62,                          // "!"
+        S_PIPE = 63,                             // "|"
+        S_EOS = 64,                              // "EOS"
+        S_COLON_LTHAN = 65,                      // ":<"
+        S_GTHAN_COLON = 66,                      // ">:"
+        S_NONE = 67,                             // "<null>"
+        S_YYACCEPT = 68,                         // $accept
+        S_script = 69,                           // script
+        S_scriptContent = 70,                    // scriptContent
+        S_scriptContentStmt = 71,                // scriptContentStmt
+        S_mod_stmt = 72,                         // mod_stmt
+        S_moduleContent = 73,                    // moduleContent
+        S_chain_prefix_stmt = 74,                // chain_prefix_stmt
+        S_const_stmt = 75,                       // const_stmt
+        S_val_stmt = 76,                         // val_stmt
+        S_var_stmt = 77,                         // var_stmt
+        S_set_stmt = 78,                         // set_stmt
+        S_discard_stmt = 79,                     // discard_stmt
+        S_moduleContentStmt = 80,                // moduleContentStmt
+        S_fn_stmt = 81,                          // fn_stmt
+        S_type_stmt = 82,                        // type_stmt
+        S_enum_stmt = 83,                        // enum_stmt
+        S_enum_field_pl = 84,                    // enum_field_pl
+        S_unprefixed_enum_field_pl = 85,         // unprefixed_enum_field_pl
+        S_enum_field = 86,                       // enum_field
+        S_typeclass_stmt = 87,                   // typeclass_stmt
+        S_using_stmt = 88,                       // using_stmt
+        S_importStmt = 89,                       // importStmt
+        S_extern_stmt = 90,                      // extern_stmt
+        S_tid = 91,                              // tid
+        S_vid = 92,                              // vid
+        S_floatl = 93,                           // floatl
+        S_stringl = 94,                          // stringl
+        S_expr = 95,                             // expr
+        S_expr_cl2 = 96,                         // expr_cl2
+        S_expr_sl = 97,                          // expr_sl
+        S_bracketed_exp = 98,                    // bracketed_exp
+        S_unit_exp = 99,                         // unit_exp
+        S_paren_exp = 100,                       // paren_exp
+        S_vtupleExpr = 101,                      // vtupleExpr
+        S_vstructExpr = 102,                     // vstructExpr
+        S_primary_exp = 103,                     // primary_exp
+        S_int_expr = 104,                        // int_expr
+        S_stringls = 105,                        // stringls
+        S_if_exp = 106,                          // if_exp
+        S_chain_exp = 107,                       // chain_exp
+        S_chain_prefix = 108,                    // chain_prefix
+        S_lambda_exp = 109,                      // lambda_exp
+        S_postfix_exp = 110,                     // postfix_exp
+        S_tcall_exp = 111,                       // tcall_exp
+        S_vcall_exp = 112,                       // vcall_exp
+        S_dot_name_exp = 113,                    // dot_name_exp
+        S_dot_index_exp = 114,                   // dot_index_exp
+        S_unary_exp = 115,                       // unary_exp
+        S_unary_op = 116,                        // unary_op
+        S_binary_exp = 117,                      // binary_exp
+        S_mul_binary_op = 118,                   // mul_binary_op
+        S_mul_binary_exp = 119,                  // mul_binary_exp
+        S_add_binary_op = 120,                   // add_binary_op
+        S_add_binary_exp = 121,                  // add_binary_exp
+        S_cmp_binary_op = 122,                   // cmp_binary_op
+        S_cmp_binary_exp = 123,                  // cmp_binary_exp
+        S_eq_binary_op = 124,                    // eq_binary_op
+        S_eq_binary_exp = 125,                   // eq_binary_exp
+        S_and_binary_exp = 126,                  // and_binary_exp
+        S_xor_binary_exp = 127,                  // xor_binary_exp
+        S_or_binary_exp = 128,                   // or_binary_exp
+        S_type_query_exp = 129,                  // type_query_exp
+        S_type_query_op = 130,                   // type_query_op
+        S_typespec = 131,                        // typespec
+        S_typespec_cl1 = 132,                    // typespec_cl1
+        S_typespec_cl2 = 133,                    // typespec_cl2
+        S_struct_typespec_field = 134,           // struct_typespec_field
+        S_struct_typespec_field_cl = 135,        // struct_typespec_field_cl
+        S_primary_typespec = 136,                // primary_typespec
+        S_paren_typespec = 137,                  // paren_typespec
+        S_tuple_typespec = 138,                  // tuple_typespec
+        S_mod_prefix_tid = 139,                  // mod_prefix_tid
+        S_mod_prefix = 140,                      // mod_prefix
+        S_fn_typespec = 141,                     // fn_typespec
+        S_postfix_typespec = 142,                // postfix_typespec
+        S_tcall_typespec = 143,                  // tcall_typespec
+        S_dot_typespec = 144,                    // dot_typespec
+        S_unary_typespec = 145,                  // unary_typespec
+        S_long_typespec = 146,                   // long_typespec
+        S_struct_typespec = 147,                 // struct_typespec
+        S_targ = 148,                            // targ
+        S_targ_cl = 149,                         // targ_cl
+        S_varg = 150,                            // varg
+        S_varg_cl = 151,                         // varg_cl
+        S_struct_exp_field = 152,                // struct_exp_field
+        S_vpattern_field = 153,                  // vpattern_field
+        S_lpattern_field = 154,                  // lpattern_field
+        S_tpattern_field = 155,                  // tpattern_field
+        S_lpattern = 156,                        // lpattern
+        S_lpattern_naked = 157,                  // lpattern_naked
+        S_vpattern = 158,                        // vpattern
+        S_tpattern = 159,                        // tpattern
+        S_vpattern_field_cl = 160,               // vpattern_field_cl
+        S_lpattern_field_cl = 161,               // lpattern_field_cl
+        S_tpattern_field_cl = 162,               // tpattern_field_cl
+        S_struct_exp_field_cl = 163,             // struct_exp_field_cl
+        S_tpattern_seq = 164                     // tpattern_seq
       };
     };
 
@@ -910,10 +921,10 @@ namespace pdm { namespace parser {
         value.move< TokenInfo > (std::move (that.value));
         break;
 
-      case symbol_kind::S_mulBinaryOp: // mulBinaryOp
-      case symbol_kind::S_addBinaryOp: // addBinaryOp
-      case symbol_kind::S_cmpBinaryOp: // cmpBinaryOp
-      case symbol_kind::S_eqBinaryOp: // eqBinaryOp
+      case symbol_kind::S_mul_binary_op: // mul_binary_op
+      case symbol_kind::S_add_binary_op: // add_binary_op
+      case symbol_kind::S_cmp_binary_op: // cmp_binary_op
+      case symbol_kind::S_eq_binary_op: // eq_binary_op
         value.move< pdm::ast::BinaryOperator > (std::move (that.value));
         break;
 
@@ -922,30 +933,30 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_expr: // expr
-      case symbol_kind::S_parenExpr: // parenExpr
-      case symbol_kind::S_unitExpr: // unitExpr
-      case symbol_kind::S_vparenExpr: // vparenExpr
+      case symbol_kind::S_bracketed_exp: // bracketed_exp
+      case symbol_kind::S_unit_exp: // unit_exp
+      case symbol_kind::S_paren_exp: // paren_exp
       case symbol_kind::S_vtupleExpr: // vtupleExpr
       case symbol_kind::S_vstructExpr: // vstructExpr
-      case symbol_kind::S_primaryExpr: // primaryExpr
+      case symbol_kind::S_primary_exp: // primary_exp
       case symbol_kind::S_int_expr: // int_expr
-      case symbol_kind::S_ifThenElseExpr: // ifThenElseExpr
-      case symbol_kind::S_chainExpr: // chainExpr
-      case symbol_kind::S_vlambdaExpr: // vlambdaExpr
-      case symbol_kind::S_postfixExpr: // postfixExpr
+      case symbol_kind::S_if_exp: // if_exp
+      case symbol_kind::S_chain_exp: // chain_exp
+      case symbol_kind::S_lambda_exp: // lambda_exp
+      case symbol_kind::S_postfix_exp: // postfix_exp
       case symbol_kind::S_tcall_exp: // tcall_exp
       case symbol_kind::S_vcall_exp: // vcall_exp
       case symbol_kind::S_dot_name_exp: // dot_name_exp
-      case symbol_kind::S_dotIxExpr: // dotIxExpr
-      case symbol_kind::S_unaryExpr: // unaryExpr
-      case symbol_kind::S_binaryExpr: // binaryExpr
-      case symbol_kind::S_mulBinaryExpr: // mulBinaryExpr
-      case symbol_kind::S_addBinaryExpr: // addBinaryExpr
-      case symbol_kind::S_cmpBinaryExpr: // cmpBinaryExpr
-      case symbol_kind::S_eqBinaryExpr: // eqBinaryExpr
-      case symbol_kind::S_andBinaryExpr: // andBinaryExpr
-      case symbol_kind::S_xorBinaryExpr: // xorBinaryExpr
-      case symbol_kind::S_orBinaryExpr: // orBinaryExpr
+      case symbol_kind::S_dot_index_exp: // dot_index_exp
+      case symbol_kind::S_unary_exp: // unary_exp
+      case symbol_kind::S_binary_exp: // binary_exp
+      case symbol_kind::S_mul_binary_exp: // mul_binary_exp
+      case symbol_kind::S_add_binary_exp: // add_binary_exp
+      case symbol_kind::S_cmp_binary_exp: // cmp_binary_exp
+      case symbol_kind::S_eq_binary_exp: // eq_binary_exp
+      case symbol_kind::S_and_binary_exp: // and_binary_exp
+      case symbol_kind::S_xor_binary_exp: // xor_binary_exp
+      case symbol_kind::S_or_binary_exp: // or_binary_exp
       case symbol_kind::S_type_query_exp: // type_query_exp
         value.move< pdm::ast::Exp* > (std::move (that.value));
         break;
@@ -955,7 +966,7 @@ namespace pdm { namespace parser {
         value.move< pdm::ast::LPattern* > (std::move (that.value));
         break;
 
-      case symbol_kind::S_lpatternField: // lpatternField
+      case symbol_kind::S_lpattern_field: // lpattern_field
         value.move< pdm::ast::LPattern::Field* > (std::move (that.value));
         break;
 
@@ -965,12 +976,12 @@ namespace pdm { namespace parser {
 
       case symbol_kind::S_scriptContentStmt: // scriptContentStmt
       case symbol_kind::S_mod_stmt: // mod_stmt
-      case symbol_kind::S_chainPrefixStmt: // chainPrefixStmt
-      case symbol_kind::S_constStmt: // constStmt
-      case symbol_kind::S_letStmt: // letStmt
-      case symbol_kind::S_varStmt: // varStmt
-      case symbol_kind::S_setStmt: // setStmt
-      case symbol_kind::S_discardStmt: // discardStmt
+      case symbol_kind::S_chain_prefix_stmt: // chain_prefix_stmt
+      case symbol_kind::S_const_stmt: // const_stmt
+      case symbol_kind::S_val_stmt: // val_stmt
+      case symbol_kind::S_var_stmt: // var_stmt
+      case symbol_kind::S_set_stmt: // set_stmt
+      case symbol_kind::S_discard_stmt: // discard_stmt
       case symbol_kind::S_moduleContentStmt: // moduleContentStmt
       case symbol_kind::S_fn_stmt: // fn_stmt
       case symbol_kind::S_type_stmt: // type_stmt
@@ -982,16 +993,15 @@ namespace pdm { namespace parser {
         value.move< pdm::ast::Stmt* > (std::move (that.value));
         break;
 
-      case symbol_kind::S_vstructExprField: // vstructExprField
+      case symbol_kind::S_struct_exp_field: // struct_exp_field
         value.move< pdm::ast::StructExp::Field* > (std::move (that.value));
         break;
 
-      case symbol_kind::S_structTypespecField: // structTypespecField
+      case symbol_kind::S_struct_typespec_field: // struct_typespec_field
         value.move< pdm::ast::StructTypespec::Field* > (std::move (that.value));
         break;
 
-      case symbol_kind::S_ttarg: // ttarg
-      case symbol_kind::S_vtarg: // vtarg
+      case symbol_kind::S_targ: // targ
         value.move< pdm::ast::TArg* > (std::move (that.value));
         break;
 
@@ -999,7 +1009,7 @@ namespace pdm { namespace parser {
         value.move< pdm::ast::TPattern* > (std::move (that.value));
         break;
 
-      case symbol_kind::S_tpatternField: // tpatternField
+      case symbol_kind::S_tpattern_field: // tpattern_field
         value.move< pdm::ast::TPattern::Field* > (std::move (that.value));
         break;
 
@@ -1008,29 +1018,33 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_typespec: // typespec
-      case symbol_kind::S_primaryTypespec: // primaryTypespec
-      case symbol_kind::S_parenTypespec: // parenTypespec
-      case symbol_kind::S_tupleTypespec: // tupleTypespec
+      case symbol_kind::S_primary_typespec: // primary_typespec
+      case symbol_kind::S_paren_typespec: // paren_typespec
+      case symbol_kind::S_tuple_typespec: // tuple_typespec
       case symbol_kind::S_mod_prefix_tid: // mod_prefix_tid
       case symbol_kind::S_fn_typespec: // fn_typespec
-      case symbol_kind::S_postfixTypespec: // postfixTypespec
-      case symbol_kind::S_ttcall: // ttcall
-      case symbol_kind::S_tdot: // tdot
-      case symbol_kind::S_unaryTypespec: // unaryTypespec
+      case symbol_kind::S_postfix_typespec: // postfix_typespec
+      case symbol_kind::S_tcall_typespec: // tcall_typespec
+      case symbol_kind::S_dot_typespec: // dot_typespec
+      case symbol_kind::S_unary_typespec: // unary_typespec
       case symbol_kind::S_long_typespec: // long_typespec
-      case symbol_kind::S_structTypespec: // structTypespec
+      case symbol_kind::S_struct_typespec: // struct_typespec
         value.move< pdm::ast::Typespec* > (std::move (that.value));
         break;
 
-      case symbol_kind::S_unaryOp: // unaryOp
+      case symbol_kind::S_unary_op: // unary_op
         value.move< pdm::ast::UnaryOperator > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_varg: // varg
+        value.move< pdm::ast::VArg* > (std::move (that.value));
         break;
 
       case symbol_kind::S_vpattern: // vpattern
         value.move< pdm::ast::VPattern* > (std::move (that.value));
         break;
 
-      case symbol_kind::S_vpatternField: // vpatternField
+      case symbol_kind::S_vpattern_field: // vpattern_field
         value.move< pdm::ast::VPattern::Field* > (std::move (that.value));
         break;
 
@@ -1039,19 +1053,18 @@ namespace pdm { namespace parser {
         value.move< std::vector<pdm::ast::EnumStmt::Field*> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_expr_cl1: // expr_cl1
       case symbol_kind::S_expr_cl2: // expr_cl2
       case symbol_kind::S_expr_sl: // expr_sl
         value.move< std::vector<pdm::ast::Exp*> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_lpatternField_cl: // lpatternField_cl
+      case symbol_kind::S_lpattern_field_cl: // lpattern_field_cl
         value.move< std::vector<pdm::ast::LPattern::Field*> > (std::move (that.value));
         break;
 
       case symbol_kind::S_scriptContent: // scriptContent
       case symbol_kind::S_moduleContent: // moduleContent
-      case symbol_kind::S_chainPrefix: // chainPrefix
+      case symbol_kind::S_chain_prefix: // chain_prefix
         value.move< std::vector<pdm::ast::Stmt*> > (std::move (that.value));
         break;
 
@@ -1059,16 +1072,15 @@ namespace pdm { namespace parser {
         value.move< std::vector<pdm::ast::StringExp::Piece> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_vstructExprField_cl: // vstructExprField_cl
+      case symbol_kind::S_struct_exp_field_cl: // struct_exp_field_cl
         value.move< std::vector<pdm::ast::StructExp::Field*> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_structTypespecField_cl: // structTypespecField_cl
+      case symbol_kind::S_struct_typespec_field_cl: // struct_typespec_field_cl
         value.move< std::vector<pdm::ast::StructTypespec::Field*> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_ttarg_cl: // ttarg_cl
-      case symbol_kind::S_vtarg_cl: // vtarg_cl
+      case symbol_kind::S_targ_cl: // targ_cl
         value.move< std::vector<pdm::ast::TArg*> > (std::move (that.value));
         break;
 
@@ -1076,7 +1088,7 @@ namespace pdm { namespace parser {
         value.move< std::vector<pdm::ast::TPattern*> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_tpatternField_cl: // tpatternField_cl
+      case symbol_kind::S_tpattern_field_cl: // tpattern_field_cl
         value.move< std::vector<pdm::ast::TPattern::Field*> > (std::move (that.value));
         break;
 
@@ -1085,7 +1097,11 @@ namespace pdm { namespace parser {
         value.move< std::vector<pdm::ast::Typespec*> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_vpatternField_cl: // vpatternField_cl
+      case symbol_kind::S_varg_cl: // varg_cl
+        value.move< std::vector<pdm::ast::VArg*> > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_vpattern_field_cl: // vpattern_field_cl
         value.move< std::vector<pdm::ast::VPattern::Field*> > (std::move (that.value));
         break;
 
@@ -1324,6 +1340,19 @@ namespace pdm { namespace parser {
       {}
 #endif
 #if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, pdm::ast::VArg*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const pdm::ast::VArg*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::VPattern*&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
@@ -1493,6 +1522,19 @@ namespace pdm { namespace parser {
       {}
 #endif
 #if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::VArg*>&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::VArg*>& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::VPattern::Field*>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
@@ -1556,10 +1598,10 @@ switch (yykind)
         value.template destroy< TokenInfo > ();
         break;
 
-      case symbol_kind::S_mulBinaryOp: // mulBinaryOp
-      case symbol_kind::S_addBinaryOp: // addBinaryOp
-      case symbol_kind::S_cmpBinaryOp: // cmpBinaryOp
-      case symbol_kind::S_eqBinaryOp: // eqBinaryOp
+      case symbol_kind::S_mul_binary_op: // mul_binary_op
+      case symbol_kind::S_add_binary_op: // add_binary_op
+      case symbol_kind::S_cmp_binary_op: // cmp_binary_op
+      case symbol_kind::S_eq_binary_op: // eq_binary_op
         value.template destroy< pdm::ast::BinaryOperator > ();
         break;
 
@@ -1568,30 +1610,30 @@ switch (yykind)
         break;
 
       case symbol_kind::S_expr: // expr
-      case symbol_kind::S_parenExpr: // parenExpr
-      case symbol_kind::S_unitExpr: // unitExpr
-      case symbol_kind::S_vparenExpr: // vparenExpr
+      case symbol_kind::S_bracketed_exp: // bracketed_exp
+      case symbol_kind::S_unit_exp: // unit_exp
+      case symbol_kind::S_paren_exp: // paren_exp
       case symbol_kind::S_vtupleExpr: // vtupleExpr
       case symbol_kind::S_vstructExpr: // vstructExpr
-      case symbol_kind::S_primaryExpr: // primaryExpr
+      case symbol_kind::S_primary_exp: // primary_exp
       case symbol_kind::S_int_expr: // int_expr
-      case symbol_kind::S_ifThenElseExpr: // ifThenElseExpr
-      case symbol_kind::S_chainExpr: // chainExpr
-      case symbol_kind::S_vlambdaExpr: // vlambdaExpr
-      case symbol_kind::S_postfixExpr: // postfixExpr
+      case symbol_kind::S_if_exp: // if_exp
+      case symbol_kind::S_chain_exp: // chain_exp
+      case symbol_kind::S_lambda_exp: // lambda_exp
+      case symbol_kind::S_postfix_exp: // postfix_exp
       case symbol_kind::S_tcall_exp: // tcall_exp
       case symbol_kind::S_vcall_exp: // vcall_exp
       case symbol_kind::S_dot_name_exp: // dot_name_exp
-      case symbol_kind::S_dotIxExpr: // dotIxExpr
-      case symbol_kind::S_unaryExpr: // unaryExpr
-      case symbol_kind::S_binaryExpr: // binaryExpr
-      case symbol_kind::S_mulBinaryExpr: // mulBinaryExpr
-      case symbol_kind::S_addBinaryExpr: // addBinaryExpr
-      case symbol_kind::S_cmpBinaryExpr: // cmpBinaryExpr
-      case symbol_kind::S_eqBinaryExpr: // eqBinaryExpr
-      case symbol_kind::S_andBinaryExpr: // andBinaryExpr
-      case symbol_kind::S_xorBinaryExpr: // xorBinaryExpr
-      case symbol_kind::S_orBinaryExpr: // orBinaryExpr
+      case symbol_kind::S_dot_index_exp: // dot_index_exp
+      case symbol_kind::S_unary_exp: // unary_exp
+      case symbol_kind::S_binary_exp: // binary_exp
+      case symbol_kind::S_mul_binary_exp: // mul_binary_exp
+      case symbol_kind::S_add_binary_exp: // add_binary_exp
+      case symbol_kind::S_cmp_binary_exp: // cmp_binary_exp
+      case symbol_kind::S_eq_binary_exp: // eq_binary_exp
+      case symbol_kind::S_and_binary_exp: // and_binary_exp
+      case symbol_kind::S_xor_binary_exp: // xor_binary_exp
+      case symbol_kind::S_or_binary_exp: // or_binary_exp
       case symbol_kind::S_type_query_exp: // type_query_exp
         value.template destroy< pdm::ast::Exp* > ();
         break;
@@ -1601,7 +1643,7 @@ switch (yykind)
         value.template destroy< pdm::ast::LPattern* > ();
         break;
 
-      case symbol_kind::S_lpatternField: // lpatternField
+      case symbol_kind::S_lpattern_field: // lpattern_field
         value.template destroy< pdm::ast::LPattern::Field* > ();
         break;
 
@@ -1611,12 +1653,12 @@ switch (yykind)
 
       case symbol_kind::S_scriptContentStmt: // scriptContentStmt
       case symbol_kind::S_mod_stmt: // mod_stmt
-      case symbol_kind::S_chainPrefixStmt: // chainPrefixStmt
-      case symbol_kind::S_constStmt: // constStmt
-      case symbol_kind::S_letStmt: // letStmt
-      case symbol_kind::S_varStmt: // varStmt
-      case symbol_kind::S_setStmt: // setStmt
-      case symbol_kind::S_discardStmt: // discardStmt
+      case symbol_kind::S_chain_prefix_stmt: // chain_prefix_stmt
+      case symbol_kind::S_const_stmt: // const_stmt
+      case symbol_kind::S_val_stmt: // val_stmt
+      case symbol_kind::S_var_stmt: // var_stmt
+      case symbol_kind::S_set_stmt: // set_stmt
+      case symbol_kind::S_discard_stmt: // discard_stmt
       case symbol_kind::S_moduleContentStmt: // moduleContentStmt
       case symbol_kind::S_fn_stmt: // fn_stmt
       case symbol_kind::S_type_stmt: // type_stmt
@@ -1628,16 +1670,15 @@ switch (yykind)
         value.template destroy< pdm::ast::Stmt* > ();
         break;
 
-      case symbol_kind::S_vstructExprField: // vstructExprField
+      case symbol_kind::S_struct_exp_field: // struct_exp_field
         value.template destroy< pdm::ast::StructExp::Field* > ();
         break;
 
-      case symbol_kind::S_structTypespecField: // structTypespecField
+      case symbol_kind::S_struct_typespec_field: // struct_typespec_field
         value.template destroy< pdm::ast::StructTypespec::Field* > ();
         break;
 
-      case symbol_kind::S_ttarg: // ttarg
-      case symbol_kind::S_vtarg: // vtarg
+      case symbol_kind::S_targ: // targ
         value.template destroy< pdm::ast::TArg* > ();
         break;
 
@@ -1645,7 +1686,7 @@ switch (yykind)
         value.template destroy< pdm::ast::TPattern* > ();
         break;
 
-      case symbol_kind::S_tpatternField: // tpatternField
+      case symbol_kind::S_tpattern_field: // tpattern_field
         value.template destroy< pdm::ast::TPattern::Field* > ();
         break;
 
@@ -1654,29 +1695,33 @@ switch (yykind)
         break;
 
       case symbol_kind::S_typespec: // typespec
-      case symbol_kind::S_primaryTypespec: // primaryTypespec
-      case symbol_kind::S_parenTypespec: // parenTypespec
-      case symbol_kind::S_tupleTypespec: // tupleTypespec
+      case symbol_kind::S_primary_typespec: // primary_typespec
+      case symbol_kind::S_paren_typespec: // paren_typespec
+      case symbol_kind::S_tuple_typespec: // tuple_typespec
       case symbol_kind::S_mod_prefix_tid: // mod_prefix_tid
       case symbol_kind::S_fn_typespec: // fn_typespec
-      case symbol_kind::S_postfixTypespec: // postfixTypespec
-      case symbol_kind::S_ttcall: // ttcall
-      case symbol_kind::S_tdot: // tdot
-      case symbol_kind::S_unaryTypespec: // unaryTypespec
+      case symbol_kind::S_postfix_typespec: // postfix_typespec
+      case symbol_kind::S_tcall_typespec: // tcall_typespec
+      case symbol_kind::S_dot_typespec: // dot_typespec
+      case symbol_kind::S_unary_typespec: // unary_typespec
       case symbol_kind::S_long_typespec: // long_typespec
-      case symbol_kind::S_structTypespec: // structTypespec
+      case symbol_kind::S_struct_typespec: // struct_typespec
         value.template destroy< pdm::ast::Typespec* > ();
         break;
 
-      case symbol_kind::S_unaryOp: // unaryOp
+      case symbol_kind::S_unary_op: // unary_op
         value.template destroy< pdm::ast::UnaryOperator > ();
+        break;
+
+      case symbol_kind::S_varg: // varg
+        value.template destroy< pdm::ast::VArg* > ();
         break;
 
       case symbol_kind::S_vpattern: // vpattern
         value.template destroy< pdm::ast::VPattern* > ();
         break;
 
-      case symbol_kind::S_vpatternField: // vpatternField
+      case symbol_kind::S_vpattern_field: // vpattern_field
         value.template destroy< pdm::ast::VPattern::Field* > ();
         break;
 
@@ -1685,19 +1730,18 @@ switch (yykind)
         value.template destroy< std::vector<pdm::ast::EnumStmt::Field*> > ();
         break;
 
-      case symbol_kind::S_expr_cl1: // expr_cl1
       case symbol_kind::S_expr_cl2: // expr_cl2
       case symbol_kind::S_expr_sl: // expr_sl
         value.template destroy< std::vector<pdm::ast::Exp*> > ();
         break;
 
-      case symbol_kind::S_lpatternField_cl: // lpatternField_cl
+      case symbol_kind::S_lpattern_field_cl: // lpattern_field_cl
         value.template destroy< std::vector<pdm::ast::LPattern::Field*> > ();
         break;
 
       case symbol_kind::S_scriptContent: // scriptContent
       case symbol_kind::S_moduleContent: // moduleContent
-      case symbol_kind::S_chainPrefix: // chainPrefix
+      case symbol_kind::S_chain_prefix: // chain_prefix
         value.template destroy< std::vector<pdm::ast::Stmt*> > ();
         break;
 
@@ -1705,16 +1749,15 @@ switch (yykind)
         value.template destroy< std::vector<pdm::ast::StringExp::Piece> > ();
         break;
 
-      case symbol_kind::S_vstructExprField_cl: // vstructExprField_cl
+      case symbol_kind::S_struct_exp_field_cl: // struct_exp_field_cl
         value.template destroy< std::vector<pdm::ast::StructExp::Field*> > ();
         break;
 
-      case symbol_kind::S_structTypespecField_cl: // structTypespecField_cl
+      case symbol_kind::S_struct_typespec_field_cl: // struct_typespec_field_cl
         value.template destroy< std::vector<pdm::ast::StructTypespec::Field*> > ();
         break;
 
-      case symbol_kind::S_ttarg_cl: // ttarg_cl
-      case symbol_kind::S_vtarg_cl: // vtarg_cl
+      case symbol_kind::S_targ_cl: // targ_cl
         value.template destroy< std::vector<pdm::ast::TArg*> > ();
         break;
 
@@ -1722,7 +1765,7 @@ switch (yykind)
         value.template destroy< std::vector<pdm::ast::TPattern*> > ();
         break;
 
-      case symbol_kind::S_tpatternField_cl: // tpatternField_cl
+      case symbol_kind::S_tpattern_field_cl: // tpattern_field_cl
         value.template destroy< std::vector<pdm::ast::TPattern::Field*> > ();
         break;
 
@@ -1731,7 +1774,11 @@ switch (yykind)
         value.template destroy< std::vector<pdm::ast::Typespec*> > ();
         break;
 
-      case symbol_kind::S_vpatternField_cl: // vpatternField_cl
+      case symbol_kind::S_varg_cl: // varg_cl
+        value.template destroy< std::vector<pdm::ast::VArg*> > ();
+        break;
+
+      case symbol_kind::S_vpattern_field_cl: // vpattern_field_cl
         value.template destroy< std::vector<pdm::ast::VPattern::Field*> > ();
         break;
 
@@ -1832,13 +1879,13 @@ switch (yykind)
       symbol_type (int tok, location_type l)
         : super_type(token_type (tok), std::move (l))
       {
-        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_LET || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_TFN || tok == token::KW_TYPE || tok == token::KW_ENUM || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
+        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_VAL || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_TFN || tok == token::KW_TYPE || tok == token::KW_ENUM || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::KW_OUT || tok == token::KW_INOUT || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
       }
 #else
       symbol_type (int tok, const location_type& l)
         : super_type(token_type (tok), l)
       {
-        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_LET || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_TFN || tok == token::KW_TYPE || tok == token::KW_ENUM || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
+        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_VAL || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_TFN || tok == token::KW_TYPE || tok == token::KW_ENUM || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::KW_OUT || tok == token::KW_INOUT || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2163,16 +2210,16 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_KW_LET (location_type l)
+      make_KW_VAL (location_type l)
       {
-        return symbol_type (token::KW_LET, std::move (l));
+        return symbol_type (token::KW_VAL, std::move (l));
       }
 #else
       static
       symbol_type
-      make_KW_LET (const location_type& l)
+      make_KW_VAL (const location_type& l)
       {
-        return symbol_type (token::KW_LET, l);
+        return symbol_type (token::KW_VAL, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2338,6 +2385,36 @@ switch (yykind)
       make_KW_TYPECLASS (const location_type& l)
       {
         return symbol_type (token::KW_TYPECLASS, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_OUT (location_type l)
+      {
+        return symbol_type (token::KW_OUT, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_OUT (const location_type& l)
+      {
+        return symbol_type (token::KW_OUT, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_INOUT (location_type l)
+      {
+        return symbol_type (token::KW_INOUT, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_INOUT (const location_type& l)
+      {
+        return symbol_type (token::KW_INOUT, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2923,7 +3000,7 @@ switch (yykind)
     static bool yy_table_value_is_error_ (int yyvalue);
 
     static const short yypact_ninf_;
-    static const signed char yytable_ninf_;
+    static const short yytable_ninf_;
 
     /// Convert a scanner token kind \a t to a symbol kind.
     /// In theory \a t should be a token_kind_type, but character literals
@@ -3199,8 +3276,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 659,     ///< Last index in yytable_.
-      yynnts_ = 98,  ///< Number of nonterminal symbols.
+      yylast_ = 656,     ///< Last index in yytable_.
+      yynnts_ = 97,  ///< Number of nonterminal symbols.
       yyfinal_ = 7 ///< Termination state number.
     };
 
@@ -3216,20 +3293,20 @@ switch (yykind)
 
 #line 33 "parser.yy"
 } } // pdm::parser
-#line 3220 "parser.tab.hh"
+#line 3297 "parser.tab.hh"
 
 
 // "%code provides" blocks.
-#line 71 "parser.yy"
+#line 76 "parser.yy"
 
     using Tk = pdm::parser::parser::token_kind_type;
-#line 195 "parser.yy"
+#line 202 "parser.yy"
 
     // int yylex(pdm::parser::TokenInfo *lvalp, pdm::source::Loc *llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
     int yylex(pdm::parser::parser::semantic_type* st, pdm::source::Loc* llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
     void yyerror(pdm::source::Loc* llocp, char const* message, pdm::source::Source* source, pdm::parser::Lexer* lexer);
 
-#line 3233 "parser.tab.hh"
+#line 3310 "parser.tab.hh"
 
 
 #endif // !YY_YY_PARSER_TAB_HH_INCLUDED

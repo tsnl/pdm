@@ -52,7 +52,7 @@ namespace pdm::parser::aux {
         intern::String return_intstr;
         intern::String discard_intstr;
         intern::String fn_intstr;
-        intern::String let_intstr;
+        intern::String val_intstr;
         intern::String var_intstr;
         intern::String const_intstr;
         intern::String and_intstr;
@@ -65,6 +65,8 @@ namespace pdm::parser::aux {
         intern::String mod_intstr;
         intern::String from_intstr;
         intern::String typeclass_intstr;
+        intern::String out_intstr;
+        intern::String inout_intstr;
 
         Keywords() {
             intern::String::ensure_init();
@@ -81,7 +83,7 @@ namespace pdm::parser::aux {
             return_intstr = "return";
             discard_intstr = "discard";
             fn_intstr = "fn";
-            let_intstr = "let";
+            val_intstr = "val";
             var_intstr = "var";
             const_intstr = "const";
             and_intstr = "and";
@@ -94,29 +96,14 @@ namespace pdm::parser::aux {
             mod_intstr = "mod";
             from_intstr = "from";
             typeclass_intstr = "typeclass";
+            out_intstr = "out";
+            inout_intstr = "inout";
         }
     };
 
     static Keywords keywords;
 
 }
-
-//
-// Definitions:
-//
-
-namespace pdm::parser {
-
-    bool Lexer::setup(source::Source* source) {
-        return m_reader.setup(source);
-    }
-
-    TokenKind Lexer::lex_one_token(TokenInfo* out_info, source::Loc* out_loc) {
-        return aux::LexOneToken(&m_reader, out_info, out_loc);
-    }
-
-}
-
 
 //
 // Helpers (2)
@@ -552,7 +539,7 @@ namespace pdm::parser::aux {
         if (intstr == keywords.with_intstr) { return Tk::KW_WITH; }
         if (intstr == keywords.fn_intstr) { return Tk::KW_FN; }
         if (intstr == keywords.const_intstr) { return Tk::KW_CONST; }
-        if (intstr == keywords.let_intstr) { return Tk::KW_LET; }
+        if (intstr == keywords.val_intstr) { return Tk::KW_VAL; }
         if (intstr == keywords.var_intstr) { return Tk::KW_VAR; }
         if (intstr == keywords.and_intstr) { return Tk::KW_AND; }
         if (intstr == keywords.xor_intstr) { return Tk::KW_XOR; }
@@ -564,6 +551,8 @@ namespace pdm::parser::aux {
         if (intstr == keywords.typeclass_intstr) { return Tk::KW_TYPECLASS; }
         if (intstr == keywords.mod_intstr) { return Tk::KW_MOD; }
         if (intstr == keywords.from_intstr) { return Tk::KW_FROM; }
+        if (intstr == keywords.out_intstr) { return Tk::KW_OUT; }
+        if (intstr == keywords.inout_intstr) { return Tk::KW_INOUT; }
         else {
             infoP->ID_intstr = intstr;
             return getIdTextKind(charBuf);
@@ -907,9 +896,9 @@ namespace pdm::parser::aux {
                 name = "not";
                 break;
             }
-            case Tk::KW_LET:
+            case Tk::KW_VAL:
             {
-                name = "let";
+                name = "val";
                 break;
             }
             case Tk::KW_VAR:
@@ -1033,6 +1022,26 @@ namespace pdm::parser::aux {
             loc->first_line(),loc->first_column(), 
             loc->last_line(),loc->last_column()
         );
+    }
+
+}
+
+//
+// Definitions:
+//
+
+namespace pdm::parser {
+
+    bool Lexer::setup(source::Source* source) {
+        return m_reader.setup(source);
+    }
+
+    TokenKind Lexer::lex_one_token(TokenInfo* out_info, source::Loc* out_loc) {
+        return aux::LexOneToken(&m_reader, out_info, out_loc);
+    }
+
+    void debug_print_token(char const* prefix, TokenKind tk, TokenInfo* ti, source::Loc* locp)  {
+        return aux::DebugPrintToken(prefix, tk, ti, locp);
     }
 
 }

@@ -75,7 +75,8 @@ namespace pdm::scoper {
         // push a new context in this frame 
         Context* shadow(ContextKind new_context_kind) {
             Context* parent_context = opt_last_context();
-            assert(parent_context != nullptr);
+            // assert(parent_context != nullptr);
+            // note that paren_context may be nullptr, and 'shadow' still works.
             m_last_context = parent_context->shadow(new_context_kind, this);
 
             if (m_first_context == nullptr) {

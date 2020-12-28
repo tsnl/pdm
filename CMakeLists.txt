@@ -149,7 +149,6 @@ add_library(
     src/pdm/ast/stmt/fn.hh
     src/pdm/ast/stmt/enum.hh
     src/pdm/ast/stmt/extern.hh
-    src/pdm/ast/stmt/let.hh
     src/pdm/ast/stmt/using.hh
     src/pdm/ast/stmt/mod.cc
     src/pdm/ast/stmt/mod.hh
@@ -158,14 +157,16 @@ add_library(
     src/pdm/ast/stmt/builtin_type.hh
     src/pdm/ast/stmt/type.hh
     src/pdm/ast/stmt/typeclass.hh
+    src/pdm/ast/stmt/val.hh
+    src/pdm/ast/stmt/var.hh
 
-    src/pdm/ast/targ/targ.hh
+    src/pdm/ast/arg/targ.hh
+    src/pdm/ast/arg/varg.hh
 
     src/pdm/ast/typespec/typespec.hh
     src/pdm/ast/typespec/dot.hh
     src/pdm/ast/typespec/fn.hh
     src/pdm/ast/typespec/id.hh
-    src/pdm/ast/typespec/ptr.hh
     src/pdm/ast/typespec/struct.hh
     src/pdm/ast/typespec/tcall.hh
 
@@ -223,6 +224,7 @@ add_library(
     src/pdm/parser/reader.cc
     src/pdm/parser/reader.hh
 
+    src/pdm/printer/printer.cc
     src/pdm/printer/printer.hh
 )
 target_link_libraries(pdm intern utf8proc)

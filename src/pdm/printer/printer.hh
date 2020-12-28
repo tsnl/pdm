@@ -7,6 +7,7 @@
 #include "pdm/ast/visitor.hh"
 #include "pdm/core/intern.hh"
 #include "pdm/core/integer.hh"
+#include "pdm/core/utf8.hh"
 
 namespace pdm::printer {
     
@@ -27,18 +28,22 @@ namespace pdm::printer {
         void print_newline();
         void print_newline_indent();
         void print_newline_deindent();
+        
         void print_u32_char(int ch);
+        
+        void print_cstr(char const* cstr);
         void print_str(std::string const& s);
         void print_u8_str(utf8::String const& s);
         void print_intstr(intern::String const& s);
-        void print_node(ast::Node* node);
+
         void print_uint(u64 u, ast::IntExp::Base base);
         void print_float(long double float_val);
 
+        void print_node(ast::Node* node);
+
       // visit overloads:
       private:
-        void print_script(ast::Script* script);
-        
+
         // scripts:
         void print_script(ast::Script* script);
 
@@ -49,7 +54,7 @@ namespace pdm::printer {
         void print_enum_stmt(ast::EnumStmt* node);
         void print_fn_stmt(ast::FnStmt* node);
         void print_const_stmt(ast::ConstStmt* node);
-        void print_let_stmt(ast::LetStmt* node);
+        void print_val_stmt(ast::ValStmt* node);
         void print_var_stmt(ast::VarStmt* node);
         void print_set_stmt(ast::SetStmt* node);
         void print_discard_stmt(ast::DiscardStmt* node);
@@ -86,13 +91,17 @@ namespace pdm::printer {
 
         // typespecs:
         void print_id_typespec(ast::IdTypespec* node);
-        void print_ptr_typespec(ast::PtrTypespec* node);
         void print_fn_typespec(ast::FnTypespec* node);
         void print_tcall_typespec(ast::TCallTypespec* node);
         void print_tuple_typespec(ast::TupleTypespec* node);
         void print_dot_name_typespec_type_prefix(ast::DotNameTypespec_TypePrefix* node);
         void print_dot_name_typespec_mod_prefix(ast::DotNameTypespec_ModPrefix* node);
         void print_struct_typespec(ast::StructTypespec* node);
+        void print_paren_typespec(ast::ParenTypespec* node);
+
+        // args:
+        void print_targ(ast::TArg* targ);
+        void print_varg(ast::VArg* varg);
 
         // non-syntactic elements:
         void print_builtin_type_stmt(ast::BuiltinTypeStmt* node);

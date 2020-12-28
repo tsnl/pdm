@@ -27,8 +27,8 @@
 %language "C++"
 %defines
 
-/* expect 2 sr conflicts */
-%expect 2
+/* expected sr conflicts */
+%expect 1
 
 %define api.namespace {pdm::parser}
 
@@ -66,6 +66,11 @@
     #include "pdm/source/source.hh"
     #include "pdm/source/pos.hh"
     #include "pdm/source/loc.hh"
+
+    #include "pdm/feedback/feedback.hh"
+    #include "pdm/feedback/note.hh"
+    #include "pdm/feedback/severity.hh"
+    #include "pdm/feedback/letter.hh"
 }
 
 %code provides {
@@ -113,7 +118,7 @@
 //
 
 %type <pdm::ast::Stmt*> moduleContentStmt
-%type <pdm::ast::Stmt*> chainPrefixStmt constStmt letStmt varStmt setStmt discardStmt
+%type <pdm::ast::Stmt*> chain_prefix_stmt const_stmt val_stmt var_stmt set_stmt discard_stmt
 %type <pdm::ast::Stmt*> importStmt
 %type <pdm::ast::Stmt*> using_stmt
 %type <pdm::ast::Stmt*> fn_stmt
@@ -137,43 +142,43 @@
 //
 
 %type <pdm::ast::Exp*> expr
-%type <std::vector<pdm::ast::Exp*>> expr_cl1 expr_cl2 expr_sl
+%type <std::vector<pdm::ast::Exp*>> /* expr_cl1 */ expr_cl2 expr_sl
 
-%type <pdm::ast::Exp*> parenExpr unitExpr int_expr
-%type <pdm::ast::Exp*> primaryExpr 
+%type <pdm::ast::Exp*> bracketed_exp unit_exp int_expr
+%type <pdm::ast::Exp*> primary_exp 
 %type <std::vector<pdm::ast::StringExp::Piece>> stringls
-%type <pdm::ast::Exp*> vparenExpr vtupleExpr vstructExpr
-%type <pdm::ast::Exp*> ifThenElseExpr chainExpr vlambdaExpr
-%type <std::vector<pdm::ast::Stmt*>> chainPrefix
-%type <pdm::ast::Exp*> unaryExpr
-%type <pdm::ast::UnaryOperator> unaryOp
+%type <pdm::ast::Exp*> paren_exp vtupleExpr vstructExpr
+%type <pdm::ast::Exp*> if_exp chain_exp lambda_exp
+%type <std::vector<pdm::ast::Stmt*>> chain_prefix
+%type <pdm::ast::Exp*> unary_exp
+%type <pdm::ast::UnaryOperator> unary_op
 
-%type <pdm::ast::Exp*> postfixExpr 
+%type <pdm::ast::Exp*> postfix_exp 
 %type <pdm::ast::Exp*> tcall_exp vcall_exp
-%type <pdm::ast::Exp*> dot_name_exp dotIxExpr
+%type <pdm::ast::Exp*> dot_name_exp dot_index_exp
 
-%type <pdm::ast::Exp*> binaryExpr 
-%type <pdm::ast::Exp*> mulBinaryExpr addBinaryExpr cmpBinaryExpr eqBinaryExpr andBinaryExpr xorBinaryExpr orBinaryExpr
-%type <pdm::ast::BinaryOperator> mulBinaryOp addBinaryOp cmpBinaryOp eqBinaryOp
+%type <pdm::ast::Exp*> binary_exp 
+%type <pdm::ast::Exp*> mul_binary_exp add_binary_exp cmp_binary_exp eq_binary_exp and_binary_exp xor_binary_exp or_binary_exp
+%type <pdm::ast::BinaryOperator> mul_binary_op add_binary_op cmp_binary_op eq_binary_op
 
 %type <pdm::ast::Exp*> type_query_exp
 %type <pdm::ast::TypeQueryKind> type_query_op
 
-%type <pdm::ast::StructExp::Field*> vstructExprField
-%type <std::vector<pdm::ast::StructExp::Field*>> vstructExprField_cl
+%type <pdm::ast::StructExp::Field*> struct_exp_field
+%type <std::vector<pdm::ast::StructExp::Field*>> struct_exp_field_cl
 
 //
 // Typespec Nonterminals:
 //
 
 %type <pdm::ast::Typespec*> typespec long_typespec
-%type <pdm::ast::Typespec*> primaryTypespec parenTypespec tupleTypespec structTypespec mod_prefix_tid fn_typespec
+%type <pdm::ast::Typespec*> primary_typespec paren_typespec tuple_typespec struct_typespec mod_prefix_tid fn_typespec
 %type <std::vector<pdm::intern::String>> mod_prefix
-%type <pdm::ast::Typespec*> postfixTypespec ttcall tdot
-%type <pdm::ast::Typespec*> unaryTypespec
+%type <pdm::ast::Typespec*> postfix_typespec tcall_typespec dot_typespec
+%type <pdm::ast::Typespec*> unary_typespec
 %type <std::vector<pdm::ast::Typespec*>> typespec_cl1 typespec_cl2
-%type <pdm::ast::StructTypespec::Field*> structTypespecField
-%type <std::vector<pdm::ast::StructTypespec::Field*>> structTypespecField_cl
+%type <pdm::ast::StructTypespec::Field*> struct_typespec_field
+%type <std::vector<pdm::ast::StructTypespec::Field*>> struct_typespec_field_cl
 
 //
 // Pattern Nonterminals:
@@ -182,14 +187,16 @@
 %type <pdm::ast::LPattern*> lpattern lpattern_naked
 %type <pdm::ast::VPattern*> vpattern 
 %type <pdm::ast::TPattern*> tpattern
-%type <pdm::ast::VPattern::Field*> vpatternField 
-%type <pdm::ast::LPattern::Field*> lpatternField
-%type <pdm::ast::TPattern::Field*> tpatternField
-%type <std::vector<pdm::ast::VPattern::Field*>> vpatternField_cl 
-%type <std::vector<pdm::ast::LPattern::Field*>> lpatternField_cl 
-%type <std::vector<pdm::ast::TPattern::Field*>> tpatternField_cl
-%type <pdm::ast::TArg*> ttarg vtarg
-%type <std::vector<pdm::ast::TArg*>> ttarg_cl vtarg_cl
+%type <pdm::ast::VPattern::Field*> vpattern_field 
+%type <pdm::ast::LPattern::Field*> lpattern_field
+%type <pdm::ast::TPattern::Field*> tpattern_field
+%type <std::vector<pdm::ast::VPattern::Field*>> vpattern_field_cl 
+%type <std::vector<pdm::ast::LPattern::Field*>> lpattern_field_cl 
+%type <std::vector<pdm::ast::TPattern::Field*>> tpattern_field_cl
+%type <pdm::ast::TArg*> targ
+%type <pdm::ast::VArg*> varg
+%type <std::vector<pdm::ast::TArg*>> targ_cl
+%type <std::vector<pdm::ast::VArg*>> varg_cl
 %type <std::vector<pdm::ast::TPattern*>> tpattern_seq
 
 %code provides {
@@ -213,7 +220,7 @@
 %token KW_EXTERN "extern"
 %token KW_FROM "from"
 %token KW_CONST "const"
-%token KW_LET "let" 
+%token KW_VAL "val" 
 %token KW_VAR "var"
 %token KW_SET "set" 
 %token KW_FN "fn" 
@@ -225,6 +232,8 @@
 %token KW_OR "or" 
 %token KW_NOT "not"
 %token KW_TYPECLASS "typeclass"
+%token KW_OUT "out"
+%token KW_INOUT "inout"
 
 %token <TokenInfo> DINT_LIT "42"
 %token <TokenInfo> XINT_LIT "0x2a"
@@ -281,7 +290,7 @@
 
 %start script;
 // %start module;
-// %start letStmt
+// %start val_stmt
 
 %%
 
@@ -316,26 +325,26 @@ moduleContent
  * Statements:
  */
 
-chainPrefixStmt
-    : constStmt
-    | letStmt
-    | varStmt
-    | setStmt
-    | discardStmt
+chain_prefix_stmt
+    : const_stmt
+    | val_stmt
+    | var_stmt
+    | set_stmt
+    | discard_stmt
     ;
-constStmt
+const_stmt
     : KW_CONST lpattern_naked BIND expr { $$ = mgr->new_const_stmt(@$, $2, $4); }
     ;
-letStmt
-    : KW_LET lpattern_naked BIND expr   { $$ = mgr->new_let_stmt(@$, $2, $4); }
+val_stmt
+    : KW_VAL lpattern_naked BIND expr   { $$ = mgr->new_val_stmt(@$, $2, $4); }
     ;
-varStmt
+var_stmt
     : KW_VAR lpattern_naked BIND expr   { $$ = mgr->new_var_stmt(@$, $2, $4); }
     ;
-setStmt
+set_stmt
     : KW_SET expr BIND expr   { $$ = mgr->new_set_stmt(@$, $2, $4); }
     ; 
-discardStmt
+discard_stmt
     : expr    { $$ = mgr->new_discard_stmt(@$, $1); }
     ;
 
@@ -350,10 +359,10 @@ moduleContentStmt
     | extern_stmt
     ;
 fn_stmt
-    : KW_FN vid              vpattern ARROW typespec BIND parenExpr   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move(std::vector<ast::TPattern*>{}), $3, $5, $7); }
-    | KW_FN vid tpattern_seq vpattern ARROW typespec BIND parenExpr   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move($3), $4, $6, $8); }
-    | KW_FN vid              vpattern                BIND parenExpr   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move(std::vector<ast::TPattern*>{}), $3, nullptr, $5); }
-    | KW_FN vid tpattern_seq vpattern                BIND parenExpr   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move($3), $4, nullptr, $6); }
+    : KW_FN vid              vpattern ARROW typespec BIND bracketed_exp   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move(std::vector<ast::TPattern*>{}), $3, $5, $7); }
+    | KW_FN vid tpattern_seq vpattern ARROW typespec BIND bracketed_exp   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move($3), $4, $6, $8); }
+    | KW_FN vid              vpattern                BIND bracketed_exp   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move(std::vector<ast::TPattern*>{}), $3, nullptr, $5); }
+    | KW_FN vid tpattern_seq vpattern                BIND bracketed_exp   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move($3), $4, nullptr, $6); }
     ;
 type_stmt
     : KW_TYPE tid              BIND long_typespec   { $$ = mgr->new_type_stmt(@$, $2.ID_intstr, std::move(std::vector<ast::TPattern*>{}), $4); }
@@ -385,7 +394,7 @@ typeclass_stmt
     ;
 
 using_stmt
-    : KW_USING parenExpr { $$ = mgr->new_using_stmt(@$, $2); }
+    : KW_USING bracketed_exp { $$ = mgr->new_using_stmt(@$, $2); }
     ;
 
 importStmt
@@ -414,12 +423,12 @@ stringl
  * Expressions:
  */
 
-expr: type_query_exp
+expr: binary_exp
     ;
-expr_cl1
-    : expr                   { $$.push_back($1); }
-    | expr_cl1 COMMA expr    { $$ = std::move($1); $$.push_back($3); }
-    ;
+// expr_cl1
+//     : expr                   { $$.push_back($1); }
+//     | expr_cl1 COMMA expr    { $$ = std::move($1); $$.push_back($3); }
+//     ;
 expr_cl2
     : expr COMMA expr        { $$.reserve(2); $$.push_back($1); $$.push_back($3); }
     | expr_cl2 COMMA expr    { $$ = std::move($1); $$.push_back($3); }
@@ -429,35 +438,35 @@ expr_sl
     | expr_sl expr SEMICOLON { $$ = std::move($1); $$.push_back($2); }
     ;
 
-parenExpr
-    : unitExpr
-    | vparenExpr
+bracketed_exp
+    : unit_exp
+    | paren_exp
     | vtupleExpr
     | vstructExpr
-    | chainExpr
+    | chain_exp
     ;
-unitExpr
+unit_exp
     : LPAREN RPAREN     { $$ = mgr->new_unit_exp(@$); }
     | LCYBRK RCYBRK     { $$ = mgr->new_unit_exp(@$); }
     ;
-vparenExpr
-    : LPAREN expr RPAREN  { $$ = mgr->new_paren_exp(@$, $2); }
+paren_exp
+    : LPAREN type_query_exp RPAREN  { $$ = mgr->new_paren_exp(@$, $2); }
     ;
 vtupleExpr
     : LPAREN expr COMMA RPAREN     { $$ = mgr->new_tuple_exp(@$, std::move(std::vector(1,$2))); }
     | LPAREN expr_cl2   RPAREN     { $$ = mgr->new_tuple_exp(@$, std::move($2)); }
     ;
 vstructExpr
-    : LCYBRK vstructExprField_cl RCYBRK     { $$ = mgr->new_struct_exp(@$, std::move($2)); }
+    : LCYBRK struct_exp_field_cl RCYBRK     { $$ = mgr->new_struct_exp(@$, std::move($2)); }
     ;
-primaryExpr
-    : parenExpr
+primary_exp
+    : bracketed_exp
     | vid            { $$ = mgr->new_id_exp(@$, $1.ID_intstr); }
     | int_expr
     | floatl         { $$ = mgr->new_float_exp(@$, $1.Float); }
     | stringls       { $$ = mgr->new_string_exp(@$, std::move($1)); }
-    | ifThenElseExpr
-    | vlambdaExpr
+    | if_exp
+    | lambda_exp
     ;
 int_expr
     : DINT_LIT  { $$ = mgr->new_int_exp(@$, $1.Int, ast::IntExp::Base::Dec); }
@@ -469,55 +478,51 @@ stringls
     | stringls SQSTRING_LIT  { $$ = std::move($1); $$.emplace_back(@2, *$2.String_utf8string, ast::StringExp::QuoteKind::SingleQuote); }
     | stringls DQSTRING_LIT  { $$ = std::move($1); $$.emplace_back(@2, *$2.String_utf8string, ast::StringExp::QuoteKind::DoubleQuote); }
     ;
-ifThenElseExpr
-    : KW_IF parenExpr KW_THEN parenExpr                      { $$ = mgr->new_if_exp(@$, $2, $4, nullptr); }
-    | KW_IF parenExpr KW_THEN parenExpr KW_ELSE primaryExpr  { $$ = mgr->new_if_exp(@$, $2, $4, $6); }
+if_exp
+    : KW_IF bracketed_exp KW_THEN bracketed_exp                         { $$ = mgr->new_if_exp(@$, $2, $4, nullptr); }
+    | KW_IF bracketed_exp KW_THEN bracketed_exp KW_ELSE primary_exp     { $$ = mgr->new_if_exp(@$, $2, $4, $6); }
     ;
-chainExpr
+chain_exp
     : LCYBRK expr             RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move(std::vector<ast::Stmt*>{}), $2); }
-    | LCYBRK chainPrefix      RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move($2), nullptr); }
-    | LCYBRK chainPrefix expr RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move($2), $3); }
+    | LCYBRK chain_prefix      RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move($2), nullptr); }
+    | LCYBRK chain_prefix expr RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move($2), $3); }
     ;
-chainPrefix
-    : chainPrefixStmt             SEMICOLON  { $$.push_back($1); }
-    | chainPrefix chainPrefixStmt SEMICOLON  { $$ = std::move($1); $$.push_back($2); }
+chain_prefix
+    : chain_prefix_stmt             SEMICOLON  { $$.push_back($1); }
+    | chain_prefix chain_prefix_stmt SEMICOLON  { $$ = std::move($1); $$.push_back($2); }
     ;
-vlambdaExpr
-    : KW_FN vpattern BIND parenExpr   { $$ = mgr->new_lambda_exp(@$, $2, $4); }
+lambda_exp
+    : KW_FN vpattern BIND bracketed_exp   { $$ = mgr->new_lambda_exp(@$, $2, $4); }
     ;
 
-postfixExpr
-    : primaryExpr
+postfix_exp
+    : primary_exp
     | tcall_exp
     | vcall_exp
     | dot_name_exp
-    | dotIxExpr
+    | dot_index_exp
     ;
 tcall_exp
-    : postfixExpr LSQBRK vtarg_cl RSQBRK  { $$ = mgr->new_tcall_exp(@$, $1, std::move($3)); }
+    : postfix_exp LSQBRK targ_cl RSQBRK  { $$ = mgr->new_tcall_exp(@$, $1, std::move($3)); }
     ;
 vcall_exp
-    : postfixExpr LPAREN RPAREN            { $$ = mgr->new_vcall_exp(@$, $1, std::move(std::vector<ast::Exp*>{})); }
-    | postfixExpr LPAREN expr_cl1 RPAREN   { $$ = mgr->new_vcall_exp(@$, $1, std::move($3)); }
+    : postfix_exp LPAREN RPAREN             { $$ = mgr->new_vcall_exp(@$, $1, std::move(std::vector<ast::VArg*>{})); }
+    | postfix_exp LPAREN varg_cl RPAREN     { $$ = mgr->new_vcall_exp(@$, $1, std::move($3)); }
     ;
 dot_name_exp
-    : postfixExpr DOT VID   { $$ = mgr->new_dot_name_exp(@$, $1, $3.ID_intstr, ast::DotNameExp::RhsHint::LhsStruct); }
-    | postfixExpr DOT TID   { $$ = mgr->new_dot_name_exp(@$, $1, $3.ID_intstr, ast::DotNameExp::RhsHint::LhsEnum); }
-    | postfixExpr ARROW VID { $$ = mgr->new_dot_name_exp(@$, $1, $3.ID_intstr, ast::DotNameExp::RhsHint::LhsStructPtr); }
-    | postfixExpr ARROW TID { $$ = mgr->new_dot_name_exp(@$, $1, $3.ID_intstr, ast::DotNameExp::RhsHint::LhsEnumPtr); }
+    : postfix_exp DOT VID   { $$ = mgr->new_dot_name_exp(@$, $1, $3.ID_intstr, ast::DotNameExp::RhsHint::LhsStruct); }
+    | postfix_exp DOT TID   { $$ = mgr->new_dot_name_exp(@$, $1, $3.ID_intstr, ast::DotNameExp::RhsHint::LhsEnum); }
     ;
-dotIxExpr
-    : postfixExpr DOT   int_expr    { $$ = mgr->new_dot_index_exp(@$, $1, $3, ast::DotIndexExp::RhsHint::LhsNotPtr); }
-    | postfixExpr DOT   parenExpr   { $$ = mgr->new_dot_index_exp(@$, $1, $3, ast::DotIndexExp::RhsHint::LhsNotPtr); }
-    | postfixExpr ARROW int_expr    { $$ = mgr->new_dot_index_exp(@$, $1, $3, ast::DotIndexExp::RhsHint::LhsPtr); }
-    | postfixExpr ARROW parenExpr   { $$ = mgr->new_dot_index_exp(@$, $1, $3, ast::DotIndexExp::RhsHint::LhsPtr); }
+dot_index_exp
+    : postfix_exp DOT int_expr      { $$ = mgr->new_dot_index_exp(@$, $1, $3, ast::DotIndexExp::RhsHint::LhsNotPtr); }
+    | postfix_exp DOT bracketed_exp { $$ = mgr->new_dot_index_exp(@$, $1, $3, ast::DotIndexExp::RhsHint::LhsNotPtr); }
     ;
 
-unaryExpr
-    : postfixExpr
-    | unaryOp unaryExpr     { $$ = mgr->new_unary_exp(@$, $1, $2); }
+unary_exp
+    : postfix_exp
+    | unary_op unary_exp     { $$ = mgr->new_unary_exp(@$, $1, $2); }
     ;
-unaryOp
+unary_op
     : PLUS       { $$ = ast::UnaryOperator::Plus; }
     | MINUS      { $$ = ast::UnaryOperator::Minus; }
     | ASTERISK   { $$ = ast::UnaryOperator::DeRef; }
@@ -525,59 +530,59 @@ unaryOp
     | KW_NOT     { $$ = ast::UnaryOperator::Not; }
     ;
 
-binaryExpr
-    : orBinaryExpr
+binary_exp
+    : or_binary_exp
     ;
-mulBinaryOp
+mul_binary_op
     : ASTERISK   { $$ = ast::BinaryOperator::Mul; }
     | FSLASH     { $$ = ast::BinaryOperator::Div; }
     | PERCENT    { $$ = ast::BinaryOperator::Rem; }
     ;
-mulBinaryExpr
-    : unaryExpr
-    | mulBinaryExpr mulBinaryOp unaryExpr   { $$ = mgr->new_binary_exp(@$, $2, $1, $3); }
+mul_binary_exp
+    : unary_exp
+    | mul_binary_exp mul_binary_op unary_exp   { $$ = mgr->new_binary_exp(@$, $2, $1, $3); }
     ;
-addBinaryOp
+add_binary_op
     : PLUS   { $$ = ast::BinaryOperator::Add; }
     | MINUS  { $$ = ast::BinaryOperator::Subtract; }
     ;
-addBinaryExpr
-    : mulBinaryExpr
-    | addBinaryExpr addBinaryOp mulBinaryExpr   { $$ = mgr->new_binary_exp(@$, $2, $1, $3); }
+add_binary_exp
+    : mul_binary_exp
+    | add_binary_exp add_binary_op mul_binary_exp   { $$ = mgr->new_binary_exp(@$, $2, $1, $3); }
     ;
-cmpBinaryOp
+cmp_binary_op
     : LTHAN     { $$ = ast::BinaryOperator::Less; }
     | LETHAN    { $$ = ast::BinaryOperator::LessOrEq; }
     | GTHAN     { $$ = ast::BinaryOperator::Greater; }
     | GETHAN    { $$ = ast::BinaryOperator::GreaterOrEq; }
     ;
-cmpBinaryExpr
-    : addBinaryExpr
-    | cmpBinaryExpr cmpBinaryOp addBinaryExpr   { $$ = mgr->new_binary_exp(@$, $2, $1, $3); }
+cmp_binary_exp
+    : add_binary_exp
+    | cmp_binary_exp cmp_binary_op add_binary_exp   { $$ = mgr->new_binary_exp(@$, $2, $1, $3); }
     ;
-eqBinaryOp
+eq_binary_op
     : EQUALS     { $$ = ast::BinaryOperator::Equals; }
     | NEQUALS    { $$ = ast::BinaryOperator::NotEquals; }
     ;
-eqBinaryExpr
-    : cmpBinaryExpr
-    | eqBinaryExpr eqBinaryOp cmpBinaryExpr { $$ = mgr->new_binary_exp(@$, $2, $1, $3); }
+eq_binary_exp
+    : cmp_binary_exp
+    | eq_binary_exp eq_binary_op cmp_binary_exp { $$ = mgr->new_binary_exp(@$, $2, $1, $3); }
     ;
-andBinaryExpr
-    : eqBinaryExpr
-    | andBinaryExpr KW_AND eqBinaryExpr  { $$ = mgr->new_binary_exp(@$, ast::BinaryOperator::And, $1, $3); }
+and_binary_exp
+    : eq_binary_exp
+    | and_binary_exp KW_AND eq_binary_exp  { $$ = mgr->new_binary_exp(@$, ast::BinaryOperator::And, $1, $3); }
     ;
-xorBinaryExpr
-    : andBinaryExpr
-    | xorBinaryExpr KW_XOR andBinaryExpr { $$ = mgr->new_binary_exp(@$, ast::BinaryOperator::XOr, $1, $3); }
+xor_binary_exp
+    : and_binary_exp
+    | xor_binary_exp KW_XOR and_binary_exp { $$ = mgr->new_binary_exp(@$, ast::BinaryOperator::XOr, $1, $3); }
     ;
-orBinaryExpr
-    : xorBinaryExpr
-    | orBinaryExpr KW_OR xorBinaryExpr   { $$ = mgr->new_binary_exp(@$, ast::BinaryOperator::Or, $1, $3); }
+or_binary_exp
+    : xor_binary_exp
+    | or_binary_exp KW_OR xor_binary_exp   { $$ = mgr->new_binary_exp(@$, ast::BinaryOperator::Or, $1, $3); }
     ;
 
 type_query_exp
-    : binaryExpr
+    : binary_exp
     | typespec type_query_op typespec   { $$ = mgr->new_type_query_exp(@$, $2, $1, $3); }
     ;
 type_query_op
@@ -591,7 +596,7 @@ type_query_op
  */
 
 typespec
-    : unaryTypespec
+    : unary_typespec
     ;
 typespec_cl1
     : typespec                    { $$.push_back($1); }
@@ -602,25 +607,25 @@ typespec_cl2
     | typespec_cl2 COMMA typespec { $$ = std::move($1); $$.push_back($3); }
     ;
 
-structTypespecField
+struct_typespec_field
     : vid typespec                { $$ = mgr->new_struct_typespec_field(@$, $1.ID_intstr, $2); }
     ;
-structTypespecField_cl
-    : structTypespecField                               { $$.push_back($1); }
-    | structTypespecField_cl COMMA structTypespecField  { $$ = std::move($1); $$.push_back($3); }
+struct_typespec_field_cl
+    : struct_typespec_field                               { $$.push_back($1); }
+    | struct_typespec_field_cl COMMA struct_typespec_field  { $$ = std::move($1); $$.push_back($3); }
     ;
 
-primaryTypespec
+primary_typespec
     : tid               { $$ = mgr->new_id_typespec(@$, $1.ID_intstr); }
-    | parenTypespec
-    | tupleTypespec
+    | paren_typespec
+    | tuple_typespec
     | mod_prefix_tid
     | fn_typespec
     ;
-parenTypespec
+paren_typespec
     : LPAREN typespec RPAREN    { $$ = mgr->new_paren_typespec(@$, $2); }
     ;
-tupleTypespec
+tuple_typespec
     : LPAREN typespec COMMA RPAREN  { $$ = mgr->new_tuple_typespec(@$, std::move(std::vector(1,$2))); }
     | LPAREN typespec_cl2   RPAREN  { $$ = mgr->new_tuple_typespec(@$, std::move($2)); }
     ;
@@ -632,103 +637,101 @@ mod_prefix
     | mod_prefix vid DOT    { $$ = std::move($1); }
     ;
 fn_typespec
-    : KW_TFN vpattern primaryTypespec { $$ = mgr->new_fn_typespec(@$, std::move($2), $3); }
+    : KW_TFN vpattern primary_typespec { $$ = mgr->new_fn_typespec(@$, std::move($2), $3); }
     ;
 
-postfixTypespec
-    : primaryTypespec
-    | ttcall
-    | tdot
+postfix_typespec
+    : primary_typespec
+    | tcall_typespec
+    | dot_typespec
     ;
-ttcall
-    : postfixTypespec LSQBRK ttarg_cl RSQBRK  { $$ = mgr->new_tcall_typespec(@$, $1, std::move($3)); }
+tcall_typespec
+    : postfix_typespec LSQBRK targ_cl RSQBRK  { $$ = mgr->new_tcall_typespec(@$, $1, std::move($3)); }
     ;
-tdot: postfixTypespec DOT VID   { $$ = mgr->new_dot_name_typespec_with_type_prefix(@$, $1, $3.ID_intstr); }
+dot_typespec: postfix_typespec DOT VID   { $$ = mgr->new_dot_name_typespec_with_type_prefix(@$, $1, $3.ID_intstr); }
     ;
 
-unaryTypespec
-    : postfixTypespec
-    | AMPERSAND unaryTypespec    { $$ = mgr->new_ptr_typespec(@$,$2); }
+unary_typespec
+    : postfix_typespec
     ;
 
 long_typespec
-    : unaryTypespec
-    | structTypespec
+    : unary_typespec
+    | struct_typespec
     ;
-structTypespec
-    : LCYBRK structTypespecField_cl RCYBRK  { $$ = mgr->new_struct_typespec(@$, std::move($2)); }
-    ;
-
-ttarg
-    : typespec  { $$ = mgr->new_targ_typespec(@$,$1); }
-    | expr      { $$ = mgr->new_targ_exp(@$,$1); }
-    ;
-ttarg_cl
-    : ttarg                 { $$.push_back($1); }
-    | ttarg_cl COMMA ttarg  { $$ = std::move($1); $$.push_back($3); }
+struct_typespec
+    : LCYBRK struct_typespec_field_cl RCYBRK  { $$ = mgr->new_struct_typespec(@$, std::move($2)); }
     ;
 
-/* value contexts' targs (template args): typespecs have Type2Val wrappers */
-vtarg
-    : typespec { $$ = mgr->new_targ_typespec(@$, $1); }
+targ: typespec { $$ = mgr->new_targ_typespec(@$, $1); }
     | expr     { $$ = mgr->new_targ_exp(@$, $1); }
     ;
-vtarg_cl
-    : vtarg                  { $$.push_back($1); }
-    | vtarg_cl COMMA vtarg   { $$ = std::move($1); $$.push_back($3); }
+targ_cl
+    : targ                  { $$.push_back($1); }
+    | targ_cl COMMA targ    { $$ = std::move($1); $$.push_back($3); }
+    ;
+varg: expr                  { $$ = mgr->new_varg(@$, $1, ast::VArgKind::In); }
+    | KW_OUT expr           { $$ = mgr->new_varg(@$, $2, ast::VArgKind::Out); }
+    | KW_INOUT expr         { $$ = mgr->new_varg(@$, $2, ast::VArgKind::InOut); }
+    ;
+varg_cl
+    : varg                  { $$.push_back($1); }
+    | varg_cl COMMA varg    { $$ = std::move($1); $$.push_back($3); }
     ;
 
 /*
  * Patterns & fields:
  */
 
-vstructExprField
+struct_exp_field
     : vid BIND expr { $$ = mgr->new_struct_exp_field(@$, $1.ID_intstr, $3); }
     ;
-vpatternField
-    : vid typespec { $$ = mgr->new_vpattern_field(@$, $1.ID_intstr, $2); }
+vpattern_field
+    :          vid typespec { $$ = mgr->new_vpattern_field(@$, $1.ID_intstr, $2, ast::VArgKind::In); }
+    | KW_OUT   vid typespec { $$ = mgr->new_vpattern_field(@$, $2.ID_intstr, $3, ast::VArgKind::Out); }
+    | KW_INOUT vid typespec { $$ = mgr->new_vpattern_field(@$, $2.ID_intstr, $3, ast::VArgKind::InOut); }
     ;
-lpatternField
+lpattern_field
     : vid typespec  { $$ = mgr->new_lpattern_field(@$, ast::LPattern::FieldKind::IdTypespecPair, $1.ID_intstr, $2); }
     | vid           { $$ = mgr->new_lpattern_field(@$, ast::LPattern::FieldKind::IdSingleton, $1.ID_intstr); }
     ;
-tpatternField
+tpattern_field
     : vid typespec  { $$ = mgr->new_tpattern_field(@$, ast::TPattern::FieldKind::Value, $1.ID_intstr, $2); }
     | tid typespec  { $$ = mgr->new_tpattern_field(@$, ast::TPattern::FieldKind::Type, $1.ID_intstr, $2); }
     ;
 
 lpattern
-    : LPAREN lpatternField_cl RPAREN  { $$ = mgr->new_lpattern(@$, std::move($2)); }
-    | LPAREN RPAREN                   { $$ = mgr->new_lpattern(@$, std::move(std::vector<ast::LPattern::Field*>{})); }
+    : LPAREN lpattern_field_cl RPAREN  { $$ = mgr->new_lpattern(@$, std::move($2)); }
+    | LPAREN RPAREN                    { $$ = mgr->new_lpattern(@$, std::move(std::vector<ast::LPattern::Field*>{})); }
     ;
 lpattern_naked
-    : lpatternField                   { $$ = mgr->new_lpattern(@$, std::move(std::vector<ast::LPattern::Field*>{1,$1})); }
+    : lpattern_field                   { $$ = mgr->new_lpattern(@$, std::move(std::vector<ast::LPattern::Field*>{1,$1})); }
     | lpattern
     ;
 vpattern
-    : LPAREN vpatternField_cl RPAREN  { $$ = mgr->new_vpattern(@$, std::move($2)); }
+    : LPAREN vpattern_field_cl RPAREN  { $$ = mgr->new_vpattern(@$, std::move($2)); }
     | LPAREN RPAREN                   { $$ = mgr->new_vpattern(@$, std::move(std::vector<ast::VPattern::Field*>{})); }
     ;
 tpattern
-    :         LSQBRK tpatternField_cl RSQBRK  { $$ = mgr->new_tpattern(@$, std::move($2), false); }
-    | EXCLAIM LSQBRK tpatternField_cl RSQBRK  { $$ = mgr->new_tpattern(@$, std::move(std::vector<ast::TPattern::Field*>{}), true); }
+    :         LSQBRK tpattern_field_cl RSQBRK  { $$ = mgr->new_tpattern(@$, std::move($2), false); }
+    | EXCLAIM LSQBRK tpattern_field_cl RSQBRK  { $$ = mgr->new_tpattern(@$, std::move($3), true); }
     ;
 
-vpatternField_cl
-    : vpatternField                          { $$.push_back($1); }
-    | vpatternField_cl COMMA vpatternField   { $$ = std::move($1); $$.push_back($3); }
+vpattern_field_cl
+    : vpattern_field                          { $$.push_back($1); }
+    | vpattern_field_cl COMMA vpattern_field   { $$ = std::move($1); $$.push_back($3); }
     ;
-lpatternField_cl
-    : lpatternField                          { $$.push_back($1); }
-    | lpatternField_cl COMMA lpatternField   { $$ = std::move($1); $$.push_back($3); }
+lpattern_field_cl
+    : lpattern_field                          { $$.push_back($1); }
+    | lpattern_field_cl COMMA lpattern_field   { $$ = std::move($1); $$.push_back($3); }
     ;
-tpatternField_cl
-    : tpatternField                          { $$.push_back($1); }
-    | tpatternField_cl COMMA tpatternField   { $$ = std::move($1); $$.push_back($3); }
+tpattern_field_cl
+    : tpattern_field                          { $$.push_back($1); }
+    | tpattern_field_cl COMMA tpattern_field   { $$ = std::move($1); $$.push_back($3); }
     ;
-vstructExprField_cl
-    : vstructExprField                              { $$.push_back($1); }
-    | vstructExprField_cl COMMA vstructExprField    { $$ = std::move($1); $$.push_back($3); }
+struct_exp_field_cl
+    : struct_exp_field                              { $$.push_back($1); }
+    | struct_exp_field_cl COMMA struct_exp_field    { $$ = std::move($1); $$.push_back($3); }
     ;
 
 tpattern_seq
@@ -779,7 +782,19 @@ namespace pdm::parser {
 
     void parser::error(source::Loc const& loc, std::string const& message) {
         // todo: post feedback here
-        std::cout << "YACC error: " << message << " at " << loc;
+        std::vector<feedback::Note*> notes{1}; {
+            std::string desc0 = "Occurred here...";
+            notes[0] = new feedback::SourceLocNote(std::move(desc0), loc);
+        };
+        std::string message_copy = message;
+        std::string desc;
+        feedback::post(new pdm::feedback::Letter(
+            feedback::Severity::Error, 
+            std::move(message_copy),
+            std::move(desc),
+            std::move(notes)
+        ));
+        std::cout << "YACC error: " << message << " at " << loc << std::endl;
     }
 
 }
@@ -790,12 +805,14 @@ int yylex(pdm::parser::parser::semantic_type* semval, pdm::source::Loc* llocp, p
     
     pdm::parser::TokenInfo info;
 
-    llocp->source(source);
     int tk = lexer->lex_one_token(&info, llocp);
     semval->as<pdm::parser::TokenInfo>() = info;
+    llocp->source(source);
 
-    if (pdm::DEBUG) {
+    bool const print_token_info = false;
+    if (pdm::DEBUG && print_token_info) {
         // DebugPrintToken("YYLEX:", tk, info, llocp);
+        debug_print_token("YYLEX:", tk, &info, llocp);
     }
     if (tk == Tk::EOS) {
         return Tk::YYEOF;

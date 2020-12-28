@@ -44,8 +44,8 @@ This repository currently builds...
 1. `pc`: An old (but functional) C compiler implementation for a subset of the language. Just validates a program 
    and then prints LLVM IR to stdout. The benchmark for performance (it's really quick!).
 2. `[lib]pdm`: A library that compilers, interpreters, and editor tools can share. Written in OO-C++. **WIP. (does not build, must disable through CMake)**
-3. `pdm_cli`: An eventual CLI frontend, currently just console tests for `pdm`. **WIP.**
-After building, try running `$ ./pc <file>` or `$ ./pdm_cli`.
+3. `pdm_sandbox`: An eventual CLI frontend, currently just console tests for `pdm`. **WIP.**
+After building, try running `$ ./pdm_sandbox <file>`.
 
 This repository contains...
 1. `src`: source code for `pc` (`src/pdm_old_c`), `libpdm` (`src/pdm`), `pdm_cli` (`src/pdm_cli`)
@@ -59,13 +59,14 @@ For the latest updates, see my latest commits.
 
 ## How to Build
 
-While PDM will have a single-command installer very soon, please follow these instructions while PDM is under
-development or wait until the build process becomes easier if you're having trouble (est. < 2 weeks).
+Just run `1build.sh` on *nix-based systems.
+
+### Alternative
 
 In all the following examples, `.` refers to the root of this repository.
 
 1. Clone this repository using 'git', ensuring you clone submodules.
-1. Use 'CMake' to configure the project, `cmake .`
+2. Use 'CMake' to configure the project, `cmake .`
    - Please set `PDM_LLVM_INSTALL_DIR` to the directory containing an installation of the LLVM library, built.
      Although the LLVM project is a large submodule dependency, CMake integration is difficult since in-source
      builds are disabled for LLVM.
@@ -78,7 +79,7 @@ In all the following examples, `.` refers to the root of this repository.
 
    - If you've installed LLVM using Homebrew on macOS, your path might look like...
       `/usr/local/Cellar/llvm/10.0.1_1`
-1. Use 'CMake' to build the project, `cmake --build .`
+3. Use 'CMake' to build the project, `cmake --build .`
    - I recommend running `cmake --build . -j <N>` where `N` is the number of 'jobs' or parallell processes you
      would like to use. On a computer with M cores, set N >= M for optimal results.
      **Example:** `$ cmake --build . -j 4   # on a 2-core MacBook Air with Hyperthreading/SMT`

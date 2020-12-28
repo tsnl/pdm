@@ -1,5 +1,68 @@
 # Roadmap
 
+## Dec 28
+
+I made the following changes last night:
+- 'let' -> 'val'
+- no more pointers, instead 'out' and 'inout' parameters + indices into data structures
+  - functional-style pass-by-value
+- no classes, just modules-- not even operator overloads.
+  - every library is a DSL of some sort.
+- build multiple 'output files' that may depend on each other.
+  - initially, we just emit WASM and/or LLVM IR + file dependencies.
+  - we can then implement integrations for different build systems
+    like Bazel, CMake, or Webpack to...
+    1. build WASM/IR
+    2. link multiple applications respecting dependency order
+
+This produces the following exceptional platform-independent result:
+  - This way, we actually build 2 targets for every source file: WASM and LLVM IR.
+  - Then, we 'link' WASM to LLVM IR by trusting stdlib to load WASM from the same location.
+  - **Thus, LLVM always runs first (for the server), with the option to replicate namespace env**
+    **on a browser using WASM version.**
+  - Simple to implement initially too!
+
+TODO: introduce 'cif' expressions
+
+Rough notes:
+```
+Key insight: only write servers, specify JS via DSLs
+Best known way: actor model
+Given Rust’s ‘dyn’ issue, abstract + class might be the way to go.
+Thus, implement...
+1. Classes (cf Kotlin with mandatory prefix C++-style visibility specifier labels); notably has primary constructor, multiple abstract inheritance
+2. Change ‘let’ to ‘val’
+3. CIF: constant if, in honour of kif kroker from futurama 
+```
+
+```
+With classes, can implement DSL that corresponds to JS; with the right base classes, we can call methods during compile-time (after everything else is built) to build shaders, JS, etc.
+Furthermore, this way, native platforms are first class.
+
+Henceforth, assume built in pointer operations are removed. ‘set’ only writes to IDs defined with ‘var’ or var parameters passed with ‘out’ or ‘inout’ prefix (cf .NET)
+
+If we treat class instances as the only and default reference type (for dynamic dispatch),
+0. Can pass subclass instance to superclass
+1. Can provide cycle-counting GC (bdwgc) (no weak references)
+2. Strong value types + functional style + templates should promote fat objects
+
+The goal is to use class instances as whole processes, not lightweight instances.
+* but then what about DSLs and operator overloading?
+* advantage of Rust ‘impl’: can add features without VT
+
+Without classes, everything is a value type. Use *containers* to wrap all memory management and *typeclasses* to validate interfaces statically rather than dynamically.
+Instead of pointers, only ‘in, out, inout’ parameters supported in language. Since a struct can’t store a reference to another datum, must instead store **index** in container/allocator.
+Thus, functionality is tied to allocation, promoting modular C-like programming over actor model.
+
+How can we use this model to provide DSL-like functionality?
+- just write a module
+- to generate JS
+
+The answer always seems to be “just write a module to do X”, which is great, because it’s simple.
+
+So we’re all set for mega features, just need containers (templates) implemented.
+```
+
 ## Dec 27
 
 We've overshot the Christmas deadline, but work continues regardless.

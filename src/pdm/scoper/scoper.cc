@@ -47,8 +47,8 @@ namespace pdm::scoper {
         // todo: implement Scoper::on_visit__fn_stmt
         return ok;
     }
-    bool Scoper::on_visit__let_stmt(ast::LetStmt* node, VisitOrder visit_order) {
-        bool ok = ast::Visitor::on_visit__let_stmt(node, visit_order);
+    bool Scoper::on_visit__val_stmt(ast::ValStmt* node, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__val_stmt(node, visit_order);
         // todo: implement Scoper::on_visit__let_stmt
         return ok;
     }
@@ -188,11 +188,6 @@ namespace pdm::scoper {
         // todo: implement Scoper::on_visit__id_typespec
         return ok;
     }
-    bool Scoper::on_visit__ptr_typespec(ast::PtrTypespec* node, VisitOrder visit_order) {
-        bool ok = ast::Visitor::on_visit__ptr_typespec(node, visit_order);
-        // todo: implement Scoper::on_visit__ptr_typespec
-        return ok;
-    }
     bool Scoper::on_visit__fn_typespec(ast::FnTypespec* node, VisitOrder visit_order) {
         bool ok = ast::Visitor::on_visit__fn_typespec(node, visit_order);
         // todo: implement Scoper::on_visit__func_typespec
@@ -223,6 +218,19 @@ namespace pdm::scoper {
         // todo: implement Scoper::on_visit__struct_typespec
         return ok;
     }
+
+    // args:
+    bool Scoper::on_visit__targ(ast::TArg* targ, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__targ(targ, visit_order);
+        // todo: implement Scoper::on_visit__targ
+        return ok;
+    }
+    bool Scoper::on_visit__varg(ast::VArg* varg, VisitOrder visit_order) {
+        bool ok = ast::Visitor::on_visit__varg(varg, visit_order);
+        // todo: implement Scoper::on_visit__varg
+        return ok;
+    }
+
 
     // non-syntax
     bool Scoper::on_visit__builtin_type_stmt(ast::BuiltinTypeStmt* node, VisitOrder visit_order) {

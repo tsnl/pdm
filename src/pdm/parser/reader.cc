@@ -5,6 +5,10 @@
 #include <cstring>
 #include <cassert>
 
+#include "pdm/feedback/feedback.hh"
+#include "pdm/feedback/letter.hh"
+#include "pdm/feedback/severity.hh"
+
 namespace pdm::parser {
 
     Reader::Reader()
@@ -25,6 +29,11 @@ namespace pdm::parser {
         // trying to open the file:
         m_fp = fopen(source->abs_path().c_str(), "r");
         if (m_fp == nullptr) {
+            feedback::post(new feedback::Letter(
+                feedback::Severity::Error,
+                "Failed to open source file at '" + source->abs_path() + "'.",
+                "Are you sure it exists?"
+            ));
             return false;
         }
         
