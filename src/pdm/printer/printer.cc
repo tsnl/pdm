@@ -505,10 +505,12 @@ namespace pdm::printer {
     void Printer::print_import_stmt(ast::ImportStmt* is) {
         print_cstr("import ");
         print_intstr(is->imported_name());
-        print_cstr(" from ");
+        // fixme; incorrect escapes, so hacky, but eh
+        print_cstr(" from \"");
         print_u8_str(is->imported_from_str());
-        print_cstr(" type ");
+        print_cstr("\" type \"");
         print_u8_str(is->imported_type_str());
+        print_u32_char('"');
     }
     void Printer::print_using_stmt(ast::UsingStmt* node) {
         print_cstr("using (");

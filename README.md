@@ -23,20 +23,19 @@ LLVM makes emitting faster code easier, and WebAssembly allows a derivative of t
 WebGPU is an in-development project to bring a standardized GPU API to browsers to succeed WebGL2.
 These facts highlight a pattern: complex GUI applications can be 
 **written once and run natively and on browsers without performance degradation** in an 
-**environment-aware way**. Furthermore, since the compiler understands when two processes execute on the same
-system, it can **statically swap slow inter-process communication for faster in-process library calls** without
-requiring more complexity on the programmer's part.
+**environment-aware way**. 
 
 Furthermore, as projects evolve, costly rewrites can be avoided since...
 1. Since PDM is AoT compiled, unnecessary runtime checks can be elided in favor of static checks, thereby 
    reducing the baseline demand for highly specified (and thus performant) code.
-2. Duck-typed implementations can always be rewritten behind a well-typed interface. 
+2. It is impossible to write code that does not typecheck, but it is still possible to write potentially incorrect or unsafe code. Thus, key performance metrics can be incrementally improved from a soundly-typed foundation without additional constraints introduced by the compiler.
 
 Lastly, PDM naturally links with existing C (and thus subsets of C++) code. By supporting the de jure standard
-in ABIs with `link "C"` statements, PDM simplifies dependency management and allows users to 
+in ABIs with `extern` statements, PDM simplifies dependency management and allows users to 
 **use C libraries out of the box.** This is possible using Clang's excellent, highly modular C/C++ parser,
 and the fact that PDM's type system accommodates C's (with some caveats with respect to non-discriminated unions).
 Support for C++ libraries is currently not planned.
+Note that support for C libraries implies support for interpreted programming language interop, i.e. compatibility with JS, Python, Lua, etc.
 
 ## Summary
 
@@ -48,7 +47,7 @@ This repository currently builds...
 After building, try running `$ ./pdm_sandbox <file>`.
 
 This repository contains...
-1. `src`: source code for `pc` (`src/pdm_old_c`), `libpdm` (`src/pdm`), `pdm_cli` (`src/pdm_cli`)
+1. `src`: source code for `pc` (`src/pdm_old_c`), `libpdm` (`src/pdm`), `pdm_sandbox` (`src/pdm_sandbox`)
 2. `dep`: dependency submodules
 3. `eg`: a list of aspirational examples; where we're going.
 4. `test`: a list of compilable examples; where we are (with `pc`)
