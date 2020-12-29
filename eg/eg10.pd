@@ -1,0 +1,56 @@
+# proposed builtin typeclasses:
+# - Int     \__ Number__
+# - Float   /
+# - Number
+# - Struct
+# - Tuple
+# ...etc
+# instead of vague 'Any'
+
+mod vector {
+    type Vec [T Number, n UInt32] = {
+        data Array[T,n]
+    };
+
+    fn increment ![T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) = {
+        help_increment[T,n](inout lt, rt);
+    };
+    fn help_increment [T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) = {
+        # for this to work, need Array subtyping to work correctly
+        # s.t. Array[T,n] :< Array[T,m] <=> n < m
+        if (n > 0) then {
+            set lt.data.(n-1) = lt.data.(n-1) + rt.data.(n-1);
+            help_increment[T,n-1](inout lt, rt)
+        };
+    };
+
+    fn add ![T Number, n UInt32] (lt Vec[T,n], rt Vec[T,n]) -> Vec[T,n] = {
+        var sum_vec = lt;
+        increment(inout sum_vec, rt);
+        sum_vec
+    };
+
+    fn hello() = {
+        val x = 0;
+    };
+};
+
+mod fibonacci {
+    fn demo () -> Int32 = {
+        0
+    };
+};
+
+# Note: 
+# _can_ pass 'inout' param to 'out' pattern without error, but using 'out' spec.
+# thus, out[T] :< inout[T] (and in[T] :< inout[T])
+# i.e.
+mod in_out_and_everybout {
+    fn hello_out(out x F32) = {
+        set x = 42.0;
+    };
+    fn hello_inout(inout x F32) = {
+        # 'out' from 'hello_out' defn, not from vpattern decl.
+        hello_out(out x);
+    };
+};
