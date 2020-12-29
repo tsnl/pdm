@@ -2,6 +2,7 @@
 #define INCLUDED_PDM_CORE_UNICODER_H
 
 #include <cstring>
+#include <sstream>
 #include <vector>
 
 #include "pdm/core/integer.hh"
@@ -62,6 +63,19 @@ namespace pdm::utf8 {
         }
         Char* data() {
             return m_data;
+        }
+        std::string string() const {
+            std::stringstream ss;
+            for (int index = 0; index < m_count; index++) {
+                Char ch = m_data[index];
+                if (0 < ch && ch < 128) {
+                    ss << static_cast<char>(ch);
+                } else {
+                    // todo: store a UTF-8 encoding instead.
+                    ss << "<u?>";
+                }
+            }
+            return ss.str();
         }
     };
 

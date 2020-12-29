@@ -11,6 +11,7 @@
 #include "pdm/ast/manager.hh"
 #include "pdm/ast/script/script.hh"
 
+#include "pdm/dependency_dispatcher/dependency_dispatcher.hh"
 #include "pdm/typer/typer.hh"
 #include "pdm/scoper/scoper.hh"
 #include "pdm/scoper/root_frame.hh"
@@ -45,11 +46,14 @@ namespace pdm::compiler {
     // 'Compiler' instances transform input files into output files.
     class Compiler {
       private:
-        std::filesystem::path     m_cwd;
-        std::filesystem::path     m_entry_point_path;
+        std::filesystem::path m_cwd;
+        std::filesystem::path m_entry_point_path;
+        
         aux::ImportMap            m_cached_imports;
         std::vector<ast::Script*> m_all_scripts;
         
+        dependency_dispatcher::DependencyDispatcher m_dependency_dispatcher;
+
         typer::Typer      m_typer;
         ast::Manager      m_manager;
         scoper::RootFrame m_root_frame;
@@ -61,6 +65,7 @@ namespace pdm::compiler {
           m_entry_point_path(abspath(std::move(entry_point_path))),
           m_cached_imports(),
           m_all_scripts(),
+          m_dependency_dispatcher(this),
           m_typer(),
           m_manager(&m_typer),
           m_root_frame(&m_typer),
@@ -68,9 +73,14 @@ namespace pdm::compiler {
             m_all_scripts.reserve(8);
         }
 
-      private:
+      public:
         ast::Script* import(std::string const& from_path, std::string const& type, std::string const& reason);
+
+      private:
+        // help_import_script_1 is called for every imported function, regardless of whether imported before or not.
         ast::Script* help_import_script_1(std::string const& from_path, std::string const& type);
+
+        // help_import_script_2 is used to perform first-time initialization of freshly loaded Scripts.
         void         help_import_script_2(ast::Script* script);
 
       public:

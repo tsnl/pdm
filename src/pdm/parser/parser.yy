@@ -119,7 +119,7 @@
 
 %type <pdm::ast::Stmt*> moduleContentStmt
 %type <pdm::ast::Stmt*> chain_prefix_stmt const_stmt val_stmt var_stmt set_stmt discard_stmt
-%type <pdm::ast::Stmt*> importStmt
+%type <pdm::ast::Stmt*> import_stmt
 %type <pdm::ast::Stmt*> using_stmt
 %type <pdm::ast::Stmt*> fn_stmt
 %type <pdm::ast::Stmt*> type_stmt enum_stmt typeclass_stmt
@@ -141,7 +141,7 @@
 // Expression Nonterminals:
 //
 
-%type <pdm::ast::Exp*> expr
+%type <pdm::ast::Exp*> expr long_exp
 %type <std::vector<pdm::ast::Exp*>> /* expr_cl1 */ expr_cl2 expr_sl
 
 %type <pdm::ast::Exp*> bracketed_exp unit_exp int_expr
@@ -307,6 +307,8 @@ scriptContent
     ;
 scriptContentStmt
     : mod_stmt
+    | import_stmt
+    | extern_stmt
     ;
 
 /*
@@ -353,7 +355,7 @@ moduleContentStmt
     | type_stmt
     | enum_stmt
     | typeclass_stmt
-    | importStmt
+    | import_stmt
     | mod_stmt
     | using_stmt
     | extern_stmt
@@ -397,7 +399,7 @@ using_stmt
     : KW_USING bracketed_exp { $$ = mgr->new_using_stmt(@$, $2); }
     ;
 
-importStmt
+import_stmt
     : KW_IMPORT vid KW_FROM stringl KW_TYPE stringl    { $$ = mgr->new_import_stmt(@$, $2.ID_intstr, *$4.String_utf8string, *$6.String_utf8string); }
     ;
 
@@ -425,6 +427,9 @@ stringl
 
 expr: binary_exp
     ;
+long_exp
+    : type_query_exp
+    ;
 // expr_cl1
 //     : expr                   { $$.push_back($1); }
 //     | expr_cl1 COMMA expr    { $$ = std::move($1); $$.push_back($3); }
@@ -450,7 +455,7 @@ unit_exp
     | LCYBRK RCYBRK     { $$ = mgr->new_unit_exp(@$); }
     ;
 paren_exp
-    : LPAREN type_query_exp RPAREN  { $$ = mgr->new_paren_exp(@$, $2); }
+    : LPAREN long_exp RPAREN  { $$ = mgr->new_paren_exp(@$, $2); }
     ;
 vtupleExpr
     : LPAREN expr COMMA RPAREN     { $$ = mgr->new_tuple_exp(@$, std::move(std::vector(1,$2))); }

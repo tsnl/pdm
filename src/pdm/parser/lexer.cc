@@ -362,9 +362,6 @@ namespace pdm::parser::aux {
             case '!':
             {
                 if (source->advance_head()) {
-                    if (source->read_head() == '=' && source->advance_head()) {
-                        return Tk::NEQUALS;
-                    }
                     return Tk::EXCLAIM;
                 }
                 break;
@@ -384,6 +381,8 @@ namespace pdm::parser::aux {
                 if (source->advance_head()) {
                     if (source->read_head() == '=' && source->advance_head()) {
                         return Tk::LETHAN;
+                    } else if (source->read_head() == '>' && source->advance_head()) {
+                        return Tk::NEQUALS;
                     }
                     return Tk::LTHAN;
                 }

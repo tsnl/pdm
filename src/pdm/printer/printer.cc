@@ -703,13 +703,7 @@ namespace pdm::printer {
     void Printer::print_dot_index_exp(ast::DotIndexExp* node) {
         print_node(node->lhs());
         print_u32_char('.');
-        if (node->rhs_exp()->kind() == ast::Kind::IntExp) {
-            print_node(node->rhs_exp());
-        } else {
-            print_u32_char('(');
-            print_node(node->rhs_exp());
-            print_u32_char(')');
-        }
+        print_node(node->rhs_exp());
     }
     void Printer::print_dot_name_exp(ast::DotNameExp* node) {
         print_node(node->lhs());
@@ -809,7 +803,7 @@ namespace pdm::printer {
             }
             case ast::BinaryOperator::NotEquals:
             {
-                print_cstr(" != ");
+                print_cstr(" <> ");
                 break;
             }
             case ast::BinaryOperator::And:

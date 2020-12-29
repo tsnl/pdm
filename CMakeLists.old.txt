@@ -149,6 +149,7 @@ add_library(
     src/pdm/ast/stmt/fn.hh
     src/pdm/ast/stmt/enum.hh
     src/pdm/ast/stmt/extern.hh
+    src/pdm/ast/stmt/let.hh
     src/pdm/ast/stmt/using.hh
     src/pdm/ast/stmt/mod.cc
     src/pdm/ast/stmt/mod.hh
@@ -157,16 +158,14 @@ add_library(
     src/pdm/ast/stmt/builtin_type.hh
     src/pdm/ast/stmt/type.hh
     src/pdm/ast/stmt/typeclass.hh
-    src/pdm/ast/stmt/val.hh
-    src/pdm/ast/stmt/var.hh
 
-    src/pdm/ast/arg/targ.hh
-    src/pdm/ast/arg/varg.hh
+    src/pdm/ast/targ/targ.hh
 
     src/pdm/ast/typespec/typespec.hh
     src/pdm/ast/typespec/dot.hh
     src/pdm/ast/typespec/fn.hh
     src/pdm/ast/typespec/id.hh
+    src/pdm/ast/typespec/ptr.hh
     src/pdm/ast/typespec/struct.hh
     src/pdm/ast/typespec/tcall.hh
 
@@ -178,7 +177,6 @@ add_library(
     src/pdm/core/intern.hh
     src/pdm/core/utf8.cc
     src/pdm/core/utf8.hh
-    src/pdm/core/units.hh
 
     src/pdm/scoper/context.cc
     src/pdm/scoper/context.hh
@@ -218,28 +216,25 @@ add_library(
 
     src/pdm/parser/lexer.cc
     src/pdm/parser/lexer.hh
+    src/pdm/parser/parser.cc
     src/pdm/parser/parser.hh
     src/pdm/parser/parser.tab.cc
     src/pdm/parser/parser.tab.hh
     src/pdm/parser/reader.cc
     src/pdm/parser/reader.hh
 
-    src/pdm/printer/printer.cc
     src/pdm/printer/printer.hh
-
-    src/pdm/dependency_dispatcher/dependency_dispatcher.cc
-    src/pdm/dependency_dispatcher/dependency_dispatcher.hh
 )
-target_link_libraries(pdm intern utf8proc)
+target_link_libraries(pdm intern)
 set_property(TARGET pdm PROPERTY CXX_STANDARD 20)
 
 add_executable(
-    pdm_sandbox
-    src/pdm_sandbox/main.cc
-    src/pdm_sandbox/typer_demo.cc
-    src/pdm_sandbox/typer_demo.hh
-    src/pdm_sandbox/feedback_demo.cc
-    src/pdm_sandbox/feedback_demo.hh
+    pdm_cli
+    src/pdm_cli/main.cc
+    src/pdm_cli/typer_demo.cc
+    src/pdm_cli/typer_demo.hh
+    src/pdm_cli/feedback_demo.cc
+    src/pdm_cli/feedback_demo.hh
 )
-target_link_libraries(pdm_sandbox pdm)
-set_property(TARGET pdm_sandbox PROPERTY CXX_STANDARD 20)
+target_link_libraries(pdm_cli pdm)
+set_property(TARGET pdm_cli PROPERTY CXX_STANDARD 20)

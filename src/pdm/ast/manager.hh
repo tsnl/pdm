@@ -1,6 +1,8 @@
 #ifndef INCLUDED_PDM_AST_MANAGER_HH
 #define INCLUDED_PDM_AST_MANAGER_HH
 
+#include <vector>
+
 #include "pdm/core/integer.hh"
 #include "pdm/core/units.hh"
 
@@ -66,10 +68,10 @@ namespace pdm::ast {
 
     class Manager {
       private:
-        typer::Typer* m_typer;
-        u8*           m_pool;
-        size_t        m_pool_size_in_bytes;
-        size_t        m_pool_used_in_bytes;
+        typer::Typer*       m_typer;
+        u8*                 m_pool;
+        size_t              m_pool_size_in_bytes;
+        size_t              m_pool_used_in_bytes;
 
       public:
         Manager(typer::Typer* typer, size_t pool_size_in_bytes = megabytes_in_bytes(64));

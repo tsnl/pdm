@@ -1,38 +1,15 @@
-# proposed builtin typeclasses:
-# - Int     \__ Number__
-# - Float   /
-# - Number
-# - Struct
-# - Tuple
-# ...etc
-# instead of vague 'Any'
-
-mod vector {
-    type Vec [T Number, n UInt32] = {
-        data Array[T,n]
-    };
-
-    fn increment ![T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) = {
-        help_increment[T,n](inout lt, rt);
-    };
-    fn help_increment [T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) = {
-        if (n > 0) then {
-            set lt.data.(n-1) = lt.data.(n-1) + rt.data.(n-1);
-            
-            # for this to work, need Array subtyping to work correctly
-            help_increment[T,n-1](inout lt, rt)
-        };
-    };
-
-    fn add ![T Number, n UInt32] (lt Vec[T,n], rt Vec[T,n]) -> Vec[T,n] = {
-        var sum_vec Vec[T,n] = lt;
-        increment(inout sum_vec, rt);
-        sum_vec
-    };
-};
+import fibx from "fibx.pdm" type "pdm.script";
 
 mod fibonacci {
-    fn demo () -> Int32 = {
-        0
+    fn fib (x Int32) -> Int32 = {
+        val result = (
+            if (x == 0 or x == 1) then {
+                x
+            } else {
+                fib(x-1) + fib(x-2)
+            }
+        );
+        fibx.register(n,result);
+        result
     };
 };

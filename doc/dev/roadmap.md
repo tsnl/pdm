@@ -1,6 +1,24 @@
 # Roadmap
 
-## Dec 28
+## Dec 28 (Part II)
+
+See `eg/eg10.pd`
+
+How does the heap interact with inout/out params?
+- 'Ptr' is the only pointer type, is just an integer address.
+- `ptr(out value)' gets the pointer to a value.
+- `malloc` returns a `Ptr` instance
+- `var x from ptr` to create variable from pointer!
+  - compare with `fn ... from`
+
+TODO: introduce `var <lpattern> from <ptr_exp>` to load a variable from a pointer.
+- raw pointers can unwrap to anything
+- eventually provide allocators with static type info so that `ptr_exp` contains static
+  info about buffer size.
+  - remember: your whole program is finite, and we have access to all source for templatization
+TODO (from part I): `cif ... then ... else`
+
+## Dec 28 (Part I)
 
 I made the following changes last night:
 - 'let' -> 'val'

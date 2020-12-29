@@ -1,5 +1,7 @@
 #include "compiler.hh"
 
+#include <iostream>
+
 #include <string>
 #include <unordered_map>
 #include <algorithm>
@@ -56,7 +58,13 @@ namespace pdm::compiler {
     }
 
     void Compiler::help_import_script_2(ast::Script* script) {
-        // todo: finish processing this script
+        std::cout << "Dispatching: " << script->source()->abs_path() << std::endl;
+        
+        // dispatching all subsequent imports:
+        m_dependency_dispatcher.dispatch_imports_for(script);
+
+        // adding to the 'all_scripts' list.
+        m_all_scripts.push_back(script);
     }
 
     bool Compiler::import_all() {
@@ -65,7 +73,6 @@ namespace pdm::compiler {
         if (entry_point_script == nullptr) {
             return false;
         }
-        m_all_scripts.push_back(entry_point_script);
 
         // todo: running until all dispatched dependencies are empty.
         // since each module's dd only runs on first import, this always halts for finite
@@ -75,6 +82,7 @@ namespace pdm::compiler {
         return true;
     }
     bool Compiler::typecheck_all() {
+        // todo: run scoper here
         // todo: actually solve a typer here...
         return false;
     }

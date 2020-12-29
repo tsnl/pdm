@@ -18,6 +18,10 @@ namespace pdm::ast {
 
             case Kind::Script:
             {
+                Script* script = dynamic_cast<Script*>(node);
+                for (ast::Stmt* stmt: script->stmts()) {
+                    ok = visit(stmt) && ok;
+                }
                 break;
             }
 
@@ -69,7 +73,6 @@ namespace pdm::ast {
                 if (fn_stmt->opt_return_ts()) {
                     ok = visit(fn_stmt->opt_return_ts()) && ok;
                 }
-                ok = visit(fn_stmt->opt_return_ts()) && ok;
                 break;
             }
             case Kind::TypeStmt:
