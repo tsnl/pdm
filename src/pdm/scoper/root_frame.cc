@@ -8,7 +8,7 @@ namespace pdm::scoper {
 
     RootFrame::RootFrame(typer::Typer* frame_typer)
     : Frame(FrameKind::Root, nullptr, frame_typer) {
-        shadow(ContextKind::Root); {
+        shadow(ContextKind::RootDefs); {
             help_define_builtin_type("Void", typer()->get_void_tv());
             help_define_builtin_type("String", typer()->get_string_tv());
             help_define_builtin_type("TypeInfo", typer()->get_type_info_tv());

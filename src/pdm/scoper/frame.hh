@@ -12,6 +12,9 @@ namespace pdm::scoper {
 
     enum class FrameKind {
         Root,
+        Script,
+        Module,
+        FnRhs,
     };
 
     // Frame is a sequence of Contexts, s.t. each predecessor is successor's parent
@@ -35,9 +38,20 @@ namespace pdm::scoper {
           m_parent_frame(parent_frame),
           m_first_context(nullptr),
           m_last_context(nullptr) {
+            // if non-null parent, updating:
+            Context* parent_last_ctx = nullptr;
             if (m_parent_frame) {
                 m_parent_frame->m_child_frames.push_back(this);
+                parent_last_ctx = m_parent_frame->last_context();
             }
+
+            // creating a new Context for this frame based on the frame kind:
+            ContextKind child_ctx_kind = select_child_ctx_kind();
+            m_first_context = new Context(child_ctx_kind, this, parent_last_ctx);
+            m_last_context = m_first_context;
+
+            // thus, every 'Frame' always has a non-nullptr 'first' and 'last' context.
+            // all done!
         }
     
       public:
@@ -54,30 +68,30 @@ namespace pdm::scoper {
         std::vector<Frame*> const& child_frames() const {
             return m_child_frames;
         }
-        Context* opt_first_new_context() const {
-            if (m_first_context) {
-                return m_first_context;
-            } else {
-                return nullptr;
-            }
+        Context* first_context() const {
+            return m_first_context;
         }
-        Context* opt_last_context() const {
-            if (m_last_context) {
-                return m_last_context;
+        Context* last_context() const {
+            return m_last_context;
+        }
+
+      private:
+        ContextKind select_child_ctx_kind() const { 
+            switch (m_kind) {
+                case FrameKind::Root: return ContextKind::RootDefs;
+                case FrameKind::Script: return ContextKind::ScriptDefs;
+                case FrameKind::Module: return ContextKind::ModuleDefs;
+                case FrameKind::FnRhs: return ContextKind::PH_FnRhsStart;
             }
-            if (m_parent_frame) {
-                return m_parent_frame->opt_last_context();
-            }
-            return nullptr;
         }
 
       public:
         // push a new context in this frame 
         Context* shadow(ContextKind new_context_kind) {
-            Context* parent_context = opt_last_context();
+            Context* parent_context = last_context();
             // assert(parent_context != nullptr);
             // note that paren_context may be nullptr, and 'shadow' still works.
-            m_last_context = parent_context->shadow(new_context_kind, this);
+            m_last_context = Context::shadow(parent_context, new_context_kind, this);
 
             if (m_first_context == nullptr) {
                 m_first_context = m_last_context;
@@ -86,11 +100,9 @@ namespace pdm::scoper {
             return m_last_context;
         }
 
+        // define a symbol in the topmost Defn
         bool define(scoper::Defn* defn) {
-            // allocating a new context:
-            Context* parent_context = opt_last_context();
-            assert(parent_context != nullptr);
-            return parent_context->define(defn);
+            return m_last_context->define(defn);
         }
     };
 

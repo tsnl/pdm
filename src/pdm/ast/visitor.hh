@@ -88,157 +88,221 @@ namespace pdm::ast {
       
       protected:
         // scripts:
-        virtual bool on_visit__script(Script* script, VisitOrder visit_order) {
-            return true;
-        };
+        virtual bool on_visit__script(Script* script, VisitOrder visit_order) = 0;
 
         // statements:
-        virtual bool on_visit__mod_stmt(ModStmt* node, VisitOrder visit_order) { 
+        virtual bool on_visit__mod_stmt(ModStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__typeclass_stmt(TypeclassStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__type_stmt(TypeStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__enum_stmt(EnumStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__fn_stmt(FnStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__const_stmt(ConstStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__val_stmt(ValStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__var_stmt(VarStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__set_stmt(SetStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__discard_stmt(DiscardStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__extern_stmt(ExternStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__import_stmt(ImportStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__using_stmt(UsingStmt* node, VisitOrder visit_order) = 0;
+
+        // expressions:
+        virtual bool on_visit__unit_exp(UnitExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__int_exp(IntExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__float_exp(FloatExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__string_exp(StringExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__id_exp(IdExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__paren_exp(ParenExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__tuple_exp(TupleExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__array_exp(ArrayExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__struct_exp(StructExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__type_query_exp(TypeQueryExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__chain_exp(ChainExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__lambda_exp(LambdaExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__if_exp(IfExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__dot_index_exp(DotIndexExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__dot_name_exp(DotNameExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__unary_exp(UnaryExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__binary_exp(BinaryExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__vcall_exp(VCallExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__tcall_exp(TCallExp* node, VisitOrder visit_order) = 0;
+        
+        // patterns:
+        virtual bool on_visit__vpattern(VPattern* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__tpattern(TPattern* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__lpattern(LPattern* node, VisitOrder visit_order) = 0;
+
+        // typespecs:
+        virtual bool on_visit__id_typespec(IdTypespec* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__fn_typespec(FnTypespec* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__tcall_typespec(TCallTypespec* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__tuple_typespec(TupleTypespec* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__dot_name_typespec_type_prefix(DotNameTypespec_TypePrefix* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__dot_name_typespec_mod_prefix(DotNameTypespec_ModPrefix* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__struct_typespec(StructTypespec* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__paren_typespec(ParenTypespec* node, VisitOrder visit_order) = 0;
+
+        // templates/shared:
+        virtual bool on_visit__targ(TArg* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__varg(VArg* node, VisitOrder visit_order) = 0;
+
+        // non-syntactic elements:
+        virtual bool on_visit__builtin_type_stmt(BuiltinTypeStmt* node, VisitOrder visit_order) = 0;
+    };
+
+    class TinyVisitor: public Visitor {
+      protected:
+        // scripts:
+        virtual bool on_visit__script(Script* script, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__typeclass_stmt(TypeclassStmt* node, VisitOrder visit_order) { 
+
+        // statements:
+        virtual bool on_visit__mod_stmt(ModStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__type_stmt(TypeStmt* node, VisitOrder visit_order) { 
+        virtual bool on_visit__typeclass_stmt(TypeclassStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__enum_stmt(EnumStmt* node, VisitOrder visit_order) {
+        virtual bool on_visit__type_stmt(TypeStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__fn_stmt(FnStmt* node, VisitOrder visit_order) { 
+        virtual bool on_visit__enum_stmt(EnumStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__const_stmt(ConstStmt* node, VisitOrder visit_order) {
+        virtual bool on_visit__fn_stmt(FnStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__val_stmt(ValStmt* node, VisitOrder visit_order) { 
+        virtual bool on_visit__const_stmt(ConstStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__var_stmt(VarStmt* node, VisitOrder visit_order) {
+        virtual bool on_visit__val_stmt(ValStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__set_stmt(SetStmt* node, VisitOrder visit_order) {
+        virtual bool on_visit__var_stmt(VarStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__discard_stmt(DiscardStmt* node, VisitOrder visit_order) {
+        virtual bool on_visit__set_stmt(SetStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__extern_stmt(ExternStmt* node, VisitOrder visit_order) {
+        virtual bool on_visit__discard_stmt(DiscardStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__import_stmt(ImportStmt* node, VisitOrder visit_order) {
+        virtual bool on_visit__extern_stmt(ExternStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__using_stmt(UsingStmt* node, VisitOrder visit_order) {
+        virtual bool on_visit__import_stmt(ImportStmt* node, VisitOrder visit_order) override {
+            return true;
+        }
+        virtual bool on_visit__using_stmt(UsingStmt* node, VisitOrder visit_order) override {
             return true;
         }
 
         // expressions:
-        virtual bool on_visit__unit_exp(UnitExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__unit_exp(UnitExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__int_exp(IntExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__int_exp(IntExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__float_exp(FloatExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__float_exp(FloatExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__string_exp(StringExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__string_exp(StringExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__id_exp(IdExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__id_exp(IdExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__paren_exp(ParenExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__paren_exp(ParenExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__tuple_exp(TupleExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__tuple_exp(TupleExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__array_exp(ArrayExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__array_exp(ArrayExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__struct_exp(StructExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__struct_exp(StructExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__type_query_exp(TypeQueryExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__type_query_exp(TypeQueryExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__chain_exp(ChainExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__chain_exp(ChainExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__lambda_exp(LambdaExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__lambda_exp(LambdaExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__if_exp(IfExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__if_exp(IfExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__dot_index_exp(DotIndexExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__dot_index_exp(DotIndexExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__dot_name_exp(DotNameExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__dot_name_exp(DotNameExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__unary_exp(UnaryExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__unary_exp(UnaryExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__binary_exp(BinaryExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__binary_exp(BinaryExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__vcall_exp(VCallExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__vcall_exp(VCallExp* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__tcall_exp(TCallExp* node, VisitOrder visit_order) {
+        virtual bool on_visit__tcall_exp(TCallExp* node, VisitOrder visit_order) override {
             return true;
         }
         
         // patterns:
-        virtual bool on_visit__vpattern(VPattern* node, VisitOrder visit_order) {
+        virtual bool on_visit__vpattern(VPattern* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__tpattern(TPattern* node, VisitOrder visit_order) {
+        virtual bool on_visit__tpattern(TPattern* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__lpattern(LPattern* node, VisitOrder visit_order) {
+        virtual bool on_visit__lpattern(LPattern* node, VisitOrder visit_order) override {
             return true;
         }
 
         // typespecs:
-        virtual bool on_visit__id_typespec(IdTypespec* node, VisitOrder visit_order) {
+        virtual bool on_visit__id_typespec(IdTypespec* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__fn_typespec(FnTypespec* node, VisitOrder visit_order) {
+        virtual bool on_visit__fn_typespec(FnTypespec* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__tcall_typespec(TCallTypespec* node, VisitOrder visit_order) {
+        virtual bool on_visit__tcall_typespec(TCallTypespec* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__tuple_typespec(TupleTypespec* node, VisitOrder visit_order) {
+        virtual bool on_visit__tuple_typespec(TupleTypespec* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__dot_name_typespec_type_prefix(DotNameTypespec_TypePrefix* node, VisitOrder visit_order) {
+        virtual bool on_visit__dot_name_typespec_type_prefix(DotNameTypespec_TypePrefix* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__dot_name_typespec_mod_prefix(DotNameTypespec_ModPrefix* node, VisitOrder visit_order) {
+        virtual bool on_visit__dot_name_typespec_mod_prefix(DotNameTypespec_ModPrefix* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__struct_typespec(StructTypespec* node, VisitOrder visit_order) {
+        virtual bool on_visit__struct_typespec(StructTypespec* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__paren_typespec(ParenTypespec* node, VisitOrder visit_order) {
+        virtual bool on_visit__paren_typespec(ParenTypespec* node, VisitOrder visit_order) override {
             return true;
         }
 
         // templates/shared:
-        virtual bool on_visit__targ(TArg* node, VisitOrder visit_order) {
+        virtual bool on_visit__targ(TArg* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__varg(VArg* node, VisitOrder visit_order) {
+        virtual bool on_visit__varg(VArg* node, VisitOrder visit_order) override {
             return true;
         }
 
         // non-syntactic elements:
-        virtual bool on_visit__builtin_type_stmt(BuiltinTypeStmt* node, VisitOrder visit_order) {
+        virtual bool on_visit__builtin_type_stmt(BuiltinTypeStmt* node, VisitOrder visit_order) override {
             return true;
         }
     };

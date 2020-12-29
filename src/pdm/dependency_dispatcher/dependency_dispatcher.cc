@@ -22,7 +22,7 @@ namespace pdm::dependency_dispatcher {
     bool DDVisitor::on_visit__import_stmt(ast::ImportStmt* node, VisitOrder visit_order) {
         assert(m_this_script != nullptr);
 
-        if (!ast::Visitor::on_visit__import_stmt(node, visit_order)) {
+        if (!ast::TinyVisitor::on_visit__import_stmt(node, visit_order)) {
             return false;
         }
 
@@ -64,11 +64,6 @@ namespace pdm::dependency_dispatcher {
         }
 
         return true;
-    }
-
-    void DependencyDispatcher::dispatch_imports_for(ast::Script* script) {
-        DDVisitor visitor{m_compiler_ref, script};
-        visitor.visit(script);
     }
 
 }

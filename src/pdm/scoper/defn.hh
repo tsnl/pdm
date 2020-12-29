@@ -11,6 +11,7 @@ namespace pdm::scoper {
 
     enum class DefnKind {
         BuiltinType,
+        Module,
         Def,
         Const,
         Let,

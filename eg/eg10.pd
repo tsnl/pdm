@@ -30,7 +30,7 @@ mod vector {
         sum_vec
     };
 
-    fn hello() = {
+    fn hello () = {
         val x = 0;
     };
 };
@@ -46,10 +46,10 @@ mod fibonacci {
 # thus, out[T] :< inout[T] (and in[T] :< inout[T])
 # i.e.
 mod in_out_and_everybout {
-    fn hello_out(out x F32) = {
+    fn hello_out (out x F32) = {
         set x = 42.0;
     };
-    fn hello_inout(inout x F32) = {
+    fn hello_inout (inout x F32) = {
         # 'out' from 'hello_out' defn, not from vpattern decl.
         hello_out(out x);
     };

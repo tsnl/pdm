@@ -7,10 +7,6 @@ namespace pdm::scoper {
         return lookup_until(name, nullptr);
     }
     Defn* Context::lookup_until(intern::String name, Context* opt_until_context) {
-        if (this == opt_until_context) {
-            return nullptr;
-        }
-
         Defn* defn = nullptr; {
             // 1. shallow defns:
             defn = help_lookup_shallow(name);
@@ -24,14 +20,15 @@ namespace pdm::scoper {
                 return defn;
             }
 
-            // 3. all possible parent definitions:
-            defn = help_lookup_parent(name, opt_until_context);
-            if (defn != nullptr) {
-                return defn;
+            // 3. all possible parent definitions if this isn't the end:
+            if (this != opt_until_context) {
+                defn = help_lookup_parent(name, opt_until_context);
+                if (defn != nullptr) {
+                    return defn;
+                }
             }
         }
-        
-        return nullptr;
+        return defn;
     }
 
     Defn* Context::help_lookup_shallow(intern::String name) {
@@ -44,8 +41,8 @@ namespace pdm::scoper {
     }
     Defn* Context::help_lookup_link(intern::String name) {
         if (m_opt_link != nullptr) {
-            Context* first_context = m_opt_link->opt_first_new_context();
-            Context* last_context = m_opt_link->opt_last_context();
+            Context* first_context = m_opt_link->first_context();
+            Context* last_context = m_opt_link->last_context();
             if (first_context != nullptr && last_context != nullptr) {
                 return last_context->lookup_until(name, first_context);
             }

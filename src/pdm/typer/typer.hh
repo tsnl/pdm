@@ -169,6 +169,8 @@ namespace pdm::typer {
             return tv;
         }
 
+        // todo: pass argument specifiers too, since only used to create statements
+        // with tpatterns
         TV* new_polymorphic_var_tv(std::string&& name) {
             TV* tv = new_tv(new PolymorphicVarSoln(std::move(name)));
             m_polymorphic_var_tvs.push_back(tv);

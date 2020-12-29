@@ -1,5 +1,53 @@
 # Roadmap
 
+## Dec 29 - WIP
+I'm too hungry to go on.
+
+Here's what's in-progress-
+1. typer.new_polymorphic_var_tv needs formal arg specs
+2. finish creating var_tvs in 'scoper'
+
+read `Roadmap Alf` (Dec 29) below for subsequent steps.
+
+## Dec 29 - Latest Roadmap: Codename Alf
+
+1. Scoper polished, documented, and ready to be implemented
+   - just store 'Context' lookup for each ID
+2. Then, implement 'typer'
+   1. flesh out required typer features...
+      1. implement 'typer' visitor to create Rules
+         - includes looking up stored 'Context' from scoper
+         - includes applying rules to stored TVs on ASTNs (see (2))
+         - includes determining all template-calls (tcalls)
+            - `TCall{Exp|Typespec}` and `VCallExp` may invoke template substitutions
+            - i.e., VCallRule with LHS template => 
+              1. generate monomorphic metavars to use for substitutions (monomorphic could include singleton i.e. value)
+              2. store each generated metavar pack on VCall, so `templater` (see below) can refer
+         - note value TVs may or may not map to an ASTN, but are determined like metavars.
+      2. implement 'TV' initializers for ASTNs
+         - _decided to do this in-scoper_
+      3. implement 'typer::dump' to verify
+   2. complete `typecheck_all`
+      1. implement TV fixed-point solver
+      2. amend 'typer::dump' to print solns to verify
+3. Then, implement `conster`
+   - check each 'const' expression and evaluate
+   - since typechecked already, pretty much just type-safe interpretation, e.g.
+     - `cif` statements: cond must be constant
+       - dead-code elimination **must** be performed AoT for `cif`
+       - so `selected_branch` assigned here
+     - `extern` statements: extern arg must be constant
+     - `const` statements: rhs must be constant
+     - builtin `const`-operators: 
+       - since functions are pure, can call functions for RHS (compile-time evaluation)
+       - note that functions are just `const`-mapped to `lambdas`
+   - Thus, `conster` evaluates all constants.
+4. Then, implement `templater`
+   - use unique values and already constant types to generate finite template substitutions.
+   - `TCall{Exp|Typespec}` and `VCallExp` may invoke template substitutions, so for each...
+     - use 'TV' solutions to generate template monomorphs from a cache
+   - finally, 
+
 ## Dec 28 (Part II)
 
 See `eg/eg10.pd`

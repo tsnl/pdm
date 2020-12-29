@@ -11,6 +11,7 @@
 #include "pdm/feedback/feedback.hh"
 #include "pdm/feedback/letter.hh"
 #include "pdm/parser/parser.hh"
+#include "pdm/dependency_dispatcher/dependency_dispatcher.hh"
 
 namespace pdm::compiler {
 
@@ -61,8 +62,9 @@ namespace pdm::compiler {
         std::cout << "Dispatching: " << script->source()->abs_path() << std::endl;
         
         // dispatching all subsequent imports:
-        m_dependency_dispatcher.dispatch_imports_for(script);
-
+        dependency_dispatcher::DDVisitor dd_visitor{this, script};
+        dd_visitor.visit(script);
+        
         // adding to the 'all_scripts' list.
         m_all_scripts.push_back(script);
     }

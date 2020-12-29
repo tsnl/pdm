@@ -191,13 +191,13 @@ namespace pdm::typer {
     };
 
     // cast
-    class CastRule: public Rule {
+    class BitcastRule: public Rule {
       private:
         TV* m_dst;
         TV* m_src;
       public:
-        CastRule(ast::Node* ast_node, TV* dst_tv, TV* src_tv)
-        : Rule(ast_node, "cast<A>(b)"),
+        BitcastRule(ast::Node* ast_node, TV* dst_tv, TV* src_tv)
+        : Rule(ast_node, "bitcast<A>(b)"),
           m_dst(dst_tv),
           m_src(src_tv) {}
     };

@@ -6,35 +6,54 @@
 #include "pdm/ast/visitor.hh"
 #include "pdm/scoper/context.hh"
 #include "pdm/scoper/frame.hh"
+#include "pdm/scoper/root_frame.hh"
 #include "pdm/typer/typer.hh"
 
 namespace pdm::scoper {
 
+    class Scoper;
+    class ScoperVisitor;
+
     class Scoper: public ast::Visitor {
       private:
-        typer::Typer*      m_typer;
+        typer::Typer* m_typer;
         std::stack<Frame*> m_frame_stack;
 
       public:
-        Scoper(typer::Typer* typer, Frame* base_frame)
+        Scoper(typer::Typer* typer)
         : m_typer(typer),
           m_frame_stack() {
+            Frame* base_frame = new RootFrame(m_typer);
             m_frame_stack.push(base_frame);
         }
 
-      protected:
-        Frame* top_frame() {
+      public:
+        typer::Typer* typer() const {
+            return m_typer;
+        }
+        Frame* top_frame() const {
             return m_frame_stack.top();
         }
+
+      public:
         void push_frame(FrameKind frame_kind) {
             m_frame_stack.push(new Frame(frame_kind, top_frame()));
         }
         void pop_frame() {
             m_frame_stack.pop();
         }
+    };
+
+    class ScoperVisitor: public ast::Visitor {
+      private:
+        Scoper* m_scoper_ref;
+
+      private:
+        Scoper* scoper() const {
+            return m_scoper_ref;
+        }
 
       protected:
-
         // scripts:
         virtual bool on_visit__script(ast::Script* script, VisitOrder visit_order) override;
 
@@ -44,10 +63,14 @@ namespace pdm::scoper {
         virtual bool on_visit__type_stmt(ast::TypeStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__enum_stmt(ast::EnumStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__fn_stmt(ast::FnStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__val_stmt(ast::ValStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__const_stmt(ast::ConstStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__val_stmt(ast::ValStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__var_stmt(ast::VarStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__extern_stmt(ast::ExternStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__import_stmt(ast::ImportStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__set_stmt(ast::SetStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__discard_stmt(ast::DiscardStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__using_stmt(ast::UsingStmt* node, VisitOrder visit_order) override;
 
         // expressions:
         virtual bool on_visit__unit_exp(ast::UnitExp* node, VisitOrder visit_order) override;
@@ -79,6 +102,7 @@ namespace pdm::scoper {
         virtual bool on_visit__id_typespec(ast::IdTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__fn_typespec(ast::FnTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__tcall_typespec(ast::TCallTypespec* node, VisitOrder visit_order) override;
+        virtual bool on_visit__paren_typespec(ast::ParenTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__tuple_typespec(ast::TupleTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__dot_name_typespec_type_prefix(ast::DotNameTypespec_TypePrefix* node, VisitOrder visit_order) override;
         virtual bool on_visit__dot_name_typespec_mod_prefix(ast::DotNameTypespec_ModPrefix* node, VisitOrder visit_order) override;

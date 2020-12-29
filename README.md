@@ -106,3 +106,34 @@ when polish is a greater user barrier than absence of features. This point is ye
 ## Contact Me
 
 If you have any questions or would like to contribute, please email me at: [tsnl21009@gmail.com](mailto:tsnl21009@gmail.com).
+
+
+## A Taste of PDM
+
+```
+# eg/eg10.pdm
+
+mod vector {
+    type Vec [T Number, n UInt32] = {
+        data Array[T,n]
+    };
+
+    fn increment ![T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) = {
+        help_increment[T,n](inout lt, rt);
+    };
+    fn help_increment [T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) = {
+        # for this to work, need Array subtyping to work correctly
+        # s.t. Array[T,n] :< Array[T,m] <=> n < m
+        if (n > 0) then {
+            set lt.data.(n-1) = lt.data.(n-1) + rt.data.(n-1);
+            help_increment[T,n-1](inout lt, rt)
+        };
+    };
+
+    fn add ![T Number, n UInt32] (lt Vec[T,n], rt Vec[T,n]) -> Vec[T,n] = {
+        var sum_vec = lt;
+        increment(inout sum_vec, rt);
+        sum_vec
+    };
+}
+```

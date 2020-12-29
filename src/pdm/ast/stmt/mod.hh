@@ -7,6 +7,13 @@
 #include "pdm/source/loc.hh"
 #include "pdm/ast/stmt/stmt.hh"
 
+namespace pdm::scoper {
+    class Frame;
+}
+namespace pdm::typer {
+    class TV;
+}
+
 namespace pdm::ast {
 
     class Manager;
@@ -18,11 +25,16 @@ namespace pdm::ast {
         intern::String     m_module_name;
         std::vector<Stmt*> m_defns;
 
+      private:
+        scoper::Frame* m_x_module_frame;
+        typer::TV*     m_x_module_tv;
+
       public:
         ModStmt(source::Loc loc, intern::String module_name, std::vector<Stmt*>&& defns)
         : Stmt(loc, Kind::ModStmt),
           m_module_name(module_name),
-          m_defns(defns) {}
+          m_defns(defns),
+          m_x_module_frame(nullptr) {}
       
       public:
         intern::String module_name() const {
@@ -30,6 +42,22 @@ namespace pdm::ast {
         }
         std::vector<Stmt*> const& defns() const {
             return m_defns;
+        }
+
+      public:
+        scoper::Frame* x_module_frame() const {
+            return m_x_module_frame;
+        }
+        void x_module_frame(scoper::Frame* frame) {
+            m_x_module_frame = frame;
+        }
+
+      public:
+        typer::TV* x_module_tv() const {
+            return m_x_module_tv;
+        }
+        void x_module_tv(typer::TV* module_tv) {
+            m_x_module_tv = module_tv;
         }
     };
 
