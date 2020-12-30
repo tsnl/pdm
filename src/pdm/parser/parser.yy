@@ -429,11 +429,8 @@ expr: binary_exp
     ;
 long_exp
     : type_query_exp
+    | expr
     ;
-// expr_cl1
-//     : expr                   { $$.push_back($1); }
-//     | expr_cl1 COMMA expr    { $$ = std::move($1); $$.push_back($3); }
-//     ;
 expr_cl2
     : expr COMMA expr        { $$.reserve(2); $$.push_back($1); $$.push_back($3); }
     | expr_cl2 COMMA expr    { $$ = std::move($1); $$.push_back($3); }
@@ -587,8 +584,7 @@ or_binary_exp
     ;
 
 type_query_exp
-    : binary_exp
-    | typespec type_query_op typespec   { $$ = mgr->new_type_query_exp(@$, $2, $1, $3); }
+    : typespec type_query_op typespec   { $$ = mgr->new_type_query_exp(@$, $2, $1, $3); }
     ;
 type_query_op
     : COLON_LTHAN   { $$ = ast::TypeQueryKind::LhsSubtypesRhs; }

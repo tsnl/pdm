@@ -6,7 +6,7 @@
 #include "pdm/ast/stmt/stmt.hh"
 
 namespace pdm::typer {
-    class TV;
+    class TypeVar;
 }
 
 namespace pdm::ast {
@@ -17,17 +17,17 @@ namespace pdm::ast {
         friend Manager;
 
       private:
-        std::string m_desc;
-        typer::TV*  m_tv;
+        std::string     m_desc;
+        typer::TypeVar* m_tv;
 
       public:
-        BuiltinTypeStmt(std::string&& desc, typer::TV* tv);
+        BuiltinTypeStmt(std::string&& desc, typer::TypeVar* tv);
 
       public:
         std::string const& desc() const {
             return m_desc;
         }
-        typer::TV* tv() const {
+        typer::TypeVar* tv() const {
             return m_tv;
         }
     };

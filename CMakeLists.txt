@@ -197,15 +197,16 @@ add_library(
     src/pdm/source/pos.hh
     src/pdm/source/source.hh
 
-    src/pdm/typer/constraint.hh
-    src/pdm/typer/rule.hh
-    src/pdm/typer/soln.cc
-    src/pdm/typer/soln.hh
-    src/pdm/typer/tv.cc
-    src/pdm/typer/tv.hh
     src/pdm/typer/typer.cc
     src/pdm/typer/typer.hh
-
+    src/pdm/typer/type_constraint.hh
+    src/pdm/typer/type_soln.cc
+    src/pdm/typer/type_soln.hh
+    src/pdm/typer/type_kind.hh
+    src/pdm/typer/var.cc
+    src/pdm/typer/var.hh
+    src/pdm/typer/rule.hh
+    
     src/pdm/feedback/feedback.cc
     src/pdm/feedback/feedback.hh
     src/pdm/feedback/manager.cc

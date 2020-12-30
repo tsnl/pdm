@@ -3,19 +3,22 @@
 
 #include <string>
 #include <deque>
-#include <pdm/core/integer.hh>
 
-#include "tv.hh"
-#include "rule.hh"
+#include "pdm/core/integer.hh"
+#include "pdm/ast/stmt/builtin_type.hh"
+
+#include "typer_config.hh"
+#include "var.hh"
+#include "type_soln.hh"
 
 // typer incrementally constructs and preserves two sets: 
 //   1. of type variables (V), and 
 //   2. rules (R) are applied.
 // - each valid rule is a closed, n-ary relation on V.
 
-// think of the typer as ITS OWN DYNAMICALLY TYPED OO-PL where TVs
+// think of the typer as ITS OWN DYNAMICALLY TYPED OO-PL where Vars
 // are objects.
-// - everything in the system is a TV
+// - everything in the system is a Var
 // - you can define relations (rules) that are potentially recursive
 // - the PL computes & checks constraints from these relations
 // - to find solutions to TypeVars
@@ -23,182 +26,173 @@
 namespace pdm::typer {
 
     class Typer {
-      friend std::deque<TV>;
+      friend std::deque<Var>;
 
       // private data members:
       private:
-        std::deque<TV> m_all_tvs;
+        std::deque<TypeVar> m_all_tvs;
+        std::deque<ClassVar> m_all_cvs;
         std::vector<Rule*> m_all_rules;
 
-        TV* m_void_tv;
-        TV* m_string_tv;
-        TV* m_type_info_tv;
-        TV* m_i8_tv;
-        TV* m_i16_tv;
-        TV* m_i32_tv;
-        TV* m_i64_tv;
-        TV* m_i128_tv;
-        TV* m_u1_tv;
-        TV* m_u8_tv;
-        TV* m_u16_tv;
-        TV* m_u32_tv;
-        TV* m_u64_tv;
-        TV* m_u128_tv;
-        TV* m_f16_tv;
-        TV* m_f32_tv;
-        TV* m_f64_tv;
-        std::vector<TV*> m_tuple_tvs;
-        std::vector<TV*> m_struct_tvs;
-        std::vector<TV*> m_enum_tvs;
-        std::vector<TV*> m_vfunc_tvs;
-        std::vector<TV*> m_tfunc_tvs;
-        std::vector<TV*> m_module_tvs;
-        std::vector<TV*> m_typeclass_tvs;
-        std::vector<TV*> m_monomorphic_var_tvs;
-        std::vector<TV*> m_polymorphic_var_tvs;
+      // constant types:
+      private:
+        TypeVar* m_void_tv;
+        TypeVar* m_string_tv;
+        
+        TypeVar* m_i8_tv;
+        TypeVar* m_i16_tv;
+        TypeVar* m_i32_tv;
+        TypeVar* m_i64_tv;
+        TypeVar* m_i128_tv;
+
+        TypeVar* m_u1_tv;
+        TypeVar* m_u8_tv;
+        TypeVar* m_u16_tv;
+        TypeVar* m_u32_tv;
+        TypeVar* m_u64_tv;
+        TypeVar* m_u128_tv;
+
+        TypeVar* m_f16_tv;
+        TypeVar* m_f32_tv;
+        TypeVar* m_f64_tv;
+        
+        std::vector<TypeVar*> m_tuple_tvs;
+        std::vector<TypeVar*> m_struct_tvs;
+        std::vector<TypeVar*> m_enum_tvs;
+        std::vector<TypeVar*> m_vfunc_tvs;
+        std::vector<TypeVar*> m_tfunc_tvs;
+        std::vector<TypeVar*> m_module_tvs;
+        std::vector<TypeVar*> m_typeclass_tvs;
+        std::vector<TypeVar*> m_monomorphic_var_tvs;
+        std::vector<TypeVar*> m_polymorphic_var_tvs;
 
       public:
-        Typer() {
-            m_void_tv = new_void_tv();
-            m_i8_tv = new_i8_tv();
-            m_i16_tv = new_i16_tv();
-            m_i32_tv = new_i32_tv();
-            m_i64_tv = new_i64_tv();
-            m_i128_tv = new_i128_tv();
-            m_u1_tv = new_u1_tv();
-            m_u8_tv = new_u8_tv();
-            m_u16_tv = new_u16_tv();
-            m_u32_tv = new_u32_tv();
-            m_u64_tv = new_u64_tv();
-            m_u128_tv = new_u128_tv();
-            m_f16_tv = new_f16_tv();
-            m_f32_tv = new_f32_tv();
-            m_f64_tv = new_f64_tv();
+        Typer(TyperConfig typer_config) {
+            m_void_tv = new_void_tv(typer_config.void_tv_client_astn);
+            m_string_tv = new_string_tv(typer_config.string_tv_client_astn);
+            m_i8_tv = new_i8_tv(typer_config.i8_tv_client_astn);
+            m_i16_tv = new_i16_tv(typer_config.i16_tv_client_astn);
+            m_i32_tv = new_i32_tv(typer_config.i32_tv_client_astn);
+            m_i64_tv = new_i64_tv(typer_config.i64_tv_client_astn);
+            m_i128_tv = new_i128_tv(typer_config.i128_tv_client_astn);
+            m_u1_tv = new_u1_tv(typer_config.u1_tv_client_astn);
+            m_u8_tv = new_u8_tv(typer_config.u8_tv_client_astn);
+            m_u16_tv = new_u16_tv(typer_config.u16_tv_client_astn);
+            m_u32_tv = new_u32_tv(typer_config.u32_tv_client_astn);
+            m_u64_tv = new_u64_tv(typer_config.u64_tv_client_astn);
+            m_u128_tv = new_u128_tv(typer_config.u128_tv_client_astn);
+            m_f16_tv = new_f16_tv(typer_config.f16_tv_client_astn);
+            m_f32_tv = new_f32_tv(typer_config.f32_tv_client_astn);
+            m_f64_tv = new_f64_tv(typer_config.f64_tv_client_astn);
         }
 
       protected:
-        TV* new_tv(Soln* soln) {
-            m_all_tvs.emplace_back(this, soln);
+        TypeVar* new_tv(ast::Node* client_ast_node, TypeSoln* soln = nullptr) {
+            m_all_tvs.emplace_back(client_ast_node, soln);
             return &m_all_tvs.back();
         }
-        TV* new_void_tv() {
-            return new_tv(VoidSoln::get());
+
+        TypeVar* new_void_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, VoidTypeSoln::get());
         }
-        TV* new_i8_tv() {
-            return new_tv(IntSoln::get_i8());
+        TypeVar* new_string_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, StringTypeSoln::get());
         }
-        TV* new_i16_tv() {
-            return new_tv(IntSoln::get_i16());
+
+        TypeVar* new_i8_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, IntTypeSoln::get_i8());
         }
-        TV* new_i32_tv() {
-            return new_tv(IntSoln::get_i32());
+        TypeVar* new_i16_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, IntTypeSoln::get_i16());
         }
-        TV* new_i64_tv() {
-            return new_tv(IntSoln::get_i64());
+        TypeVar* new_i32_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, IntTypeSoln::get_i32());
         }
-        TV* new_i128_tv() {
-            return new_tv(IntSoln::get_i128());
+        TypeVar* new_i64_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, IntTypeSoln::get_i64());
         }
-        TV* new_u1_tv() {
-            return new_tv(IntSoln::get_u1());
+        TypeVar* new_i128_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, IntTypeSoln::get_i128());
         }
-        TV* new_u8_tv() {
-            return new_tv(IntSoln::get_u8());
+
+        TypeVar* new_u1_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, IntTypeSoln::get_u1());
         }
-        TV* new_u16_tv() {
-            return new_tv(IntSoln::get_u16());
+        TypeVar* new_u8_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, IntTypeSoln::get_u8());
         }
-        TV* new_u32_tv() {
-            return new_tv(IntSoln::get_u32());
+        TypeVar* new_u16_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, IntTypeSoln::get_u16());
         }
-        TV* new_u64_tv() {
-            return new_tv(IntSoln::get_u64());
+        TypeVar* new_u32_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, IntTypeSoln::get_u32());
         }
-        TV* new_u128_tv() {
-            return new_tv(IntSoln::get_u128());
+        TypeVar* new_u64_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, IntTypeSoln::get_u64());
         }
-        TV* new_f16_tv() {
-            return new_tv(FloatSoln::get_f16());
+        TypeVar* new_u128_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, IntTypeSoln::get_u128());
         }
-        TV* new_f32_tv() {
-            return new_tv(FloatSoln::get_f32());
+
+        TypeVar* new_f16_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, FloatTypeSoln::get_f16());
         }
-        TV* new_f64_tv() {
-            return new_tv(FloatSoln::get_f64());
+        TypeVar* new_f32_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, FloatTypeSoln::get_f32());
+        }
+        TypeVar* new_f64_tv(ast::BuiltinTypeStmt* client_ast_node) {
+            return new_tv(client_ast_node, FloatTypeSoln::get_f64());
+        }
+
+      protected:
+        ClassVar* new_cv() {
+            m_all_cvs.emplace_back();
         }
 
       //
-      // TV creation and acquisition:
+      // TVs:
       //
-
       public:
-        TV* get_void_tv() { return m_void_tv; }
-        TV* get_string_tv() { return m_string_tv; }
-        TV* get_type_info_tv() { return m_type_info_tv; }
+        TypeVar* get_void_tv()     const { return m_void_tv; }
+        TypeVar* get_string_tv()   const { return m_string_tv; }
 
-        TV* get_i8_tv()   { return m_i8_tv; }
-        TV* get_i16_tv()  { return m_i16_tv; }
-        TV* get_i32_tv()  { return m_i32_tv; }
-        TV* get_i64_tv()  { return m_i64_tv; }
-        TV* get_i128_tv() { return m_i128_tv; }
+        TypeVar* get_i8_tv()    const { return m_i8_tv; }
+        TypeVar* get_i16_tv()   const { return m_i16_tv; }
+        TypeVar* get_i32_tv()   const { return m_i32_tv; }
+        TypeVar* get_i64_tv()   const { return m_i64_tv; }
+        TypeVar* get_i128_tv()  const { return m_i128_tv; }
         
-        TV* get_u1_tv()   { return m_u1_tv; }
-        TV* get_u8_tv()   { return m_u8_tv; }
-        TV* get_u16_tv()  { return m_u16_tv; }
-        TV* get_u32_tv()  { return m_u32_tv; }
-        TV* get_u64_tv()  { return m_u64_tv; }
-        TV* get_u128_tv() { return m_u128_tv; }
+        TypeVar* get_u1_tv()   const { return m_u1_tv; }
+        TypeVar* get_u8_tv()   const { return m_u8_tv; }
+        TypeVar* get_u16_tv()  const { return m_u16_tv; }
+        TypeVar* get_u32_tv()  const { return m_u32_tv; }
+        TypeVar* get_u64_tv()  const { return m_u64_tv; }
+        TypeVar* get_u128_tv() const { return m_u128_tv; }
 
-        TV* get_f16_tv() { return m_f16_tv; }
-        TV* get_f32_tv() { return m_f32_tv; }
-        TV* get_f64_tv() { return m_f64_tv; }
+        TypeVar* get_f16_tv() const { return m_f16_tv; }
+        TypeVar* get_f32_tv() const { return m_f32_tv; }
+        TypeVar* get_f64_tv() const { return m_f64_tv; }
         
-        // todo: implement these handlers
-
-        // TV* new_tuple_tv(std::vector<TV*>&& fields);
-        // TV* new_struct_tv(std::vector<Field>&& fields);
-        // TV* new_enum_tv(std::vector<Field>&& fields);
-        // TV* new_class_tv(std::vector<Field>&& fields);
-        // TV* new_vfunc_tv(int formal_arg_count);
-        // TV* new_tfunc_tv(int formal_arg_count);
-        // TV* new_module_tv(std::vector<Field>&& mod_fields);
-        
-        TV* new_monomorphic_var_tv(std::string&& name) {
-            TV* tv = new_tv(new MonomorphicVarSoln(std::move(name)));
-            m_monomorphic_var_tvs.push_back(tv);
-            return tv;
-        }
-
-        // todo: pass argument specifiers too, since only used to create statements
-        // with tpatterns
-        TV* new_polymorphic_var_tv(std::string&& name) {
-            TV* tv = new_tv(new PolymorphicVarSoln(std::move(name)));
-            m_polymorphic_var_tvs.push_back(tv);
-            return tv;
-        }
-
-        // TV* new_typeclass_tv();
-
       //
       // Rules:
       //
 
       public:
-        void apply_vid_typespec_rule(ast::Node* ast_node, intern::String lhs_name, TV* lhs_tv, TV* rhs_typespec_tv) {
-            typer::PatternTypespecRule_VId* rule = new typer::PatternTypespecRule_VId(ast_node, lhs_name, lhs_tv, rhs_typespec_tv);
-            m_all_rules.push_back(rule);
-        }
-        void apply_tid_typespec_rule(ast::Node* ast_node, intern::String lhs_name, TV* lhs_tv, TV* rhs_typespec_tv) {
-            typer::PatternTypespecRule_TId* rule = new typer::PatternTypespecRule_TId(ast_node, lhs_name, lhs_tv, rhs_typespec_tv);
-            m_all_rules.push_back(rule);
-        }
+        // void apply_vid_typespec_rule (ast::Node* ast_node, intern::String lhs_name, TypeVar* lhs_var, Var* rhs_typespec_var) {
+        //     typer::PatternTypespecRule_VId* rule = new typer::PatternTypespecRule_VId(ast_node, lhs_name, lhs_var, rhs_typespec_var);
+        //     m_all_rules.push_back(rule);
+        // }
+        // void apply_tid_typespec_rule (ast::Node* ast_node, intern::String lhs_name, Var* lhs_var, Var* rhs_typespec_var) {
+        //     typer::PatternTypespecRule_TId* rule = new typer::PatternTypespecRule_TId(ast_node, lhs_name, lhs_var, rhs_typespec_var);
+        //     m_all_rules.push_back(rule);
+        // }
 
       // Dump:
       public:
         // todo: implement typer::dump
         void dump() const;
     };
-    
+
 }   // namespace pdm::typer
 
 #endif  // INCLUDED_PDM_TYPER_TYPER_HH

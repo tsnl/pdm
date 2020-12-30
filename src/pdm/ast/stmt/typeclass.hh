@@ -13,7 +13,7 @@ namespace pdm::ast {
     class Manager;
     class TPattern;
     class Typespec;
-    class Exp;
+    class TypeQueryExp;
 }
 
 namespace pdm::ast {
@@ -22,11 +22,11 @@ namespace pdm::ast {
         friend Manager;
 
       private:
-        intern::String          m_typeclass_name;
-        intern::String          m_candidate_name;
-        Typespec*               m_candidate_typespec;
-        std::vector<TPattern*>  m_tpatterns;
-        std::vector<Exp*>       m_conditions;
+        intern::String              m_typeclass_name;
+        intern::String              m_candidate_name;
+        Typespec*                   m_candidate_typespec;
+        std::vector<TPattern*>      m_tpatterns;
+        std::vector<TypeQueryExp*>  m_conditions;
 
       public:
         TypeclassStmt(
@@ -35,7 +35,7 @@ namespace pdm::ast {
             intern::String candidate_name,
             Typespec* candidate_typespec,
             std::vector<TPattern*>&& tpatterns,
-            std::vector<Exp*>&& conditions
+            std::vector<TypeQueryExp*>&& conditions
         )
         : Stmt(loc, Kind::TypeStmt),
           m_typeclass_name(typeclass_name),
@@ -57,7 +57,7 @@ namespace pdm::ast {
         std::vector<TPattern*> const& tpatterns() const {
             return m_tpatterns;
         }
-        std::vector<Exp*> const& conditions() const {
+        std::vector<TypeQueryExp*> const& conditions() const {
             return m_conditions;
         }
     };

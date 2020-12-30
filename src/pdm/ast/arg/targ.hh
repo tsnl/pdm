@@ -10,7 +10,7 @@ namespace pdm::ast {
 namespace pdm::ast {
 
     enum class TArgKind {
-        Exp,
+        Value,
         Typespec
     };
     
@@ -28,7 +28,7 @@ namespace pdm::ast {
         
       protected:
         TArg(source::Loc loc, Exp* exp)
-        : TArg(loc, exp, TArgKind::Exp) {}
+        : TArg(loc, exp, TArgKind::Value) {}
 
         TArg(source::Loc loc, Typespec* typespec)
         : TArg(loc, typespec, TArgKind::Typespec) {}
@@ -44,8 +44,8 @@ namespace pdm::ast {
 
       // convenience properties:
       public:
-        bool is_exp() const {
-            return m_arg_kind == TArgKind::Exp;
+        bool is_value() const {
+            return m_arg_kind == TArgKind::Value;
         }
         bool is_typespec() const {
             return m_arg_kind == TArgKind::Typespec; 

@@ -1,5 +1,86 @@
 # Roadmap
 
+## Dec 29 - WIP (2)
+
+Turns out, templating out is harder than expected.
+- Old templater solution (mentioned below) seems inelegant, relies on old TVs which weren't designed to handle templates/kinding.
+
+(_old_) Here's how we can typecheck types without substitution and copying, using only monomorphic TVs and CHA `O:)`:
+- for each formal template-arg,
+  - if a type arg, 
+    - create a PROXY var to represent any type that could be passed.
+    - treat PROXY like a regular monomorphic var, accumulating constraints in definition.
+    - FIRST check PROXY vs. typeclass-spec in typer!<br/>
+      is PROXY a SUBCLASS of the formal typespec? check by **COMPARING \[TYPE\] CONSTRAINTS**
+    - SECOND during template instantiation, check actual arg vs. typeclass-spec
+      - true/false: type in class or not.
+  - otherwise if a value arg,
+    - treat value arg exactly like a VCall in-parameter; solved problem.
+
+(_old_) But we can do even better! The following approach **does not need Constraint comparison**, and instead maintains
+a most general proxy argument that can then be subtype-compared.
+- create a PROXY_ACTUAL_ARG var; treat like a regular monomorphic var, accumulating constraints in function definition.
+- **USE** PROXY as SUPERTYPE of all ACTUAL CALLS **BUT DO NOT REQUIRE PROXY TO SOLVE**
+  - since PROXY is fixed, it's referentially transparent in this context; imagine duplicating and applying to each subtyping.
+  - do not allow any more constraints to be added to proxy during this point, need some kind of `freeze/one-way` mechanism that just
+    ignores new constraints [from subtypes] without error after initial constraint set is constructed.
+  - if a T :< PROXY, then T may substitute PROXY
+    - suppose T depends on PROXY2; since it is also frozen at this point, all OK!
+- sit back and let super/subtype solver handle the rest. :)
+
+> Apply this 'proxy-actual-arg' to value arguments.
+> 'running' the program symbolically accumulates 'value-constraints'; e.g. <5, >4, etc
+> The proxy value is not a unique solution (can refer to many values) and is hence really a type
+> But we can still compare the proxy against other numbers using the MOST GENERAL SUBSTITUTION
+> So 4 < x < 5, y = 3, y < x = true always since y < 4.
+> This is the same thing we're doing here, such that **PROXY is just the MOST GENERAL ACTUAL ARGUMENT**.
+
+> 'freeze' + no-checking is required to handle **disjoint typeclasses.**
+> Consider typeclass `Number`, containing `Int__`, `UInt__` and `Float__`.
+> Without these two features, the proxy will get 'Kind'-solved as Int or Float, and will produce errors
+> for legal substitutions.
+> However, 'freeze' lets us reuse this constant 'Var'--
+> **Maybe 'freeze' should return an 'PartialSoln' that cannot be solved but can be compared against.**
+
+Now, we can do even better! We can implement the `A subclass B` transparently using the above method.
+To typecheck template type arguments, we...
+1. compute a set of constraints
+2. stick them in a Var with 'Partial' SolnKind, creating the submost supertype of all valid type args
+3. check if the actual type argument 'solves'/'substitutes' the formal type argument.
+
+
+Thus, we can **typecheck templates without expanding them.**
+Furthermore, we can port most of the existing C code without much modification.
+Much, much less work. Hooray!
+
+**Note** `Constraint`s only apply to types-- not typeclasses, not values.
+- Kind-separated constraints: exploit dynamic_cast<InvalidBase*>(v) == nullptr to weed out inapplicable constraints.
+- So constraints are...
+  - Void:
+    - IsVoidConstraint
+  - Int, Float
+    - IsNumberConstraint
+    - IsIntConstraint
+    - IsFloatConstraint
+    - IsIntWithMinBitWidthConstraint
+    - IsIntWithMaxBitWidthConstraint
+  - Tuple
+    - IsTupleConstraint
+    - HasFieldConstraint
+  - Array (hard-coded for `.(abc)` access to work)
+    - IsArrayConstraint
+    - HasSignature          (accepts Var T)
+    - HasLength             (accepts Var value)
+  - Struct
+    - IsStructConstraint
+    - HasFieldConstraint    (accepts Var)
+  - Enum
+    - IsEnumConstraint
+    - HasVariantConstraint  (accepts Var)
+  - Function
+    - IsFunctionConstraint
+    - IsCalledConstraint    (accepts Var for args, return type)
+
 ## Dec 29 - WIP
 I'm too hungry to go on.
 

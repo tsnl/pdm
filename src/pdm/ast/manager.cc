@@ -142,7 +142,7 @@ namespace pdm::ast {
     EnumStmt* Manager::new_enum_stmt(source::Loc loc, intern::String name, std::vector<EnumStmt::Field*>&& fields) {
         return emplace<EnumStmt>(loc, name, std::move(fields));
     }
-    TypeclassStmt* Manager::new_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, Typespec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<Exp*>&& conditions) {
+    TypeclassStmt* Manager::new_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, Typespec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions) {
         return emplace<TypeclassStmt>(loc, lhs_name, candidate_name, candidate_typespec, std::move(tpatterns), std::move(conditions));
     }
     EnumStmt::Field* Manager::new_enum_stmt_field(source::Loc loc, intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs) {

@@ -48,7 +48,6 @@ namespace pdm::scoper {
             typer::TV* module_tv; {
                 std::string tv_prefix = "module:";
                 std::string tv_name = tv_prefix + node->module_name().content();
-                module_tv = scoper()->typer()->new_monomorphic_var_tv(std::move(tv_name));
             }
 
             // defining the new module in the script:
@@ -88,7 +87,7 @@ namespace pdm::scoper {
             
             typer::TV* type_tv;
             if (node->lhs_tpatterns().empty()) {
-                type_tv = scoper()->typer()->new_monomorphic_var_tv(std::move(tv_name));
+                
             } else {
                 // todo: pass argument specifiers too, since `new_polymorphic_var_tv` only used to define 
                 // statements with tpatterns
@@ -112,6 +111,7 @@ namespace pdm::scoper {
         return true;
     }
     bool ScoperVisitor::on_visit__fn_stmt(ast::FnStmt* node, VisitOrder visit_order) {
+        
         return true;
     }
     bool ScoperVisitor::on_visit__const_stmt(ast::ConstStmt* node, VisitOrder visit_order) {

@@ -2,12 +2,18 @@
 #define INCLUDED_PDM_SCOPER_DEFN_HH
 
 #include "pdm/core/intern.hh"
-#include "pdm/ast/stmt/stmt.hh"
-#include "pdm/typer/typer.hh"
+
+namespace pdm::ast {
+    class Node;
+}
+namespace pdm::typer {
+    class Var;
+}
+namespace pdm::scoper {
+    class Context;
+}
 
 namespace pdm::scoper {
-
-    class Context;
 
     enum class DefnKind {
         BuiltinType,
@@ -25,13 +31,16 @@ namespace pdm::scoper {
       private:
         DefnKind       m_kind;
         intern::String m_name;
-        ast::Stmt*     m_stmt;
-        typer::TV*     m_tv;
+        ast::Node*     m_defn_node;
+        typer::Var*    m_var;
         Context*       m_container_context;
 
       public:
-        Defn(DefnKind kind, intern::String name, ast::Stmt* stmt, typer::TV* tv)
-        : m_kind(kind), m_name(name), m_stmt(stmt), m_tv(tv),
+        Defn(DefnKind kind, intern::String name, ast::Node* defn_node, typer::Var* typer_var)
+        : m_kind(kind), 
+          m_name(name), 
+          m_defn_node(defn_node),
+          m_var(typer_var),
           m_container_context(nullptr) {}
 
       public:
@@ -41,11 +50,11 @@ namespace pdm::scoper {
         intern::String name() const {
             return m_name;
         }
-        ast::Stmt* stmt() const {
-            return m_stmt;
+        ast::Node* defn_node() const {
+            return m_defn_node;
         }
-        typer::TV* tv() const {
-            return m_tv;
+        typer::Var* var() const {
+            return m_var;
         }
         Context* container_context() const {
             return m_container_context;
