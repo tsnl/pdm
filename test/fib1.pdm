@@ -9,7 +9,7 @@ mod fibonacci {
                 fib(x-1) + fib(x-2)
             }
         );
-        fibx.register(n,result);
+        discard fibx.register(n,result);
         result
     };
 };

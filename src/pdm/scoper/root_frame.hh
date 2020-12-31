@@ -5,6 +5,7 @@
 
 namespace pdm::typer {
     class Typer;
+    class Var;
 }
 
 namespace pdm::scoper {
@@ -14,7 +15,7 @@ namespace pdm::scoper {
         RootFrame(typer::Typer* typer);
 
       private:
-        void help_define_builtin_type(intern::String name, typer::TV* tv);
+        void help_define_builtin_type(intern::String name, typer::Var* typer_var);
     };
 
 }

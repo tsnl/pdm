@@ -62,6 +62,7 @@
 
 namespace pdm::typer {
     class Typer;
+    class TypeVar;
 }
 
 namespace pdm::ast {
@@ -121,7 +122,7 @@ namespace pdm::ast {
         TPattern::Field* new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, Typespec* rhs_typespec);
         VPattern::Field* new_vpattern_field(source::Loc loc, intern::String name, Typespec* rhs_typespec, VArgKind varg_kind);
 
-        BuiltinTypeStmt* new_builtin_type_stmt(std::string&& desc, typer::TV* tv);
+        BuiltinTypeStmt* new_builtin_type_stmt(std::string&& desc);
         ConstStmt* new_const_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
         DiscardStmt* new_discard_stmt(source::Loc loc, Exp* exp);
         ValStmt* new_val_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
@@ -129,7 +130,7 @@ namespace pdm::ast {
         SetStmt* new_set_stmt(source::Loc loc, Exp* lhs, Exp* rhs);
         
         ImportStmt* new_import_stmt(source::Loc loc, intern::String imported_name, utf8::String imported_from_exp, utf8::String imported_type_exp);
-        UsingStmt* new_using_stmt(source::Loc loc, Exp* used_exp);
+        UsingStmt* new_using_stmt(source::Loc loc, intern::String module_name, std::string suffix);
         ExternStmt* new_extern_stmt(source::Loc loc, intern::String ext_mod_name, Exp* link_arg);
         ModStmt* new_mod_stmt(source::Loc loc, intern::String module_name, std::vector<Stmt*>&& defns);
         FnStmt* new_fn_stmt(

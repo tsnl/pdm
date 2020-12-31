@@ -53,26 +53,38 @@ namespace pdm::compiler {
         
         typer::Typer      m_typer;
         ast::Manager      m_manager;
-        scoper::RootFrame m_root_frame;
         scoper::Scoper    m_scoper;
 
-      public:
-        Compiler(std::string&& cwd, std::string&& entry_point_path)
-        : m_cwd(std::move(cwd)),
-          m_entry_point_path(abspath(std::move(entry_point_path))),
-          m_cached_imports(),
-          m_all_scripts(),
-          m_typer(),
-          m_manager(&m_typer),
-          m_root_frame(&m_typer),
-          m_scoper(&m_typer, &m_root_frame) {
-            m_all_scripts.reserve(8);
-        }
+      // builtin type stmts:
+      private:
+        ast::BuiltinTypeStmt* m_void_tv_client_astn;
+        ast::BuiltinTypeStmt* m_string_tv_client_astn;
+        ast::BuiltinTypeStmt* m_i8_tv_client_astn;
+        ast::BuiltinTypeStmt* m_i16_tv_client_astn;
+        ast::BuiltinTypeStmt* m_i32_tv_client_astn;
+        ast::BuiltinTypeStmt* m_i64_tv_client_astn;
+        ast::BuiltinTypeStmt* m_i128_tv_client_astn;
+        ast::BuiltinTypeStmt* m_u1_tv_client_astn;
+        ast::BuiltinTypeStmt* m_u8_tv_client_astn;
+        ast::BuiltinTypeStmt* m_u16_tv_client_astn;
+        ast::BuiltinTypeStmt* m_u32_tv_client_astn;
+        ast::BuiltinTypeStmt* m_u64_tv_client_astn;
+        ast::BuiltinTypeStmt* m_u128_tv_client_astn;
+        ast::BuiltinTypeStmt* m_f16_tv_client_astn;
+        ast::BuiltinTypeStmt* m_f32_tv_client_astn;
+        ast::BuiltinTypeStmt* m_f64_tv_client_astn;
 
+      public:
+        Compiler(std::string&& cwd, std::string&& entry_point_path);
+        
       public:
         ast::Script* import(std::string const& from_path, std::string const& type, std::string const& reason);
 
       private:
+        // help_define_builtin_type is called during the constructor, post initialization to define
+        // universal types.
+        ast::BuiltinTypeStmt* help_define_builtin_type(intern::String name, typer::Var* typer_var);
+        
         // help_import_script_1 is called for every imported function, regardless of whether imported before or not.
         ast::Script* help_import_script_1(std::string const& from_path, std::string const& type);
 

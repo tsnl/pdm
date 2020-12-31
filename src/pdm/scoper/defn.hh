@@ -17,15 +17,23 @@ namespace pdm::scoper {
 
     enum class DefnKind {
         BuiltinType,
-        Module,
-        Def,
+        Module, ImportModule,
+        Fn,
         Const,
-        Let,
-        Type,
+        Val, Var,
+        Type, Enum,
         Typeclass,
         Using,
-        Import
+        Import,
+        ExternObject
     };
+
+    inline bool module_defn_kind(DefnKind defn_kind) {
+        return (0
+            || defn_kind == DefnKind::Module
+            || defn_kind == DefnKind::ImportModule
+        );
+    }
 
     class Defn {
       private:

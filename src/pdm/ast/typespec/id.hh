@@ -6,17 +6,21 @@
 #include "pdm/core/intern.hh"
 #include "pdm/source/loc.hh"
 #include "pdm/ast/kind.hh"
-#include "pdm/ast/typespec/typespec.hh"
+#include "typespec.hh"
+
+namespace pdm::scoper {
+    class Manager;
+    class Defn;
+}
 
 namespace pdm::ast {
-
-    class Manager;
 
     class IdTypespec: public Typespec {
         friend Manager;
 
       private:
         intern::String m_name;
+        scoper::Defn const* m_x_defn;
 
       protected:
         IdTypespec(source::Loc loc, intern::String name)
@@ -26,6 +30,14 @@ namespace pdm::ast {
       public:
         intern::String name() const {
             return m_name;
+        }
+
+      public:
+        scoper::Defn const* x_defn() const {
+            return m_x_defn;
+        }
+        void x_defn(scoper::Defn const* defn) {
+            m_x_defn = defn;
         }
     };
 

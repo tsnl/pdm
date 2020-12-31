@@ -14,16 +14,21 @@ namespace pdm::ast {
         friend Manager;
 
       private:
-        Exp* m_used_exp;
+        intern::String m_module_name;
+        std::string    m_suffix;
     
       protected:
-        UsingStmt(source::Loc loc, Exp* used_exp)
+        UsingStmt(source::Loc loc, intern::String module_name, std::string suffix)
         : Stmt(loc, Kind::UsingStmt),
-          m_used_exp(used_exp) {}
+          m_module_name(module_name),
+          m_suffix(suffix) {}
 
       public:
-        Exp* used_exp() const {
-            return m_used_exp;
+        intern::String const& module_name() const {
+            return m_module_name;
+        }
+        std::string const& suffix() const {
+            return m_suffix;
         }
     };
 

@@ -4,18 +4,22 @@
 #include "pdm/core/intern.hh"
 #include "pdm/source/loc.hh"
 #include "pdm/ast/kind.hh"
-#include "pdm/ast/exp/exp.hh"
+#include "exp.hh"
+
+namespace pdm::scoper {
+    class Manager;
+    class Defn;
+}
 
 namespace pdm::ast {
-
-    class Manager;
 
     class IdExp: public Exp {
         friend Manager;
       
       private:
-        intern::String m_name;
-    
+        intern::String      m_name;
+        scoper::Defn const* m_x_defn;
+
       protected:
         IdExp(source::Loc loc, intern::String name)
         : Exp(loc, Kind::IdExp),
@@ -24,6 +28,14 @@ namespace pdm::ast {
       public:
         intern::String name() const {
             return m_name;
+        }
+
+      public:
+        scoper::Defn const* x_defn() const {
+            return m_x_defn;
+        }
+        void x_defn(scoper::Defn const* defn) {
+            m_x_defn = defn;
         }
     };
 

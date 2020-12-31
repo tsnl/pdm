@@ -7,11 +7,17 @@
 
 namespace pdm::ast {
 
-    BuiltinTypeStmt::BuiltinTypeStmt(std::string&& desc, typer::TypeVar* tv)
+    BuiltinTypeStmt::BuiltinTypeStmt(std::string&& desc)
     : Stmt(source::Loc::none, Kind::BuiltinTypeStmt),
       m_desc(std::move(desc)),
-      m_tv(tv) {
-        assert(m_tv->soln_fixed());
+      m_x_tv(nullptr) {}
+
+    void BuiltinTypeStmt::x_tv(typer::TypeVar* tv) {
+        assert(tv->soln_fixed());
+        m_x_tv = tv;
     }
 
+    typer::TypeVar* BuiltinTypeStmt::x_tv() const {
+        return m_x_tv;
+    }
 }

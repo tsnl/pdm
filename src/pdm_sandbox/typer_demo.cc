@@ -20,9 +20,9 @@ namespace pdm_cli::typer_demo {
         // todo: z :subtype: int__ (int/numeric literal rule)
         
         // let x I32;
-        auto lhs_tv = typer.new_monomorphic_var_tv("x");
+        auto lhs_tv = typer.new_tv("x");
         auto rhs_tv = typer.get_i32_tv();
-        typer.apply_vid_typespec_rule(NULL, lhs_name, lhs_tv, rhs_tv);
+        // typer.apply_vid_typespec_rule(NULL, lhs_name, lhs_tv, rhs_tv);
 
         std::cout << "rule applied!" << std::endl;
     }

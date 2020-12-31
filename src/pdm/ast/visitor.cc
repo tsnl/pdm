@@ -121,7 +121,6 @@ namespace pdm::ast {
             case Kind::UsingStmt:
             {
                 UsingStmt* using_stmt = dynamic_cast<UsingStmt*>(node);
-                ok = visit(using_stmt->used_exp()) && ok;
                 break;
             }
 

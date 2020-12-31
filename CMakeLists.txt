@@ -13,96 +13,28 @@ project(pandemonium C CXX)
 find_package(LLVM REQUIRED CONFIG)
 # find_package(Clang REQUIRED CONFIG)
 
+set(PDM_LLVM_INSTALL_DIR CACHE PATH 
+    "llvm install dir containing headers ('include' dir) with 'llvm', 'clang', etc.")
+
 message(STATUS "... Found LLVM version (${LLVM_PACKAGE_VERSION})")
 message(STATUS "... Using LLVMConfig.cmake in: ${LLVM_DIR}")
-message(STATUS "... Add '/usr/local/Cellar/llvm/10.0.1_1/include/' to your IDE include path list for LLVM C API auto-complete.")
-
+message(STATUS "... Add '${PDM_LLVM_INSTALL_DIR}/include' to your IDE include path list for LLVM C API auto-complete.")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
-set(PDM_LLVM_INSTALL_DIR CACHE PATH "llvm install dir containing headers ('include' dir) with 'llvm', 'clang', etc.")
 
-# todo: change this path for different platforms
+
 include_directories(
     "${PDM_LLVM_INSTALL_DIR}/include/"
 )
 include_directories(
     src
-    src/pdm_old_c
     dep
 )
 
-add_definitions(${LLVM_DEFINITIONS})
-add_executable(pc
-    src/pdm_old_c/ast.c
-    src/pdm_old_c/ast.h
-    src/pdm_old_c/checker.c
-    src/pdm_old_c/checker.h
-    src/pdm_old_c/code-printer.c
-    src/pdm_old_c/code-printer.h
-    src/pdm_old_c/config.h
-    src/pdm_old_c/debugger.c
-    src/pdm_old_c/debugger.h
-    src/pdm_old_c/extra-tokens.h
-    src/pdm_old_c/interp.c
-    src/pdm_old_c/interp.h
-    src/pdm_old_c/lexer.c
-    src/pdm_old_c/lexer.h
-    src/pdm_old_c/llvm-emitter.c
-    src/pdm_old_c/llvm-emitter.h
-    src/pdm_old_c/main.c
-    src/pdm_old_c/parser.h
-    src/pdm_old_c/parser.tab.c
-    src/pdm_old_c/parser.tab.h
-    src/pdm_old_c/primer.c
-    src/pdm_old_c/primer.h
-    src/pdm_old_c/source.c
-    src/pdm_old_c/source.h
-    src/pdm_old_c/symbols.c
-    src/pdm_old_c/symbols.h
-    src/pdm_old_c/typer.c
-    src/pdm_old_c/typer.h
-    src/pdm_old_c/unicoder.c
-    src/pdm_old_c/unicoder.h
-    src/pdm_old_c/useful.c
-    src/pdm_old_c/useful.h
-    src/pdm_old_c/values.h
-)
 
 #
-# LLVM
-# - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt
 #
-
-# target_link_libraries(pc LLVM)
-# target_include_directories(pc PUBLIC "${LLVM_INCLUDE_DIRS}")
-# target_link_libraries(pc LLVMSupport clangTooling)
-
-# Find the libraries that correspond to the LLVM components
-# that we wish to use
-llvm_map_components_to_libnames(llvm_libs Core ExecutionEngine Interpreter MCJIT Support nativecodegen IRReader)
-
-# Link against LLVM libraries
-target_link_libraries(pc ${llvm_libs})
-
+# PDM:
 #
-# Intern library:
-#
-
-add_subdirectory(dep/intern)
-target_link_libraries(pc intern)
-
-#
-# utf8proc - Unicode support
-#
-
-add_library(utf8proc
-    dep/utf8proc/utf8proc.c
-    dep/utf8proc/utf8proc.h
-)
-target_link_libraries(pc utf8proc)
-
-
-#
-# WIP C++ rewrite
 #
 
 add_library(
@@ -144,19 +76,21 @@ add_library(
     src/pdm/ast/script/script.hh
 
     src/pdm/ast/stmt/stmt.hh
+    src/pdm/ast/stmt/builtin_type.cc
+    src/pdm/ast/stmt/builtin_type.hh
     src/pdm/ast/stmt/const.hh
     src/pdm/ast/stmt/discard.hh
-    src/pdm/ast/stmt/fn.hh
     src/pdm/ast/stmt/enum.hh
     src/pdm/ast/stmt/extern.hh
-    src/pdm/ast/stmt/using.hh
+    src/pdm/ast/stmt/fn.hh
+    src/pdm/ast/stmt/import.cc
+    src/pdm/ast/stmt/import.hh
     src/pdm/ast/stmt/mod.cc
     src/pdm/ast/stmt/mod.hh
     src/pdm/ast/stmt/set.hh
-    src/pdm/ast/stmt/builtin_type.cc
-    src/pdm/ast/stmt/builtin_type.hh
     src/pdm/ast/stmt/type.hh
     src/pdm/ast/stmt/typeclass.hh
+    src/pdm/ast/stmt/using.hh
     src/pdm/ast/stmt/val.hh
     src/pdm/ast/stmt/var.hh
 
@@ -231,8 +165,47 @@ add_library(
     src/pdm/dependency_dispatcher/dependency_dispatcher.cc
     src/pdm/dependency_dispatcher/dependency_dispatcher.hh
 )
-target_link_libraries(pdm intern utf8proc)
+
+#
+# LLVM
+# - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt
+#
+
+# Find the libraries that correspond to the LLVM components
+# that we wish to use
+llvm_map_components_to_libnames(llvm_libs Core ExecutionEngine Interpreter MCJIT Support nativecodegen IRReader)
+add_definitions(${LLVM_DEFINITIONS})
+target_link_libraries(pdm ${llvm_libs})
+
+#
+# Intern library:
+#
+
+add_subdirectory(dep/intern)
+target_link_libraries(pdm intern)
+
+#
+# utf8proc - Unicode support
+#
+
+add_library(utf8proc
+    dep/utf8proc/utf8proc.c
+    dep/utf8proc/utf8proc.h
+)
+target_link_libraries(pdm utf8proc)
+
+#
+# CXX Standard:
+#
+
 set_property(TARGET pdm PROPERTY CXX_STANDARD 20)
+
+
+#
+#
+# PDM Sandbox:
+#
+#
 
 add_executable(
     pdm_sandbox

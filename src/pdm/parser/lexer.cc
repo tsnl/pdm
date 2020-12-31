@@ -552,6 +552,7 @@ namespace pdm::parser::aux {
         if (intstr == keywords.from_intstr) { return Tk::KW_FROM; }
         if (intstr == keywords.out_intstr) { return Tk::KW_OUT; }
         if (intstr == keywords.inout_intstr) { return Tk::KW_INOUT; }
+        if (intstr == keywords.discard_intstr) { return Tk::KW_DISCARD; }
         else {
             infoP->ID_intstr = intstr;
             return getIdTextKind(charBuf);
@@ -928,6 +929,11 @@ namespace pdm::parser::aux {
             case Tk::KW_ENUM:
             {
                 name = "enum";
+                break;
+            }
+            case Tk::KW_DISCARD:
+            {
+                name = "discard";
                 break;
             }
             case Tk::DINT_LIT:

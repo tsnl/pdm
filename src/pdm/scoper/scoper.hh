@@ -14,34 +14,63 @@ namespace pdm::scoper {
     class Scoper;
     class ScoperVisitor;
 
-    class Scoper: public ast::Visitor {
+    class Scoper: public ast::TinyVisitor {
+        friend ScoperVisitor;
+
       private:
-        typer::Typer* m_typer;
+        struct IdExpLookupOrder      { ast::IdExp* id_exp; Context* lookup_context; };
+        struct IdTypespecLookupOrder { ast::IdTypespec* id_typespec; Context* lookup_context; };
+        struct ImportLookupOrder     { ast::ImportStmt* import_stmt; Context* lookup_context; };
+        struct UsingLookupOrder      { ast::UsingStmt* using_stmt; Context* lookup_context; };
+
+      private:
+        typer::Typer*      m_typer;
+        Frame*             m_root_frame;
         std::stack<Frame*> m_frame_stack;
+        
+        std::vector<IdExpLookupOrder>      m_id_exp_orders;
+        std::vector<IdTypespecLookupOrder> m_id_typespec_orders;
+        std::vector<ImportLookupOrder>     m_import_orders;
+        std::vector<UsingLookupOrder>      m_using_orders;
+
+        int m_overhead_chain_exp_count;
+
+        bool m_finished;
 
       public:
-        Scoper(typer::Typer* typer)
-        : m_typer(typer),
-          m_frame_stack() {
-            Frame* base_frame = new RootFrame(m_typer);
-            m_frame_stack.push(base_frame);
-        }
+        Scoper(typer::Typer* typer);
 
       public:
-        typer::Typer* typer() const {
-            return m_typer;
-        }
-        Frame* top_frame() const {
-            return m_frame_stack.top();
-        }
+        Frame*        root_frame() const { return m_root_frame; }
+        typer::Typer* typer()      const { return m_typer; }
+        bool          finished()   const { return m_finished; }
 
       public:
-        void push_frame(FrameKind frame_kind) {
-            m_frame_stack.push(new Frame(frame_kind, top_frame()));
-        }
-        void pop_frame() {
-            m_frame_stack.pop();
-        }
+        // `scope` creates data structures needed to lookup IDs
+        bool scope(ast::Script* script);
+        
+        // `finish` should be called after all imported scripts are scoped.
+        // it traverses the constructed data-structure to set ASTN properties
+        // and apply finishing touches (e.g. using/import links).
+        bool finish();
+
+      private:
+        Frame* top_frame() const { return m_frame_stack.top(); }
+      
+      private:
+        void push_frame(FrameKind frame_kind) { m_frame_stack.push(new Frame(frame_kind, top_frame())); }
+        void pop_frame()                      { m_frame_stack.pop(); }
+
+      private:
+        bool in_chain_exp()   { return m_overhead_chain_exp_count <= 0; }
+        void inc_overhead_chain_exp_count() { ++m_overhead_chain_exp_count; }
+        void dec_overhead_chain_exp_count() { --m_overhead_chain_exp_count; }
+
+      private:
+        void place_id_exp_lookup_order(ast::IdExp* id_exp);
+        void place_id_typespec_lookup_order(ast::IdTypespec* id_typespec);
+        void place_import_lookup_order(ast::ImportStmt* import_stmt);
+        void place_using_lookup_order(ast::UsingStmt* using_stmt);
     };
 
     class ScoperVisitor: public ast::Visitor {
@@ -92,7 +121,7 @@ namespace pdm::scoper {
         virtual bool on_visit__binary_exp(ast::BinaryExp* node, VisitOrder visit_order) override;
         virtual bool on_visit__vcall_exp(ast::VCallExp* node, VisitOrder visit_order) override;
         virtual bool on_visit__tcall_exp(ast::TCallExp* node, VisitOrder visit_order) override;
-        
+
         // patterns:
         virtual bool on_visit__vpattern(ast::VPattern* node, VisitOrder visit_order) override;
         virtual bool on_visit__tpattern(ast::TPattern* node, VisitOrder visit_order) override;

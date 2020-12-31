@@ -18,18 +18,19 @@ namespace pdm::ast {
 
       private:
         std::string     m_desc;
-        typer::TypeVar* m_tv;
+        typer::TypeVar* m_x_tv;
 
       public:
-        BuiltinTypeStmt(std::string&& desc, typer::TypeVar* tv);
+        BuiltinTypeStmt(std::string&& desc);
 
       public:
         std::string const& desc() const {
             return m_desc;
         }
-        typer::TypeVar* tv() const {
-            return m_tv;
-        }
+        
+      public:
+        void x_tv(typer::TypeVar* tv);
+        typer::TypeVar* x_tv() const;
     };
 
 }

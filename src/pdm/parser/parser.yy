@@ -142,7 +142,8 @@
 //
 
 %type <pdm::ast::Exp*> expr long_exp
-%type <std::vector<pdm::ast::Exp*>> /* expr_cl1 */ expr_cl2 expr_sl
+%type <std::vector<pdm::ast::Exp*>> /* expr_cl1 */ expr_cl2
+%type <std::vector<pdm::ast::TypeQueryExp*>> type_query_exp_sl
 
 %type <pdm::ast::Exp*> bracketed_exp unit_exp int_expr
 %type <pdm::ast::Exp*> primary_exp 
@@ -161,7 +162,7 @@
 %type <pdm::ast::Exp*> mul_binary_exp add_binary_exp cmp_binary_exp eq_binary_exp and_binary_exp xor_binary_exp or_binary_exp
 %type <pdm::ast::BinaryOperator> mul_binary_op add_binary_op cmp_binary_op eq_binary_op
 
-%type <pdm::ast::Exp*> type_query_exp
+%type <pdm::ast::TypeQueryExp*> type_query_exp
 %type <pdm::ast::TypeQueryKind> type_query_op
 
 %type <pdm::ast::StructExp::Field*> struct_exp_field
@@ -234,6 +235,7 @@
 %token KW_TYPECLASS "typeclass"
 %token KW_OUT "out"
 %token KW_INOUT "inout"
+%token KW_DISCARD "discard"
 
 %token <TokenInfo> DINT_LIT "42"
 %token <TokenInfo> XINT_LIT "0x2a"
@@ -347,7 +349,7 @@ set_stmt
     : KW_SET expr BIND expr   { $$ = mgr->new_set_stmt(@$, $2, $4); }
     ; 
 discard_stmt
-    : expr    { $$ = mgr->new_discard_stmt(@$, $1); }
+    : KW_DISCARD expr   { $$ = mgr->new_discard_stmt(@$, $2); }
     ;
 
 moduleContentStmt
@@ -387,22 +389,20 @@ enum_field
     | tid LPAREN typespec_cl1 RPAREN { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move($3), true); }
     ;
 typeclass_stmt
-    : KW_TYPECLASS tid LTHAN tid typespec GTHAN              BIND LCYBRK expr_sl RCYBRK { 
+    : KW_TYPECLASS tid LTHAN tid typespec GTHAN              BIND LCYBRK type_query_exp_sl RCYBRK { 
         $$ = mgr->new_typeclass_stmt(@$, $2.ID_intstr, $4.ID_intstr, $5, std::move(std::vector<ast::TPattern*>{}), std::move($9)); 
       }
-    | KW_TYPECLASS tid LTHAN tid typespec GTHAN tpattern_seq BIND LCYBRK expr_sl RCYBRK { 
+    | KW_TYPECLASS tid LTHAN tid typespec GTHAN tpattern_seq BIND LCYBRK type_query_exp_sl RCYBRK { 
         $$ = mgr->new_typeclass_stmt(@$, $2.ID_intstr, $4.ID_intstr, $5, std::move($7), std::move($10)); 
       }
     ;
-
 using_stmt
-    : KW_USING bracketed_exp { $$ = mgr->new_using_stmt(@$, $2); }
+    : KW_USING vid DOT      ASTERISK    { $$ = mgr->new_using_stmt(@$, $2.ID_intstr, ""); }
+    | KW_USING vid DOT vid  ASTERISK    { $$ = mgr->new_using_stmt(@$, $2.ID_intstr, $4.ID_intstr.content()); }
     ;
-
 import_stmt
     : KW_IMPORT vid KW_FROM stringl KW_TYPE stringl    { $$ = mgr->new_import_stmt(@$, $2.ID_intstr, *$4.String_utf8string, *$6.String_utf8string); }
     ;
-
 extern_stmt
     : KW_EXTERN vid KW_FROM expr    { $$ = mgr->new_extern_stmt(@$, $2.ID_intstr, $4); }
     ;
@@ -435,9 +435,9 @@ expr_cl2
     : expr COMMA expr        { $$.reserve(2); $$.push_back($1); $$.push_back($3); }
     | expr_cl2 COMMA expr    { $$ = std::move($1); $$.push_back($3); }
     ;
-expr_sl
-    : expr SEMICOLON         { $$.push_back($1); }
-    | expr_sl expr SEMICOLON { $$ = std::move($1); $$.push_back($2); }
+type_query_exp_sl
+    : type_query_exp SEMICOLON         { $$.push_back($1); }
+    | type_query_exp_sl type_query_exp SEMICOLON { $$ = std::move($1); $$.push_back($2); }
     ;
 
 bracketed_exp

@@ -494,6 +494,7 @@ namespace pdm::printer {
         help_print_bind_stmt(this, "set", node->lhs_exp(), node->rhs_exp());
     }
     void Printer::print_discard_stmt(ast::DiscardStmt* node) {
+        print_str("discard ");
         print_node(node->discarded_exp());
     }
     void Printer::print_extern_stmt(ast::ExternStmt* es) {
@@ -504,18 +505,20 @@ namespace pdm::printer {
     }
     void Printer::print_import_stmt(ast::ImportStmt* is) {
         print_cstr("import ");
-        print_intstr(is->imported_name());
+        print_intstr(is->import_name());
         // fixme; incorrect escapes, so hacky, but eh
         print_cstr(" from \"");
-        print_u8_str(is->imported_from_str());
+        print_u8_str(is->import_from_str());
         print_cstr("\" type \"");
-        print_u8_str(is->imported_type_str());
+        print_u8_str(is->import_type_str());
         print_u32_char('"');
     }
     void Printer::print_using_stmt(ast::UsingStmt* node) {
-        print_cstr("using (");
-        print_node(node->used_exp());
-        print_u32_char(')');
+        print_cstr("using ");
+        print_intstr(node->module_name());
+        print_u32_char('.');
+        print_str(node->suffix());
+        print_u32_char('*');
     }
 
     // expressions:

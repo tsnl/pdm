@@ -27,10 +27,10 @@ namespace pdm::dependency_dispatcher {
         }
 
         if (visit_order == VisitOrder::Pre) {
-            std::filesystem::path this_script_path = node->imported_from_str().string();
-            std::string reason = "import " + std::string(node->imported_name().content());
-            std::filesystem::path import_from = node->imported_from_str().string();
-            std::string import_type = node->imported_type_str().string();
+            std::filesystem::path this_script_path = node->import_from_str().string();
+            std::string reason = "import " + std::string(node->import_name().content());
+            std::filesystem::path import_from = node->import_from_str().string();
+            std::string import_type = node->import_type_str().string();
             
             std::filesystem::path absolute_import_from;
             if (is_relfile_import_type(import_type)) {
@@ -60,7 +60,7 @@ namespace pdm::dependency_dispatcher {
             }
 
             ast::Script* imported_script = m_compiler_ref->import(absolute_import_from.string(), import_type, reason);
-            node->x_imported_script(imported_script);
+            node->x_origin_script(imported_script);
         }
 
         return true;

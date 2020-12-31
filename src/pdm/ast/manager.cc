@@ -102,8 +102,8 @@ namespace pdm::ast {
         return emplace<VPattern::Field>(loc, name, rhs_typespec, varg_kind);
     }
 
-    BuiltinTypeStmt* Manager::new_builtin_type_stmt(std::string&& desc, typer::TV* tv) {
-        return emplace<BuiltinTypeStmt>(std::move(desc), tv);
+    BuiltinTypeStmt* Manager::new_builtin_type_stmt(std::string&& desc) {
+        return emplace<BuiltinTypeStmt>(std::move(desc));
     }
     ConstStmt* Manager::new_const_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp) {
         return emplace<ConstStmt>(loc, lhs_lpattern, rhs_exp);
@@ -124,8 +124,8 @@ namespace pdm::ast {
     ImportStmt* Manager::new_import_stmt(source::Loc loc, intern::String imported_name, utf8::String imported_from_exp, utf8::String imported_type_exp) {
         return emplace<ImportStmt>(loc, imported_name, imported_from_exp, imported_type_exp);
     }
-    UsingStmt* Manager::new_using_stmt(source::Loc loc, Exp* used_exp) {
-        return emplace<UsingStmt>(loc, used_exp);
+    UsingStmt* Manager::new_using_stmt(source::Loc loc, intern::String module_name, std::string suffix) {
+        return emplace<UsingStmt>(loc, module_name, suffix);
     }
     ExternStmt* Manager::new_extern_stmt(source::Loc loc, intern::String ext_mod_name, Exp* link_arg) {
         return emplace<ExternStmt>(loc, ext_mod_name, link_arg);

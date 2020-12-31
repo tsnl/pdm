@@ -7,13 +7,54 @@
 #include <algorithm>
 
 #include "pdm/core/intern.hh"
+
 #include "pdm/ast/script/script.hh"
+
 #include "pdm/feedback/feedback.hh"
 #include "pdm/feedback/letter.hh"
+
 #include "pdm/parser/parser.hh"
+
 #include "pdm/dependency_dispatcher/dependency_dispatcher.hh"
 
+#include "pdm/scoper/context.hh"
+#include "pdm/scoper/defn.hh"
+
+#include "pdm/typer/typer.hh"
+
+
 namespace pdm::compiler {
+
+    Compiler::Compiler(std::string&& cwd, std::string&& entry_point_path)
+    : m_cwd(std::move(cwd)),
+        m_entry_point_path(abspath(std::move(entry_point_path))),
+        m_cached_imports(),
+        m_all_scripts(),
+        m_typer(),
+        m_manager(&m_typer),
+        m_scoper(&m_typer) 
+    {
+        m_all_scripts.reserve(8);
+
+        m_scoper.root_frame()->shadow(scoper::ContextKind::RootDefs); {
+            m_void_tv_client_astn = help_define_builtin_type("Void", typer()->get_void_tv());
+            m_string_tv_client_astn = help_define_builtin_type("String", typer()->get_string_tv());
+            m_i8_tv_client_astn = help_define_builtin_type("Bool", typer()->get_u1_tv());
+            m_i16_tv_client_astn = help_define_builtin_type("UInt8", typer()->get_u8_tv());
+            m_i32_tv_client_astn = help_define_builtin_type("UInt16", typer()->get_u16_tv());
+            m_i64_tv_client_astn = help_define_builtin_type("UInt32", typer()->get_u32_tv());
+            m_i128_tv_client_astn = help_define_builtin_type("UInt64", typer()->get_u64_tv());
+            m_u1_tv_client_astn = help_define_builtin_type("UInt128", typer()->get_u128_tv());
+            m_u8_tv_client_astn = help_define_builtin_type("Int8", typer()->get_i8_tv());
+            m_u16_tv_client_astn = help_define_builtin_type("Int16", typer()->get_i16_tv());
+            m_u32_tv_client_astn = help_define_builtin_type("Int32", typer()->get_i32_tv());
+            m_u64_tv_client_astn = help_define_builtin_type("Int64", typer()->get_i64_tv());
+            m_u128_tv_client_astn = help_define_builtin_type("Int128", typer()->get_i128_tv());
+            m_f16_tv_client_astn = help_define_builtin_type("Float16", typer()->get_f16_tv());
+            m_f32_tv_client_astn = help_define_builtin_type("Float32", typer()->get_f32_tv());
+            m_f64_tv_client_astn = help_define_builtin_type("Float64", typer()->get_f64_tv());
+        }
+    }
 
     ast::Script* Compiler::import(std::string const& from_path, std::string const& type, std::string const& reason) {
         ast::Script* script = help_import_script_1(from_path, type);
@@ -27,6 +68,14 @@ namespace pdm::compiler {
         } else {
             return script;
         }
+    }
+
+    ast::BuiltinTypeStmt* Compiler::help_define_builtin_type(intern::String name, typer::Var* typer_var) {
+        std::string debug_name = std::string("RootType:") + std::string(name.content());
+        ast::BuiltinTypeStmt* stmt = m_manager.new_builtin_type_stmt(std::move(debug_name));
+        scoper::Defn defn {scoper::DefnKind::BuiltinType, name, stmt, typer_var};
+        assert(m_scoper.root_frame()->define(defn) && "Bad builtins setup.");
+        return stmt;
     }
 
     ast::Script* Compiler::help_import_script_1(std::string const& from_path, std::string const& type) {

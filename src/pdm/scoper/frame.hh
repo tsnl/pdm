@@ -8,13 +8,17 @@
 #include "pdm/scoper/context.hh"
 #include "pdm/typer/typer.hh"
 
+
 namespace pdm::scoper {
 
     enum class FrameKind {
         Root,
         Script,
         Module,
-        FnRhs,
+        FnRhs, TypeRhs, EnumRhs,
+        TypeclassRhs,
+        LPattern, VPattern, TPattern,
+        Chain
     };
 
     // Frame is a sequence of Contexts, s.t. each predecessor is successor's parent
@@ -82,6 +86,13 @@ namespace pdm::scoper {
                 case FrameKind::Script: return ContextKind::ScriptDefs;
                 case FrameKind::Module: return ContextKind::ModuleDefs;
                 case FrameKind::FnRhs: return ContextKind::PH_FnRhsStart;
+                case FrameKind::TypeRhs: return ContextKind::PH_TypeRhsStart;
+                case FrameKind::EnumRhs: return ContextKind::PH_EnumRhsStart;
+                case FrameKind::TypeclassRhs: return ContextKind::PH_TypeclassRhsStart;
+                case FrameKind::Chain: return ContextKind::PH_ChainStart;
+                case FrameKind::LPattern: return ContextKind::LPatternDefs;
+                case FrameKind::VPattern: return ContextKind::VPatternDefs;
+                case FrameKind::TPattern: return ContextKind::TPatternDefs;
             }
         }
 
@@ -101,7 +112,7 @@ namespace pdm::scoper {
         }
 
         // define a symbol in the topmost Defn
-        bool define(scoper::Defn* defn) {
+        bool define(scoper::Defn defn) {
             return m_last_context->define(defn);
         }
     };
