@@ -8,6 +8,8 @@
 #include "pdm/scoper/frame.hh"
 #include "pdm/scoper/root_frame.hh"
 #include "pdm/typer/typer.hh"
+#include "pdm/printer/printer.hh"
+
 
 namespace pdm::scoper {
 
@@ -26,14 +28,10 @@ namespace pdm::scoper {
       private:
         typer::Typer*      m_typer;
         Frame*             m_root_frame;
-        std::stack<Frame*> m_frame_stack;
-        
         std::vector<IdExpLookupOrder>      m_id_exp_orders;
         std::vector<IdTypespecLookupOrder> m_id_typespec_orders;
         std::vector<ImportLookupOrder>     m_import_orders;
         std::vector<UsingLookupOrder>      m_using_orders;
-
-        int m_overhead_chain_exp_count;
 
         bool m_finished;
 
@@ -54,33 +52,45 @@ namespace pdm::scoper {
         // and apply finishing touches (e.g. using/import links).
         bool finish();
 
+      public:
+        void print_debug_info(printer::Printer& printer);
+    };
+
+    class ScoperVisitor: public ast::Visitor {
+        friend Scoper;
+
+      private:
+        Scoper* m_scoper_ref;
+        int m_overhead_chain_exp_count;
+        std::stack<DefnKind> m_vpattern_defn_kind_stack;
+        std::stack<DefnKind> m_lpattern_defn_kind_stack;
+        std::stack<Frame*> m_frame_stack;
+
+      protected:
+        ScoperVisitor(Scoper* scoper_ref);
+
+      private:
+        Scoper* scoper() const {
+            return m_scoper_ref;
+        }
+
+      private:
+        bool in_chain_exp()   { return m_overhead_chain_exp_count > 0; }
+        void inc_overhead_chain_exp_count() { ++m_overhead_chain_exp_count; }
+        void dec_overhead_chain_exp_count() { --m_overhead_chain_exp_count; }
+
       private:
         Frame* top_frame() const { return m_frame_stack.top(); }
       
       private:
-        void push_frame(FrameKind frame_kind) { m_frame_stack.push(new Frame(frame_kind, top_frame())); }
-        void pop_frame()                      { m_frame_stack.pop(); }
-
-      private:
-        bool in_chain_exp()   { return m_overhead_chain_exp_count <= 0; }
-        void inc_overhead_chain_exp_count() { ++m_overhead_chain_exp_count; }
-        void dec_overhead_chain_exp_count() { --m_overhead_chain_exp_count; }
+        void push_frame(FrameKind frame_kind);
+        void pop_frame();
 
       private:
         void place_id_exp_lookup_order(ast::IdExp* id_exp);
         void place_id_typespec_lookup_order(ast::IdTypespec* id_typespec);
         void place_import_lookup_order(ast::ImportStmt* import_stmt);
         void place_using_lookup_order(ast::UsingStmt* using_stmt);
-    };
-
-    class ScoperVisitor: public ast::Visitor {
-      private:
-        Scoper* m_scoper_ref;
-
-      private:
-        Scoper* scoper() const {
-            return m_scoper_ref;
-        }
 
       protected:
         // scripts:

@@ -12,4 +12,9 @@ mod fibonacci {
         discard fibx.register(n,result);
         result
     };
+
+    fn fib2 (y Int32) -> Int32 = {
+        val hello = 0;
+        hello
+    };
 };

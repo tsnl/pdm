@@ -73,6 +73,9 @@ namespace pdm::ast {
                 if (fn_stmt->opt_return_ts()) {
                     ok = visit(fn_stmt->opt_return_ts()) && ok;
                 }
+                if (fn_stmt->opt_rhs_exp()) {
+                    ok = visit(fn_stmt->opt_rhs_exp()) && ok;
+                }
                 break;
             }
             case Kind::TypeStmt:

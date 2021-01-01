@@ -7,10 +7,10 @@
 
 #include "pdm/core/config.hh"
 #include "pdm/core/intern.hh"
-
 #include "pdm/ast/stmt/stmt.hh"
-
 #include "pdm/scoper/defn.hh"
+#include "pdm/printer/printer.hh"
+
 
 namespace pdm::scoper {
 
@@ -19,21 +19,22 @@ namespace pdm::scoper {
     // ContextKind tells the compiler why a Context was created.
     enum class ContextKind {
         // contexts containing Defns:
-        RootDefs,               // contains all primitives, builtins in one context
-        ScriptDefs,             // contains all modules in a script in one context  (out)
-        ModuleDefs,             // contains all constants/defns in a module in one context (out of order query) [fn,const]
-        TPatternDefs,           // contains all defns in a TPattern
-        VPatternDefs,           // contains all defns in a VPattern
-        LPatternDefs,           // contains all defns in an LPattern
-        
-        // contexts that should never contain symbols, but help initialize Frames:
-        PH_FnRhsStart,          // placeholder: start of fn defn (rhs, incl. targs and vargs).
-        PH_TypeRhsStart,        // placeholder: start of type defn (rhs, incl. targs).
-        PH_EnumRhsStart,        // placeholder: start of enum defn (rhs, incl. targs).
-        PH_TypeclassRhsStart,   // placeholder: start of typeclass defn (rhs, incl. targs).
-        PH_ChainStart,          // placeholder: start of chain exp.
-        PH_ChainLink,           // placeholder: start of a new statement in a chain (shadowing)
+        RootDefs,             // contains all primitives, builtins in one context
+        ScriptDefs,           // contains all modules in a script in one context  (out)
+        ModuleDefs,           // contains all constants/defns in a module in one context (out of order query) [fn,const]
+        TPatternDefs,         // contains all defns in a TPattern
+        VPatternDefs,         // contains all defns in a VPattern
+        LPatternDefs,         // contains all defns in an LPattern
+        FnRhsStart,           // start of fn defn (rhs, incl. targs and vargs).
+        TypeRhsStart,         // start of type defn (rhs, incl. targs).
+        EnumRhsStart,         // start of enum defn (rhs, incl. targs).
+        TypeclassRhsStart,    // start of typeclass defn (rhs, incl. targs).
+        ChainStart,           // start of chain exp.
+        ChainLink,            // start of a new statement in a chain (shadowing)
     };
+
+    // (debug) context_kind_as_text emits a char* with the name of the enum specified.
+    char const* context_kind_as_text(ContextKind context_kind);
 
     // Context represents a point in code from where symbols can be looked up.
     // - At each context, some symbols are defined while all others are not.
@@ -66,18 +67,15 @@ namespace pdm::scoper {
 
       // public property getters:
       public:
-        ContextKind kind() {
+        ContextKind kind() const {
             return m_kind;
         }
-        Context* opt_parent_context() {
+        Context* opt_parent_context() const {
             return m_opt_parent_context;
         }
-        std::deque<Defn> const& defns() {
+        std::deque<Defn> const& defns() const {
             return m_defns;
         }
-
-      private:
-        bool is_placeholder() const;
 
       // define / shadow
       protected:
@@ -102,6 +100,10 @@ namespace pdm::scoper {
         Defn const* help_lookup_shallow(intern::String name);
         Defn const* help_lookup_link(intern::String name);
         Defn const* help_lookup_parent(intern::String name, Context* opt_until_context);
+
+      // debug printing:
+      public:
+        void print(printer::Printer& out) const;
     };
 
 }

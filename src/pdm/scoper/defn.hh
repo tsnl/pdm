@@ -2,6 +2,7 @@
 #define INCLUDED_PDM_SCOPER_DEFN_HH
 
 #include "pdm/core/intern.hh"
+#include "pdm/printer/printer.hh"
 
 namespace pdm::ast {
     class Node;
@@ -25,8 +26,11 @@ namespace pdm::scoper {
         Typeclass,
         Using,
         Import,
-        ExternObject
+        ExternObject,
+        FormalVArg, FormalTArg,
     };
+
+    char const* defn_kind_as_text(DefnKind defn_kind);
 
     inline bool module_defn_kind(DefnKind defn_kind) {
         return (0
@@ -72,6 +76,9 @@ namespace pdm::scoper {
         Context* container_context(Context* context) {
             return m_container_context = context;
         }
+
+      public:
+        void print(printer::Printer& p) const;
     };
 
 }

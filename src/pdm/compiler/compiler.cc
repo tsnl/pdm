@@ -17,6 +17,7 @@
 
 #include "pdm/dependency_dispatcher/dependency_dispatcher.hh"
 
+#include "pdm/scoper/scoper.hh"
 #include "pdm/scoper/context.hh"
 #include "pdm/scoper/defn.hh"
 
@@ -110,30 +111,32 @@ namespace pdm::compiler {
     void Compiler::help_import_script_2(ast::Script* script) {
         std::cout << "Dispatching: " << script->source()->abs_path() << std::endl;
         
+        // adding to the 'all_scripts' list BEFORE adding more scripts
+        // <=> entry_point is always the first script, leaves farther out.
+        m_all_scripts.push_back(script);
+
         // dispatching all subsequent imports:
         dependency_dispatcher::DDVisitor dd_visitor{this, script};
         dd_visitor.visit(script);
-        
-        // adding to the 'all_scripts' list.
-        m_all_scripts.push_back(script);
     }
 
     bool Compiler::import_all() {
-        // importing the entry point:
-        ast::Script* entry_point_script = import(m_entry_point_path, "pdm.script", "entry point");
-        if (entry_point_script == nullptr) {
-            return false;
-        }
-
-        // todo: running until all dispatched dependencies are empty.
-        // since each module's dd only runs on first import, this always halts for finite
-        // number of imports.
-
-        // all ok!
-        return true;
+        // importing the entry point, and all dependencies recursively via DependencyDispatcher:
+        return (nullptr != import(m_entry_point_path, "pdm.script", "entry point"));
     }
     bool Compiler::typecheck_all() {
-        // todo: run scoper here
+        for (ast::Script* script: m_all_scripts) {
+            m_scoper.scope(script);
+        }
+
+        //
+        // debug only!
+        //
+        if (DEBUG) {
+            printer::Printer printer{std::cout};
+            m_scoper.print_debug_info(printer);
+        }
+
         // todo: actually solve a typer here...
         return false;
     }

@@ -1,0 +1,6 @@
+mod fuzz {
+    fn hi (x Int32) -> Int32 = {
+        val y = x;
+        y
+    };
+};

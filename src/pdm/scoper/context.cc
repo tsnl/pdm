@@ -1,8 +1,11 @@
 #include "context.hh"
 
 #include <cassert>
+#include <ostream>
+#include <iomanip>
 
 #include "frame.hh"
+#include "context.hh"
 
 namespace pdm::scoper {
 
@@ -18,26 +21,11 @@ namespace pdm::scoper {
         m_opt_link_filter_prefix(),
         m_defns() {}
 
-    bool Context::is_placeholder() const {
-        return (
-            m_kind == ContextKind::PH_ChainLink ||
-            m_kind == ContextKind::PH_ChainStart ||
-            m_kind == ContextKind::PH_EnumRhsStart ||
-            m_kind == ContextKind::PH_FnRhsStart ||
-            m_kind == ContextKind::PH_TypeclassRhsStart ||
-            m_kind == ContextKind::PH_TypeRhsStart
-        );
-    }
-
     //
     // define
     //
 
     bool Context::define(Defn new_defn) {
-        if (pdm::DEBUG) {
-            assert(!is_placeholder() && "Placeholder contexts can only be shadowed.");
-        }
-
         for (Defn const& old_defn: m_defns) {
             if (old_defn.name() == new_defn.name()) {
                 return false;
@@ -130,9 +118,51 @@ namespace pdm::scoper {
     }
 
     //
+    // debug
+    //
+
+    void Context::print(printer::Printer& p) const {
+        p.print_cstr(context_kind_as_text(kind()));
+        p.print_cstr(" {");
+        for (int defn_index = 0; defn_index < m_defns.size(); defn_index++) {
+            Defn const& defn = m_defns[defn_index];
+            defn.print(p);
+            if (defn_index+1 != m_defns.size()) {
+                p.print_cstr(", ");
+            }
+        }
+        p.print_cstr("}");
+        if (m_opt_link) {
+            p.print_cstr(" link_to (Frame at ");
+            p.print_uint(reinterpret_cast<u64>(m_opt_link), ast::IntExp::Base::Hex);
+            p.print_cstr(")");
+        }
+    }
+
+    char const* context_kind_as_text(ContextKind context_kind) {
+        switch (context_kind)
+        {
+            case ContextKind::RootDefs: return "RootDefs";
+            case ContextKind::ScriptDefs: return "ScriptDefs";
+            case ContextKind::ModuleDefs: return "ModuleDefs";
+            case ContextKind::TPatternDefs: return "TPatternDefs";
+            case ContextKind::VPatternDefs: return "VPatternDefs";
+            case ContextKind::LPatternDefs: return "LPatternDefs";
+            case ContextKind::FnRhsStart: return "FnRhsStart";
+            case ContextKind::TypeRhsStart: return "TypeRhsStart";
+            case ContextKind::EnumRhsStart: return "EnumRhsStart";
+            case ContextKind::TypeclassRhsStart: return "TypeclassRhsStart";
+            case ContextKind::ChainStart: return "ChainStart";
+            case ContextKind::ChainLink: return "ChainLink";
+        }
+        return nullptr;
+    }
+
+    //
     // notes
     //
 
-    // it is possible to replace 'deque' with 'vector' if we forbid 'define'
-    // 'vector' is stable as long as we don't mutate it.
+    // it is possible to replace 'deque' with 'vector' if we forbid 'define' after any 'lookup'
+    // since any 'vector' instance is stable as long as we don't mutate it.
+
 }

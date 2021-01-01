@@ -7,6 +7,7 @@
 #include "pdm/ast/stmt/stmt.hh"
 #include "pdm/scoper/context.hh"
 #include "pdm/typer/typer.hh"
+#include "pdm/printer/printer.hh"
 
 
 namespace pdm::scoper {
@@ -20,6 +21,8 @@ namespace pdm::scoper {
         LPattern, VPattern, TPattern,
         Chain
     };
+
+    char const* frame_kind_as_text(FrameKind frame_kind);
 
     // Frame is a sequence of Contexts, s.t. each predecessor is successor's parent
     // last_context->parent->parent... = first_context
@@ -63,6 +66,9 @@ namespace pdm::scoper {
         : Frame(kind, parent_frame, parent_frame->typer()) {}
 
       public:
+        FrameKind kind() const {
+            return m_kind;
+        }
         typer::Typer* typer() const {
             return m_typer;
         }
@@ -85,11 +91,11 @@ namespace pdm::scoper {
                 case FrameKind::Root: return ContextKind::RootDefs;
                 case FrameKind::Script: return ContextKind::ScriptDefs;
                 case FrameKind::Module: return ContextKind::ModuleDefs;
-                case FrameKind::FnRhs: return ContextKind::PH_FnRhsStart;
-                case FrameKind::TypeRhs: return ContextKind::PH_TypeRhsStart;
-                case FrameKind::EnumRhs: return ContextKind::PH_EnumRhsStart;
-                case FrameKind::TypeclassRhs: return ContextKind::PH_TypeclassRhsStart;
-                case FrameKind::Chain: return ContextKind::PH_ChainStart;
+                case FrameKind::FnRhs: return ContextKind::FnRhsStart;
+                case FrameKind::TypeRhs: return ContextKind::TypeRhsStart;
+                case FrameKind::EnumRhs: return ContextKind::EnumRhsStart;
+                case FrameKind::TypeclassRhs: return ContextKind::TypeclassRhsStart;
+                case FrameKind::Chain: return ContextKind::ChainStart;
                 case FrameKind::LPattern: return ContextKind::LPatternDefs;
                 case FrameKind::VPattern: return ContextKind::VPatternDefs;
                 case FrameKind::TPattern: return ContextKind::TPatternDefs;
@@ -100,21 +106,16 @@ namespace pdm::scoper {
         // push a new context in this frame 
         Context* shadow(ContextKind new_context_kind) {
             Context* parent_context = last_context();
-            // assert(parent_context != nullptr);
-            // note that paren_context may be nullptr, and 'shadow' still works.
-            m_last_context = Context::shadow(parent_context, new_context_kind, this);
-
-            if (m_first_context == nullptr) {
-                m_first_context = m_last_context;
-            }
-            
-            return m_last_context;
+            return m_last_context = Context::shadow(parent_context, new_context_kind, this);
         }
 
         // define a symbol in the topmost Defn
         bool define(scoper::Defn defn) {
             return m_last_context->define(defn);
         }
+
+      public:
+        void print(printer::Printer& p) const;
     };
 
 }

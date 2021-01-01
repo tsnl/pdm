@@ -1,5 +1,7 @@
 #include "scoper.hh"
 
+#include <iostream>
+
 #include <string>
 #include <cassert>
 
@@ -21,16 +23,13 @@ namespace pdm::scoper {
 
     Scoper::Scoper(typer::Typer* typer)
     : m_typer(typer),
-        m_frame_stack(),
-        m_id_exp_orders(),
-        m_id_typespec_orders(),
-        m_import_orders(),
-        m_using_orders(),
-        m_finished(false),
-        m_overhead_chain_exp_count(0)
+      m_id_exp_orders(),
+      m_id_typespec_orders(),
+      m_import_orders(),
+      m_using_orders(),
+      m_finished(false)
     {
         m_root_frame = new RootFrame(m_typer);
-        m_frame_stack.push(m_root_frame);
     }
 
     bool Scoper::scope(ast::Script* script) {
@@ -41,7 +40,7 @@ namespace pdm::scoper {
             return false;
         }
 
-        ScoperVisitor visitor;
+        ScoperVisitor visitor{this};
         return visitor.visit(script);
     }
 
@@ -133,21 +132,12 @@ namespace pdm::scoper {
         return ok;
     }
 
-    void Scoper::place_id_exp_lookup_order(ast::IdExp* exp) {
-        IdExpLookupOrder order {exp, top_frame()->last_context()};
-        m_id_exp_orders.push_back(order);
-    }
-    void Scoper::place_id_typespec_lookup_order(ast::IdTypespec* typespec) {
-        IdTypespecLookupOrder order {typespec, top_frame()->last_context()};
-        m_id_typespec_orders.push_back(order);
-    }
-    void Scoper::place_import_lookup_order(ast::ImportStmt* import_stmt) {
-        ImportLookupOrder order {import_stmt, top_frame()->last_context()};
-        m_import_orders.push_back(order);
-    }
-    void Scoper::place_using_lookup_order(ast::UsingStmt* using_stmt) {
-        UsingLookupOrder order {using_stmt, top_frame()->last_context()};
-        m_using_orders.push_back(order);
+    // debug:
+    void Scoper::print_debug_info(printer::Printer& printer) {
+        printer.print_cstr("Scoper dump");
+        printer.print_newline_indent();
+        m_root_frame->print(printer);
+        printer.print_newline_deindent();
     }
 
     //
@@ -156,14 +146,80 @@ namespace pdm::scoper {
     //
     //
 
+    //
+    // helpers:
+    //
+
+    ScoperVisitor::ScoperVisitor(Scoper* scoper_ref)
+    : m_scoper_ref(scoper_ref),
+      m_overhead_chain_exp_count(0) 
+    {
+        m_frame_stack.push(scoper_ref->root_frame());
+    }
+
+    void ScoperVisitor::push_frame(FrameKind frame_kind) {
+        m_frame_stack.push(new Frame(frame_kind, top_frame()));
+
+        if (DEBUG) {
+            // std::cout << "Push (" << m_frame_stack.size() << ")" << std::endl;
+        }
+    }
+    void ScoperVisitor::pop_frame() {
+        m_frame_stack.pop();
+        
+        if (DEBUG) {
+            assert(!m_frame_stack.empty() && "Cannot pop root frame in scoper.");
+            // std::cout << "Pop (" << m_frame_stack.size() << ")" << std::endl;
+        }
+    }
+
+    void ScoperVisitor::place_id_exp_lookup_order(ast::IdExp* exp) {
+        Scoper::IdExpLookupOrder order {exp, top_frame()->last_context()};
+        scoper()->m_id_exp_orders.push_back(order);
+    }
+    void ScoperVisitor::place_id_typespec_lookup_order(ast::IdTypespec* typespec) {
+        Scoper::IdTypespecLookupOrder order {typespec, top_frame()->last_context()};
+        scoper()->m_id_typespec_orders.push_back(order);
+    }
+    void ScoperVisitor::place_import_lookup_order(ast::ImportStmt* import_stmt) {
+        Scoper::ImportLookupOrder order {import_stmt, top_frame()->last_context()};
+        scoper()->m_import_orders.push_back(order);
+    }
+    void ScoperVisitor::place_using_lookup_order(ast::UsingStmt* using_stmt) {
+        Scoper::UsingLookupOrder order {using_stmt, top_frame()->last_context()};
+        scoper()->m_using_orders.push_back(order);
+    }
+
+    ast::ModStmt* original_stmt_of_module_defn(Defn const* module_defn) {
+        ast::ModStmt* original_mod_stmt = nullptr;
+        
+        if (module_defn->kind() == DefnKind::Module) {
+            original_mod_stmt = dynamic_cast<ast::ModStmt*>(module_defn->defn_node());
+        } 
+        else if (module_defn->kind() == DefnKind::ImportModule) {
+            ast::ImportStmt* imported_stmt = dynamic_cast<ast::ImportStmt*>(module_defn->defn_node());
+            assert(imported_stmt != nullptr);
+            
+            // because of dependency dispatch order, this dependency's order should have been completed already.
+            original_mod_stmt = imported_stmt->x_origin_mod_stmt();
+        }
+        
+        assert(original_mod_stmt != nullptr);
+        return original_mod_stmt;
+    }
+    
+    //
+    // visitor methods:
+    //
+
     // scripts:
     bool ScoperVisitor::on_visit__script(ast::Script* script, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            scoper()->push_frame(FrameKind::Script);
+            push_frame(FrameKind::Script);
         } else {
             // popping the script frame:
-            Frame* script_frame = scoper()->top_frame();
-            scoper()->pop_frame();
+            Frame* script_frame = top_frame();
+            pop_frame();
 
             // storing the frame on the script node for later (for imports):
             script->x_script_frame(script_frame);
@@ -174,11 +230,11 @@ namespace pdm::scoper {
     // statements:
     bool ScoperVisitor::on_visit__mod_stmt(ast::ModStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            scoper()->push_frame(FrameKind::Module);
+            push_frame(FrameKind::Module);
         } else {
             // popping the module frame:
-            Frame* module_frame = scoper()->top_frame();
-            scoper()->pop_frame();
+            Frame* module_frame = top_frame();
+            pop_frame();
 
             // creating a new TV:
             typer::TypeVar* module_tv; {
@@ -188,7 +244,7 @@ namespace pdm::scoper {
             }
 
             // defining the new module in the script:
-            scoper()->top_frame()->define(Defn(
+            top_frame()->define(Defn(
                 DefnKind::Module,
                 node->module_name(),
                 node,
@@ -208,16 +264,16 @@ namespace pdm::scoper {
                 std::string cv_name = cv_prefix + node->typeclass_name().content();
                 typeclass_cv = scoper()->typer()->new_cv(std::move(cv_name), node);
             }
-            scoper()->top_frame()->define(Defn(
+            top_frame()->define(Defn(
                 DefnKind::Typeclass,
                 node->typeclass_name(),
                 node,
                 typeclass_cv
             ));
 
-            scoper()->push_frame(FrameKind::TypeclassRhs);
+            push_frame(FrameKind::TypeclassRhs);
         } else {
-            scoper()->pop_frame();
+            pop_frame();
         }
         return true;
     }
@@ -233,16 +289,16 @@ namespace pdm::scoper {
                 std::string tv_name = tv_prefix + node->lhs_name().content();
                 type_tv = scoper()->typer()->new_tv(std::move(tv_name));
             }
-            scoper()->top_frame()->define(Defn(
+            top_frame()->define(Defn(
                 DefnKind::Type,
                 node->lhs_name(),
                 node,
                 type_tv
             ));
 
-            scoper()->push_frame(FrameKind::TypeRhs);
+            push_frame(FrameKind::TypeRhs);
         } else {
-            scoper()->pop_frame();
+            pop_frame();
         }
         return true;
     }
@@ -253,16 +309,16 @@ namespace pdm::scoper {
                 std::string tv_name = tv_prefix + node->name().content();
                 type_tv = scoper()->typer()->new_tv(std::move(tv_name), nullptr, node);
             }
-            scoper()->top_frame()->define(Defn(
+            top_frame()->define(Defn(
                 DefnKind::Enum,
                 node->name(),
                 node,
                 type_tv
             ));
 
-            scoper()->push_frame(FrameKind::EnumRhs);
+            push_frame(FrameKind::EnumRhs);
         } else {
-            scoper()->pop_frame();
+            pop_frame();
         }
         return true;
     }
@@ -274,32 +330,58 @@ namespace pdm::scoper {
                 std::string tv_name = tv_prefix + node->name().content();
                 type_tv = scoper()->typer()->new_tv(std::move(tv_name), nullptr, node);
             }
-            scoper()->top_frame()->define(Defn(
+            top_frame()->define(Defn(
                 DefnKind::Fn,
                 node->name(),
                 node,
                 type_tv
             ));
-            scoper()->push_frame(FrameKind::FnRhs);
+            push_frame(FrameKind::FnRhs);
+
+            m_vpattern_defn_kind_stack.push(DefnKind::FormalVArg);
         } else {
-            scoper()->pop_frame();
+            m_vpattern_defn_kind_stack.pop();
+            pop_frame();
         }
         return true;
     }
 
     bool ScoperVisitor::on_visit__const_stmt(ast::ConstStmt* node, VisitOrder visit_order) {
-        // warning: const, val, var just define in top scope via `pattern`
-        //          `shadow` needs to be called by the chain, not individual statements.
+        if (visit_order == VisitOrder::Pre) {
+            if (in_chain_exp()) {
+                top_frame()->shadow(ContextKind::ChainLink);
+            }
+
+            // in order to specify what kind of definition this lpattern performs, push to stack:
+            m_lpattern_defn_kind_stack.push(DefnKind::Const);
+        } else {
+            m_lpattern_defn_kind_stack.pop();
+        }
         return true;
     }
     bool ScoperVisitor::on_visit__val_stmt(ast::ValStmt* node, VisitOrder visit_order) {
-        // warning: const, val, var just define in top scope via `pattern`
-        //          `shadow` needs to be called by the chain, not individual statements.
+        if (visit_order == VisitOrder::Pre) {
+            if (in_chain_exp()) {
+                top_frame()->shadow(ContextKind::ChainLink);
+            }
+
+            // in order to specify what kind of definition this lpattern performs, push to stack:
+            m_lpattern_defn_kind_stack.push(DefnKind::Val);
+        } else {
+            m_lpattern_defn_kind_stack.pop();
+        }
         return true;
     }
     bool ScoperVisitor::on_visit__var_stmt(ast::VarStmt* node, VisitOrder visit_order) {
-        if (scoper()->in_chain_exp()) {
-            scoper()->top_frame()->shadow(ContextKind::PH_ChainLink);
+        if (visit_order == VisitOrder::Pre) {
+            if (in_chain_exp()) {
+                top_frame()->shadow(ContextKind::ChainLink);
+            }
+
+            // in order to specify what kind of definition this lpattern performs, push to stack:
+            m_lpattern_defn_kind_stack.push(DefnKind::Var);
+        } else {
+            m_lpattern_defn_kind_stack.pop();
         }
         return true;
     }
@@ -311,7 +393,7 @@ namespace pdm::scoper {
                 std::string tv_name = std::move(tv_prefix) + node->ext_mod_name().content();
                 ext_mod_tv = scoper()->typer()->new_tv(std::move(tv_name), nullptr, node);
             }
-            scoper()->top_frame()->define(Defn(
+            top_frame()->define(Defn(
                 DefnKind::ExternObject,
                 node->ext_mod_name(),
                 node,
@@ -328,7 +410,7 @@ namespace pdm::scoper {
                 std::string tv_name = std::move(tv_prefix) + node->import_name().content();
                 mod_tv = scoper()->typer()->new_tv(std::move(tv_name), nullptr, node);
             }
-            scoper()->top_frame()->define(Defn(
+            top_frame()->define(Defn(
                 DefnKind::ImportModule,
                 node->import_name(),
                 node,
@@ -337,7 +419,7 @@ namespace pdm::scoper {
 
             // storing the exported TV to link against later, placing an order to link:
             node->x_exported_tv(mod_tv);
-            scoper()->place_import_lookup_order(node);
+            place_import_lookup_order(node);
         }
         return true;
     }
@@ -352,7 +434,7 @@ namespace pdm::scoper {
     bool ScoperVisitor::on_visit__using_stmt(ast::UsingStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // just placing an order; with 'link' there:
-            scoper()->place_using_lookup_order(node);
+            place_using_lookup_order(node);
         }
         return true;
     }
@@ -372,7 +454,7 @@ namespace pdm::scoper {
     }
     bool ScoperVisitor::on_visit__id_exp(ast::IdExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            scoper()->place_id_exp_lookup_order(node);
+            place_id_exp_lookup_order(node);
         }
         return true;
     }
@@ -393,13 +475,20 @@ namespace pdm::scoper {
     }
     bool ScoperVisitor::on_visit__chain_exp(ast::ChainExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            scoper()->inc_overhead_chain_exp_count();
+            inc_overhead_chain_exp_count();
+            push_frame(FrameKind::Chain);
         } else {
-            scoper()->dec_overhead_chain_exp_count();
+            pop_frame();
+            dec_overhead_chain_exp_count();
         }
         return true;
     }
     bool ScoperVisitor::on_visit__lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            m_vpattern_defn_kind_stack.push(DefnKind::FormalVArg);
+        } else {
+            m_vpattern_defn_kind_stack.pop();
+        }
         return true;
     }
     bool ScoperVisitor::on_visit__if_exp(ast::IfExp* node, VisitOrder visit_order) {
@@ -426,12 +515,60 @@ namespace pdm::scoper {
     
     // patterns:
     bool ScoperVisitor::on_visit__vpattern(ast::VPattern* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            for (ast::VPattern::Field* field: node->fields()) {
+                typer::TypeVar* field_tv; {
+                    std::string field_prefix = defn_kind_as_text(m_vpattern_defn_kind_stack.top());
+                    std::string field_name = field->lhs_name().content();
+                    std::string tv_name = "VPattern(" + field_prefix + "):" + field_name;
+                    field_tv = scoper()->typer()->new_tv(std::move(tv_name), nullptr, node);
+                }
+                top_frame()->define(Defn(
+                    m_vpattern_defn_kind_stack.top(),
+                    field->lhs_name(),
+                    node,
+                    field_tv
+                ));
+            }
+        }
         return true;
     }
     bool ScoperVisitor::on_visit__tpattern(ast::TPattern* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            for (ast::TPattern::Field* field: node->fields()) {
+                typer::TypeVar* field_tv; {
+                    std::string field_prefix = defn_kind_as_text(DefnKind::FormalTArg);
+                    std::string field_name = field->lhs_name().content();
+                    std::string tv_name = "TPattern(" + field_prefix + "):" + field_name;
+                    field_tv = scoper()->typer()->new_tv(std::move(tv_name), nullptr, node);
+                }
+                top_frame()->define(Defn(
+                    DefnKind::FormalTArg,
+                    field->lhs_name(),
+                    node,
+                    field_tv
+                ));
+            }
+        }
         return true;
     }
     bool ScoperVisitor::on_visit__lpattern(ast::LPattern* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            for (ast::LPattern::Field* field: node->fields()) {
+                typer::TypeVar* field_tv; {
+                    std::string field_prefix = defn_kind_as_text(m_lpattern_defn_kind_stack.top());
+                    std::string field_name = field->lhs_name().content();
+                    std::string tv_name = "LPattern(" + field_prefix + "):" + field_name;
+                    field_tv = scoper()->typer()->new_tv(std::move(tv_name), nullptr, node);
+                }
+                top_frame()->define(Defn(
+                    m_lpattern_defn_kind_stack.top(),
+                    field->lhs_name(),
+                    node,
+                    field_tv
+                ));
+            }
+        }
         return true;
     }
 
@@ -439,7 +576,7 @@ namespace pdm::scoper {
     bool ScoperVisitor::on_visit__id_typespec(ast::IdTypespec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // placing an order:
-            scoper()->place_id_typespec_lookup_order(node);
+            place_id_typespec_lookup_order(node);
         }
         return true;
     }
@@ -478,27 +615,4 @@ namespace pdm::scoper {
         return true;
     }
 
-    //
-    //
-    // Helpers
-    //
-    //
-
-    ast::ModStmt* original_stmt_of_module_defn(Defn const* module_defn) {
-        ast::ModStmt* original_mod_stmt = nullptr;
-        
-        if (module_defn->kind() == DefnKind::Module) {
-            original_mod_stmt = dynamic_cast<ast::ModStmt*>(module_defn->defn_node());
-        } 
-        else if (module_defn->kind() == DefnKind::ImportModule) {
-            ast::ImportStmt* imported_stmt = dynamic_cast<ast::ImportStmt*>(module_defn->defn_node());
-            assert(imported_stmt != nullptr);
-            
-            // because of dependency dispatch order, this dependency's order should have been completed already.
-            original_mod_stmt = imported_stmt->x_origin_mod_stmt();
-        }
-        
-        assert(original_mod_stmt != nullptr);
-        return original_mod_stmt;
-    }
 }
