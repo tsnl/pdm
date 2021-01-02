@@ -38,6 +38,10 @@ namespace pdm::ast {
             return m_state;
         }
 
+        source::Loc& mut_loc() {
+            return m_loc;
+        }
+
       // state transitions:
       public:
         void chgstate__fresh_to_primed();

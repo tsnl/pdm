@@ -4,14 +4,14 @@
 
 #include "pdm/ast/visitor.hh"
 #include "pdm/core/intern.hh"
-#include "pdm/typer/typer.hh"
+#include "pdm/types/manager.hh"
 
 namespace pdm_cli::typer_demo {
 
     void demo1() {
         pdm::intern::String lhs_name("x");
         
-        pdm::typer::Typer typer{};
+        pdm::types::Manager typer{};
         
         // todo: freevar (monomorph): 'x'
         // todo: y: i32

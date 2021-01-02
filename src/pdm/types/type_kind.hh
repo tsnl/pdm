@@ -1,7 +1,7 @@
 #ifndef INCLUDED_PDM_TYPER_TYPE_KIND_HH
 #define INCLUDED_PDM_TYPER_TYPE_KIND_HH
 
-namespace pdm::typer {
+namespace pdm::types {
     enum class TypeKind {
         Unknown = 0,
         Void,

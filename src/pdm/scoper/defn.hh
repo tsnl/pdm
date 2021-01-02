@@ -7,7 +7,7 @@
 namespace pdm::ast {
     class Node;
 }
-namespace pdm::typer {
+namespace pdm::types {
     class Var;
 }
 namespace pdm::scoper {
@@ -44,11 +44,11 @@ namespace pdm::scoper {
         DefnKind       m_kind;
         intern::String m_name;
         ast::Node*     m_defn_node;
-        typer::Var*    m_var;
+        types::Var*    m_var;
         Context*       m_container_context;
 
       public:
-        Defn(DefnKind kind, intern::String name, ast::Node* defn_node, typer::Var* typer_var)
+        Defn(DefnKind kind, intern::String name, ast::Node* defn_node, types::Var* typer_var)
         : m_kind(kind), 
           m_name(name), 
           m_defn_node(defn_node),
@@ -65,7 +65,7 @@ namespace pdm::scoper {
         ast::Node* defn_node() const {
             return m_defn_node;
         }
-        typer::Var* var() const {
+        types::Var* var() const {
             return m_var;
         }
         Context* container_context() const {

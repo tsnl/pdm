@@ -9,10 +9,9 @@ mod fibonacci {
                 fib(x-1) + fib(x-2)
             }
         );
-        discard fibx.register(n,result);
+        discard fibx.register(x, result);
         result
     };
-
     fn fib2 (y Int32) -> Int32 = {
         val hello = 0;
         hello

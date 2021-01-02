@@ -9,22 +9,11 @@
  * - implement 'Fn' (typespecs...) typespec
  */
 
-/* see docs on define "api.pure" "full"...
- * - %define Summary
- *     https://www.gnu.org/software/bison/manual/html_node/_0025define-Summary.html 
- * - A Pure (Reentrant) Parser
- *     https://www.gnu.org/software/bison/manual/html_node/Pure-Decl.html
- * - Calling Conventions for Pure Parsers 
- *     https://www.gnu.org/software/bison/manual/html_node/Pure-Calling.html
- */
-
-/* see this on using C++ variants for Bison:
- *   https://www.gnu.org/software/bison/manual/html_node/A-Simple-C_002b_002b-Example.html
- */
-
 %require "3.2"
 
 %language "C++"
+
+/* write a parser header file, please */
 %defines
 
 /* expected sr conflicts */
@@ -32,18 +21,17 @@
 
 %define api.namespace {pdm::parser}
 
+// selecting parser type:
 // %glr-parser
 // %define lr.type lalr
 // %define lr.type ielr
 // %define lr.type canonical-lr
 // %define api.pure true
 
-// we want 'ast.h' and 'extra-tokens.h' in the header
-// https://stackoverflow.com/questions/47726404/how-to-put-header-file-to-tab-h-in-bison
+// including headers:
 %code requires {
     #include "pdm/core/config.hh"
 
-    // todo: include more AST files here:
     #include "pdm/ast/node.hh"
     #include "pdm/ast/manager.hh"
     #include "pdm/ast/script/script.hh"
@@ -772,6 +760,7 @@ namespace pdm::parser {
 
         ast::Script* out = nullptr;
         pdm::parser::parser yyparser{source, &lexer, manager, &out};
+        
         // yyparser.set_debug_level(pdm::DEBUG);
         int result = yyparser.parse();
         if (result == 0) {
@@ -781,8 +770,10 @@ namespace pdm::parser {
         }
     }
 
-    void parser::error(source::Loc const& loc, std::string const& message) {
-        // todo: post feedback here
+    void parser::error(source::Loc const& const_loc, std::string const& message) {
+        source::Loc loc = const_loc;
+        loc.source(source);
+
         std::vector<feedback::Note*> notes{1}; {
             std::string desc0 = "Occurred here...";
             notes[0] = new feedback::SourceLocNote(std::move(desc0), loc);
@@ -808,11 +799,9 @@ int yylex(pdm::parser::parser::semantic_type* semval, pdm::source::Loc* llocp, p
 
     int tk = lexer->lex_one_token(&info, llocp);
     semval->as<pdm::parser::TokenInfo>() = info;
-    llocp->source(source);
 
     bool const print_token_info = false;
     if (pdm::DEBUG && print_token_info) {
-        // DebugPrintToken("YYLEX:", tk, info, llocp);
         debug_print_token("YYLEX:", tk, &info, llocp);
     }
     if (tk == Tk::EOS) {
@@ -821,3 +810,17 @@ int yylex(pdm::parser::parser::semantic_type* semval, pdm::source::Loc* llocp, p
         return tk;
     }
 }
+
+
+/* see docs on define "api.pure" "full"...
+ * - %define Summary
+ *     https://www.gnu.org/software/bison/manual/html_node/_0025define-Summary.html 
+ * - A Pure (Reentrant) Parser
+ *     https://www.gnu.org/software/bison/manual/html_node/Pure-Decl.html
+ * - Calling Conventions for Pure Parsers 
+ *     https://www.gnu.org/software/bison/manual/html_node/Pure-Calling.html
+ */
+
+/* see this on using C++ variants for Bison:
+ *   https://www.gnu.org/software/bison/manual/html_node/A-Simple-C_002b_002b-Example.html
+ */

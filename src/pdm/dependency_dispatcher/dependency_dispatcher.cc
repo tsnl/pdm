@@ -19,6 +19,12 @@ namespace pdm::dependency_dispatcher {
         return import_type == "pdm.script";
     }
 
+    bool DDVisitor::on_visit(ast::Node* node, VisitOrder visit_order) {
+        // setting 'source' for each node 'loc':
+        node->mut_loc().source(m_this_script->source());
+        return TinyVisitor::on_visit(node, visit_order);
+    }
+
     bool DDVisitor::on_visit__import_stmt(ast::ImportStmt* node, VisitOrder visit_order) {
         assert(m_this_script != nullptr);
 

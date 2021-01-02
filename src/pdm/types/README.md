@@ -1,12 +1,12 @@
-# Typer
+# Manager
 
 ## Overview
 
 The typer is used to infer and check the all typing in an input program.
-Typer users do this by instantiating `Var`s, and apply `Rule`s to them.
+Manager users do this by instantiating `Var`s, and apply `Rule`s to them.
 The typer then solves each Var by examining constraints for any inconsistencies.
 
-Typer supports two kinds of variables: `ClassVar` and `TypeVar`.
+Manager supports two kinds of variables: `ClassVar` and `TypeVar`.
 - Use `TypeVar` to solve for one unique type in a context.
   - Use `Type`, subclass of `TypeVar`, for constant types with frozen soln.
     Need to generate/maintain appropriate constraints for these constants.

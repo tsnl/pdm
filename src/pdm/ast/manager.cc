@@ -1,7 +1,7 @@
 #include "manager.hh"
 
 namespace pdm::ast {
-    Manager::Manager(typer::Typer* typer, size_t pool_size_in_bytes)
+    Manager::Manager(types::Manager* typer, size_t pool_size_in_bytes)
     : m_typer(typer),
       m_pool(new u8[pool_size_in_bytes]),
       m_pool_size_in_bytes(pool_size_in_bytes),

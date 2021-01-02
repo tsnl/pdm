@@ -59,10 +59,12 @@ For the latest updates, see my latest commits.
 ## How to Build
 
 Just run `1build.sh` on *nix-based systems.
+Ensure you have CMake installed.
 
 ### Alternative
 
 In all the following examples, `.` refers to the root of this repository.
+Ensure you have CMake installed.
 
 1. Clone this repository using 'git', ensuring you clone submodules.
 2. Use 'CMake' to configure the project, `cmake .`

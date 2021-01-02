@@ -45,11 +45,10 @@
 #ifndef YY_YY_PARSER_TAB_HH_INCLUDED
 # define YY_YY_PARSER_TAB_HH_INCLUDED
 // "%code requires" blocks.
-#line 43 "parser.yy"
+#line 32 "parser.yy"
 
     #include "pdm/core/config.hh"
 
-    // todo: include more AST files here:
     #include "pdm/ast/node.hh"
     #include "pdm/ast/manager.hh"
     #include "pdm/ast/script/script.hh"
@@ -78,7 +77,7 @@
     #include "pdm/feedback/severity.hh"
     #include "pdm/feedback/letter.hh"
 
-#line 82 "parser.tab.hh"
+#line 81 "parser.tab.hh"
 
 
 # include <cstdlib> // std::abort
@@ -211,9 +210,9 @@
 # define YYDEBUG 1
 #endif
 
-#line 33 "parser.yy"
+#line 22 "parser.yy"
 namespace pdm { namespace parser {
-#line 217 "parser.tab.hh"
+#line 216 "parser.tab.hh"
 
 
 
@@ -3354,22 +3353,22 @@ switch (yykind)
   };
 
 
-#line 33 "parser.yy"
+#line 22 "parser.yy"
 } } // pdm::parser
-#line 3360 "parser.tab.hh"
+#line 3359 "parser.tab.hh"
 
 
 // "%code provides" blocks.
-#line 76 "parser.yy"
+#line 64 "parser.yy"
 
     using Tk = pdm::parser::parser::token_kind_type;
-#line 203 "parser.yy"
+#line 191 "parser.yy"
 
     // int yylex(pdm::parser::TokenInfo *lvalp, pdm::source::Loc *llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
     int yylex(pdm::parser::parser::semantic_type* st, pdm::source::Loc* llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
     void yyerror(pdm::source::Loc* llocp, char const* message, pdm::source::Source* source, pdm::parser::Lexer* lexer);
 
-#line 3373 "parser.tab.hh"
+#line 3372 "parser.tab.hh"
 
 
 #endif // !YY_YY_PARSER_TAB_HH_INCLUDED

@@ -7,14 +7,14 @@
 #include "type_soln.hh"
 #include "type_constraint.hh"
 
-namespace pdm::typer {
-    class Typer;
+namespace pdm::types {
+    class Manager;
 }
 namespace pdm::ast {
     class Node;
 }
 
-namespace pdm::typer {
+namespace pdm::types {
 
     class Var;
     class TypeVar;

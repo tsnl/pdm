@@ -5,7 +5,7 @@
 // Forward Declarations:
 //
 
-namespace pdm::typer {
+namespace pdm::types {
 
     class Rule;
 
@@ -16,7 +16,7 @@ namespace pdm::typer {
 // Implementation:
 //
 
-namespace pdm::typer {
+namespace pdm::types {
     
     class TypeConstraint {
       private:

@@ -8,14 +8,14 @@
 #include "type_constraint.hh"
 #include "type_kind.hh"
 
-namespace pdm::typer {
+namespace pdm::types {
     class TypeVar;
 }
 namespace pdm::ast {
     class Exp;
 }
 
-namespace pdm::typer {
+namespace pdm::types {
 
     // typer maps each 'TypeVar' to a 'TypeSoln' type:
     class TypeSoln {

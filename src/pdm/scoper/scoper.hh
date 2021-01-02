@@ -7,7 +7,7 @@
 #include "pdm/scoper/context.hh"
 #include "pdm/scoper/frame.hh"
 #include "pdm/scoper/root_frame.hh"
-#include "pdm/typer/typer.hh"
+#include "pdm/types/manager.hh"
 #include "pdm/printer/printer.hh"
 
 
@@ -26,8 +26,8 @@ namespace pdm::scoper {
         struct UsingLookupOrder      { ast::UsingStmt* using_stmt; Context* lookup_context; };
 
       private:
-        typer::Typer*      m_typer;
-        Frame*             m_root_frame;
+        types::Manager* m_typer;
+        Frame*        m_root_frame;
         std::vector<IdExpLookupOrder>      m_id_exp_orders;
         std::vector<IdTypespecLookupOrder> m_id_typespec_orders;
         std::vector<ImportLookupOrder>     m_import_orders;
@@ -36,11 +36,11 @@ namespace pdm::scoper {
         bool m_finished;
 
       public:
-        Scoper(typer::Typer* typer);
+        Scoper(types::Manager* typer);
 
       public:
         Frame*        root_frame() const { return m_root_frame; }
-        typer::Typer* typer()      const { return m_typer; }
+        types::Manager* typer()      const { return m_typer; }
         bool          finished()   const { return m_finished; }
 
       public:
@@ -53,7 +53,7 @@ namespace pdm::scoper {
         bool finish();
 
       public:
-        void print_debug_info(printer::Printer& printer);
+        void print(printer::Printer& printer);
     };
 
     class ScoperVisitor: public ast::Visitor {

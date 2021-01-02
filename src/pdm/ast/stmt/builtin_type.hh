@@ -5,7 +5,7 @@
 
 #include "pdm/ast/stmt/stmt.hh"
 
-namespace pdm::typer {
+namespace pdm::types {
     class TypeVar;
 }
 
@@ -18,7 +18,7 @@ namespace pdm::ast {
 
       private:
         std::string     m_desc;
-        typer::TypeVar* m_x_tv;
+        types::TypeVar* m_x_tv;
 
       public:
         BuiltinTypeStmt(std::string&& desc);
@@ -29,8 +29,8 @@ namespace pdm::ast {
         }
         
       public:
-        void x_tv(typer::TypeVar* tv);
-        typer::TypeVar* x_tv() const;
+        void x_tv(types::TypeVar* tv);
+        types::TypeVar* x_tv() const;
     };
 
 }

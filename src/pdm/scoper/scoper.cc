@@ -5,8 +5,13 @@
 #include <string>
 #include <cassert>
 
-#include "pdm/typer/typer.hh"
-#include "pdm/typer/var.hh"
+#include "pdm/types/manager.hh"
+#include "pdm/types/var.hh"
+
+#include "pdm/feedback/feedback.hh"
+#include "pdm/feedback/letter.hh"
+#include "pdm/feedback/severity.hh"
+#include "pdm/feedback/note.hh"
 
 // helpers:
 namespace pdm::scoper {
@@ -21,7 +26,7 @@ namespace pdm::scoper {
     //
     //
 
-    Scoper::Scoper(typer::Typer* typer)
+    Scoper::Scoper(types::Manager* typer)
     : m_typer(typer),
       m_id_exp_orders(),
       m_id_typespec_orders(),
@@ -51,24 +56,52 @@ namespace pdm::scoper {
 
         // IdExp
         for (IdExpLookupOrder id_exp_order: m_id_exp_orders) {
-            intern::String id_name = id_exp_order.id_exp->name();
+            ast::IdExp* id_exp = id_exp_order.id_exp;
+            intern::String id_name = id_exp->name();
             Defn const* opt_defn = id_exp_order.lookup_context->lookup(id_name);
             if (opt_defn != nullptr) {
-                id_exp_order.id_exp->x_defn(opt_defn);
+                id_exp->x_defn(opt_defn);
             } else {
-                // todo: post feedback about an ID that was used but not defined.
+                // post feedback about a value ID that was used but not defined.
+                std::string headline = "ID '" + std::string(id_name.content()) + "' used but not defined";
+                std::string desc = "";
+                std::vector<feedback::Note*> notes(1); {
+                    source::Loc defn_loc = id_exp->loc();
+                    std::string defn_desc = "see here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(defn_desc), defn_loc);
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
                 ok = false;
             }
         }
 
         // IdTypespec
         for (IdTypespecLookupOrder id_typespec_order: m_id_typespec_orders) {
+            ast::IdTypespec* id_typespec = id_typespec_order.id_typespec;
             intern::String id_name = id_typespec_order.id_typespec->name();
             Defn const* defn = id_typespec_order.lookup_context->lookup(id_name);
             if (defn != nullptr) {
                 id_typespec_order.id_typespec->x_defn(defn);
             } else {
-                // todo: post feedback about an ID that was used but not defined.
+                // post feedback about a type ID that was used but not defined.
+                std::string headline = "ID '" + std::string(id_name.content()) + "' used but not defined";
+                std::string desc = "";
+                std::vector<feedback::Note*> notes(1); {
+                    source::Loc defn_loc = id_typespec->loc();
+                    std::string defn_desc = "see here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(defn_desc), defn_loc);
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
                 ok = false;
             }
         }
@@ -80,26 +113,65 @@ namespace pdm::scoper {
             
             // fetching the exported frame:
             ast::ImportStmt* import_stmt = import_order.import_stmt;
-            Frame* exporter_frame = import_stmt->x_origin_script()->x_script_frame();
-            if (exporter_frame == nullptr) {
-                // todo: post feedback about an import failure.
+            Frame* origin_script_frame = import_stmt->x_origin_script()->x_script_frame();
+            if (origin_script_frame == nullptr) {
+                // posting feedback about an import failure:
+                std::string headline = "Import '" + std::string(import_stmt->import_name().content()) + "' could not be resolved.";
+                std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
+                std::vector<feedback::Note*> notes{1}; {
+                    std::string desc = "at import statement here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(desc), import_stmt->loc());
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
                 ok = false;
                 continue;
             }
             
             // looking up the exported symbol in the exported frame:
-            Context* first_ctx = exporter_frame->first_context();
-            Context* last_ctx = exporter_frame->last_context();
+            Context* first_ctx = origin_script_frame->first_context();
+            Context* last_ctx = origin_script_frame->last_context();
             Defn const* module_defn = last_ctx->lookup_until(import_stmt->import_name(), first_ctx);
             if (module_defn == nullptr) {
-                // todo: post feedback about importing an undefined symbol
+                // posting feedback about importing an undefined symbol
+                std::string headline = "Module '" + std::string(import_stmt->import_name().content()) + "' could not be found in the origin script.";
+                std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
+                std::vector<feedback::Note*> notes{1}; {
+                    std::string desc = "at import statement here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(desc), import_stmt->loc());
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
                 ok = false;
                 continue;
             }
             
             // checking the exported symbol's kind:
             if (!module_defn_kind(module_defn->kind())) {
-                // todo: post feedback about importing a non-module.
+                // posting feedback about importing an undefined symbol
+                std::string headline = "Symbol '" + std::string(import_stmt->import_name().content()) + "' is not importable.";
+                std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
+                std::vector<feedback::Note*> notes{2}; {
+                    std::string desc0 = "at import statement here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(desc0), import_stmt->loc());
+                    
+                    std::string desc1 = "non-importable node here (expected module or imported module)...";
+                    notes[1] = new feedback::SourceLocNote(std::move(desc1), module_defn->defn_node()->loc());
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
                 ok = false;
                 continue;
             }
@@ -133,7 +205,7 @@ namespace pdm::scoper {
     }
 
     // debug:
-    void Scoper::print_debug_info(printer::Printer& printer) {
+    void Scoper::print(printer::Printer& printer) {
         printer.print_cstr("Scoper dump");
         printer.print_newline_indent();
         m_root_frame->print(printer);
@@ -195,15 +267,13 @@ namespace pdm::scoper {
         
         if (module_defn->kind() == DefnKind::Module) {
             original_mod_stmt = dynamic_cast<ast::ModStmt*>(module_defn->defn_node());
-        } 
+        }
         else if (module_defn->kind() == DefnKind::ImportModule) {
             ast::ImportStmt* imported_stmt = dynamic_cast<ast::ImportStmt*>(module_defn->defn_node());
             assert(imported_stmt != nullptr);
-            
-            // because of dependency dispatch order, this dependency's order should have been completed already.
+            // from dependency dispatcher:
             original_mod_stmt = imported_stmt->x_origin_mod_stmt();
         }
-        
         assert(original_mod_stmt != nullptr);
         return original_mod_stmt;
     }
@@ -237,7 +307,7 @@ namespace pdm::scoper {
             pop_frame();
 
             // creating a new TV:
-            typer::TypeVar* module_tv; {
+            types::TypeVar* module_tv; {
                 std::string tv_prefix = "Defn(Module):";
                 std::string tv_name = tv_prefix + node->module_name().content();
                 module_tv = scoper()->typer()->new_tv(std::move(tv_name), nullptr, node);
@@ -259,7 +329,7 @@ namespace pdm::scoper {
     }
     bool ScoperVisitor::on_visit__typeclass_stmt(ast::TypeclassStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            typer::ClassVar* typeclass_cv = nullptr; {
+            types::ClassVar* typeclass_cv = nullptr; {
                 std::string cv_prefix = "Defn(Typeclass):";
                 std::string cv_name = cv_prefix + node->typeclass_name().content();
                 typeclass_cv = scoper()->typer()->new_cv(std::move(cv_name), node);
@@ -284,7 +354,7 @@ namespace pdm::scoper {
     // Thus, use TV, not CV, even if targs present.
     bool ScoperVisitor::on_visit__type_stmt(ast::TypeStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            typer::TypeVar* type_tv = nullptr; {
+            types::TypeVar* type_tv = nullptr; {
                 std::string tv_prefix = "Defn(Type):";
                 std::string tv_name = tv_prefix + node->lhs_name().content();
                 type_tv = scoper()->typer()->new_tv(std::move(tv_name));
@@ -304,7 +374,7 @@ namespace pdm::scoper {
     }
     bool ScoperVisitor::on_visit__enum_stmt(ast::EnumStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            typer::TypeVar* type_tv = nullptr; {
+            types::TypeVar* type_tv = nullptr; {
                 std::string tv_prefix = "Defn(Enum):";
                 std::string tv_name = tv_prefix + node->name().content();
                 type_tv = scoper()->typer()->new_tv(std::move(tv_name), nullptr, node);
@@ -325,7 +395,7 @@ namespace pdm::scoper {
 
     bool ScoperVisitor::on_visit__fn_stmt(ast::FnStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            typer::TypeVar* type_tv = nullptr; {
+            types::TypeVar* type_tv = nullptr; {
                 std::string tv_prefix = "Defn(Fn):";
                 std::string tv_name = tv_prefix + node->name().content();
                 type_tv = scoper()->typer()->new_tv(std::move(tv_name), nullptr, node);
@@ -388,7 +458,7 @@ namespace pdm::scoper {
 
     bool ScoperVisitor::on_visit__extern_stmt(ast::ExternStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            typer::TypeVar* ext_mod_tv = nullptr; {
+            types::TypeVar* ext_mod_tv = nullptr; {
                 std::string tv_prefix = "Defn(ExternModule):";
                 std::string tv_name = std::move(tv_prefix) + node->ext_mod_name().content();
                 ext_mod_tv = scoper()->typer()->new_tv(std::move(tv_name), nullptr, node);
@@ -405,7 +475,7 @@ namespace pdm::scoper {
     bool ScoperVisitor::on_visit__import_stmt(ast::ImportStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // defining the new symbol with a new, exported TV:
-            typer::TypeVar* mod_tv = nullptr; {
+            types::TypeVar* mod_tv = nullptr; {
                 std::string tv_prefix = "Defn(ImportModule):";
                 std::string tv_name = std::move(tv_prefix) + node->import_name().content();
                 mod_tv = scoper()->typer()->new_tv(std::move(tv_name), nullptr, node);
@@ -517,7 +587,7 @@ namespace pdm::scoper {
     bool ScoperVisitor::on_visit__vpattern(ast::VPattern* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             for (ast::VPattern::Field* field: node->fields()) {
-                typer::TypeVar* field_tv; {
+                types::TypeVar* field_tv; {
                     std::string field_prefix = defn_kind_as_text(m_vpattern_defn_kind_stack.top());
                     std::string field_name = field->lhs_name().content();
                     std::string tv_name = "VPattern(" + field_prefix + "):" + field_name;
@@ -536,7 +606,7 @@ namespace pdm::scoper {
     bool ScoperVisitor::on_visit__tpattern(ast::TPattern* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             for (ast::TPattern::Field* field: node->fields()) {
-                typer::TypeVar* field_tv; {
+                types::TypeVar* field_tv; {
                     std::string field_prefix = defn_kind_as_text(DefnKind::FormalTArg);
                     std::string field_name = field->lhs_name().content();
                     std::string tv_name = "TPattern(" + field_prefix + "):" + field_name;
@@ -555,7 +625,7 @@ namespace pdm::scoper {
     bool ScoperVisitor::on_visit__lpattern(ast::LPattern* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             for (ast::LPattern::Field* field: node->fields()) {
-                typer::TypeVar* field_tv; {
+                types::TypeVar* field_tv; {
                     std::string field_prefix = defn_kind_as_text(m_lpattern_defn_kind_stack.top());
                     std::string field_name = field->lhs_name().content();
                     std::string tv_name = "LPattern(" + field_prefix + "):" + field_name;

@@ -5,6 +5,6 @@
 #include "ast.h"
 #include "typer.h"
 
-int EmitLlvmModule(Typer* typer, AstNode* module);
+int EmitLlvmModule(Manager* typer, AstNode* module);
 
 #endif  // INCLUDED_LLVM_EMITTER_H

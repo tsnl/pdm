@@ -13,7 +13,7 @@
 // forward declarations:
 //
 
-namespace pdm::typer {
+namespace pdm::types {
     class Constraint;
 }
 
@@ -22,7 +22,7 @@ namespace pdm::typer {
 // implementation:
 //
 
-namespace pdm::typer {
+namespace pdm::types {
     
     class Rule {
       // private data members:

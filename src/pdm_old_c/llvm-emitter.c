@@ -51,14 +51,14 @@
 
 typedef struct Emitter Emitter;
 struct Emitter {
-    Typer* typer;
+    Manager* typer;
     LLVMValueRef currentLlvmFunction;
     LLVMModuleRef module;
     LLVMBuilderRef builder;
 };
-static Emitter newEmitter(Typer* typer, char const* moduleName);
+static Emitter newEmitter(Manager* typer, char const* moduleName);
 
-Emitter newEmitter(Typer* typer, char const* moduleName) {
+Emitter newEmitter(Manager* typer, char const* moduleName) {
     Emitter emitter;
     emitter.typer = typer;
     emitter.builder = LLVMCreateBuilder();
@@ -83,7 +83,7 @@ static int exportModuleHeaders(Emitter* emitter, AstNode* moduleNode);
 static int exportModule(Emitter* emitter, AstNode* moduleNode);
 static int exportModuleHeaders_postVisitor(void* emitter, AstNode* node);
 static int exportModule_preVisitor(void* emitter, AstNode* node);
-static ExportedType exportType(Typer* typer, Type* type);
+static ExportedType exportType(Manager* typer, Type* type);
 static ExportedValue exportValue(Emitter* emitter, AstNode* exprNode);
 static char* exportName(AstNode* node);
 
@@ -93,7 +93,7 @@ static char* exportName(AstNode* node);
 //
 //
 
-static void buildLlvmField(Typer* typer, void* sb, SymbolID name, Type* type);
+static void buildLlvmField(Manager* typer, void* sb, SymbolID name, Type* type);
 
 int exportModuleHeaders(Emitter* emitter, AstNode* moduleNode) {
     return RecursivelyVisitAstNode(emitter,moduleNode,NULL,exportModuleHeaders_postVisitor);
@@ -243,7 +243,7 @@ int exportModule_preVisitor(void* rawEmitter, AstNode* node) {
     return 1;
 }
 
-ExportedType exportType(Typer* typer, Type* type) {
+ExportedType exportType(Manager* typer, Type* type) {
     // converts a compiler 'Type' into an LLVM Type.
     // 1:1 conversion wherever possible, no magic.
 
@@ -389,7 +389,7 @@ ExportedType exportType(Typer* typer, Type* type) {
 }
 ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
     // converts a compiler expression into an LLVM expression, building as required.
-    Typer* typer = emitter->typer;
+    Manager* typer = emitter->typer;
 
     // alloca-ing some memory for each value, relying on LLVM's mem2reg pass to optimize where unnecessary:
     ExportedValue exportedValue;
@@ -1353,7 +1353,7 @@ char* exportName(AstNode* node) {
     return exportedName;
 }
 
-void buildLlvmField(Typer* typer, void* rawSBP, SymbolID name, Type* type) {
+void buildLlvmField(Manager* typer, void* rawSBP, SymbolID name, Type* type) {
     ExportedType** sbp = rawSBP;
     ExportedType fieldTypeRef = exportType(typer,type);
     sb_push((*sbp),fieldTypeRef);
@@ -1363,7 +1363,7 @@ void buildLlvmField(Typer* typer, void* rawSBP, SymbolID name, Type* type) {
 // Interface:
 //
 
-int EmitLlvmModule(Typer* typer, AstNode* module) {
+int EmitLlvmModule(Manager* typer, AstNode* module) {
     Emitter emitter = newEmitter(typer,"hub-test");
     int result = 1;
     result = exportModuleHeaders(&emitter,module) && result;

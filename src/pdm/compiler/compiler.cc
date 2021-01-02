@@ -21,19 +21,20 @@
 #include "pdm/scoper/context.hh"
 #include "pdm/scoper/defn.hh"
 
-#include "pdm/typer/typer.hh"
+#include "pdm/types/manager.hh"
 
 
 namespace pdm::compiler {
 
-    Compiler::Compiler(std::string&& cwd, std::string&& entry_point_path)
-    : m_cwd(std::move(cwd)),
+    Compiler::Compiler(std::string&& cwd, std::string&& entry_point_path, u64 print_flags)
+    :   m_cwd(std::move(cwd)),
         m_entry_point_path(abspath(std::move(entry_point_path))),
         m_cached_imports(),
         m_all_scripts(),
         m_typer(),
         m_manager(&m_typer),
-        m_scoper(&m_typer) 
+        m_scoper(&m_typer),
+        m_print_flags(print_flags)
     {
         m_all_scripts.reserve(8);
 
@@ -71,7 +72,7 @@ namespace pdm::compiler {
         }
     }
 
-    ast::BuiltinTypeStmt* Compiler::help_define_builtin_type(intern::String name, typer::Var* typer_var) {
+    ast::BuiltinTypeStmt* Compiler::help_define_builtin_type(intern::String name, types::Var* typer_var) {
         std::string debug_name = std::string("RootType:") + std::string(name.content());
         ast::BuiltinTypeStmt* stmt = m_manager.new_builtin_type_stmt(std::move(debug_name));
         scoper::Defn defn {scoper::DefnKind::BuiltinType, name, stmt, typer_var};
@@ -120,25 +121,120 @@ namespace pdm::compiler {
         dd_visitor.visit(script);
     }
 
-    bool Compiler::import_all() {
+    bool Compiler::pass1_import_all() {
         // importing the entry point, and all dependencies recursively via DependencyDispatcher:
-        return (nullptr != import(m_entry_point_path, "pdm.script", "entry point"));
-    }
-    bool Compiler::typecheck_all() {
+        ast::Script* entry_point_script = import(m_entry_point_path, "pdm.script", "entry point");
+        if (entry_point_script == nullptr) {
+            return false;            
+        }
+
+        // scoping each module, visiting in dependency order:
         for (ast::Script* script: m_all_scripts) {
             m_scoper.scope(script);
         }
-
-        //
-        // debug only!
-        //
-        if (DEBUG) {
-            printer::Printer printer{std::cout};
-            m_scoper.print_debug_info(printer);
+        bool scoper_ok = m_scoper.finish();
+        if (!scoper_ok) {
+            feedback::post(new feedback::Letter(
+                feedback::Severity::FatalError,
+                "A fatal scoper error occurred.",
+                "See other error messages for further guidance."
+            ));
+            return false;
         }
 
-        // todo: actually solve a typer here...
+        // all ok
+        return true;
+    }
+    bool Compiler::pass2_typecheck_all() {
+        std::cout << "Not Implemented: pass2_typecheck_all" << std::endl;
         return false;
+    }
+    bool Compiler::pass3_emit_all() {
+        std::cout << "Not Implemented: pass3_emit_all" << std::endl;
+        return false;
+    }
+
+    void Compiler::postpass1_print1_code() {
+        printer::Printer p{std::cout};
+        for (ast::Script* script: all_scripts()) {
+            p.print_node(script);
+        }
+    }
+    void Compiler::postpass1_print2_scopes() {
+        printer::Printer p{std::cout};
+        m_scoper.print(p);
+    }
+    void Compiler::postpass2_print1_types() {
+        printer::Printer p{std::cout};
+        m_typer.print(p);
+    }
+    void Compiler::postpass3_print1_llvm() {
+        std::cout << "Not Implemented: 'postpass3_print1_llvm'" << std::endl;
+    }
+    void Compiler::postpass3_print2_wasm() {
+        std::cout << "Not Implemented: 'postpass3_print2_wasm'" << std::endl;
+    }
+
+    bool Compiler::finish() {
+        if (!pass1_import_all()) {
+            std::string desc = "Loading Error-- Compilation Terminated";
+            std::string headline = (
+                "A fatal error occurred while loading your source files, "
+                "so output files will not be made."
+            );
+            feedback::post(new feedback::Letter(
+                feedback::Severity::FatalError,
+                std::move(headline),
+                std::move(desc)
+            ));
+            return false;
+        }
+
+        if (m_print_flags & static_cast<u64>(PrintFlag::SourceCode)) {
+            postpass1_print1_code();
+        }
+        if (m_print_flags & static_cast<u64>(PrintFlag::Scopes)) {
+            postpass1_print2_scopes();
+        }
+        
+        if (!pass2_typecheck_all()) {
+            std::string headline = "Typechecking Error-- Compilation Terminated";
+            std::string desc = (
+                "All loaded assets are syntactically valid, but other errors "
+                "occurred while processing, so output files will not be made."
+            );
+            feedback::post(new feedback::Letter(
+                feedback::Severity::FatalError,
+                std::move(headline),
+                std::move(desc)
+            ));
+            return false;
+        }
+
+        if (m_print_flags & static_cast<u64>(PrintFlag::Types)) {
+            postpass2_print1_types();
+        }
+
+        if (!pass3_emit_all()) {
+            std::string headline = "Emitting code failed.";
+            std::string desc = (
+                "This is a compiler error. "
+                "Please upgrade to a newer version of the compiler. "
+                
+                "If this doesn't fix your issue, you will need to file a bug report. "
+                "Try rewriting your code to reproduce and isolate what causes this issue. "
+                "Then, work around the issue while we work on the compiler to fix this, "
+                "or fix it yourself and submit the code."
+            );
+            feedback::post(new feedback::Letter(
+                feedback::Severity::CompilerError,
+                headline,
+                desc
+            ));
+            return false;
+        }
+
+        return true;
     }
 
     std::string Compiler::abspath(std::string const& rel_path) const {

@@ -12,7 +12,7 @@ namespace pdm::ast {
     class Stmt;
     class ModStmt;
 }
-namespace pdm::typer {
+namespace pdm::types {
     class TypeVar;
 }
 
@@ -26,7 +26,7 @@ namespace pdm::ast {
         utf8::String    m_import_type;
         Script*         m_x_origin_script;
         ast::ModStmt*   m_x_origin_mod_stmt;
-        typer::TypeVar* m_x_exported_tv;
+        types::TypeVar* m_x_exported_tv;
 
       protected:
         ImportStmt(source::Loc loc, intern::String import_name, utf8::String import_from, utf8::String import_type);
@@ -54,10 +54,10 @@ namespace pdm::ast {
 
       // set by scoper:
       public:
-        typer::TypeVar* x_exported_tv() const {
+        types::TypeVar* x_exported_tv() const {
             return m_x_exported_tv;
         }
-        void x_exported_tv(typer::TypeVar* exported_tv) {
+        void x_exported_tv(types::TypeVar* exported_tv) {
             m_x_exported_tv = exported_tv;
         }
         ast::ModStmt* x_origin_mod_stmt() const {

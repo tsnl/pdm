@@ -11,7 +11,7 @@
 #include "pdm/ast/manager.hh"
 #include "pdm/ast/script/script.hh"
 
-#include "pdm/typer/typer.hh"
+#include "pdm/types/manager.hh"
 #include "pdm/scoper/scoper.hh"
 #include "pdm/scoper/root_frame.hh"
 
@@ -44,6 +44,15 @@ namespace pdm::compiler {
 
     // 'Compiler' instances transform input files into output files.
     class Compiler {
+      public:
+        enum class PrintFlag: u64 {
+            SourceCode  = 0x1,
+            Scopes      = 0x2,
+            Types       = 0x4,
+            Llvm        = 0x8,
+            Wasm        = 0x10
+        };
+
       private:
         std::filesystem::path m_cwd;
         std::filesystem::path m_entry_point_path;
@@ -51,9 +60,11 @@ namespace pdm::compiler {
         aux::ImportMap            m_cached_imports;
         std::vector<ast::Script*> m_all_scripts;
         
-        typer::Typer      m_typer;
-        ast::Manager      m_manager;
-        scoper::Scoper    m_scoper;
+        types::Manager   m_typer;
+        ast::Manager   m_manager;
+        scoper::Scoper m_scoper;
+
+        u64 m_print_flags;
 
       // builtin type stmts:
       private:
@@ -75,7 +86,7 @@ namespace pdm::compiler {
         ast::BuiltinTypeStmt* m_f64_tv_client_astn;
 
       public:
-        Compiler(std::string&& cwd, std::string&& entry_point_path);
+        Compiler(std::string&& cwd, std::string&& entry_point_path, u64 print_flags = 0);
         
       public:
         ast::Script* import(std::string const& from_path, std::string const& type, std::string const& reason);
@@ -83,7 +94,7 @@ namespace pdm::compiler {
       private:
         // help_define_builtin_type is called during the constructor, post initialization to define
         // universal types.
-        ast::BuiltinTypeStmt* help_define_builtin_type(intern::String name, typer::Var* typer_var);
+        ast::BuiltinTypeStmt* help_define_builtin_type(intern::String name, types::Var* typer_var);
         
         // help_import_script_1 is called for every imported function, regardless of whether imported before or not.
         ast::Script* help_import_script_1(std::string const& from_path, std::string const& type);
@@ -91,15 +102,26 @@ namespace pdm::compiler {
         // help_import_script_2 is used to perform first-time initialization of freshly loaded Scripts.
         void help_import_script_2(ast::Script* script);
 
+      private:
+        bool pass1_import_all();
+        bool pass2_typecheck_all();
+        bool pass3_emit_all();
+
+      private:
+        void postpass1_print1_code();
+        void postpass1_print2_scopes();
+        void postpass2_print1_types();
+        void postpass3_print1_llvm();
+        void postpass3_print2_wasm();
+
       public:
-        bool import_all();
-        bool typecheck_all();
+        bool finish();
 
       public:
         std::string abspath(std::string const& str) const;
 
       public:
-        typer::Typer* typer() {
+        types::Manager* typer() {
             return &m_typer;
         }
         ast::Manager* ast_manager() {

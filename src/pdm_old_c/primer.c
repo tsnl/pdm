@@ -60,7 +60,7 @@ struct Primer {
     Frame* rootFrame;
 
     // the typer is used by the primer to create metatypes.
-    Typer* typer;
+    Manager* typer;
 
     // new scopes can extend previous ones, and are organized into 'frames' stored in this stack:
     Frame* frameStackSB;
@@ -70,7 +70,7 @@ struct Primer {
 size_t allocatedPrimersCount = 0;
 Primer allocatedPrimers[MAX_PRIMER_COUNT];
 
-static Primer* createPrimer(Typer* typer);
+static Primer* createPrimer(Manager* typer);
 static void pushSymbol(Primer* primer, SymbolID defnID, void* type, AstNode* node);
 static Scope* pushFrame(Primer* primer, Scope* scope, AstNode* optFunc);
 static Scope* pushFrameWithMod(Primer* primer, Scope* scope, AstNode* optFunc, AstNode* optModuleStmt);
@@ -83,8 +83,8 @@ AstNode* topFrameModuleStmt(Primer* primer);
 static size_t allocatedScopeCount = 0;
 static Scope allocatedScopes[MAX_AST_NODE_COUNT];
 inline static Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn);
-static Scope* newRootScope(Typer* typer, Frame* frame);
-static Scope* newBuiltinTypedefScope(Typer* typer, Scope* prevScope, SymbolID name, void* type);
+static Scope* newRootScope(Manager* typer, Frame* frame);
+static Scope* newBuiltinTypedefScope(Manager* typer, Scope* prevScope, SymbolID name, void* type);
 static DefnScope* lookupSymbolUntil(Scope* scope, SymbolID lookupID, Scope* endScopeP);
 
 static void debugPrintPrimer(Primer* primer);
@@ -115,7 +115,7 @@ void ensureStaticSymbolsLoaded() {
     }
 }
 
-Primer* createPrimer(Typer* typer) {
+Primer* createPrimer(Manager* typer) {
     ensureStaticSymbolsLoaded();
     
     Primer* primer = NULL;
@@ -266,7 +266,7 @@ inline Scope* newScope(Scope* parent, SymbolID defnID, void* type, AstNode* defn
 
     return scope;
 }
-Scope* newRootScope(Typer* typer, Frame* rootFrame) {
+Scope* newRootScope(Manager* typer, Frame* rootFrame) {
     Scope* prevScope = NULL;
     
     //
@@ -299,7 +299,7 @@ Scope* newRootScope(Typer* typer, Frame* rootFrame) {
 
     return prevScope;
 }
-Scope* newBuiltinTypedefScope(Typer* typer, Scope* prevScope, SymbolID name, void* type) {
+Scope* newBuiltinTypedefScope(Manager* typer, Scope* prevScope, SymbolID name, void* type) {
     AstNode* node = NewAstBuiltinTypedefNode(name, type);
     return newScope(prevScope, name, type, node);
 }

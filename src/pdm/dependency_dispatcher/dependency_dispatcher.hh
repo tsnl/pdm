@@ -22,6 +22,9 @@ namespace pdm::dependency_dispatcher {
         : m_compiler_ref(compiler_ref),
           m_this_script(this_script) {}
       
+      public:
+        virtual bool on_visit(ast::Node* node, VisitOrder visit_order) override;
+
       protected:
         virtual bool on_visit__import_stmt(ast::ImportStmt* node, VisitOrder visit_order) override;
     };

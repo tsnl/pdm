@@ -6,8 +6,8 @@
 #include "source.h"
 #include "ast.h"
 
-typedef struct Typer Typer;
-typedef struct TyperCfg TyperCfg;
+typedef struct Manager Manager;
+typedef struct ManagerCfg ManagerCfg;
 
 typedef enum IntWidth IntWidth;
 typedef enum FloatWidth FloatWidth;
@@ -50,7 +50,7 @@ enum FloatWidth {
 };
 
 typedef struct Type Type;
-typedef void(*FieldCB)(Typer* typer, void* context, SymbolID name, Type* type);
+typedef void(*FieldCB)(Manager* typer, void* context, SymbolID name, Type* type);
 
 // typedef struct InputTypeFieldNode InputTypeFieldNode;
 // typedef struct InputTypeFieldNode InputTypeFieldList;
@@ -73,7 +73,7 @@ struct TypeField {
 // - if two types are structurally equivalent, they are also pointer equivalent
 //
 
-struct TyperCfg {
+struct ManagerCfg {
     size_t maxMetavarCount;
     size_t maxPtrCount;
     size_t maxSliceCount;
@@ -87,38 +87,38 @@ struct TyperCfg {
     size_t maxBinaryIntrinsicCount;
     size_t maxPhiCount;
 };
-TyperCfg NewDefaultTyperCfg(void);
-Typer* NewTyper(TyperCfg config);
+ManagerCfg NewDefaultManagerCfg(void);
+Manager* NewManager(ManagerCfg config);
 
 //
 // Constructor methods:
 //
 
-Type* NewModuleType(Typer* typer, AstNode* moduleNode);
+Type* NewModuleType(Manager* typer, AstNode* moduleNode);
 
-Type* GetUnitType(Typer* typer);
-Type* GetStringType(Typer* typer);
-Type* GetIntType(Typer* typer, IntWidth width, int isSigned);
-Type* GetFloatType(Typer* typer, FloatWidth width);
-Type* NewOrGetPtrType(Typer* typer, Type* pointee);
-Type* NewOrGetSliceType(Typer* typer, Type* elementType);
-Type* NewOrGetFuncType(Typer* typer, int argsCount, Type* args[], Type* image);
-Type* NewOrGetTypefuncType(Typer* typer, Type* arg, Type* body);
-Type* NewOrGetTupleType(Typer* typer, TypeField* typefields, int typefieldCount);
-Type* NewOrGetUnionType(Typer* typer, TypeField* typefields, int typefieldCount);
+Type* GetUnitType(Manager* typer);
+Type* GetStringType(Manager* typer);
+Type* GetIntType(Manager* typer, IntWidth width, int isSigned);
+Type* GetFloatType(Manager* typer, FloatWidth width);
+Type* NewOrGetPtrType(Manager* typer, Type* pointee);
+Type* NewOrGetSliceType(Manager* typer, Type* elementType);
+Type* NewOrGetFuncType(Manager* typer, int argsCount, Type* args[], Type* image);
+Type* NewOrGetTypefuncType(Manager* typer, Type* arg, Type* body);
+Type* NewOrGetTupleType(Manager* typer, TypeField* typefields, int typefieldCount);
+Type* NewOrGetUnionType(Manager* typer, TypeField* typefields, int typefieldCount);
 
-Type* NewOrGetUnaryIntrinsicType(Typer* typer, Loc loc, AstUnaryOperator op, Type* arg);
-Type* NewOrGetBinaryIntrinsicType(Typer* typer, Loc loc, AstBinaryOperator op, Type* ltArg, Type* rtArg);
-Type* GetPhiType(Typer* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse);
+Type* NewOrGetUnaryIntrinsicType(Manager* typer, Loc loc, AstUnaryOperator op, Type* arg);
+Type* NewOrGetBinaryIntrinsicType(Manager* typer, Loc loc, AstBinaryOperator op, Type* ltArg, Type* rtArg);
+Type* GetPhiType(Manager* typer, Loc loc, Type* cond, Type* ifTrue, Type* ifFalse);
 
-Type* NewCastHelperType(Typer* typer, Type* to, Type* from);
-Type* NewMetavarType(Loc loc, Typer* typer, char const* format, ...);
+Type* NewCastHelperType(Manager* typer, Type* to, Type* from);
+Type* NewMetavarType(Loc loc, Manager* typer, char const* format, ...);
 
 //
 // Getter methods for type info:
 //
 
-// Type* GetTypeSoln(Typer* typer, Type* type);
+// Type* GetTypeSoln(Manager* typer, Type* type);
 TypeKind GetTypeKind(Type* type);
 IntWidth GetIntTypeWidth(Type* type);
 int GetIntTypeIsSigned(Type* type);
@@ -132,7 +132,7 @@ Type* GetFuncTypeArgAt(Type* func, int index);
 Type* GetFuncTypeImage(Type* func);
 int GetTupleTypeFieldCount(Type* type);
 int GetUnionTypeFieldCount(Type* type);
-void MapCompoundType(Typer* typer, Type* compound, FieldCB cb, void* context);
+void MapCompoundType(Manager* typer, Type* compound, FieldCB cb, void* context);
 
 char const* GetMetatypeName(Type* typeP);
 
@@ -142,17 +142,17 @@ AstNode* GetModuleTypeAstNode(Type* moduleType);
 // Typing and type-checking:
 //
 
-void TypeNode(Typer* typer, AstNode* node);
-int SolveAndCheckTyper(Typer* typer);
+void TypeNode(Manager* typer, AstNode* node);
+int SolveAndCheckManager(Manager* typer);
 
-size_t GetTypeSizeInBytes(Typer* typer, Type* type);
-Type* GetTypeSoln(Typer* typer, Type* type);
+size_t GetTypeSizeInBytes(Manager* typer, Type* type);
+Type* GetTypeSoln(Manager* typer, Type* type);
 
 //
 // Debug:
 //
 
-void PrintTyper(Typer* typer);
+void PrintManager(Manager* typer);
 
 //
 // Reflection:

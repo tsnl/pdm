@@ -6,7 +6,7 @@
 
 #include "pdm/ast/stmt/stmt.hh"
 #include "pdm/scoper/context.hh"
-#include "pdm/typer/typer.hh"
+#include "pdm/types/manager.hh"
 #include "pdm/printer/printer.hh"
 
 
@@ -30,7 +30,7 @@ namespace pdm::scoper {
     // - used by links
     class Frame {
       private:
-        typer::Typer*       m_typer;
+        types::Manager*       m_typer;
         FrameKind           m_kind;
         Frame*              m_parent_frame;
         std::vector<Frame*> m_child_frames;
@@ -39,7 +39,7 @@ namespace pdm::scoper {
 
       protected:
         // primary constructor: called by all other constructors
-        Frame(FrameKind kind, Frame* parent_frame, typer::Typer* typer)
+        Frame(FrameKind kind, Frame* parent_frame, types::Manager* typer)
         : m_typer(typer),
           m_kind(kind),
           m_parent_frame(parent_frame),
@@ -69,7 +69,7 @@ namespace pdm::scoper {
         FrameKind kind() const {
             return m_kind;
         }
-        typer::Typer* typer() const {
+        types::Manager* typer() const {
             return m_typer;
         }
         Frame* parent_frame() const {

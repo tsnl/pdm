@@ -3,7 +3,7 @@
 #include <cassert>
 
 #include "pdm/source/loc.hh"
-#include "pdm/typer/var.hh"
+#include "pdm/types/var.hh"
 
 namespace pdm::ast {
 
@@ -12,12 +12,12 @@ namespace pdm::ast {
       m_desc(std::move(desc)),
       m_x_tv(nullptr) {}
 
-    void BuiltinTypeStmt::x_tv(typer::TypeVar* tv) {
+    void BuiltinTypeStmt::x_tv(types::TypeVar* tv) {
         assert(tv->soln_fixed());
         m_x_tv = tv;
     }
 
-    typer::TypeVar* BuiltinTypeStmt::x_tv() const {
+    types::TypeVar* BuiltinTypeStmt::x_tv() const {
         return m_x_tv;
     }
 }

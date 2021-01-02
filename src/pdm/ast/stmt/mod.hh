@@ -10,7 +10,7 @@
 namespace pdm::scoper {
     class Frame;
 }
-namespace pdm::typer {
+namespace pdm::types {
     class TypeVar;
 }
 
@@ -27,7 +27,7 @@ namespace pdm::ast {
 
       private:
         scoper::Frame*  m_x_module_frame;
-        typer::TypeVar* m_x_module_tv;
+        types::TypeVar* m_x_module_tv;
 
       public:
         ModStmt(source::Loc loc, intern::String module_name, std::vector<Stmt*>&& defns)
@@ -54,10 +54,10 @@ namespace pdm::ast {
         }
 
       public:
-        typer::TypeVar* x_module_tv() const {
+        types::TypeVar* x_module_tv() const {
             return m_x_module_tv;
         }
-        void x_module_tv(typer::TypeVar* module_tv) {
+        void x_module_tv(types::TypeVar* module_tv) {
             m_x_module_tv = module_tv;
         }
     };

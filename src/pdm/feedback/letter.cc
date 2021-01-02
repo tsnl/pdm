@@ -10,9 +10,13 @@ namespace pdm::feedback {
 
     void Letter::print(std::ostream& out) {
         switch (severity()) {
+            case Severity::CompilerError:
+            {
+                out << "BUG-!!: ";
+            }
             case Severity::FatalError:
             {
-                out << "FATAL_ERROR: ";
+                out << "FATAL: ";
                 break;
             }
             case Severity::Error:

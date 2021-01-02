@@ -83,8 +83,8 @@ namespace pdm::ast {
             Post
         };
 
-      private:
-        bool on_visit(Node* node, VisitOrder visit_order);
+      protected:
+        virtual bool on_visit(Node* node, VisitOrder visit_order);
       
       protected:
         // scripts:

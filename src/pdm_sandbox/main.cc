@@ -21,33 +21,10 @@ int main(int argc, char const* argv[]) {
             std::move(std::filesystem::current_path().string()),
             std::move(entry_point_path)
         };
-        if (!compiler.import_all()) {
-            std::cout << "A fatal error occurred while loading source files." << std::endl;
-            pdm::feedback::print_all(std::cout);
-            return 1;
-        }
-
-        // debug only
-        bool const print_scripts = true;
-        if (print_scripts) {
-            for (pdm::ast::Script* script: compiler.all_scripts()) {
-                pdm::printer::Printer printer{std::cout};
-                printer.print_node(script);
-            }
-        }
-
-        if (!compiler.typecheck_all()) {
-            std::cout << "A fatal typechecking occurred." << std::endl;
-            pdm::feedback::print_all(std::cout);
-            return 1;
-        }
-
-        // from here, we have a verdant, typechecked AST.
-        // todo: emit an LLVM IR bundle, resolving dependencies as required
-        // todo: emit a WASM bundle, resolving dependencies as required.
-
-        // pdm_cli::typer_demo::demo1();
-        // pdm_cli::feedback_demo::demo1();
+        bool compiled_ok = compiler.finish();
+        int return_code = (compiled_ok ? 0 : 1);
+        pdm::feedback::print_all(std::cout);
+        return return_code;
     }
     return 0;
 }

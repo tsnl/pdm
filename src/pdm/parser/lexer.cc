@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <iomanip>
 
 #include <cctype>
 #include <cassert>
@@ -130,25 +131,25 @@ namespace pdm::parser::aux {
     // - Read, Advance, Read, Advance...
     // - if (Advance...) is an effective way to check for and handle EOFs.
 
-    TokenKind lexOneToken(Reader* source, TokenInfo* info, source::Loc* out_loc) {
+    TokenKind lexOneToken(Reader* reader, TokenInfo* info, source::Loc* out_loc) {
         // At SOF, reading the first character.
-        if (source->at_sof()) {
-            source->advance_head();
+        if (reader->at_sof()) {
+            reader->advance_head();
         }
         
         // Ignoring whitespace & comments:
-        while (isspace(source->read_head()) || source->read_head() == '#') {
-            skipWhitespace(source);
-            if (source->read_head() == '#') {
+        while (isspace(reader->read_head()) || reader->read_head() == '#') {
+            skipWhitespace(reader);
+            if (reader->read_head() == '#') {
                 do {
-                    source->advance_head();
-                } while (source->read_head() != '\n' && !source->at_eof());
+                    reader->advance_head();
+                } while (reader->read_head() != '\n' && !reader->at_eof());
             }
-            skipWhitespace(source);
+            skipWhitespace(reader);
         }
 
         // If at EOF, returning Tk::EOS (not Tk::NONE!) to indicate the end of this token stream.
-        if (source->at_eof()) {
+        if (reader->at_eof()) {
             return Tk::EOS;
         }
 
@@ -157,46 +158,49 @@ namespace pdm::parser::aux {
         //
 
         // Loc firstLoc; 
-        source::Pos firstPos = *source->opt_head_pos();
-        assert(source->opt_head_pos() != nullptr);
+        source::Pos firstPos = *reader->opt_head_pos();
+        assert(reader->opt_head_pos() != nullptr);
 
         //
         // Simple tokens:
         //
 
-        TokenKind outKind = lexOneSimpleToken(source);
+        TokenKind outKind = lexOneSimpleToken(reader);
         if (outKind == Tk::NONE) {
             // must be a more complex token...
 
-            int firstChar = source->read_head();
+            int firstChar = reader->read_head();
             
             // numbers:
             if (isdigit(firstChar)) {
-                outKind = lexOneNumber(source, info);
+                outKind = lexOneNumber(reader, info);
             }
 
             // strings:    
             else if (firstChar == '"' || firstChar == '\'') {
-                outKind = lexOneString(source, info, firstPos);
+                outKind = lexOneString(reader, info, firstPos);
             }
 
             // IDs and keywords:
             else if (isFirstIdChar(firstChar)) {
-                outKind = lexOneIdOrKeyword(source, info, firstPos);
+                outKind = lexOneIdOrKeyword(reader, info, firstPos);
             }
 
             // Error: unknown token kind.
             // Offer feedback with location, RETURN EARLY with Tk::NONE
             else {
+                source::Loc loc {firstPos};
+                loc.source(reader->opt_source());
+
                 std::vector<feedback::Note*> notes; {
                     notes.reserve(1);
-                    notes.push_back(new feedback::SourceLocNote("here...", source::Loc(firstPos)));
+                    notes.push_back(new feedback::SourceLocNote("here...", loc));
                 }
                 char offendingChar = firstChar;
                 std::stringstream headline_ss;
                 headline_ss 
                     << "Before '" << offendingChar << "' " 
-                    << "(" << (int)offendingChar << ") "
+                    << "(U+" << std::hex << (int)offendingChar << ") "
                     << "expected a valid token.";
                 feedback::Letter* letter = new feedback::Letter(
                     feedback::Severity::FatalError,
@@ -210,7 +214,7 @@ namespace pdm::parser::aux {
         }
 
         // populating lastLoc, creating span, returning VALID token kind found so far:
-        source::Pos lastPos = *source->opt_head_pos();
+        source::Pos lastPos = *reader->opt_head_pos();
         *out_loc = source::Loc{firstPos, lastPos};
         return outKind;
     }

@@ -3,8 +3,8 @@
 
 #include "pdm/scoper/frame.hh"
 
-namespace pdm::typer {
-    class Typer;
+namespace pdm::types {
+    class Manager;
     class Var;
 }
 
@@ -12,10 +12,10 @@ namespace pdm::scoper {
 
     class RootFrame: public Frame {
       public:
-        RootFrame(typer::Typer* typer);
+        RootFrame(types::Manager* typer);
 
       private:
-        void help_define_builtin_type(intern::String name, typer::Var* typer_var);
+        void help_define_builtin_type(intern::String name, types::Var* typer_var);
     };
 
 }

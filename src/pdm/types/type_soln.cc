@@ -1,6 +1,6 @@
 #include "type_soln.hh"
 
-namespace pdm::typer {
+namespace pdm::types {
 
     VoidTypeSoln VoidTypeSoln::s_singleton {};
     StringTypeSoln StringTypeSoln::s_singleton {};

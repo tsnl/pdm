@@ -22,7 +22,7 @@ struct LoadedSource {
 
 struct Interp {
     LoadedSource* loadedSourceSb;
-    Typer* typer;
+    Manager* typer;
     Primer* primer;
 };
 
@@ -48,7 +48,7 @@ Interp* CreateInterp(void) {
 
     Interp* interp = malloc(sizeof(Interp));
     interp->loadedSourceSb = NULL;
-    interp->typer = NewTyper(NewDefaultTyperCfg());
+    interp->typer = NewManager(NewDefaultManagerCfg());
     interp->primer = CreatePrimer(interp->typer);
     return interp;
 }
@@ -107,11 +107,11 @@ int InterpTypecheckModules(Interp* interp) {
     }
 
     // typechecking the whole system:
-    int result = SolveAndCheckTyper(interp->typer);
+    int result = SolveAndCheckManager(interp->typer);
 
     // post typer dump:
     if (DEBUG) {
-        PrintTyper(interp->typer);
+        PrintManager(interp->typer);
     }
 
     return result;

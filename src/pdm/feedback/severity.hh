@@ -4,6 +4,7 @@
 namespace pdm::feedback {
 
     enum class Severity {
+        CompilerError,
         FatalError,
         Error,
         Warning,
