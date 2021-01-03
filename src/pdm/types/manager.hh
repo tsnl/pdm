@@ -1,5 +1,5 @@
-#ifndef INCLUDED_PDM_TYPER_TYPER_HH
-#define INCLUDED_PDM_TYPER_TYPER_HH
+#ifndef INCLUDED_PDM_TYPES_MANAGER_HH
+#define INCLUDED_PDM_TYPES_MANAGER_HH
 
 #include <string>
 #include <deque>
@@ -10,6 +10,10 @@
 
 #include "var.hh"
 #include "type_soln.hh"
+
+namespace pdm {
+    class Compiler;
+}
 
 // typer incrementally constructs and preserves two sets: 
 //   1. of type variables (V), and 
@@ -30,6 +34,8 @@ namespace pdm::types {
 
       // storage for all types:
       private:
+        Compiler* m_opt_compiler_ptr;
+
         std::deque<TypeVar>  m_all_tvs;
         std::deque<ClassVar> m_all_cvs;
         std::vector<Rule*>   m_all_rules;
@@ -55,7 +61,7 @@ namespace pdm::types {
         TypeVar m_f64_tv;
         
       public:
-        Manager();
+        Manager(Compiler* opt_compiler_ptr = nullptr);
 
       // create tv (TypeVar) and cv (ClassVar)
       public:
@@ -114,4 +120,4 @@ namespace pdm::types {
 
 }   // namespace pdm::typer
 
-#endif  // INCLUDED_PDM_TYPER_TYPER_HH
+#endif  // INCLUDED_PDM_TYPES_MANAGER_HH

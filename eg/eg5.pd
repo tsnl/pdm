@@ -1,9 +1,9 @@
 # Enums: simple enough.
 
 module opt {
-    enum Opt[T] {
-        Some T,
-        None
-    };
+    type Opt[T]
+    | Some T
+    | None
+    ;
 };
 

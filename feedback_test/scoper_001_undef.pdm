@@ -1,0 +1,17 @@
+mod test_scoper_undef {
+    fn test_scoper_undef (x Float32) -> Float32 = {
+        # use an undefined symbol 'y'
+        y
+    };
+};
+
+# Correct sample output (Jan 2 2020):
+#   pdm-cli v0.0
+#   Dispatching: /Users/nti/Documents/pdm.master/feedback_test/scoper_undef.pdm
+#   ERROR: ID 'y' used but not defined
+#       - see here...
+#         [/Users/nti/Documents/pdm.master/feedback_test/scoper_undef.pdm:4:9-5:0]
+#   FATAL: A fatal scoper error occurred.
+#     See other error messages for further guidance.
+#   FATAL: A fatal error occurred while loading your source files, so output files will not be made.
+#     Loading Error-- Compilation Terminated

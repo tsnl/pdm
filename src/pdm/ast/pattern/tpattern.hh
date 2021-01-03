@@ -7,8 +7,13 @@
 #include "pdm/ast/node.hh"
 #include "pdm/ast/typespec/typespec.hh"
 
+#include "base_field.hh"
+
 namespace pdm::ast {
     class Manager;
+}
+namespace pdm::types {
+    class Var;
 }
 
 namespace pdm::ast {
@@ -21,34 +26,36 @@ namespace pdm::ast {
             Value,
             Type
         };
-        class Field {
+        class Field: public BaseField {
             friend Manager;
 
           private:
-            source::Loc m_loc;
             FieldKind m_kind;
-            intern::String m_lhs_name;
             Typespec* m_typespec;
+            types::Var* m_x_defn_var;
 
           protected:
             Field(source::Loc loc, FieldKind kind, intern::String name, Typespec* rhs_typespec)
-            : m_loc(loc),
-              m_kind(kind),
-              m_lhs_name(name),
-              m_typespec(rhs_typespec) {}
+            :   BaseField(loc, Kind::Aux_TPatternField, name),
+                m_kind(kind),
+                m_typespec(rhs_typespec),
+                m_x_defn_var(nullptr)
+            {}
           
           public:
-            source::Loc const& loc() const {
-                return m_loc;
-            }
             FieldKind kind() const { 
                 return m_kind; 
             }
-            intern::String lhs_name() const {
-                return m_lhs_name; 
-            }
             Typespec* rhs_typespec() const {
                 return m_typespec; 
+            }
+          
+          public:
+            types::Var* x_defn_var() const {
+                return m_x_defn_var;
+            }
+            void x_defn_var(types::Var* defn_var) {
+                m_x_defn_var = defn_var;
             }
         };
 

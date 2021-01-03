@@ -215,7 +215,6 @@
 %token KW_FN "fn" 
 %token KW_TFN "Fn"
 %token KW_TYPE "type" 
-%token KW_ENUM "enum"
 %token KW_AND "and" 
 %token KW_XOR "xor" 
 %token KW_OR "or" 
@@ -275,7 +274,6 @@
  * -> KW_FROM
  * -> KW_AS
  * -> KW_TYPE
- * -> KW_ENUM
  */
 
 %start script;
@@ -361,11 +359,10 @@ type_stmt
     | KW_TYPE tid tpattern_seq BIND long_typespec   { $$ = mgr->new_type_stmt(@$, $2.ID_intstr, std::move($3), $5); }
     ;
 enum_stmt
-    : KW_ENUM tid enum_field_pl     { $$ = mgr->new_enum_stmt(@$, $2.ID_intstr, std::move($3)); }
+    : KW_TYPE tid enum_field_pl     { $$ = mgr->new_enum_stmt(@$, $2.ID_intstr, std::move($3)); }
     ;
 enum_field_pl
     : PIPE unprefixed_enum_field_pl { $$ = std::move($2); }
-    | unprefixed_enum_field_pl      { $$ = std::move($1); }
     ;
 unprefixed_enum_field_pl
     : enum_field                                { $$.push_back($1); }

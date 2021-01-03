@@ -62,7 +62,6 @@ namespace pdm::parser::aux {
         intern::String not_intstr;
         intern::String set_intstr;
         intern::String type_intstr;
-        intern::String enum_intstr;
         intern::String mod_intstr;
         intern::String from_intstr;
         intern::String typeclass_intstr;
@@ -93,7 +92,6 @@ namespace pdm::parser::aux {
             not_intstr = "not";
             set_intstr = "set";
             type_intstr = "type";
-            enum_intstr = "enum";
             mod_intstr = "mod";
             from_intstr = "from";
             typeclass_intstr = "typeclass";
@@ -550,7 +548,6 @@ namespace pdm::parser::aux {
         if (intstr == keywords.not_intstr) { return Tk::KW_NOT; }
         if (intstr == keywords.set_intstr) { return Tk::KW_SET; }
         if (intstr == keywords.type_intstr) { return Tk::KW_TYPE; }
-        if (intstr == keywords.enum_intstr) { return Tk::KW_ENUM; }
         if (intstr == keywords.typeclass_intstr) { return Tk::KW_TYPECLASS; }
         if (intstr == keywords.mod_intstr) { return Tk::KW_MOD; }
         if (intstr == keywords.from_intstr) { return Tk::KW_FROM; }
@@ -928,11 +925,6 @@ namespace pdm::parser::aux {
             case Tk::KW_TYPE:
             {
                 name = "type";
-                break;
-            }
-            case Tk::KW_ENUM:
-            {
-                name = "enum";
                 break;
             }
             case Tk::KW_DISCARD:

@@ -2,8 +2,9 @@
 
 namespace pdm::types {
 
-    Manager::Manager()
-    :   m_void_tv("BuiltinType:Void", VoidTypeSoln::get(), nullptr),
+    Manager::Manager(Compiler* opt_compiler_ptr)
+    :   m_opt_compiler_ptr(opt_compiler_ptr),
+        m_void_tv("BuiltinType:Void", VoidTypeSoln::get(), nullptr),
         m_string_tv("BuiltinType:String", StringTypeSoln::get(), nullptr),
         m_i8_tv("BuiltinType:I8", IntTypeSoln::get_i8(), nullptr),
         m_i16_tv("BuiltinType:I16", IntTypeSoln::get_i16(), nullptr),
