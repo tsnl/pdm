@@ -8,6 +8,11 @@ namespace pdm::ast {
     bool Visitor::visit(Node* node) {
         bool ok = true;
         
+        // early return if a helper node:
+        if (is_aux_kind(node->kind())) {
+            return ok;
+        }
+
         ok = on_visit(node, VisitOrder::Pre) && ok;
 
         switch (node->kind()) 
@@ -369,6 +374,14 @@ namespace pdm::ast {
                 ok = false;
                 break;
             }
+
+            // ignoring 'Aux_':
+            case Kind::Aux_LPatternField:
+            case Kind::Aux_TPatternField:
+            case Kind::Aux_VPatternField:
+            {
+                break;
+            }
         }
 
         ok = on_visit(node, VisitOrder::Post) && ok;
@@ -585,6 +598,14 @@ namespace pdm::ast {
             case Kind::__Count:
             {
                 return false;
+            }
+
+            // ignore:
+            case Kind::Aux_LPatternField:
+            case Kind::Aux_TPatternField:
+            case Kind::Aux_VPatternField:
+            {
+                return true;
             }
         }
     }

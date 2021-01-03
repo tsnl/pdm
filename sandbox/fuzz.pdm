@@ -1,0 +1,35 @@
+import math from "stdlib.pdm" type "pdm/script";
+
+mod vec {
+    type Vec2 = {
+        x Float32,
+        y Float32
+    };
+
+    fn mul (v Vec2, s Float32) -> Vec2 = {
+        x = v.x * s,
+        y = v.y * s
+    };
+
+    fn dot (v Vec2, w Vec2) -> Float32 = {
+        v.x * w.x + v.y * w.y
+    };
+    fn length_sqr (v Vec2) -> Float32 = {
+        dot(v, v)
+    };
+    fn length (v Vec2) -> Float32 = {
+        math.sqrt(length_sqr(v))
+    };
+
+    # returns a vector pointing in the same direction of unit length
+    # * ensure the output is of unit length
+    # * deal with a failure case! when |v| = 0
+    fn normalize (v Vec2) -> Vec2 = {
+        val v_length = length(v);
+        if (v_length == 0) then {
+            v
+        } else {
+            mul(v, 1/v_length)
+        }
+    };
+};

@@ -1,12 +1,20 @@
-# Manager
+# Types
+
+## Upshot
+
+This module lets users...
+1. create types
+2. create type and typeclass variables (with TypeVar, ClassVar resp.)
+3. create rules and assume or test them. 
+4. use assumed rules to solve and check type and typeclass variables.
 
 ## Overview
 
-The typer is used to infer and check the all typing in an input program.
-Manager users do this by instantiating `Var`s, and apply `Rule`s to them.
-The typer then solves each Var by examining constraints for any inconsistencies.
+This module is used to infer and check the all typing in an input program.
+Users do this by instantiating `Var`s, and apply `Rule`s to them.
+This module then solves each Var by examining constraints for any inconsistencies.
 
-Manager supports two kinds of variables: `ClassVar` and `TypeVar`.
+This module supports two kinds of variables: `ClassVar` and `TypeVar`.
 - Use `TypeVar` to solve for one unique type in a context.
   - Use `Type`, subclass of `TypeVar`, for constant types with frozen soln.
     Need to generate/maintain appropriate constraints for these constants.

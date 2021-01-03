@@ -42,7 +42,23 @@ namespace pdm::ast {
         "TupleTypespec", "StructTypespec"
     };
 
-    char const* kind_as_cstr(Kind kind) {
+    char const* kind_as_text(Kind kind) {
         return kind_as_cstr_table[(int)kind];
+    }
+
+    bool is_aux_kind(Kind kind) {
+        return (
+            kind == Kind::Aux_LPatternField ||
+            kind == Kind::Aux_VPatternField ||
+            kind == Kind::Aux_TPatternField
+        );
+    }
+
+    bool is_pattern_kind(Kind kind) {
+        return (
+            kind == Kind::LPattern ||
+            kind == Kind::VPattern ||
+            kind == Kind::TPattern
+        );
     }
 }

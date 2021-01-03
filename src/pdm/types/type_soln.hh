@@ -1,5 +1,5 @@
-#ifndef INCLUDED_PDM_TYPER_TYPE_SOLN_HH
-#define INCLUDED_PDM_TYPER_TYPE_SOLN_HH
+#ifndef INCLUDED_PDM_TYPES_TYPE_SOLN_HH
+#define INCLUDED_PDM_TYPES_TYPE_SOLN_HH
 
 #include <vector>
 
@@ -256,4 +256,4 @@ namespace pdm::types {
 
 }   // namespace pdm::typer
 
-#endif  // INCLUDED_PDM_TYPER_TYPE_SOLN_HH
+#endif  // INCLUDED_PDM_TYPES_TYPE_SOLN_HH

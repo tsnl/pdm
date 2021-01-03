@@ -1,8 +1,9 @@
 #include "manager.hh"
+#include "pdm/compiler/compiler.hh"
 
 namespace pdm::ast {
-    Manager::Manager(types::Manager* typer, size_t pool_size_in_bytes)
-    : m_typer(typer),
+    Manager::Manager(Compiler* compiler_ptr, size_t pool_size_in_bytes)
+    : m_compiler_ptr(compiler_ptr),
       m_pool(new u8[pool_size_in_bytes]),
       m_pool_size_in_bytes(pool_size_in_bytes),
       m_pool_used_in_bytes(0) {}
@@ -13,6 +14,13 @@ namespace pdm::ast {
         }
         m_pool_size_in_bytes = 0;
         m_pool_used_in_bytes = 0;
+    }
+
+    Compiler* Manager::compiler() {
+        return m_compiler_ptr;
+    }
+    types::Manager* Manager::types_mgr() const {
+        return m_compiler_ptr->types_mgr();
     }
 
     Script* Manager::new_script(source::Source* source, source::Loc loc, std::vector<Stmt*>&& stmts) {

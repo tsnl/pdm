@@ -11,10 +11,15 @@
 #include "pdm/printer/printer.hh"
 
 
+namespace pdm {
+    class Compiler;
+}
 namespace pdm::scoper {
-
     class Scoper;
     class ScoperVisitor;
+}
+
+namespace pdm::scoper {
 
     class Scoper: public ast::TinyVisitor {
         friend ScoperVisitor;
@@ -26,8 +31,8 @@ namespace pdm::scoper {
         struct UsingLookupOrder      { ast::UsingStmt* using_stmt; Context* lookup_context; };
 
       private:
-        types::Manager* m_typer;
-        Frame*        m_root_frame;
+        Compiler*                m_compiler_ptr;
+        Frame*                             m_root_frame;
         std::vector<IdExpLookupOrder>      m_id_exp_orders;
         std::vector<IdTypespecLookupOrder> m_id_typespec_orders;
         std::vector<ImportLookupOrder>     m_import_orders;
@@ -36,12 +41,14 @@ namespace pdm::scoper {
         bool m_finished;
 
       public:
-        Scoper(types::Manager* typer);
+        Scoper(Compiler* compiler_ptr);
 
       public:
-        Frame*        root_frame() const { return m_root_frame; }
-        types::Manager* typer()      const { return m_typer; }
-        bool          finished()   const { return m_finished; }
+        Frame*              root_frame() const { return m_root_frame; }
+        Compiler* compiler()   const { return m_compiler_ptr; }
+        bool                finished()   const { return m_finished; }
+
+        types::Manager* types_mgr() const;
 
       public:
         // `scope` creates data structures needed to lookup IDs
@@ -60,11 +67,11 @@ namespace pdm::scoper {
         friend Scoper;
 
       private:
-        Scoper* m_scoper_ref;
-        int m_overhead_chain_exp_count;
+        Scoper*              m_scoper_ref;
+        int                  m_overhead_chain_exp_count;
         std::stack<DefnKind> m_vpattern_defn_kind_stack;
         std::stack<DefnKind> m_lpattern_defn_kind_stack;
-        std::stack<Frame*> m_frame_stack;
+        std::stack<Frame*>   m_frame_stack;
 
       protected:
         ScoperVisitor(Scoper* scoper_ref);
@@ -91,6 +98,11 @@ namespace pdm::scoper {
         void place_id_typespec_lookup_order(ast::IdTypespec* id_typespec);
         void place_import_lookup_order(ast::ImportStmt* import_stmt);
         void place_using_lookup_order(ast::UsingStmt* using_stmt);
+
+      private:
+        void post_overlapping_defn_error(std::string defn_kind, Defn const& failed_defn);
+        void post_overlapping_defn_error(std::string defn_kind, Defn const& failed_defn, Context* tried_context) const;
+        void help_post_defn_failure(std::string defn_kind, Defn const& failed_new_defn, Defn const& old_defn) const;
 
       protected:
         // scripts:

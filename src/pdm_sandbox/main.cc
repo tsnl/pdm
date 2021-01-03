@@ -17,9 +17,10 @@ int main(int argc, char const* argv[]) {
                   << "Please try again."    << std::endl;
     } else {
         std::string entry_point_path {argv[1]};
-        pdm::compiler::Compiler compiler {
+        pdm::Compiler compiler {
             std::move(std::filesystem::current_path().string()),
-            std::move(entry_point_path)
+            std::move(entry_point_path),
+            pdm::Compiler::PrintFlags_PrintEverything
         };
         bool compiled_ok = compiler.finish();
         int return_code = (compiled_ok ? 0 : 1);

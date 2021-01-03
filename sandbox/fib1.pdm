@@ -1,4 +1,4 @@
-import fibx from "fibx.pdm" type "pdm.script";
+import fibx from "fibx.pdm" type "pdm/script";
 
 mod fibonacci {
     fn fib (x Int32) -> Int32 = {
@@ -13,7 +13,7 @@ mod fibonacci {
         result
     };
     fn fib2 (y Int32) -> Int32 = {
-        val hello = 0;
+        val (hello, hello) = 0;
         hello
     };
 };

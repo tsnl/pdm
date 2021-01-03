@@ -48,8 +48,13 @@ namespace pdm::ast {
         DotNameTypespec_TypePrefix, DotNameTypespec_ModPrefix,
         TupleTypespec, StructTypespec,
 
-        // shared, templates:
+        // args:
         TArg, VArg,
+
+        // helpers, don't get own visit methods:
+        Aux_VPatternField,
+        Aux_TPatternField,
+        Aux_LPatternField,
 
         // total count:
         __Count
@@ -61,6 +66,10 @@ namespace pdm::ast {
     // - kind.cc: update names IN ORDER
 
     char const* kind_as_text(Kind kind);
+
+    bool is_aux_kind(Kind kind);
+
+    bool is_pattern_kind(Kind kind);
 
 }   // namespace pdm::ast
 

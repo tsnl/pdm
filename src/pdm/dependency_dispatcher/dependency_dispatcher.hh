@@ -3,7 +3,7 @@
 
 #include "pdm/ast/visitor.hh"
 
-namespace pdm::compiler {
+namespace pdm {
     class Compiler;
 }
 namespace pdm::ast {
@@ -14,11 +14,11 @@ namespace pdm::dependency_dispatcher {
 
     class DDVisitor: public ast::TinyVisitor {
       private:
-        compiler::Compiler* m_compiler_ref;
+        Compiler* m_compiler_ref;
         ast::Script*        m_this_script;
 
       public:
-        DDVisitor(compiler::Compiler* compiler_ref, ast::Script* this_script)
+        DDVisitor(Compiler* compiler_ref, ast::Script* this_script)
         : m_compiler_ref(compiler_ref),
           m_this_script(this_script) {}
       

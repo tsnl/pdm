@@ -1,0 +1,9 @@
+mod scoper_redef {
+    # in most cases, definitions shadow.
+    # the only way to get this error is...
+    #   val (x, x) = something();
+    # or...
+    fn oops (ditto Float32, ditto Float32) -> Float32 = {
+        0.0
+    };
+};

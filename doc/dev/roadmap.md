@@ -1,5 +1,18 @@
 # Roadmap
 
+## Jan 2 2021
+
+- A lot of work done on the scoper; about ready.
+- Typer WIP.
+
+Current task-sheet:
+1. Finish posting scoper error messages
+2. Implement typer visitor; use old C code as a reference (same rules).
+   - Now, supertyping and subtyping are cleared up too.
+
+Current feature wishlist:
+1. Implement 'FnTypeSpec'
+
 ## Dec 29 - WIP (2)
 
 Turns out, templating out is harder than expected.

@@ -353,7 +353,7 @@ namespace pdm::printer {
             }
 
             // illegal elements:
-            case ast::Kind::__Count:
+            default:
             {
                 break;
             }

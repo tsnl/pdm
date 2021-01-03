@@ -24,39 +24,27 @@
 #include "pdm/types/manager.hh"
 
 
-namespace pdm::compiler {
+namespace pdm {
 
     Compiler::Compiler(std::string&& cwd, std::string&& entry_point_path, u64 print_flags)
     :   m_cwd(std::move(cwd)),
         m_entry_point_path(abspath(std::move(entry_point_path))),
         m_cached_imports(),
         m_all_scripts(),
-        m_typer(),
-        m_manager(&m_typer),
-        m_scoper(&m_typer),
+        m_types_mgr(this),
+        m_ast_mgr(this),
         m_print_flags(print_flags)
     {
         m_all_scripts.reserve(8);
-
-        m_scoper.root_frame()->shadow(scoper::ContextKind::RootDefs); {
-            m_void_tv_client_astn = help_define_builtin_type("Void", typer()->get_void_tv());
-            m_string_tv_client_astn = help_define_builtin_type("String", typer()->get_string_tv());
-            m_i8_tv_client_astn = help_define_builtin_type("Bool", typer()->get_u1_tv());
-            m_i16_tv_client_astn = help_define_builtin_type("UInt8", typer()->get_u8_tv());
-            m_i32_tv_client_astn = help_define_builtin_type("UInt16", typer()->get_u16_tv());
-            m_i64_tv_client_astn = help_define_builtin_type("UInt32", typer()->get_u32_tv());
-            m_i128_tv_client_astn = help_define_builtin_type("UInt64", typer()->get_u64_tv());
-            m_u1_tv_client_astn = help_define_builtin_type("UInt128", typer()->get_u128_tv());
-            m_u8_tv_client_astn = help_define_builtin_type("Int8", typer()->get_i8_tv());
-            m_u16_tv_client_astn = help_define_builtin_type("Int16", typer()->get_i16_tv());
-            m_u32_tv_client_astn = help_define_builtin_type("Int32", typer()->get_i32_tv());
-            m_u64_tv_client_astn = help_define_builtin_type("Int64", typer()->get_i64_tv());
-            m_u128_tv_client_astn = help_define_builtin_type("Int128", typer()->get_i128_tv());
-            m_f16_tv_client_astn = help_define_builtin_type("Float16", typer()->get_f16_tv());
-            m_f32_tv_client_astn = help_define_builtin_type("Float32", typer()->get_f32_tv());
-            m_f64_tv_client_astn = help_define_builtin_type("Float64", typer()->get_f64_tv());
-        }
     }
+
+    u64 Compiler::PrintFlags_PrintEverything = (0
+        | static_cast<u64>(PrintFlag::SourceCode)
+        | static_cast<u64>(PrintFlag::Scopes)
+        | static_cast<u64>(PrintFlag::Types)
+        | static_cast<u64>(PrintFlag::Llvm)
+        | static_cast<u64>(PrintFlag::Wasm)
+    );
 
     ast::Script* Compiler::import(std::string const& from_path, std::string const& type, std::string const& reason) {
         ast::Script* script = help_import_script_1(from_path, type);
@@ -72,11 +60,11 @@ namespace pdm::compiler {
         }
     }
 
-    ast::BuiltinTypeStmt* Compiler::help_define_builtin_type(intern::String name, types::Var* typer_var) {
+    ast::BuiltinTypeStmt* Compiler::help_define_builtin_type(scoper::Scoper& scoper, intern::String name, types::Var* typer_var) {
         std::string debug_name = std::string("RootType:") + std::string(name.content());
-        ast::BuiltinTypeStmt* stmt = m_manager.new_builtin_type_stmt(std::move(debug_name));
+        ast::BuiltinTypeStmt* stmt = m_ast_mgr.new_builtin_type_stmt(std::move(debug_name));
         scoper::Defn defn {scoper::DefnKind::BuiltinType, name, stmt, typer_var};
-        assert(m_scoper.root_frame()->define(defn) && "Bad builtins setup.");
+        assert(scoper.root_frame()->define(defn) && "Bad builtins setup.");
         return stmt;
     }
 
@@ -88,10 +76,10 @@ namespace pdm::compiler {
             return script_it->second;
         }
 
-        if (type == "pdm.script") {
+        if (type == "pdm/script") {
             std::string abs_from_path = key.import_from_path.native();
             source::Source* source = new source::Source(std::move(abs_from_path));
-            ast::Script* script = parser::parse_script(&m_manager, source);
+            ast::Script* script = parser::parse_script(&m_ast_mgr, source);
             if (script == nullptr) {
                 return nullptr;
             } else {
@@ -121,18 +109,36 @@ namespace pdm::compiler {
         dd_visitor.visit(script);
     }
 
-    bool Compiler::pass1_import_all() {
+    bool Compiler::pass1_import_all(scoper::Scoper& scoper) {
         // importing the entry point, and all dependencies recursively via DependencyDispatcher:
-        ast::Script* entry_point_script = import(m_entry_point_path, "pdm.script", "entry point");
+        ast::Script* entry_point_script = import(m_entry_point_path, "pdm/script", "entry point");
         if (entry_point_script == nullptr) {
             return false;            
         }
 
         // scoping each module, visiting in dependency order:
-        for (ast::Script* script: m_all_scripts) {
-            m_scoper.scope(script);
+        scoper.root_frame()->shadow(scoper::ContextKind::RootDefs); {
+            m_void_tv_client_astn = help_define_builtin_type(scoper, "Void", types_mgr()->get_void_tv());
+            m_string_tv_client_astn = help_define_builtin_type(scoper, "String", types_mgr()->get_string_tv());
+            m_i8_tv_client_astn = help_define_builtin_type(scoper, "Int8", types_mgr()->get_i8_tv());
+            m_i16_tv_client_astn = help_define_builtin_type(scoper, "Int16", types_mgr()->get_i16_tv());
+            m_i32_tv_client_astn = help_define_builtin_type(scoper, "Int32", types_mgr()->get_i32_tv());
+            m_i64_tv_client_astn = help_define_builtin_type(scoper, "Int64", types_mgr()->get_i64_tv());
+            m_i128_tv_client_astn = help_define_builtin_type(scoper, "Int128", types_mgr()->get_i128_tv());
+            m_u1_tv_client_astn = help_define_builtin_type(scoper, "Bool", types_mgr()->get_u1_tv());
+            m_u8_tv_client_astn = help_define_builtin_type(scoper, "UInt8", types_mgr()->get_u8_tv());
+            m_u16_tv_client_astn = help_define_builtin_type(scoper, "UInt16", types_mgr()->get_u16_tv());
+            m_u32_tv_client_astn = help_define_builtin_type(scoper, "UInt32", types_mgr()->get_u32_tv());
+            m_u64_tv_client_astn = help_define_builtin_type(scoper, "UInt64", types_mgr()->get_u64_tv());
+            m_u128_tv_client_astn = help_define_builtin_type(scoper, "UInt128", types_mgr()->get_u128_tv());
+            m_f16_tv_client_astn = help_define_builtin_type(scoper, "Float16", types_mgr()->get_f16_tv());
+            m_f32_tv_client_astn = help_define_builtin_type(scoper, "Float32", types_mgr()->get_f32_tv());
+            m_f64_tv_client_astn = help_define_builtin_type(scoper, "Float64", types_mgr()->get_f64_tv());
         }
-        bool scoper_ok = m_scoper.finish();
+        for (ast::Script* script: m_all_scripts) {
+            scoper.scope(script);
+        }
+        bool scoper_ok = scoper.finish();
         if (!scoper_ok) {
             feedback::post(new feedback::Letter(
                 feedback::Severity::FatalError,
@@ -160,13 +166,13 @@ namespace pdm::compiler {
             p.print_node(script);
         }
     }
-    void Compiler::postpass1_print2_scopes() {
+    void Compiler::postpass1_print2_scopes(scoper::Scoper& scoper) {
         printer::Printer p{std::cout};
-        m_scoper.print(p);
+        scoper.print(p);
     }
     void Compiler::postpass2_print1_types() {
         printer::Printer p{std::cout};
-        m_typer.print(p);
+        m_types_mgr.print(p);
     }
     void Compiler::postpass3_print1_llvm() {
         std::cout << "Not Implemented: 'postpass3_print1_llvm'" << std::endl;
@@ -176,11 +182,13 @@ namespace pdm::compiler {
     }
 
     bool Compiler::finish() {
-        if (!pass1_import_all()) {
+        scoper::Scoper scoper{this};
+
+        if (!pass1_import_all(scoper)) {
             std::string desc = "Loading Error-- Compilation Terminated";
             std::string headline = (
                 "A fatal error occurred while loading your source files, "
-                "so output files will not be made."
+                "so no output files will be made."
             );
             feedback::post(new feedback::Letter(
                 feedback::Severity::FatalError,
@@ -194,14 +202,14 @@ namespace pdm::compiler {
             postpass1_print1_code();
         }
         if (m_print_flags & static_cast<u64>(PrintFlag::Scopes)) {
-            postpass1_print2_scopes();
+            postpass1_print2_scopes(scoper);
         }
         
         if (!pass2_typecheck_all()) {
             std::string headline = "Typechecking Error-- Compilation Terminated";
             std::string desc = (
                 "All loaded assets are syntactically valid, but other errors "
-                "occurred while processing, so output files will not be made."
+                "occurred while processing, so no output files will be made."
             );
             feedback::post(new feedback::Letter(
                 feedback::Severity::FatalError,

@@ -1,5 +1,5 @@
-#ifndef INCLUDED_PDM_TYPER_TYPE_KIND_HH
-#define INCLUDED_PDM_TYPER_TYPE_KIND_HH
+#ifndef INCLUDED_PDM_TYPES_TYPE_KIND_HH
+#define INCLUDED_PDM_TYPES_TYPE_KIND_HH
 
 namespace pdm::types {
     enum class TypeKind {
@@ -16,4 +16,4 @@ namespace pdm::types {
     };
 }
 
-#endif  // INCLUDED_PDM_TYPER_TYPE_KIND_HH
+#endif  // INCLUDED_PDM_TYPES_TYPE_KIND_HH

@@ -1,5 +1,5 @@
-#ifndef INCLUDED_PDM_TYPER_VAR_HH
-#define INCLUDED_PDM_TYPER_VAR_HH
+#ifndef INCLUDED_PDM_TYPES_VAR_HH
+#define INCLUDED_PDM_TYPES_VAR_HH
 
 #include <vector>
 #include <string>
@@ -120,4 +120,4 @@ namespace pdm::types {
 
 }   // namespace pdm::typer
 
-#endif  // INCLUDED_PDM_TYPER_VAR_HH
+#endif  // INCLUDED_PDM_TYPES_VAR_HH

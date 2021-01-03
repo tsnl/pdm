@@ -42,6 +42,7 @@ add_library(
 
     src/pdm/ast/manager.cc
     src/pdm/ast/manager.hh
+    src/pdm/ast/kind.cc
     src/pdm/ast/kind.hh
     src/pdm/ast/node.cc
     src/pdm/ast/node.hh
@@ -141,6 +142,9 @@ add_library(
     src/pdm/types/var.hh
     src/pdm/types/rule.hh
     
+    src/pdm/typer/typer.hh
+    src/pdm/typer/typer.hh
+
     src/pdm/feedback/feedback.cc
     src/pdm/feedback/feedback.hh
     src/pdm/feedback/manager.cc

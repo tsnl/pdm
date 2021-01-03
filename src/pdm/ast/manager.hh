@@ -59,7 +59,9 @@
 #include "typespec/tcall.hh"
 #include "typespec/tuple.hh"
 
-
+namespace pdm {
+    class Compiler;
+}
 namespace pdm::types {
     class Manager;
     class TypeVar;
@@ -69,13 +71,13 @@ namespace pdm::ast {
 
     class Manager {
       private:
-        types::Manager*       m_typer;
+        Compiler* m_compiler_ptr;
         u8*                 m_pool;
         size_t              m_pool_size_in_bytes;
         size_t              m_pool_used_in_bytes;
 
       public:
-        Manager(types::Manager* typer, size_t pool_size_in_bytes = megabytes_in_bytes(64));
+        Manager(Compiler* compiler_ptr, size_t pool_size_in_bytes = megabytes_in_bytes(64));
         ~Manager();
 
       private:
@@ -161,9 +163,10 @@ namespace pdm::ast {
         VArg* new_varg(source::Loc, Exp* exp, VArgKind varg_kind);
 
       public:
-        types::Manager* typer() const {
-            return m_typer;
-        }
+        Compiler* compiler();
+
+      public:
+        types::Manager* types_mgr() const;
     };
 
 }   // namespace pdm::ast

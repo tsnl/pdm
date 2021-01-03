@@ -8,9 +8,19 @@
 #include "pdm/ast/node.hh"
 #include "pdm/ast/typespec/typespec.hh"
 
-namespace pdm::ast {
+#include "base_field.hh"
 
+namespace pdm::scoper {
+    class Defn;
+}
+namespace pdm::types {
+    class TypeVar;
+}
+namespace pdm::ast {
     class Manager;
+}
+
+namespace pdm::ast {
 
     class LPattern: public Node {
         friend Manager;
@@ -20,21 +30,20 @@ namespace pdm::ast {
             IdSingleton,
             IdTypespecPair
         };
-        class Field {
+        class Field: public BaseField {
             friend Manager;
           
           private:
-            source::Loc     m_loc;
             FieldKind       m_kind;
-            intern::String  m_lhs_name;
             Typespec*       m_opt_rhs_typespec;
-          
+            types::TypeVar* m_x_defn_tv;
+            
           protected:
             Field(source::Loc loc, FieldKind kind, intern::String name, Typespec* opt_rhs_typespec = nullptr)
-            : m_loc(loc),
-              m_kind(kind), 
-              m_lhs_name(name), 
-              m_opt_rhs_typespec(opt_rhs_typespec) {
+            :   BaseField(loc, Kind::Aux_LPatternField, name),
+                m_kind(kind),
+                m_opt_rhs_typespec(opt_rhs_typespec)
+            {
                 if (opt_rhs_typespec) {
                     assert(
                         (kind == LPattern::FieldKind::IdTypespecPair) && 
@@ -44,17 +53,19 @@ namespace pdm::ast {
             }
           
           public:
-            source::Loc const& loc() const { 
-                return m_loc; 
-            }
             FieldKind kind() const { 
                 return m_kind; 
             }
-            intern::String lhs_name() const { 
-                return m_lhs_name; 
-            }
             Typespec* opt_rhs_typespec() const { 
                 return m_opt_rhs_typespec; 
+            }
+
+          public:
+            types::TypeVar* x_defn_tv() const {
+                return m_x_defn_tv;
+            }
+            void x_defn_tv(types::TypeVar* defn_tv) {
+                m_x_defn_tv = defn_tv;
             }
         };
       

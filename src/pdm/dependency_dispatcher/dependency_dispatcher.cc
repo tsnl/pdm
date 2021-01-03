@@ -1,12 +1,18 @@
 #include "dependency_dispatcher.hh"
 
 #include <iostream>
+#include <iomanip>
+
 #include <string>
 #include <filesystem>
 #include <cassert>
 
 #include "pdm/compiler/compiler.hh"
 #include "pdm/ast/manager.hh"
+#include "pdm/ast/kind.hh"
+#include "pdm/ast/pattern/vpattern.hh"
+#include "pdm/ast/pattern/lpattern.hh"
+#include "pdm/ast/pattern/tpattern.hh"
 
 #include "pdm/feedback/feedback.hh"
 #include "pdm/feedback/letter.hh"
@@ -16,12 +22,32 @@
 namespace pdm::dependency_dispatcher {
 
     inline bool is_relfile_import_type(std::string const& import_type) {
-        return import_type == "pdm.script";
+        return import_type == "pdm/script";
     }
 
     bool DDVisitor::on_visit(ast::Node* node, VisitOrder visit_order) {
         // setting 'source' for each node 'loc':
         node->mut_loc().source(m_this_script->source());
+
+        // (inelegant but efficient) additionally setting for fields if pattern:
+        // - inelegant because DependencyDispatcher is growing into a 'parser cleanup' module too.
+        // - need better names... ;-;
+        if (ast::is_pattern_kind(node->kind())) {
+            if (node->kind() == ast::Kind::VPattern) {
+                for (ast::VPattern::Field* field: dynamic_cast<ast::VPattern*>(node)->fields()) {
+                    field->mut_loc().source(m_this_script->source());
+                }
+            } else if (node->kind() == ast::Kind::LPattern) {
+                for (ast::LPattern::Field* field: dynamic_cast<ast::LPattern*>(node)->fields()) {
+                    field->mut_loc().source(m_this_script->source());
+                }
+            } else if (node->kind() == ast::Kind::TPattern) {
+                for (ast::TPattern::Field* field: dynamic_cast<ast::TPattern*>(node)->fields()) {
+                    field->mut_loc().source(m_this_script->source());
+                }
+            }
+        }
+
         return TinyVisitor::on_visit(node, visit_order);
     }
 
