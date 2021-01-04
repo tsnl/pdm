@@ -10,25 +10,14 @@ set(CMAKE_TOOLCHAIN_FILE
     CACHE STRING "Vcpkg toolchain file"
 )
 
-# configuring project, langs:
+# creating project, setting langs:
 project(pandemonium C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD 11)
 
-#
-# Building grammar:
-#
-
-message(STATUS "Building grammar using Bison")
-set(BISON_PATH REQUIRED CACHE STRING "")
-set(PARSER_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/parser)
-execute_process(COMMAND "${BISON_PATH} --output=parser.tab.cc --defines=parser.tab.hh" WORKING_DIRECTORY ${PARSER_ROOT})
-
-#
-# Configuring VCPkg, dependencies:
+# configuring VCPkg, dependencies:
+# from https://github.com/microsoft/vcpkg/README.md
 # from http://cpptruths.blogspot.com/2019/03/bootstrapping-vcpkg-based-cmake-project.html
-#
-
 set(PDM_DEPENDENCIES llvm)
 # set(PDM_DEPENDENCIES llvm clang)
 
@@ -57,21 +46,15 @@ if(NOT DEFINED ${CMAKE_TOOLCHAIN_FILE})
     execute_process(COMMAND ${VCPKG_EXEC} install ${PDM_DEPENDENCIES} WORKING_DIRECTORY ${VCPKG_ROOT})
 endif()
 
-#
-# Configuring dependencies: libclang, llvm
-#
-
+# finding dependencies: libclang, llvm
 find_package(LLVM CONFIG REQUIRED)
 # find_package(Clang CONFIG REQUIRED)
-
-message(STATUS "... Found LLVM version (${LLVM_PACKAGE_VERSION})")
-message(STATUS "... Using LLVMConfig.cmake in: ${LLVM_DIR}")
-message(STATUS "... Add '${PDM_LLVM_INSTALL_DIR}/include' to your IDE include path list for LLVM C API auto-complete.")
+message(STATUS "Found LLVM version (${LLVM_PACKAGE_VERSION})")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
 
-
+# including directories:
 include_directories(
-    "${PDM_LLVM_INSTALL_DIR}/include/"
     "${LLVM_INCLUDE_DIR}"
 )
 include_directories(
@@ -79,13 +62,7 @@ include_directories(
     dep
 )
 
-
-#
-#
-# PDM:
-#
-#
-
+# adding 'pdm': core library for compiler, other tools:
 add_library(
     pdm
 
@@ -190,7 +167,7 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/rule.hh
-   ${CMAKE_CURRENT_SOURCE_DIR}/
+    
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/typer/typer.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/typer/typer.hh
 
@@ -219,47 +196,24 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/dependency_dispatcher/dependency_dispatcher.hh
 )
 
-#
-# LLVM
+# link pdm <- llvm
 # - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt
-#
-
-# Find the libraries that correspond to the LLVM components
-# that we wish to use
 llvm_map_components_to_libnames(llvm_libs Core ExecutionEngine Interpreter MCJIT Support nativecodegen IRReader)
 add_definitions(${LLVM_DEFINITIONS})
 target_link_libraries(pdm ${llvm_libs})
 
-#
-# Intern library:
-#
-
+# link pdm <- intern :- C lib for interned string support
 add_subdirectory(dep/intern)
 target_link_libraries(pdm intern)
 
-#
-# utf8proc - Unicode support
-#
-
+# link pdm <- utf8proc :- C lib for Unicode support
 add_library(utf8proc
     dep/utf8proc/utf8proc.c
     dep/utf8proc/utf8proc.h
 )
 target_link_libraries(pdm utf8proc)
 
-#
-# CXX Standard:
-#
-
-set_property(TARGET pdm PROPERTY CXX_STANDARD 20)
-
-
-#
-#
-# PDM Sandbox:
-#
-#
-
+# PDM Sandbox: toy driver for PDM
 add_executable(
     pdm_sandbox
     src/pdm_sandbox/main.cc
@@ -269,8 +223,6 @@ add_executable(
     src/pdm_sandbox/feedback_demo.hh
 )
 target_link_libraries(pdm_sandbox pdm)
-set_property(TARGET pdm_sandbox PROPERTY CXX_STANDARD 20)
-
 
 #
 #
