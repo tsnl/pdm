@@ -3,19 +3,23 @@ cmake_minimum_required(VERSION 3.16)
 #
 # Initializing the project:
 #
-set(
-    CMAKE_TOOLCHAIN_FILE 
+
+# initializing the vcpkg builtsystem:
+set(CMAKE_TOOLCHAIN_FILE
     ${CMAKE_CURRENT_SOURCE_DIR}/dev/vcpkg/scripts/buildsystems/vcpkg.cmake
     CACHE STRING "Vcpkg toolchain file"
 )
 
-project(pandemonium CXX)
+# configuring project, langs:
+project(pandemonium C CXX)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_C_STANDARD 11)
 
 #
 # Building grammar:
 #
 
+message(STATUS "Building grammar using Bison")
 set(BISON_PATH REQUIRED CACHE STRING "")
 set(PARSER_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/parser)
 execute_process(COMMAND "${BISON_PATH} --output=parser.tab.cc --defines=parser.tab.hh" WORKING_DIRECTORY ${PARSER_ROOT})
@@ -56,9 +60,6 @@ endif()
 #
 # Configuring dependencies: libclang, llvm
 #
-
-set(LLVM_DIR "${VCPKG_ROOT}/")
-set(CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH} ${LLVM_DIR}")
 
 find_package(LLVM CONFIG REQUIRED)
 # find_package(Clang CONFIG REQUIRED)
@@ -189,7 +190,7 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/rule.hh
-   ${CMAKE_CURRENT_SOURCE_DIR}/ 
+   ${CMAKE_CURRENT_SOURCE_DIR}/
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/typer/typer.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/typer/typer.hh
 
