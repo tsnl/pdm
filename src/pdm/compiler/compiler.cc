@@ -22,7 +22,7 @@
 #include "pdm/scoper/defn.hh"
 
 #include "pdm/types/manager.hh"
-
+#include "pdm/typer/typer.hh"
 
 namespace pdm {
 
@@ -152,8 +152,12 @@ namespace pdm {
         return true;
     }
     bool Compiler::pass2_typecheck_all() {
-        std::cout << "Not Implemented: pass2_typecheck_all" << std::endl;
-        return false;
+        bool all_scripts_ok = true;
+        for (ast::Script* script: m_all_scripts) {
+            bool script_ok = typer::type(&m_types_mgr, script);
+            all_scripts_ok = all_scripts_ok && script_ok;
+        }
+        return all_scripts_ok;
     }
     bool Compiler::pass3_emit_all() {
         std::cout << "Not Implemented: pass3_emit_all" << std::endl;
@@ -172,7 +176,7 @@ namespace pdm {
     }
     void Compiler::postpass2_print1_types() {
         printer::Printer p{std::cout};
-        m_types_mgr.print(p);
+        m_types_mgr.print(p, "After pass2");
     }
     void Compiler::postpass3_print1_llvm() {
         std::cout << "Not Implemented: 'postpass3_print1_llvm'" << std::endl;

@@ -1,12 +1,12 @@
 #include "printer.hh"
 
 namespace pdm::printer {
-    
+
     template <typename P, typename T>
     void help_print_chain(Printer* printer, std::vector<P> const& prefix, T tail) {
         printer->print_u32_char('{');
         printer->print_newline_indent();
-    
+
         // the first N-1 prefix elements are always followed by ';' '\n'
         for (int index = 0; index < prefix.size(); index++) {
             ast::Node* item = prefix[index];
@@ -44,7 +44,7 @@ namespace pdm::printer {
 
     void Printer::print_newline() {
         m_ostream_ref << std::endl;
-        
+
         // postfix indent:
         for (int indent_count_index = 0; indent_count_index < m_indent_count; indent_count_index++) {
             m_ostream_ref << m_indent_text;
@@ -89,20 +89,13 @@ namespace pdm::printer {
         }
     }
 
-    void Printer::print_uint(u64 u, ast::IntExp::Base base) {
-        switch (base) {
-            case ast::IntExp::Base::Dec:
-            {
-                m_ostream_ref << std::dec << u;
-                break;
-            }
-            case ast::IntExp::Base::Hex:
-            {
-                m_ostream_ref << "0x" << std::hex << u;
-                break;
-            }
-        }
+    void Printer::print_uint_dec(u64 u) {
+        m_ostream_ref << std::dec << u;
     }
+    void Printer::print_uint_hex(u64 u) {
+        m_ostream_ref << "0x" << std::hex << u;
+    }
+
     void Printer::print_float(long double float_val) {
         m_ostream_ref << float_val;
     }
@@ -275,7 +268,7 @@ namespace pdm::printer {
                 print_tcall_exp(dynamic_cast<ast::TCallExp*>(node));
                 break;
             }
-            
+
             case ast::Kind::VPattern:
             {
                 print_vpattern(dynamic_cast<ast::VPattern*>(node));
@@ -332,7 +325,7 @@ namespace pdm::printer {
                 print_paren_typespec(dynamic_cast<ast::ParenTypespec*>(node));
                 break;
             }
-            
+
             // args:
             case ast::Kind::TArg:
             {
@@ -360,7 +353,7 @@ namespace pdm::printer {
         }
     }
 
-    
+
 
     // scripts:
     void Printer::print_script(ast::Script* script) {
@@ -450,7 +443,7 @@ namespace pdm::printer {
         print_cstr("fn ");
         print_intstr(fns->name());
         print_u32_char(' ');
-        
+
         for (ast::TPattern* tpattern: fns->tpatterns()) {
             print_node(tpattern);
             print_u32_char(' ');
@@ -526,7 +519,18 @@ namespace pdm::printer {
         print_cstr("()");
     }
     void Printer::print_int_exp(ast::IntExp* ie) {
-        print_uint(ie->value(), ie->base());
+        switch (ie->base()) {
+            case ast::IntExp::Base::Dec:
+            {
+                print_uint_dec(ie->value());
+                break;
+            }
+            case ast::IntExp::Base::Hex:
+            {
+                print_uint_hex(ie->value());
+                break;
+            }
+        }
     }
     void Printer::print_float_exp(ast::FloatExp* fe) {
         print_float(fe->value());
@@ -637,7 +641,7 @@ namespace pdm::printer {
     }
     void Printer::print_type_query_exp(ast::TypeQueryExp* node) {
         print_node(node->lhs_typespec());
-        
+
         switch (node->query_kind())
         {
             case ast::TypeQueryKind::LhsEqualsRhs:
@@ -862,31 +866,36 @@ namespace pdm::printer {
         }
         print_u32_char(']');
     }
-    
+
     // patterns:
     void Printer::print_vpattern(ast::VPattern* node) {
         print_u32_char('(');
         int field_count = node->fields().size();
         for (int index = 0; index < field_count; index++) {
             ast::VPattern::Field* field = node->fields()[index];
-            
+
             switch (field->accepted_varg_kind()) {
-                case ast::VArgKind::In:
+                case ast::VArgAccessSpec::In:
                 {
                     break;
                 }
-                case ast::VArgKind::Out:
+                case ast::VArgAccessSpec::Out:
                 {
                     print_cstr("out ");
                     break;
                 }
-                case ast::VArgKind::InOut:
+                case ast::VArgAccessSpec::InOut:
                 {
                     print_cstr("inout ");
                     break;
                 }
+                case ast::VArgAccessSpec::Opaque:
+                {
+                    print_cstr("opaque ");
+                    break;
+                }
             }
-            
+
             print_intstr(field->lhs_name());
             print_u32_char(' ');
             print_node(field->rhs_typespec());
@@ -1026,19 +1035,24 @@ namespace pdm::printer {
         print_node(targ->arg_node());
     }
     void Printer::print_varg(ast::VArg* varg) {
-        switch (varg->arg_kind()) {
-            case ast::VArgKind::In: 
+        switch (varg->access_spec()) {
+            case ast::VArgAccessSpec::In:
             {
                 break;
             }
-            case ast::VArgKind::Out:
+            case ast::VArgAccessSpec::Out:
             {
                 print_cstr("out ");
                 break;
             }
-            case ast::VArgKind::InOut:
+            case ast::VArgAccessSpec::InOut:
             {
                 print_cstr("inout ");
+                break;
+            }
+            case ast::VArgAccessSpec::Opaque:
+            {
+                print_cstr("opaque ");
                 break;
             }
         }

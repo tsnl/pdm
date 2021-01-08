@@ -6,8 +6,10 @@
 #include "pdm/ast/kind.hh"
 #include "exp.hh"
 
-namespace pdm::scoper {
+namespace pdm::ast {
     class Manager;
+}
+namespace pdm::scoper {
     class Defn;
 }
 

@@ -10,8 +10,8 @@ project(pandemonium C CXX)
 # - https://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
 # - todo: load source by adding dirs to 'CMAKE_MODULE_PATH' http://wiki.icub.org/wiki/CMake_and_FIND_PACKAGE
 
-find_package(LLVM REQUIRED CONFIG)
-# find_package(Clang REQUIRED CONFIG)
+find_package(llvm REQUIRED CONFIG)
+find_package(Clang REQUIRED CONFIG)
 
 set(PDM_LLVM_INSTALL_DIR CACHE PATH 
     "llvm install dir containing headers ('include' dir) with 'llvm', 'clang', etc.")
@@ -19,8 +19,7 @@ set(PDM_LLVM_INSTALL_DIR CACHE PATH
 message(STATUS "... Found LLVM version (${LLVM_PACKAGE_VERSION})")
 message(STATUS "... Using LLVMConfig.cmake in: ${LLVM_DIR}")
 message(STATUS "... Add '${PDM_LLVM_INSTALL_DIR}/include' to your IDE include path list for LLVM C API auto-complete.")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
-
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
 
 include_directories(
     "${PDM_LLVM_INSTALL_DIR}/include/"
@@ -69,6 +68,7 @@ add_library(
     src/pdm/ast/exp/unit.hh
     src/pdm/ast/exp/vcall.hh
 
+    src/pdm/ast/pattern/base_field.hh
     src/pdm/ast/pattern/lpattern.hh
     src/pdm/ast/pattern/tpattern.hh
     src/pdm/ast/pattern/vpattern.hh
@@ -98,6 +98,7 @@ add_library(
     src/pdm/ast/arg/targ.hh
     src/pdm/ast/arg/varg.hh
 
+    src/pdm/ast/typespec/typespec.cc
     src/pdm/ast/typespec/typespec.hh
     src/pdm/ast/typespec/dot.hh
     src/pdm/ast/typespec/fn.hh
@@ -134,17 +135,23 @@ add_library(
 
     src/pdm/types/manager.cc
     src/pdm/types/manager.hh
-    src/pdm/types/type_constraint.hh
-    src/pdm/types/type_soln.cc
-    src/pdm/types/type_soln.hh
+    src/pdm/types/typeop_result.hh
+    src/pdm/types/constraint.cc
+    src/pdm/types/constraint.hh
+    src/pdm/types/type.cc
+    src/pdm/types/type.hh
     src/pdm/types/type_kind.hh
+    src/pdm/types/interval.hh
+    src/pdm/types/interval.cc
     src/pdm/types/var.cc
     src/pdm/types/var.hh
-    src/pdm/types/rule.hh
+    src/pdm/types/var_kind.hh
+    src/pdm/types/relation.hh
+    src/pdm/types/relation.cc
     
+    src/pdm/typer/typer.cc
     src/pdm/typer/typer.hh
-    src/pdm/typer/typer.hh
-
+    
     src/pdm/feedback/feedback.cc
     src/pdm/feedback/feedback.hh
     src/pdm/feedback/manager.cc

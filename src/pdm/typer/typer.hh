@@ -12,7 +12,7 @@ namespace pdm::ast {
 
 namespace pdm::typer {
 
-    void type(types::Manager* manager, ast::Script* script);
+    bool type(types::Manager* manager, ast::Script* script);
 
 }
 

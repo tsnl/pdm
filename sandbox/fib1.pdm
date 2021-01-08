@@ -13,7 +13,7 @@ mod fibonacci {
         result
     };
     fn fib2 (y Int32) -> Int32 = {
-        val (hello, hello) = 0;
+        val hello = 0;
         hello
     };
 };

@@ -15,9 +15,12 @@ namespace pdm::ast {
     class VPattern;
     class TPattern;
 }
-
+namespace pdm::types {
+    class Var;
+}
 
 namespace pdm::ast {
+
     class FnStmt: public Stmt {
         friend Manager;
 
@@ -36,6 +39,7 @@ namespace pdm::ast {
         VPattern*                       m_vpattern;
         Typespec*                       m_return_ts;
         std::variant<ExpRhs, ExternRhs> m_rhs;
+        types::Var*                     m_x_defn_var;
 
       protected:
         FnStmt(source::Loc loc, intern::String name, std::vector<TPattern*> tpatterns, VPattern* vpattern, Typespec* opt_return_ts, Exp* rhs)
@@ -52,7 +56,8 @@ namespace pdm::ast {
           m_tpatterns(std::move(tpatterns)),
           m_vpattern(vpattern),
           m_return_ts(opt_return_ts),
-          m_rhs(ExternRhs{ext_mod_name, ext_fn_name}) {}
+          m_rhs(ExternRhs{ext_mod_name, ext_fn_name}),
+          m_x_defn_var(nullptr) {}
 
       public:
         intern::String name() const {
@@ -99,6 +104,15 @@ namespace pdm::ast {
             } else {
                 return {};
             }
+        }
+
+      // extension properties set by scoper:
+      public:
+        types::Var* x_defn_var() const {
+            return m_x_defn_var;
+        }
+        void x_defn_var(types::Var* var) {
+            m_x_defn_var = var;
         }
     };
 

@@ -30,11 +30,11 @@ namespace pdm::ast {
             source::Loc     m_loc;
             intern::String  m_lhs_name;
             Typespec*       m_typespec;
-            VArgKind        m_accepted_varg_kind;
+            VArgAccessSpec  m_accepted_varg_kind;
             types::TypeVar* m_x_defn_tv;
 
           protected:
-            Field(source::Loc loc, intern::String lhs_name, Typespec* rhs_typespec, VArgKind accepted_varg_kind)
+            Field(source::Loc loc, intern::String lhs_name, Typespec* rhs_typespec, VArgAccessSpec accepted_varg_kind)
             :   BaseField(loc, Kind::Aux_VPatternField, lhs_name),
                 m_typespec(rhs_typespec),
                 m_accepted_varg_kind(accepted_varg_kind),
@@ -45,7 +45,7 @@ namespace pdm::ast {
             Typespec* rhs_typespec() const {
                 return m_typespec;
             }
-            VArgKind accepted_varg_kind() const {
+            VArgAccessSpec accepted_varg_kind() const {
                 return m_accepted_varg_kind;
             }
 

@@ -9,12 +9,19 @@
 #include "pdm/ast/typespec/struct.hh"
 
 namespace pdm::ast {
-
     class Manager;
+    class TPattern;
+}
+namespace pdm::types {
+    class Var;
+}
+
+namespace pdm::ast {
 
     class EnumStmt: public Stmt {
         friend Manager;
 
+      // field:
       public:
         class Field {
             friend Manager;
@@ -50,22 +57,38 @@ namespace pdm::ast {
             }
         };
 
+      // body:
       private:
-        intern::String   m_name;
+        intern::String                m_name;
+        std::vector<ast::TPattern*>   m_tpatterns;
         std::vector<EnumStmt::Field*> m_fields;
+        types::Var*                   m_x_defn_var;
       
       protected:
-        EnumStmt(source::Loc loc, intern::String name, std::vector<EnumStmt::Field*>&& fields)
+        EnumStmt(source::Loc loc, intern::String name, std::vector<ast::TPattern*>&& tpatterns, std::vector<EnumStmt::Field*>&& fields)
         : Stmt(loc, Kind::EnumStmt),
           m_name(name),
-          m_fields(std::move(fields)) {}
+          m_tpatterns(std::move(tpatterns)),
+          m_fields(std::move(fields)),
+          m_x_defn_var(nullptr) {}
       
       public:
         intern::String name() const {
             return m_name;
         }
+        std::vector<ast::TPattern*> const& tpatterns() const {
+            return m_tpatterns;
+        }
         std::vector<EnumStmt::Field*> const& fields() const {
             return m_fields;
+        }
+
+      public:
+        types::Var* x_defn_var() const {
+            return m_x_defn_var;
+        }
+        void x_defn_var(types::Var* defn_var) {
+            m_x_defn_var = defn_var;
         }
     };
 

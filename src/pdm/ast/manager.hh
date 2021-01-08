@@ -122,7 +122,7 @@ namespace pdm::ast {
         VPattern* new_vpattern(source::Loc loc, std::vector<VPattern::Field*>&& fields);
         LPattern::Field* new_lpattern_field(source::Loc loc, LPattern::FieldKind kind, intern::String name, Typespec* opt_rhs_typespec = nullptr);
         TPattern::Field* new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, Typespec* rhs_typespec);
-        VPattern::Field* new_vpattern_field(source::Loc loc, intern::String name, Typespec* rhs_typespec, VArgKind varg_kind);
+        VPattern::Field* new_vpattern_field(source::Loc loc, intern::String name, Typespec* rhs_typespec, VArgAccessSpec varg_kind);
 
         BuiltinTypeStmt* new_builtin_type_stmt(std::string&& desc);
         ConstStmt* new_const_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
@@ -144,7 +144,7 @@ namespace pdm::ast {
             Exp* body
         );
         TypeStmt* new_type_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, Typespec* rhs_typespec);
-        EnumStmt* new_enum_stmt(source::Loc loc, intern::String name, std::vector<EnumStmt::Field*>&& fields);
+        EnumStmt* new_enum_stmt(source::Loc loc, intern::String name, std::vector<TPattern*>&& tpatterns, std::vector<EnumStmt::Field*>&& fields);
         TypeclassStmt* new_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, Typespec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions);
         EnumStmt::Field* new_enum_stmt_field(source::Loc loc, intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs);
         
@@ -160,7 +160,7 @@ namespace pdm::ast {
 
         TArg* new_targ_exp(source::Loc loc, Exp* exp);
         TArg* new_targ_typespec(source::Loc loc, Typespec* typespec);
-        VArg* new_varg(source::Loc, Exp* exp, VArgKind varg_kind);
+        VArg* new_varg(source::Loc, Exp* exp, VArgAccessSpec varg_kind);
 
       public:
         Compiler* compiler();

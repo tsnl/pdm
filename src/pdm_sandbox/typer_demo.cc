@@ -26,6 +26,5 @@ namespace pdm_cli::typer_demo {
 
         std::cout << "rule applied!" << std::endl;
     }
-    
 
 }

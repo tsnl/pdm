@@ -134,7 +134,7 @@ namespace pdm::scoper {
         p.print_cstr("}");
         if (m_opt_link) {
             p.print_cstr(" link_to (Frame at ");
-            p.print_uint(reinterpret_cast<u64>(m_opt_link), ast::IntExp::Base::Hex);
+            p.print_uint_hex(reinterpret_cast<u64>(m_opt_link));
             p.print_cstr(")");
         }
     }

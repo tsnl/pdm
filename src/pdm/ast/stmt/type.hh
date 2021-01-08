@@ -13,6 +13,9 @@ namespace pdm::ast {
     class Manager;
     class TPattern;
 }
+namespace pdm::types {
+    class Var;
+}
 
 namespace pdm::ast {
 
@@ -32,13 +35,15 @@ namespace pdm::ast {
         intern::String                       m_lhs_name;
         std::vector<TPattern*>               m_lhs_tpatterns;
         std::variant<TypespecRhs, ExternRhs> m_rhs;
+        types::Var*                          m_x_defn_var;
 
       public:
         TypeStmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& lhs_tpatterns, Typespec* typespec)
         : Stmt(loc, Kind::TypeStmt),
           m_lhs_name(lhs_name),
           m_lhs_tpatterns(std::move(lhs_tpatterns)),
-          m_rhs(TypespecRhs{typespec}) {}
+          m_rhs(TypespecRhs{typespec}),
+          m_x_defn_var(nullptr) {}
 
         TypeStmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& lhs_tpatterns, intern::String ext_mod_name, utf8::String ext_type_name)
         : Stmt(loc, Kind::TypeStmt),
@@ -86,6 +91,14 @@ namespace pdm::ast {
             } else {
                 return {};
             }
+        }
+
+      public:
+        types::Var* x_defn_var() const {
+            return m_x_defn_var;
+        }
+        void x_defn_var(types::Var* defn_var) {
+            m_x_defn_var = defn_var;
         }
     };
 

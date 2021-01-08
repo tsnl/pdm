@@ -2,9 +2,11 @@
 #define INCLUDED_PDM_AST_ARG_TARG_HH
 
 #include "pdm/ast/node.hh"
+#include "pdm/ast/exp/exp.hh"
+#include "pdm/ast/typespec/typespec.hh"
 
 namespace pdm::ast {
-    class Friend;
+    class Manager;
 }
 
 namespace pdm::ast {
@@ -15,7 +17,7 @@ namespace pdm::ast {
     };
     
     class TArg: public Node {
-        friend Manager;
+        friend ast::Manager;
 
       private:
         Node*    m_node;
@@ -27,10 +29,10 @@ namespace pdm::ast {
           m_node(ref_node), m_arg_kind(arg_kind) {}
         
       protected:
-        TArg(source::Loc loc, Exp* exp)
+        TArg(source::Loc loc, ast::Exp* exp)
         : TArg(loc, exp, TArgKind::Value) {}
 
-        TArg(source::Loc loc, Typespec* typespec)
+        TArg(source::Loc loc, ast::Typespec* typespec)
         : TArg(loc, typespec, TArgKind::Typespec) {}
 
       // getters:  

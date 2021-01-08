@@ -5,8 +5,8 @@
 This module lets users...
 1. create types
 2. create type and typeclass variables (with TypeVar, ClassVar resp.)
-3. create rules and assume or test them. 
-4. use assumed rules to solve and check type and typeclass variables.
+3. create relations and assume or test them. 
+4. use assumed relations to solve and check type and typeclass variables.
 
 ## Overview
 
@@ -51,10 +51,12 @@ There are two different typer operators:
 - `assume(rule)` adds the rule to the system, assuming it is true. All errors deferred until type solution.
 - `test(rule)` checks if the rule is True, False, or Invalid. The latter indicates a typing error.
 
-## Note: Three-case analysis
+## Solution
 
-The typer is the most complex module in the compiler.
-When approaching it, most work factors into **three kinds of cases:**
-1. Constant types: Void, Int, Float
-2. Compound types: Struct, Func
-3. Typeclasses: Templates, Typeclasses
+1.  Propagates and equalizes Constraint sets iteratively
+    flowing from supervars to subvars
+2.  Iterates through assumed constraints to determine a solution
+    constructively.
+    1.  consider kind-constraints to select one kind.
+    2.  check and use kind-dependent-constraints to construct an IntervalSet
+    

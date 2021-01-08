@@ -359,7 +359,8 @@ type_stmt
     | KW_TYPE tid tpattern_seq BIND long_typespec   { $$ = mgr->new_type_stmt(@$, $2.ID_intstr, std::move($3), $5); }
     ;
 enum_stmt
-    : KW_TYPE tid enum_field_pl     { $$ = mgr->new_enum_stmt(@$, $2.ID_intstr, std::move($3)); }
+    : KW_TYPE tid              enum_field_pl    { $$ = mgr->new_enum_stmt(@$, $2.ID_intstr, std::move(std::vector<ast::TPattern*>{}), std::move($3)); }
+    | KW_TYPE tid tpattern_seq enum_field_pl    { $$ = mgr->new_enum_stmt(@$, $2.ID_intstr, std::move($3), std::move($4)); }
     ;
 enum_field_pl
     : PIPE unprefixed_enum_field_pl { $$ = std::move($2); }
@@ -413,7 +414,7 @@ stringl
 expr: binary_exp
     ;
 long_exp
-    : type_query_exp
+    : type_query_exp   { $$ = dynamic_cast<ast::Exp*>($1); }
     | expr
     ;
 expr_cl2
@@ -656,9 +657,9 @@ targ_cl
     : targ                  { $$.push_back($1); }
     | targ_cl COMMA targ    { $$ = std::move($1); $$.push_back($3); }
     ;
-varg: expr                  { $$ = mgr->new_varg(@$, $1, ast::VArgKind::In); }
-    | KW_OUT expr           { $$ = mgr->new_varg(@$, $2, ast::VArgKind::Out); }
-    | KW_INOUT expr         { $$ = mgr->new_varg(@$, $2, ast::VArgKind::InOut); }
+varg: expr                  { $$ = mgr->new_varg(@$, $1, ast::VArgAccessSpec::In); }
+    | KW_OUT expr           { $$ = mgr->new_varg(@$, $2, ast::VArgAccessSpec::Out); }
+    | KW_INOUT expr         { $$ = mgr->new_varg(@$, $2, ast::VArgAccessSpec::InOut); }
     ;
 varg_cl
     : varg                  { $$.push_back($1); }
@@ -673,9 +674,9 @@ struct_exp_field
     : vid BIND expr { $$ = mgr->new_struct_exp_field(@$, $1.ID_intstr, $3); }
     ;
 vpattern_field
-    :          vid typespec { $$ = mgr->new_vpattern_field(@$, $1.ID_intstr, $2, ast::VArgKind::In); }
-    | KW_OUT   vid typespec { $$ = mgr->new_vpattern_field(@$, $2.ID_intstr, $3, ast::VArgKind::Out); }
-    | KW_INOUT vid typespec { $$ = mgr->new_vpattern_field(@$, $2.ID_intstr, $3, ast::VArgKind::InOut); }
+    :          vid typespec { $$ = mgr->new_vpattern_field(@$, $1.ID_intstr, $2, ast::VArgAccessSpec::In); }
+    | KW_OUT   vid typespec { $$ = mgr->new_vpattern_field(@$, $2.ID_intstr, $3, ast::VArgAccessSpec::Out); }
+    | KW_INOUT vid typespec { $$ = mgr->new_vpattern_field(@$, $2.ID_intstr, $3, ast::VArgAccessSpec::InOut); }
     ;
 lpattern_field
     : vid typespec  { $$ = mgr->new_lpattern_field(@$, ast::LPattern::FieldKind::IdTypespecPair, $1.ID_intstr, $2); }

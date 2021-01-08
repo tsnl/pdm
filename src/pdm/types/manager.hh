@@ -9,10 +9,14 @@
 #include "pdm/printer/printer.hh"
 
 #include "var.hh"
-#include "type_soln.hh"
+#include "type.hh"
+#include "typeop_result.hh"
 
 namespace pdm {
     class Compiler;
+}
+namespace pdm::typer {
+    class Relation;
 }
 
 // typer incrementally constructs and preserves two sets: 
@@ -36,9 +40,12 @@ namespace pdm::types {
       private:
         Compiler* m_opt_compiler_ptr;
 
-        std::deque<TypeVar>  m_all_tvs;
-        std::deque<ClassVar> m_all_cvs;
-        std::vector<Rule*>   m_all_rules;
+        std::deque<TypeVar>           m_all_tvs;
+        std::deque<ClassVar>          m_all_cvs;
+        std::deque<ValueTemplateVar>  m_all_value_template_vars;
+        std::deque<TypeTemplateVar>   m_all_type_template_vars;
+        std::deque<ClassTemplateVar>  m_all_class_template_vars;
+        std::vector<Relation*>        m_all_relations;
         
         TypeVar m_void_tv;
         TypeVar m_string_tv;
@@ -63,59 +70,50 @@ namespace pdm::types {
       public:
         Manager(Compiler* opt_compiler_ptr = nullptr);
 
-      // create tv (TypeVar) and cv (ClassVar)
+      // create tv (TypeVar), cv (ClassVar), and template vars:
       public:
-        TypeVar* new_tv(std::string&& name, TypeSoln* soln = nullptr, ast::Node* opt_client_ast_node = nullptr) {
-            m_all_tvs.emplace_back(std::move(name), soln, opt_client_ast_node);
-            return &m_all_tvs.back();
-        }
-        ClassVar* new_cv(std::string&& name, ast::Node* opt_client_ast_node = nullptr) {
-            m_all_cvs.emplace_back(std::move(name), opt_client_ast_node);
-            return &m_all_cvs.back();
-        }
+        TypeVar* new_fixed_tv(std::string&& name, Type* soln, ast::Node* opt_client_ast_node = nullptr);
+        TypeVar* new_tv(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        TypeVar* new_proxy_tv(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        ClassVar* new_cv(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+
+        ValueTemplateVar* new_value_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        TypeTemplateVar*  new_type_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        ClassTemplateVar* new_class_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
 
       //
       // TVs:
       //
       public:
-        TypeVar* get_void_tv()     { return &m_void_tv; }
-        TypeVar* get_string_tv()   { return &m_string_tv; }
+        TypeVar* get_void_tv() { return &m_void_tv; }
+        TypeVar* get_string_tv() { return &m_string_tv; }
 
-        TypeVar* get_i8_tv()    { return &m_i8_tv; }
-        TypeVar* get_i16_tv()   { return &m_i16_tv; }
-        TypeVar* get_i32_tv()   { return &m_i32_tv; }
-        TypeVar* get_i64_tv()   { return &m_i64_tv; }
-        TypeVar* get_i128_tv()  { return &m_i128_tv; }
+        TypeVar* get_i8_tv() { return &m_i8_tv; }
+        TypeVar* get_i16_tv() { return &m_i16_tv; }
+        TypeVar* get_i32_tv() { return &m_i32_tv; }
+        TypeVar* get_i64_tv() { return &m_i64_tv; }
+        TypeVar* get_i128_tv() { return &m_i128_tv; }
         
-        TypeVar* get_u1_tv()   { return &m_u1_tv; }
-        TypeVar* get_u8_tv()   { return &m_u8_tv; }
-        TypeVar* get_u16_tv()  { return &m_u16_tv; }
-        TypeVar* get_u32_tv()  { return &m_u32_tv; }
-        TypeVar* get_u64_tv()  { return &m_u64_tv; }
+        TypeVar* get_u1_tv() { return &m_u1_tv; }
+        TypeVar* get_u8_tv() { return &m_u8_tv; }
+        TypeVar* get_u16_tv() { return &m_u16_tv; }
+        TypeVar* get_u32_tv() { return &m_u32_tv; }
+        TypeVar* get_u64_tv() { return &m_u64_tv; }
         TypeVar* get_u128_tv() { return &m_u128_tv; }
 
         TypeVar* get_f16_tv() { return &m_f16_tv; }
         TypeVar* get_f32_tv() { return &m_f32_tv; }
         TypeVar* get_f64_tv() { return &m_f64_tv; }
-        
-      //
-      // Rules:
-      //
 
+      // interface
       public:
-        // void apply_vid_typespec_rule (ast::Node* ast_node, intern::String lhs_name, TypeVar* lhs_var, Var* rhs_typespec_var) {
-        //     typer::PatternTypespecRule_VId* rule = new typer::PatternTypespecRule_VId(ast_node, lhs_name, lhs_var, rhs_typespec_var);
-        //     m_all_rules.push_back(rule);
-        // }
-        // void apply_tid_typespec_rule (ast::Node* ast_node, intern::String lhs_name, Var* lhs_var, Var* rhs_typespec_var) {
-        //     typer::PatternTypespecRule_TId* rule = new typer::PatternTypespecRule_TId(ast_node, lhs_name, lhs_var, rhs_typespec_var);
-        //     m_all_rules.push_back(rule);
-        // }
+        // map each 'Relation' class to a function application here.
+        AssumeOpResult assume(Relation* relation);
+        TestOpResult test(Relation* relation);
 
       // Dump:
       public:
-        // todo: implement typer::dump
-        void print(printer::Printer& p) const;
+        void print(printer::Printer& p, std::string const& title) const;
     };
 
 }   // namespace pdm::typer

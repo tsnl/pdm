@@ -1,4 +1,4 @@
-import math from "stdlib.pdm" type "pdm/script";
+import math from "math.pdm" type "pdm/script";
 
 mod vec {
     type Vec2 = {
@@ -23,7 +23,10 @@ mod vec {
 
     # returns a vector pointing in the same direction of unit length
     # * ensure the output is of unit length
-    # * deal with a failure case! when |v| = 0
+    # * check a failure case! when |v| = 0
+    #   - raise this error if user forgets the 'if'
+    #   - disable this error when 'if' is present
+    #   * the compiler helps check your code
     fn normalize (v Vec2) -> Vec2 = {
         val v_length = length(v);
         if (v_length == 0) then {

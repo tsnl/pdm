@@ -1,6 +1,8 @@
 #include "manager.hh"
 #include "pdm/compiler/compiler.hh"
 
+#include "pdm/ast/arg/varg.hh"
+
 namespace pdm::ast {
     Manager::Manager(Compiler* compiler_ptr, size_t pool_size_in_bytes)
     : m_compiler_ptr(compiler_ptr),
@@ -106,7 +108,7 @@ namespace pdm::ast {
     TPattern::Field* Manager::new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, Typespec* rhs_typespec) {
         return emplace<TPattern::Field>(loc, kind, name, rhs_typespec);
     }
-    VPattern::Field* Manager::new_vpattern_field(source::Loc loc, intern::String name, Typespec* rhs_typespec, VArgKind varg_kind) {
+    VPattern::Field* Manager::new_vpattern_field(source::Loc loc, intern::String name, Typespec* rhs_typespec, VArgAccessSpec varg_kind) {
         return emplace<VPattern::Field>(loc, name, rhs_typespec, varg_kind);
     }
 
@@ -147,8 +149,8 @@ namespace pdm::ast {
     TypeStmt* Manager::new_type_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, Typespec* rhs_typespec) {
         return emplace<TypeStmt>(loc, lhs_name, std::move(tpatterns), rhs_typespec);
     }
-    EnumStmt* Manager::new_enum_stmt(source::Loc loc, intern::String name, std::vector<EnumStmt::Field*>&& fields) {
-        return emplace<EnumStmt>(loc, name, std::move(fields));
+    EnumStmt* Manager::new_enum_stmt(source::Loc loc, intern::String name, std::vector<TPattern*>&& tpatterns, std::vector<EnumStmt::Field*>&& fields) {
+        return emplace<EnumStmt>(loc, name, std::move(tpatterns), std::move(fields));
     }
     TypeclassStmt* Manager::new_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, Typespec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions) {
         return emplace<TypeclassStmt>(loc, lhs_name, candidate_name, candidate_typespec, std::move(tpatterns), std::move(conditions));
@@ -191,7 +193,7 @@ namespace pdm::ast {
     TArg* Manager::new_targ_typespec(source::Loc loc, Typespec* typespec) {
         return emplace<TArg>(loc, typespec);
     }
-    VArg* Manager::new_varg(source::Loc loc, Exp* exp, VArgKind varg_kind) {
+    VArg* Manager::new_varg(source::Loc loc, Exp* exp, VArgAccessSpec varg_kind) {
         return emplace<VArg>(loc, exp, varg_kind);
     }
 }

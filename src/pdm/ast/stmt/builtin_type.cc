@@ -13,7 +13,7 @@ namespace pdm::ast {
       m_x_tv(nullptr) {}
 
     void BuiltinTypeStmt::x_tv(types::TypeVar* tv) {
-        assert(tv->soln_fixed());
+        assert(tv->is_soln_fixed());
         m_x_tv = tv;
     }
 

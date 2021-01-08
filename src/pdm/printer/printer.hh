@@ -36,7 +36,8 @@ namespace pdm::printer {
         void print_u8_str(utf8::String const& s);
         void print_intstr(intern::String const& s);
 
-        void print_uint(u64 u, ast::IntExp::Base base);
+        void print_uint_dec(u64 u);
+        void print_uint_hex(u64 u);
         void print_float(long double float_val);
 
         void print_node(ast::Node* node);
