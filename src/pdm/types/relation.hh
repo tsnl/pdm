@@ -58,8 +58,6 @@ namespace pdm::types {
         bool apply();
     };
 
-
-
     // IdTypingRelation for (x T) or <T Cls>
     class IdTypingRelation: public Relation {
       private:
@@ -149,44 +147,64 @@ namespace pdm::types {
     };
 
     // '.' accessors:
+    enum class DotNameRelationHint {
+        ModuleType,                 // a.T
+        StructFieldOrModuleField,   // a.v
+        EnumField,                  // T.E
+        TypeField                   // T.e
+    };
     class DotNameRelation: public Relation {
       private:
-        TypeVar*       m_lhs;
-        intern::String m_rhs_name;
+        TypeVar*            m_lhs;
+        intern::String      m_rhs_name;
+        DotNameRelationHint m_hint;
       public:
-        DotNameRelation(ast::Node* ast_node, TypeVar* lhs, intern::String rhs_name)
-        : Relation(ast_node, "DotNameRelation"),
-          m_lhs(lhs),
-          m_rhs_name(rhs_name) {}
+        DotNameRelation(ast::Node* ast_node, TypeVar* lhs, intern::String rhs_name, DotNameRelationHint hint);
 
       public:
-        TypeVar* lhs() const {
-            return m_lhs;
-        }
-        intern::String rhs_name() const {
-            return m_rhs_name;
-        }
+        TypeVar* lhs() const;
+        intern::String rhs_name() const;
+        DotNameRelationHint hint() const;
     };
+    inline DotNameRelation::DotNameRelation(ast::Node* ast_node, TypeVar* lhs, intern::String rhs_name, DotNameRelationHint hint)
+    :   Relation(ast_node, "DotNameRelation"),
+        m_lhs(lhs),
+        m_rhs_name(rhs_name),
+        m_hint(hint) 
+    {}
+    inline TypeVar* DotNameRelation::lhs() const {
+        return m_lhs;
+    }
+    inline intern::String DotNameRelation::rhs_name() const {
+        return m_rhs_name;
+    }
+    inline DotNameRelationHint DotNameRelation::hint() const {
+        return m_hint;
+    }
+
     class DotIndexRelation: public Relation {
       private:
         TypeVar* m_lhs;
         int      m_rhs_index;
 
       public:
-        DotIndexRelation(ast::Node* ast_node, TypeVar* lhs, int rhs_index)
-        : Relation(ast_node, "DotIndexRelation"),
-          m_lhs(lhs),
-          m_rhs_index(rhs_index) {};
+        DotIndexRelation(ast::Node* ast_node, TypeVar* lhs, int rhs_index);
 
       public:
-        TypeVar* lhs() const {
-            return m_lhs;
-        }
-        int rhs_index() const {
-            return m_rhs_index;
-        }
+        TypeVar* lhs() const;
+        int rhs_index() const;
     };
-    
+    inline DotIndexRelation::DotIndexRelation(ast::Node* ast_node, TypeVar* lhs, int rhs_index)
+    :   Relation(ast_node, "DotIndexRelation"),
+        m_lhs(lhs),
+        m_rhs_index(rhs_index) {};
+    inline TypeVar* DotIndexRelation::lhs() const {
+        return m_lhs;
+    }
+    inline int DotIndexRelation::rhs_index() const {
+        return m_rhs_index;
+    }
+
     // vcall (func()): definition and use
     enum class FnRelationKind {
         Formal,   // in this call, formal arguments are equal to actual arguments
@@ -235,6 +253,53 @@ namespace pdm::types {
         {}
     };
 
+    // if-then, if-then-else:
+    class IfThenRelation: public Relation {
+      private:
+        TypeVar* m_cond;
+        TypeVar* m_then;
+      public:
+        IfThenRelation(ast::Node* ast_node, TypeVar* cond, TypeVar* then)
+        : Relation(ast_node, "IfThenRelation"),
+          m_cond(cond),
+          m_then(then) {}
+    };
+    class IfThenElseRelation: public Relation {
+      private:
+        TypeVar* m_cond;
+        TypeVar* m_then;
+        TypeVar* m_else;
+      public:
+        IfThenElseRelation(ast::Node* ast_node, TypeVar* cond_tv, TypeVar* then_tv, TypeVar* else_tv)
+        : Relation(ast_node, "IfThenElseRelation"),
+          m_cond(cond_tv),
+          m_then(then_tv),
+          m_else(else_tv) {}
+    };
+
+    // cast
+    class BitcastableRelation: public Relation {
+      private:
+        TypeVar* m_dst;
+        TypeVar* m_src;
+      public:
+        BitcastableRelation(ast::Node* ast_node, TypeVar* dst_tv, TypeVar* src_tv)
+        : Relation(ast_node, "BitcastableRelation"),
+          m_dst(dst_tv),
+          m_src(src_tv) {}
+    };
+
+    // convert
+    class ConvertableRelation: public Relation {
+      private:
+        TypeVar* m_dst;
+        TypeVar* m_src;
+      public:
+        ConvertableRelation(ast::Node* ast_node, TypeVar* dst_tv, TypeVar* src_tv)
+        : Relation(ast_node, "ConvertableRelation") {}
+    };
+
+    // todo: tcalls need more work; separate formal and actual like fun.
     // tcall: definition and use
     class TemplateCallRelation: public Relation {
       private:
@@ -285,51 +350,6 @@ namespace pdm::types {
         );
     };
 
-    // if-then, if-then-else:
-    class IfThenRelation: public Relation {
-      private:
-        TypeVar* m_cond;
-        TypeVar* m_then;
-      public:
-        IfThenRelation(ast::Node* ast_node, TypeVar* cond, TypeVar* then)
-        : Relation(ast_node, "IfThenRelation"),
-          m_cond(cond),
-          m_then(then) {}
-    };
-    class IfThenElseRelation: public Relation {
-      private:
-        TypeVar* m_cond;
-        TypeVar* m_then;
-        TypeVar* m_else;
-      public:
-        IfThenElseRelation(ast::Node* ast_node, TypeVar* cond_tv, TypeVar* then_tv, TypeVar* else_tv)
-        : Relation(ast_node, "IfThenElseRelation"),
-          m_cond(cond_tv),
-          m_then(then_tv),
-          m_else(else_tv) {}
-    };
-
-    // cast
-    class BitcastableRelation: public Relation {
-      private:
-        TypeVar* m_dst;
-        TypeVar* m_src;
-      public:
-        BitcastableRelation(ast::Node* ast_node, TypeVar* dst_tv, TypeVar* src_tv)
-        : Relation(ast_node, "BitcastableRelation"),
-          m_dst(dst_tv),
-          m_src(src_tv) {}
-    };
-
-    // convert
-    class ConvertableRelation: public Relation {
-      private:
-        TypeVar* m_dst;
-        TypeVar* m_src;
-      public:
-        ConvertableRelation(ast::Node* ast_node, TypeVar* dst_tv, TypeVar* src_tv)
-        : Relation(ast_node, "ConvertableRelation") {}
-    };
 }
 
 #endif  // INCLUDED_PDM_TYPES_RELATION_HH

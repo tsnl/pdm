@@ -147,26 +147,5 @@ First, navigate to the root of this repository (where the 'pdm_sandbox' executab
 
 ```
 # Input:
-$ ./pdm_sandbox test/fib1.pdm
-
-# Expected output looks something like this:
-pdm-cli v0.0
-Dispatching: /<path...>/pdm.master/test/fib1.pdm
-Dispatching: /<path...>/pdm.master/test/fibx.pdm
-script "/<path...>/pdm.master/test/fibx.pdm" {
-  mod fibx {
-    fn register (x Int32, y Int32) = ();
-  };
-}
-script "/<path...>/pdm.master/test/fib1.pdm" {
-  import fibx from "fibx.pdm" type "pdm.script";
-  mod fibonacci {
-    fn fib (x Int32) -> Int32 = {
-      val result = (if (x == 0 or x == 1) then {x} else {fib(x - 1) + fib(x - 2)});
-      discard fibx.register(n, result);
-      result
-    };
-  };
-}
-A fatal typechecking occurred.
+$ ./pdm_sandbox sandbox/fib1.pdm
 ```

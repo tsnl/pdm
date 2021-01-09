@@ -11,6 +11,11 @@ namespace pdm::types {
         Denied,
         ErrorOccurred
     };
+    enum class SolveIterResult {
+        AtFixedPoint,
+        UpdatedOrFresh,
+        AtError
+    };
 }
 
 #endif  // INCLUDED__PDM__TYPES__TYPEOP_RESULT_HH

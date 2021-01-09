@@ -1,5 +1,18 @@
 # Roadmap
 
+## Jan 9 2021
+- A lot of spec work done for types and typer:
+  - see [src/pdm/types/README.md](/src/pdm/types/README.md)
+  - see [src/pdm/types/typing.dot](/src/pdm/types/typing.dot) for a graph explaining type solution.
+- Implemented (most of) type dumps (Constraints, Relations pending)
+- **Next**:
+  1. finish 'TCall' Relations (they're wrong now)
+  2. finish 'typer' and verify that common constraints are registering in dump
+  3. implement `types::Manager::solve` to...
+     1. Abort early if VarKind/kind-bitset errors detected in Var or any super/sub-vars
+     2. Generate IntervalSet per-Var
+     3. Propagate IntervalSet iteratively, one edge at a time, until the system stops changing (reaches a fixed point).
+
 ## Jan 2 2021
 
 - A lot of work done on the scoper; about ready.

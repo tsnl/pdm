@@ -2,6 +2,27 @@
 
 namespace pdm::types {
 
+    bool Type::test_subtypeOf(Type const* supertype) const {
+        // trivially true in case they are the same type instance:
+        if (supertype == this) {
+            return true;
+        }
+
+        // checking for kind mismatch:
+        if (type_kind() != supertype->type_kind()) {
+            return false;
+        }
+
+        // delegating to pure virtual helper:
+        return help_test_subtypeOf_postKindCheck(supertype);
+    }
+    bool Type::help_test_subtypeOf_postKindCheck(Type const* supertype) const {
+        // Since kind is different, subtype defaults to impossible.
+        // For VoidType, StringType, and other synthetic types, the closure of subtype
+        // is a singleton set, so this implementation is correct.
+        return false;
+    }
+
     VoidType VoidType::s_singleton {};
     StringType StringType::s_singleton {};
 

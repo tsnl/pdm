@@ -11,6 +11,8 @@
 #include "var_kind.hh"
 #include "typeop_result.hh"
 
+#include "interval.hh"
+
 namespace pdm::types {
     class Manager;
 
@@ -31,9 +33,9 @@ namespace pdm::ast {
 namespace pdm::types {
 
     // A 'Var' is a bag of constraints that identifies a set of types.
-    // All types in this set satisfy all constraints.
+    // All types in this set satisfy all assumed constraints.
     // All typing operations boil down to supervar and subvar relationships
-    // between Vars or assumed constraints.
+    // between Vars and easily unifiable IntervalSets 
     // - a type T is in a class C              <=> T \subvar C
     // - a type T is a subtype of a type U     <=> T \subvar U
     // - a class C is a subclass of class D    <=> C \subvar D
@@ -46,35 +48,29 @@ namespace pdm::types {
 
       private:
         std::string m_name;
+        ast::Node* m_opt_client_ast_node;
+        VarKind m_var_kind;
         
-        // the user first applies Relations, which store the 'Constraint' instance
-        // as a record of a typing operation.
-        std::vector<KindConstraint*> m_assumed_kind_constraints;
+        // all applied constraints stored as common or kind-dependent:
+        std::vector<CommonConstraint*> m_assumed_common_constraints;
         std::vector<KindDependentConstraint*> m_assumed_kind_dependent_constraints;
 
-        // Constraints are 'applied' to...
-        // - enable the most general bits for assumed_kind_bitset
-        // - store immediate super and sub vars (according to supertyping, superclassing, class membership, etc.)
+        // common constraints broken into a bitset, subvars, and supervars:
         u64 m_assumed_kind_bitset;
         std::vector<Var*> m_assumed_subvars;
         std::vector<Var*> m_assumed_supervars;
         
-        // based on the above, we equalize a shared interval set
+        // after checking all supervar/subvar bitsets, kind-dependent constraints are broken 
+        // into an 'IntervalSet' that is then iteratively expanded.
+        // Finally, the IntervalSet can be checked for validity based on VarKind.
+        IntervalSet m_assumed_interval_set;
 
-        // todo: constraints may contain other properties like fields, args, etc that all need to be stored somehow,
-        //       probably on an extension class.
-        ast::Node* m_opt_client_ast_node;
-        VarKind    m_var_kind;
+        // for each solution iter, we cache the previous iter's result:
+        SolveIterResult m_zeroth_solve_iter_result;
+        SolveIterResult m_prev_solve_iter_result;
 
       protected:
-        Var(std::string&& name, ast::Node* opt_client_ast_node, VarKind var_kind)
-        : m_name(std::move(name)),
-          m_assumed_kind_constraints(),
-          m_assumed_kind_dependent_constraints(),
-          m_assumed_subvars(),
-          m_assumed_supervars(),
-          m_opt_client_ast_node(opt_client_ast_node),
-          m_var_kind(var_kind) {}
+        Var(std::string&& name, ast::Node* opt_client_ast_node, VarKind var_kind, SolveIterResult default_solve_iter_result);
 
         virtual ~Var() {}
 
@@ -83,15 +79,23 @@ namespace pdm::types {
         std::string const& name() const;
         VarKind var_kind() const;
         ast::Node* opt_client_ast_node() const;
-        std::vector<KindConstraint*> const& assumed_kind_constraints() const;
+        std::vector<CommonConstraint*> const& assumed_common_constraints() const;
         std::vector<KindDependentConstraint*> const& assumed_kind_dependent_constraints() const;
         std::vector<Var*> const& assumed_subvars() const;
         std::vector<Var*> const& assumed_supervars() const;
 
-      // todo: Relation interface
+      // Relation interface
+      // - assume updates the IntervalSet representation
+      // - solve (called after all 'assume')
       public:
-        virtual AssumeOpResult assume(Constraint* constraint);
-        virtual TestOpResult test(Constraint* constraint);
+        AssumeOpResult assume(Constraint* constraint);
+        SolveIterResult solve_iter();
+      private:
+        SolveIterResult help_solve_iter();
+
+      public:
+        TestOpResult test(Constraint* constraint);
+
       private:
         static void help_assume_subvar(Var* subvar, Var* supervar);
 
@@ -101,12 +105,25 @@ namespace pdm::types {
       private:
         void help_print_title(printer::Printer& p) const;
         void help_print_assumed_kind_bitset(printer::Printer& p) const;
-        void help_print_assumed_kind_constraints(printer::Printer& p) const;
+        void help_print_assumed_common_constraints(printer::Printer& p) const;
         void help_print_assumed_kind_dependent_constraints(printer::Printer& p) const;
         void help_print_assumed_subvars(printer::Printer& p) const;
         void help_print_assumed_supervars(printer::Printer& p) const;
         void help_print_opt_client_ast_node(printer::Printer& p) const;
     };
+    inline Var::Var(std::string&& name, ast::Node* opt_client_ast_node, VarKind var_kind, SolveIterResult zeroth_solve_iter_result)
+    :   m_name(std::move(name)),
+        m_opt_client_ast_node(opt_client_ast_node),
+        m_var_kind(var_kind),
+        m_assumed_common_constraints(),
+        m_assumed_kind_dependent_constraints(),
+        m_assumed_kind_bitset(0),
+        m_assumed_subvars(),
+        m_assumed_supervars(),
+        m_assumed_interval_set(),
+        m_zeroth_solve_iter_result(zeroth_solve_iter_result),
+        m_prev_solve_iter_result(zeroth_solve_iter_result)
+    {}
     inline std::string const& Var::name() const {
         return m_name;
     }
@@ -116,8 +133,8 @@ namespace pdm::types {
     inline ast::Node* Var::opt_client_ast_node() const {
         return m_opt_client_ast_node;
     }
-    inline std::vector<KindConstraint*> const& Var::assumed_kind_constraints() const {
-        return m_assumed_kind_constraints;
+    inline std::vector<CommonConstraint*> const& Var::assumed_common_constraints() const {
+        return m_assumed_common_constraints;
     }
     inline std::vector<KindDependentConstraint*> const& Var::assumed_kind_dependent_constraints() const {
         return m_assumed_kind_dependent_constraints;
@@ -143,6 +160,9 @@ namespace pdm::types {
       public:
         TypeVar(std::string&& name, Type* opt_fixed_soln, ast::Node* opt_client_ast_node, TypeVarSolnBill soln_bill);
 
+      private:
+        static SolveIterResult zeroth_solve_iter_result_for_soln_bill(TypeVarSolnBill soln_bill);
+
       // public getters:
       public:
         Type* newest_soln() const {
@@ -161,7 +181,7 @@ namespace pdm::types {
 
     inline
     TypeVar::TypeVar(std::string&& name, Type* opt_fixed_soln, ast::Node* opt_client_ast_node, TypeVarSolnBill soln_bill)
-    :   Var(std::move(name), opt_client_ast_node, VarKind::Type),
+    :   Var(std::move(name), opt_client_ast_node, VarKind::Type, zeroth_solve_iter_result_for_soln_bill(soln_bill)),
         m_newest_soln(opt_fixed_soln),
         m_soln_bill(soln_bill) 
     {
@@ -174,7 +194,7 @@ namespace pdm::types {
     class ClassVar: public Var {
       public:
         ClassVar(std::string&& name, ast::Node* client_ast_node)
-        : Var(std::move(name), client_ast_node, VarKind::Class) {}
+        : Var(std::move(name), client_ast_node, VarKind::Class, SolveIterResult::UpdatedOrFresh) {}
 
       public:
         void assume_constraint(Constraint* constraint);
@@ -265,7 +285,7 @@ namespace pdm::types {
 
     inline
     TemplateVar::TemplateVar(std::string&& name, ast::Node* client_ast_node, VarKind var_kind)
-    :   Var(std::move(name), client_ast_node, var_kind),
+    :   Var(std::move(name), client_ast_node, var_kind, SolveIterResult::UpdatedOrFresh),
         m_formal_args()
     {}
 

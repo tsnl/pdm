@@ -1,6 +1,7 @@
 #include "var.hh"
 
 #include <string>
+#include <iostream>
 
 #include "pdm/ast/node.hh"
 #include "pdm/printer/printer.hh"
@@ -12,49 +13,111 @@
 namespace pdm::types {
 
     AssumeOpResult Var::assume(Constraint* constraint) {
-        // Kind constraints update the assumed_kind_bitset:
-        KindConstraint* kind_constraint = dynamic_cast<KindConstraint*>(constraint);
-        if (kind_constraint != nullptr) {
-            m_assumed_kind_constraints.push_back(kind_constraint);
-            m_assumed_kind_bitset |= kind_constraint->allowed_type_kinds_bitset();
-            return AssumeOpResult::Applied;
-        } 
+        // if this constraint was not intended for a Var of this VarKind,
+        // typer's meta-type error:
+        if (var_kind() != constraint->domain_var_kind()) {
+            return AssumeOpResult::ErrorOccurred;
+        }
 
-        // Subtype, subclass, class membership boil down to subvar:
-        {   // subtype:
+        // unless NotImplemented, AssumeOp will return 'Applied' from here.
+        
+        // if the zeroth solve iter is 'AtFixed', this is a constant type.
+        if (m_zeroth_solve_iter_result == SolveIterResult::AtFixedPoint) {
+            // just ignoring extra constraints on constants-- 
+            // constants are constraint sinks upon propagation!
+            return AssumeOpResult::Applied;
+        }
+        
+        // if a common constraint, adding and applying immediately.
+        CommonConstraint* common_constraint = nullptr;
+        if ((common_constraint = dynamic_cast<CommonConstraint*>(constraint)) != nullptr) {
+            m_assumed_common_constraints.push_back(common_constraint);
+
+            // Kind constraints update the assumed_kind_bitset:
+            KindConstraint* kind_constraint = dynamic_cast<KindConstraint*>(constraint);
+            if (kind_constraint != nullptr) {
+                m_assumed_common_constraints.push_back(kind_constraint);
+                m_assumed_kind_bitset |= kind_constraint->allowed_type_kinds_bitset();
+                return AssumeOpResult::Applied;
+            } 
+
+            // subtype:
             SubtypeOfConstraint* subtype_of_constraint = dynamic_cast<SubtypeOfConstraint*>(constraint);
             if (subtype_of_constraint != nullptr) {
                 help_assume_subvar(this, subtype_of_constraint->supertype_tv());
                 return AssumeOpResult::Applied;
             }
-        }
-        {   // subclass:
+
+            // subclass:
             SubclassOfConstraint* subclass_of_constraint = dynamic_cast<SubclassOfConstraint*>(constraint);
             if (subclass_of_constraint != nullptr) {
                 help_assume_subvar(this, subclass_of_constraint->superclass_cv());
                 return AssumeOpResult::Applied;
             }
-        }
-        {   // class instanceship:
+        
+            // class instanceship:
             ClassOfConstraint* classof_constraint = dynamic_cast<ClassOfConstraint*>(constraint);
             if (classof_constraint != nullptr) {
                 help_assume_subvar(classof_constraint->member_tv(), this);
                 return AssumeOpResult::Applied;
             }
-        }
 
-        {   // All kind-dependent constraints go into a list for later.
+            // All kind-dependent constraints go into a list for later.
             KindDependentConstraint* kd_constraint = dynamic_cast<KindDependentConstraint*>(constraint);
             if (kd_constraint != nullptr) {
                 m_assumed_kind_dependent_constraints.push_back(kd_constraint);
                 return AssumeOpResult::Applied;
             }
+
+            // Unknown CommonConstraint kind...
+            assert(0 && "Unknown CommonConstraint.");
+        }
+
+        // if a kind-dependent constraint, adding to a list and deferring for later.
+        // also adding a kind-constraint corresponding to the assumed kind.
+        KindDependentConstraint* kind_dependent_constraint = nullptr;
+        if ((kind_dependent_constraint = dynamic_cast<KindDependentConstraint*>(constraint)) != nullptr) {
+            // *sweats in bad memory management*
+            AssumeOpResult result = assume(new KindConstraint(
+                constraint->parent_relation(), 
+                constraint->domain_var_kind(), 
+                static_cast<u64>(kind_dependent_constraint->required_type_kind())
+            ));
+            
+            // kind-dependent constraints deferred for later.
+            m_assumed_kind_dependent_constraints.push_back(kind_dependent_constraint);
+
+            // returning the result of just the kind application:
+            return result;
         }
 
         return AssumeOpResult::ErrorOccurred;
     }
+
+    SolveIterResult Var::solve_iter() {
+        SolveIterResult iter_sir = help_solve_iter();
+        m_prev_solve_iter_result = iter_sir;
+        return iter_sir;
+    }
+    SolveIterResult Var::help_solve_iter() {
+        if (m_prev_solve_iter_result == SolveIterResult::AtFixedPoint) {
+            return SolveIterResult::AtFixedPoint;
+        }
+        if (m_prev_solve_iter_result == SolveIterResult::AtError) {
+            return SolveIterResult::AtError;
+        }
+        
+        assert(m_prev_solve_iter_result == SolveIterResult::UpdatedOrFresh);
+
+        // todo: compare kind bitset against all subvars
+        // todo: implement rest of `typing.dot`...
+
+        std::cout << "NotImplemented: help_solve_iter" << std::endl;
+        return SolveIterResult::AtError;
+    }
+
     TestOpResult Var::test(Constraint* constraint) {
-        // todo: implement me!
+        std::cout << "NotImplemented: Var::test." << std::endl;
         return TestOpResult::ErrorOccurred;
     }
     
@@ -71,7 +134,7 @@ namespace pdm::types {
         {
             help_print_assumed_kind_bitset(p);
             p.print_newline();
-            help_print_assumed_kind_constraints(p);
+            help_print_assumed_common_constraints(p);
             p.print_newline();
             help_print_assumed_kind_dependent_constraints(p);
             p.print_newline();
@@ -140,17 +203,17 @@ namespace pdm::types {
             if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::Struct)) { p.print_cstr("| Struct "); }
             if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::Enum))   { p.print_cstr("| Enum "); }
             if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::Module)) { p.print_cstr("| Module "); }
-            if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::Func))   { p.print_cstr("| Func "); }
+            if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::Fn))   { p.print_cstr("| Fn "); }
         } else {
             p.print_cstr(": None");
         }
     }
-    void Var::help_print_assumed_kind_constraints(printer::Printer& p) const {
-        p.print_cstr("assume KindConstraints:");
-        if (assumed_kind_constraints().empty()) {
+    void Var::help_print_assumed_common_constraints(printer::Printer& p) const {
+        p.print_cstr("assume CommonConstraints:");
+        if (assumed_common_constraints().empty()) {
             p.print_cstr(" None");
         } else {
-            for (Constraint* constraint: assumed_kind_constraints()) {
+            for (Constraint* constraint: assumed_common_constraints()) {
                 p.print_cstr("- ");
                 // todo: print constraint here
                 p.print_newline();
@@ -206,6 +269,20 @@ namespace pdm::types {
             p.print_cstr(" @ ");
             p.print_uint_hex(reinterpret_cast<u64>(m_opt_client_ast_node));
             p.print_newline();
+        }
+    }
+
+    SolveIterResult TypeVar::zeroth_solve_iter_result_for_soln_bill(TypeVarSolnBill soln_bill) {
+        switch (soln_bill) {
+            case TypeVarSolnBill::Fixed: 
+            {
+                return SolveIterResult::AtFixedPoint;
+            }
+            case TypeVarSolnBill::Monotype:
+            case TypeVarSolnBill::ProxyForMany:
+            {
+                return SolveIterResult::UpdatedOrFresh;
+            }
         }
     }
 }

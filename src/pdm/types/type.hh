@@ -22,19 +22,31 @@ namespace pdm::types {
         std::string m_name;
         TypeKind    m_type_kind;
               
-      public:
+      protected:
         Type(std::string name, TypeKind type_kind)
         : m_name(std::move(name)),
           m_type_kind(type_kind) {}
 
       public:
-        std::string const& name() const {
-            return m_name;
-        }
-        TypeKind type_kind() const {
-            return m_type_kind;
-        }
+        std::string const& name() const;
+        TypeKind type_kind() const;
+        
+      public:
+        bool test_subtypeOf(Type const* supertype) const;
+        bool test_supertypeOf(Type const* subtype) const;
+      
+      private:
+        virtual bool help_test_subtypeOf_postKindCheck(Type const* supertype_of_same_type_kind) const;
     };
+    inline std::string const& Type::name() const {
+        return m_name;
+    }
+    inline TypeKind Type::type_kind() const {
+        return m_type_kind;
+    }
+    inline bool Type::test_supertypeOf(Type const* subtype) const {
+        return subtype->test_subtypeOf(this);
+    }
 
     //
     // VoidType:
@@ -44,6 +56,7 @@ namespace pdm::types {
       // shared singletons:
       private:
         static VoidType s_singleton;
+
       public:
         static VoidType* get() { 
             return &s_singleton; 
@@ -63,6 +76,7 @@ namespace pdm::types {
       // shared singleton:
       private:
         static StringType s_singleton;
+
       public:
         static StringType* get() {
             return &s_singleton;
@@ -294,16 +308,19 @@ namespace pdm::types {
         {}
 
       public:
-        FuncArgReadWriteSpec read_write_spec() const {
-            return m_read_write_spec;
-        }
-        intern::String name() const {
-            return m_name;
-        }
-        Type* arg_typespec() const {
-            return m_arg_typespec;
-        }
+        FuncArgReadWriteSpec read_write_spec() const;
+        intern::String name() const;
+        Type* arg_typespec() const;
     };
+    inline FuncArgReadWriteSpec FuncTypeFormalArg::read_write_spec() const {
+        return m_read_write_spec;
+    }
+    inline intern::String FuncTypeFormalArg::name() const {
+        return m_name;
+    }
+    inline Type* FuncTypeFormalArg::arg_typespec() const {
+        return m_arg_typespec;
+    }
     class FuncTypeActualArg {
       private:
         FuncArgReadWriteSpec  m_read_write_spec;
@@ -329,7 +346,7 @@ namespace pdm::types {
         TypeVar*                       m_ret_tv;
       public:
         FnType(std::string&& name, std::vector<FuncTypeFormalArg>&& formal_args, TypeVar* ret_tv)
-        : Type("FnType:" + std::move(name), TypeKind::Func),
+        : Type("FnType:" + std::move(name), TypeKind::Fn),
           m_formal_args(std::move(formal_args)),
           m_ret_tv(ret_tv) {}
     };
