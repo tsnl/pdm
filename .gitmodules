@@ -13,3 +13,6 @@
 [submodule "dep/utf8proc"]
 	path = dep/utf8proc
 	url = https://github.com/JuliaStrings/utf8proc
+[submodule "dev/vcpkg"]
+	path = dev/vcpkg
+	url = https://github.com/Microsoft/vcpkg

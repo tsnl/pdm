@@ -40,10 +40,11 @@ Note that support for C libraries implies support for interpreted programming la
 ## Summary
 
 This repository currently builds...
-1. `pc`: An old (but functional) C compiler implementation for a subset of the language. Just validates a program 
+1. `pc`: An old C compiler implementation of the language. Just validates a program 
    and then prints LLVM IR to stdout. The benchmark for performance (it's really quick!).
-2. `[lib]pdm`: A library that compilers, interpreters, and editor tools can share. Written in OO-C++. **WIP. (does not build, must disable through CMake)**
-3. `pdm_sandbox`: An eventual CLI frontend, currently just console tests for `pdm`. **WIP.**
+   Syntax and semantics have changed incompatibly since then.
+2. `[lib]pdm`: A library that compilers, interpreters, and editor tools can share. Written in OO-C++. **WIP.**
+3. `pdm_sandbox`: An eventual CLI frontend, currently just console tests for `pdm`. **WIP, TRY ME.**
 After building, try running `$ ./pdm_sandbox <file>`.
 
 This repository contains...
@@ -55,35 +56,51 @@ This repository contains...
 
 For the latest updates, see my latest commits.
 
-
 ## How to Build
 
-Just run `1build.sh` on *nix-based systems.
-Ensure you have CMake installed.
+**Prerequisites:**
 
-### Alternative
+In order to build PDM, you will require:
+1. CMake >= 3.16 (can probably be downgraded safely)
+2. A C/C++ compiler (I recommend Clang)
+3. The `git` command-line utility, and an understanding of how to navigate directories and invoke `git` and `cmake` using the terminal
+
+**Recommended:** If you use Visual Studio Code or another OSS Code derivative, 
+1. install the `CMake Tools` Extension via the Visual Studio Code Marketplace. 
+2. Use VS Code to open the Workspace located at `/vscode.code-workspace`.
+Now, CMake Tools will help you detect installed compiler kits, configure CMake, and even help you build and debug if you so choose.
+
+**Building**
 
 In all the following examples, `.` refers to the root of this repository.
 Ensure you have CMake installed.
 
-1. Clone this repository using 'git', ensuring you clone submodules.
+1. Clone this repository using 'git'. Initialize submodules.
+
+   Assuming we are cloning to the directory 'pdm-0',
+    ```
+    $ git clone https://github.com/tsnl/pdm pdm-0
+    $ cd pdm-0
+    $ git submodule update --init --recursive
+    ```
 2. Use 'CMake' to configure the project, `cmake .`
-   - Please set `PDM_LLVM_INSTALL_DIR` to the directory containing an installation of the LLVM library, built.
-     Although the LLVM project is a large submodule dependency, CMake integration is difficult since in-source
-     builds are disabled for LLVM.
 
-     If you don't have LLVM installed, please follow LLVM's instructions for building your desired version from 
-     source. Once you have built this, set `PDM_LLVM_INSTALL_DIR` accordingly.
+   This will automatically fetch and compile all required dependencies from scratch.
+   This may take upwards of an hour.
    
-     **To set `PDM_LLVM_INSTALL_DIR`**, simply run `ccmake .` to run the console CMake configuration tool, or 
-     `cmake-gui .`.
-
-   - If you've installed LLVM using Homebrew on macOS, your path might look like...
-      `/usr/local/Cellar/llvm/10.0.1_1`
 3. Use 'CMake' to build the project, `cmake --build .`
-   - I recommend running `cmake --build . -j <N>` where `N` is the number of 'jobs' or parallell processes you
-     would like to use. On a computer with M cores, set N >= M for optimal results.
-     **Example:** `$ cmake --build . -j 4   # on a 2-core MacBook Air with Hyperthreading/SMT`
+    -   I recommend running `cmake --build . -j <N>` where `N` is the number of 'jobs' or parallell processes you
+        would like to use. On a computer with M cores, set N >= M for optimal results.
+        
+        **Example:** 
+        
+        `$ cmake --build . -j 4   # on a 2-core MacBook Air with Hyperthreading/SMT`
+    -   Omit the `-j` flag when debugging to ensure C compiler output is in-order.
+
+
+**Having trouble?**
+
+Please file an issue, and it'll be fixed as soon as possible.
 
 
 ## Project Horizon
