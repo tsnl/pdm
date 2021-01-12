@@ -1,7 +1,11 @@
 mod type_query_exps {
+    fn hello (x F32) -> F32 = {
+
+    };
+
     const hello = F32 :< F64;
 
-    const world = fn (x F32) {
+    const world = lambda (x F32) = {
 
-    }
+    };
 };

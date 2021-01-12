@@ -121,6 +121,7 @@ namespace pdm::ast {
         virtual bool on_visit__if_exp(IfExp* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__dot_index_exp(DotIndexExp* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__dot_name_exp(DotNameExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__module_dot_exp(ModuleDotExp* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__unary_exp(UnaryExp* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__binary_exp(BinaryExp* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__vcall_exp(VCallExp* node, VisitOrder visit_order) = 0;
@@ -243,6 +244,9 @@ namespace pdm::ast {
         virtual bool on_visit__dot_name_exp(DotNameExp* node, VisitOrder visit_order) override {
             return true;
         }
+        virtual bool on_visit__module_dot_exp(ModuleDotExp* node, VisitOrder visit_order) override {
+            return true;
+        };
         virtual bool on_visit__unary_exp(UnaryExp* node, VisitOrder visit_order) override {
             return true;
         }

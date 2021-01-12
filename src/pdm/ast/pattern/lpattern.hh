@@ -71,17 +71,18 @@ namespace pdm::ast {
       
       private:
         std::vector<LPattern::Field*> m_fields;
+        bool                          m_destructure;
       
       protected:
-        LPattern(source::Loc loc, std::vector<LPattern::Field*>&& fields)
+        LPattern(source::Loc loc, std::vector<LPattern::Field*>&& fields, bool destructure)
         : Node(loc, Kind::LPattern),
-          m_fields(std::move(fields)) {}
+          m_fields(std::move(fields)),
+          m_destructure(destructure) {}
       
       public:
-        bool is_singleton_pattern() const {
-            return m_fields.size() == 1;
+        bool destructure() const {
+            return m_destructure;
         }
-
         std::vector<LPattern::Field*> const& fields() const {
             return m_fields;
         }

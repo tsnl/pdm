@@ -1,3 +1,3 @@
 pushd src/pdm/parser/
-./bison-build.sh
+./bison-build.sh $*
 popd

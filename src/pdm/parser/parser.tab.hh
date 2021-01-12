@@ -45,7 +45,7 @@
 #ifndef YY_YY_PARSER_TAB_HH_INCLUDED
 # define YY_YY_PARSER_TAB_HH_INCLUDED
 // "%code requires" blocks.
-#line 32 "parser.yy"
+#line 29 "parser.yy"
 
     #include "pdm/core/config.hh"
 
@@ -210,7 +210,7 @@
 # define YYDEBUG 1
 #endif
 
-#line 22 "parser.yy"
+#line 19 "parser.yy"
 namespace pdm { namespace parser {
 #line 216 "parser.tab.hh"
 
@@ -455,8 +455,8 @@ namespace pdm { namespace parser {
       // or_binary_exp
       char dummy4[sizeof (pdm::ast::Exp*)];
 
+      // destructured_lpattern
       // lpattern
-      // lpattern_naked
       char dummy5[sizeof (pdm::ast::LPattern*)];
 
       // lpattern_field
@@ -644,53 +644,54 @@ namespace pdm { namespace parser {
     KW_VAR = 273,                  // "var"
     KW_SET = 274,                  // "set"
     KW_FN = 275,                   // "fn"
-    KW_TFN = 276,                  // "Fn"
-    KW_TYPE = 277,                 // "type"
-    KW_AND = 278,                  // "and"
-    KW_XOR = 279,                  // "xor"
-    KW_OR = 280,                   // "or"
-    KW_NOT = 281,                  // "not"
-    KW_TYPECLASS = 282,            // "typeclass"
-    KW_OUT = 283,                  // "out"
-    KW_INOUT = 284,                // "inout"
-    KW_DISCARD = 285,              // "discard"
-    DINT_LIT = 286,                // "42"
-    XINT_LIT = 287,                // "0x2a"
-    FLOAT_LIT = 288,               // "4.2"
-    DQSTRING_LIT = 289,            // "\"dq-string-literal\""
-    SQSTRING_LIT = 290,            // "'sq-string-literal'"
-    DOT = 291,                     // "."
-    COLON = 292,                   // ":"
-    COMMA = 293,                   // ","
-    SEMICOLON = 294,               // ";"
-    DBL_COLON = 295,               // "::"
-    LPAREN = 296,                  // "("
-    RPAREN = 297,                  // ")"
-    LSQBRK = 298,                  // "["
-    RSQBRK = 299,                  // "]"
-    LCYBRK = 300,                  // "{"
-    RCYBRK = 301,                  // "}"
-    ARROW = 302,                   // "->"
-    ASTERISK = 303,                // "*"
-    FSLASH = 304,                  // "/"
-    PERCENT = 305,                 // "%"
-    PLUS = 306,                    // "+"
-    MINUS = 307,                   // "-"
-    LTHAN = 308,                   // "<"
-    LETHAN = 309,                  // "<="
-    GTHAN = 310,                   // ">"
-    GETHAN = 311,                  // ">="
-    BIND = 312,                    // "="
-    EQUALS = 313,                  // "=="
-    NEQUALS = 314,                 // "!="
-    CARET = 315,                   // "^"
-    AMPERSAND = 316,               // "&"
-    EXCLAIM = 317,                 // "!"
-    PIPE = 318,                    // "|"
-    EOS = 319,                     // "EOS"
-    COLON_LTHAN = 320,             // ":<"
-    GTHAN_COLON = 321,             // ">:"
-    NONE = 322                     // "<null>"
+    KW_LAMBDA = 276,               // "lambda"
+    KW_TFN = 277,                  // "Fn"
+    KW_TYPE = 278,                 // "type"
+    KW_AND = 279,                  // "and"
+    KW_XOR = 280,                  // "xor"
+    KW_OR = 281,                   // "or"
+    KW_NOT = 282,                  // "not"
+    KW_TYPECLASS = 283,            // "typeclass"
+    KW_OUT = 284,                  // "out"
+    KW_INOUT = 285,                // "inout"
+    KW_DISCARD = 286,              // "discard"
+    DINT_LIT = 287,                // "42"
+    XINT_LIT = 288,                // "0x2a"
+    FLOAT_LIT = 289,               // "4.2"
+    DQSTRING_LIT = 290,            // "\"dq-string-literal\""
+    SQSTRING_LIT = 291,            // "'sq-string-literal'"
+    DOT = 292,                     // "."
+    COLON = 293,                   // ":"
+    COMMA = 294,                   // ","
+    SEMICOLON = 295,               // ";"
+    DBL_COLON = 296,               // "::"
+    LPAREN = 297,                  // "("
+    RPAREN = 298,                  // ")"
+    LSQBRK = 299,                  // "["
+    RSQBRK = 300,                  // "]"
+    LCYBRK = 301,                  // "{"
+    RCYBRK = 302,                  // "}"
+    ARROW = 303,                   // "->"
+    ASTERISK = 304,                // "*"
+    FSLASH = 305,                  // "/"
+    PERCENT = 306,                 // "%"
+    PLUS = 307,                    // "+"
+    MINUS = 308,                   // "-"
+    LTHAN = 309,                   // "<"
+    LETHAN = 310,                  // "<="
+    GTHAN = 311,                   // ">"
+    GETHAN = 312,                  // ">="
+    BIND = 313,                    // "="
+    EQUALS = 314,                  // "=="
+    NEQUALS = 315,                 // "!="
+    CARET = 316,                   // "^"
+    AMPERSAND = 317,               // "&"
+    EXCLAIM = 318,                 // "!"
+    PIPE = 319,                    // "|"
+    EOS = 320,                     // "EOS"
+    COLON_LTHAN = 321,             // ":<"
+    GTHAN_COLON = 322,             // ">:"
+    NONE = 323                     // "<null>"
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -707,7 +708,7 @@ namespace pdm { namespace parser {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 68, ///< Number of tokens.
+        YYNTOKENS = 69, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -730,151 +731,152 @@ namespace pdm { namespace parser {
         S_KW_VAR = 18,                           // "var"
         S_KW_SET = 19,                           // "set"
         S_KW_FN = 20,                            // "fn"
-        S_KW_TFN = 21,                           // "Fn"
-        S_KW_TYPE = 22,                          // "type"
-        S_KW_AND = 23,                           // "and"
-        S_KW_XOR = 24,                           // "xor"
-        S_KW_OR = 25,                            // "or"
-        S_KW_NOT = 26,                           // "not"
-        S_KW_TYPECLASS = 27,                     // "typeclass"
-        S_KW_OUT = 28,                           // "out"
-        S_KW_INOUT = 29,                         // "inout"
-        S_KW_DISCARD = 30,                       // "discard"
-        S_DINT_LIT = 31,                         // "42"
-        S_XINT_LIT = 32,                         // "0x2a"
-        S_FLOAT_LIT = 33,                        // "4.2"
-        S_DQSTRING_LIT = 34,                     // "\"dq-string-literal\""
-        S_SQSTRING_LIT = 35,                     // "'sq-string-literal'"
-        S_DOT = 36,                              // "."
-        S_COLON = 37,                            // ":"
-        S_COMMA = 38,                            // ","
-        S_SEMICOLON = 39,                        // ";"
-        S_DBL_COLON = 40,                        // "::"
-        S_LPAREN = 41,                           // "("
-        S_RPAREN = 42,                           // ")"
-        S_LSQBRK = 43,                           // "["
-        S_RSQBRK = 44,                           // "]"
-        S_LCYBRK = 45,                           // "{"
-        S_RCYBRK = 46,                           // "}"
-        S_ARROW = 47,                            // "->"
-        S_ASTERISK = 48,                         // "*"
-        S_FSLASH = 49,                           // "/"
-        S_PERCENT = 50,                          // "%"
-        S_PLUS = 51,                             // "+"
-        S_MINUS = 52,                            // "-"
-        S_LTHAN = 53,                            // "<"
-        S_LETHAN = 54,                           // "<="
-        S_GTHAN = 55,                            // ">"
-        S_GETHAN = 56,                           // ">="
-        S_BIND = 57,                             // "="
-        S_EQUALS = 58,                           // "=="
-        S_NEQUALS = 59,                          // "!="
-        S_CARET = 60,                            // "^"
-        S_AMPERSAND = 61,                        // "&"
-        S_EXCLAIM = 62,                          // "!"
-        S_PIPE = 63,                             // "|"
-        S_EOS = 64,                              // "EOS"
-        S_COLON_LTHAN = 65,                      // ":<"
-        S_GTHAN_COLON = 66,                      // ">:"
-        S_NONE = 67,                             // "<null>"
-        S_YYACCEPT = 68,                         // $accept
-        S_script = 69,                           // script
-        S_scriptContent = 70,                    // scriptContent
-        S_scriptContentStmt = 71,                // scriptContentStmt
-        S_mod_stmt = 72,                         // mod_stmt
-        S_moduleContent = 73,                    // moduleContent
-        S_chain_prefix_stmt = 74,                // chain_prefix_stmt
-        S_const_stmt = 75,                       // const_stmt
-        S_val_stmt = 76,                         // val_stmt
-        S_var_stmt = 77,                         // var_stmt
-        S_set_stmt = 78,                         // set_stmt
-        S_discard_stmt = 79,                     // discard_stmt
-        S_moduleContentStmt = 80,                // moduleContentStmt
-        S_fn_stmt = 81,                          // fn_stmt
-        S_type_stmt = 82,                        // type_stmt
-        S_enum_stmt = 83,                        // enum_stmt
-        S_enum_field_pl = 84,                    // enum_field_pl
-        S_unprefixed_enum_field_pl = 85,         // unprefixed_enum_field_pl
-        S_enum_field = 86,                       // enum_field
-        S_typeclass_stmt = 87,                   // typeclass_stmt
-        S_using_stmt = 88,                       // using_stmt
-        S_import_stmt = 89,                      // import_stmt
-        S_extern_stmt = 90,                      // extern_stmt
-        S_tid = 91,                              // tid
-        S_vid = 92,                              // vid
-        S_floatl = 93,                           // floatl
-        S_stringl = 94,                          // stringl
-        S_expr = 95,                             // expr
-        S_long_exp = 96,                         // long_exp
-        S_expr_cl2 = 97,                         // expr_cl2
-        S_type_query_exp_sl = 98,                // type_query_exp_sl
-        S_bracketed_exp = 99,                    // bracketed_exp
-        S_unit_exp = 100,                        // unit_exp
-        S_paren_exp = 101,                       // paren_exp
-        S_vtupleExpr = 102,                      // vtupleExpr
-        S_vstructExpr = 103,                     // vstructExpr
-        S_primary_exp = 104,                     // primary_exp
-        S_int_expr = 105,                        // int_expr
-        S_stringls = 106,                        // stringls
-        S_if_exp = 107,                          // if_exp
-        S_chain_exp = 108,                       // chain_exp
-        S_chain_prefix = 109,                    // chain_prefix
-        S_lambda_exp = 110,                      // lambda_exp
-        S_postfix_exp = 111,                     // postfix_exp
-        S_tcall_exp = 112,                       // tcall_exp
-        S_vcall_exp = 113,                       // vcall_exp
-        S_dot_name_exp = 114,                    // dot_name_exp
-        S_dot_index_exp = 115,                   // dot_index_exp
-        S_unary_exp = 116,                       // unary_exp
-        S_unary_op = 117,                        // unary_op
-        S_binary_exp = 118,                      // binary_exp
-        S_mul_binary_op = 119,                   // mul_binary_op
-        S_mul_binary_exp = 120,                  // mul_binary_exp
-        S_add_binary_op = 121,                   // add_binary_op
-        S_add_binary_exp = 122,                  // add_binary_exp
-        S_cmp_binary_op = 123,                   // cmp_binary_op
-        S_cmp_binary_exp = 124,                  // cmp_binary_exp
-        S_eq_binary_op = 125,                    // eq_binary_op
-        S_eq_binary_exp = 126,                   // eq_binary_exp
-        S_and_binary_exp = 127,                  // and_binary_exp
-        S_xor_binary_exp = 128,                  // xor_binary_exp
-        S_or_binary_exp = 129,                   // or_binary_exp
-        S_type_query_exp = 130,                  // type_query_exp
-        S_type_query_op = 131,                   // type_query_op
-        S_typespec = 132,                        // typespec
-        S_typespec_cl1 = 133,                    // typespec_cl1
-        S_typespec_cl2 = 134,                    // typespec_cl2
-        S_struct_typespec_field = 135,           // struct_typespec_field
-        S_struct_typespec_field_cl = 136,        // struct_typespec_field_cl
-        S_primary_typespec = 137,                // primary_typespec
-        S_paren_typespec = 138,                  // paren_typespec
-        S_tuple_typespec = 139,                  // tuple_typespec
-        S_mod_prefix_tid = 140,                  // mod_prefix_tid
-        S_mod_prefix = 141,                      // mod_prefix
-        S_fn_typespec = 142,                     // fn_typespec
-        S_postfix_typespec = 143,                // postfix_typespec
-        S_tcall_typespec = 144,                  // tcall_typespec
-        S_dot_typespec = 145,                    // dot_typespec
-        S_unary_typespec = 146,                  // unary_typespec
-        S_long_typespec = 147,                   // long_typespec
-        S_struct_typespec = 148,                 // struct_typespec
-        S_targ = 149,                            // targ
-        S_targ_cl = 150,                         // targ_cl
-        S_varg = 151,                            // varg
-        S_varg_cl = 152,                         // varg_cl
-        S_struct_exp_field = 153,                // struct_exp_field
-        S_vpattern_field = 154,                  // vpattern_field
-        S_lpattern_field = 155,                  // lpattern_field
-        S_tpattern_field = 156,                  // tpattern_field
-        S_lpattern = 157,                        // lpattern
-        S_lpattern_naked = 158,                  // lpattern_naked
-        S_vpattern = 159,                        // vpattern
-        S_tpattern = 160,                        // tpattern
-        S_vpattern_field_cl = 161,               // vpattern_field_cl
-        S_lpattern_field_cl = 162,               // lpattern_field_cl
-        S_tpattern_field_cl = 163,               // tpattern_field_cl
-        S_struct_exp_field_cl = 164,             // struct_exp_field_cl
-        S_tpattern_seq = 165                     // tpattern_seq
+        S_KW_LAMBDA = 21,                        // "lambda"
+        S_KW_TFN = 22,                           // "Fn"
+        S_KW_TYPE = 23,                          // "type"
+        S_KW_AND = 24,                           // "and"
+        S_KW_XOR = 25,                           // "xor"
+        S_KW_OR = 26,                            // "or"
+        S_KW_NOT = 27,                           // "not"
+        S_KW_TYPECLASS = 28,                     // "typeclass"
+        S_KW_OUT = 29,                           // "out"
+        S_KW_INOUT = 30,                         // "inout"
+        S_KW_DISCARD = 31,                       // "discard"
+        S_DINT_LIT = 32,                         // "42"
+        S_XINT_LIT = 33,                         // "0x2a"
+        S_FLOAT_LIT = 34,                        // "4.2"
+        S_DQSTRING_LIT = 35,                     // "\"dq-string-literal\""
+        S_SQSTRING_LIT = 36,                     // "'sq-string-literal'"
+        S_DOT = 37,                              // "."
+        S_COLON = 38,                            // ":"
+        S_COMMA = 39,                            // ","
+        S_SEMICOLON = 40,                        // ";"
+        S_DBL_COLON = 41,                        // "::"
+        S_LPAREN = 42,                           // "("
+        S_RPAREN = 43,                           // ")"
+        S_LSQBRK = 44,                           // "["
+        S_RSQBRK = 45,                           // "]"
+        S_LCYBRK = 46,                           // "{"
+        S_RCYBRK = 47,                           // "}"
+        S_ARROW = 48,                            // "->"
+        S_ASTERISK = 49,                         // "*"
+        S_FSLASH = 50,                           // "/"
+        S_PERCENT = 51,                          // "%"
+        S_PLUS = 52,                             // "+"
+        S_MINUS = 53,                            // "-"
+        S_LTHAN = 54,                            // "<"
+        S_LETHAN = 55,                           // "<="
+        S_GTHAN = 56,                            // ">"
+        S_GETHAN = 57,                           // ">="
+        S_BIND = 58,                             // "="
+        S_EQUALS = 59,                           // "=="
+        S_NEQUALS = 60,                          // "!="
+        S_CARET = 61,                            // "^"
+        S_AMPERSAND = 62,                        // "&"
+        S_EXCLAIM = 63,                          // "!"
+        S_PIPE = 64,                             // "|"
+        S_EOS = 65,                              // "EOS"
+        S_COLON_LTHAN = 66,                      // ":<"
+        S_GTHAN_COLON = 67,                      // ">:"
+        S_NONE = 68,                             // "<null>"
+        S_YYACCEPT = 69,                         // $accept
+        S_script = 70,                           // script
+        S_scriptContent = 71,                    // scriptContent
+        S_scriptContentStmt = 72,                // scriptContentStmt
+        S_mod_stmt = 73,                         // mod_stmt
+        S_moduleContent = 74,                    // moduleContent
+        S_chain_prefix_stmt = 75,                // chain_prefix_stmt
+        S_const_stmt = 76,                       // const_stmt
+        S_val_stmt = 77,                         // val_stmt
+        S_var_stmt = 78,                         // var_stmt
+        S_set_stmt = 79,                         // set_stmt
+        S_discard_stmt = 80,                     // discard_stmt
+        S_moduleContentStmt = 81,                // moduleContentStmt
+        S_fn_stmt = 82,                          // fn_stmt
+        S_type_stmt = 83,                        // type_stmt
+        S_enum_stmt = 84,                        // enum_stmt
+        S_enum_field_pl = 85,                    // enum_field_pl
+        S_unprefixed_enum_field_pl = 86,         // unprefixed_enum_field_pl
+        S_enum_field = 87,                       // enum_field
+        S_typeclass_stmt = 88,                   // typeclass_stmt
+        S_using_stmt = 89,                       // using_stmt
+        S_import_stmt = 90,                      // import_stmt
+        S_extern_stmt = 91,                      // extern_stmt
+        S_tid = 92,                              // tid
+        S_vid = 93,                              // vid
+        S_floatl = 94,                           // floatl
+        S_stringl = 95,                          // stringl
+        S_mod_prefix = 96,                       // mod_prefix
+        S_expr = 97,                             // expr
+        S_long_exp = 98,                         // long_exp
+        S_expr_cl2 = 99,                         // expr_cl2
+        S_type_query_exp_sl = 100,               // type_query_exp_sl
+        S_bracketed_exp = 101,                   // bracketed_exp
+        S_unit_exp = 102,                        // unit_exp
+        S_paren_exp = 103,                       // paren_exp
+        S_vtupleExpr = 104,                      // vtupleExpr
+        S_vstructExpr = 105,                     // vstructExpr
+        S_primary_exp = 106,                     // primary_exp
+        S_int_expr = 107,                        // int_expr
+        S_stringls = 108,                        // stringls
+        S_if_exp = 109,                          // if_exp
+        S_chain_exp = 110,                       // chain_exp
+        S_chain_prefix = 111,                    // chain_prefix
+        S_lambda_exp = 112,                      // lambda_exp
+        S_postfix_exp = 113,                     // postfix_exp
+        S_tcall_exp = 114,                       // tcall_exp
+        S_vcall_exp = 115,                       // vcall_exp
+        S_dot_name_exp = 116,                    // dot_name_exp
+        S_dot_index_exp = 117,                   // dot_index_exp
+        S_unary_exp = 118,                       // unary_exp
+        S_unary_op = 119,                        // unary_op
+        S_binary_exp = 120,                      // binary_exp
+        S_mul_binary_op = 121,                   // mul_binary_op
+        S_mul_binary_exp = 122,                  // mul_binary_exp
+        S_add_binary_op = 123,                   // add_binary_op
+        S_add_binary_exp = 124,                  // add_binary_exp
+        S_cmp_binary_op = 125,                   // cmp_binary_op
+        S_cmp_binary_exp = 126,                  // cmp_binary_exp
+        S_eq_binary_op = 127,                    // eq_binary_op
+        S_eq_binary_exp = 128,                   // eq_binary_exp
+        S_and_binary_exp = 129,                  // and_binary_exp
+        S_xor_binary_exp = 130,                  // xor_binary_exp
+        S_or_binary_exp = 131,                   // or_binary_exp
+        S_type_query_exp = 132,                  // type_query_exp
+        S_type_query_op = 133,                   // type_query_op
+        S_typespec = 134,                        // typespec
+        S_typespec_cl1 = 135,                    // typespec_cl1
+        S_typespec_cl2 = 136,                    // typespec_cl2
+        S_struct_typespec_field = 137,           // struct_typespec_field
+        S_struct_typespec_field_cl = 138,        // struct_typespec_field_cl
+        S_primary_typespec = 139,                // primary_typespec
+        S_paren_typespec = 140,                  // paren_typespec
+        S_tuple_typespec = 141,                  // tuple_typespec
+        S_mod_prefix_tid = 142,                  // mod_prefix_tid
+        S_fn_typespec = 143,                     // fn_typespec
+        S_postfix_typespec = 144,                // postfix_typespec
+        S_tcall_typespec = 145,                  // tcall_typespec
+        S_dot_typespec = 146,                    // dot_typespec
+        S_unary_typespec = 147,                  // unary_typespec
+        S_long_typespec = 148,                   // long_typespec
+        S_struct_typespec = 149,                 // struct_typespec
+        S_targ = 150,                            // targ
+        S_targ_cl = 151,                         // targ_cl
+        S_varg = 152,                            // varg
+        S_varg_cl = 153,                         // varg_cl
+        S_struct_exp_field = 154,                // struct_exp_field
+        S_vpattern_field = 155,                  // vpattern_field
+        S_lpattern_field = 156,                  // lpattern_field
+        S_tpattern_field = 157,                  // tpattern_field
+        S_destructured_lpattern = 158,           // destructured_lpattern
+        S_lpattern = 159,                        // lpattern
+        S_vpattern = 160,                        // vpattern
+        S_tpattern = 161,                        // tpattern
+        S_vpattern_field_cl = 162,               // vpattern_field_cl
+        S_lpattern_field_cl = 163,               // lpattern_field_cl
+        S_tpattern_field_cl = 164,               // tpattern_field_cl
+        S_struct_exp_field_cl = 165,             // struct_exp_field_cl
+        S_tpattern_seq = 166                     // tpattern_seq
       };
     };
 
@@ -966,8 +968,8 @@ namespace pdm { namespace parser {
         value.move< pdm::ast::Exp* > (std::move (that.value));
         break;
 
+      case symbol_kind::S_destructured_lpattern: // destructured_lpattern
       case symbol_kind::S_lpattern: // lpattern
-      case symbol_kind::S_lpattern_naked: // lpattern_naked
         value.move< pdm::ast::LPattern* > (std::move (that.value));
         break;
 
@@ -1676,8 +1678,8 @@ switch (yykind)
         value.template destroy< pdm::ast::Exp* > ();
         break;
 
+      case symbol_kind::S_destructured_lpattern: // destructured_lpattern
       case symbol_kind::S_lpattern: // lpattern
-      case symbol_kind::S_lpattern_naked: // lpattern_naked
         value.template destroy< pdm::ast::LPattern* > ();
         break;
 
@@ -1924,13 +1926,13 @@ switch (yykind)
       symbol_type (int tok, location_type l)
         : super_type(token_type (tok), std::move (l))
       {
-        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_VAL || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_TFN || tok == token::KW_TYPE || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::KW_OUT || tok == token::KW_INOUT || tok == token::KW_DISCARD || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
+        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_VAL || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_LAMBDA || tok == token::KW_TFN || tok == token::KW_TYPE || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::KW_OUT || tok == token::KW_INOUT || tok == token::KW_DISCARD || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
       }
 #else
       symbol_type (int tok, const location_type& l)
         : super_type(token_type (tok), l)
       {
-        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_VAL || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_TFN || tok == token::KW_TYPE || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::KW_OUT || tok == token::KW_INOUT || tok == token::KW_DISCARD || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
+        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_VAL || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_LAMBDA || tok == token::KW_TFN || tok == token::KW_TYPE || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::KW_OUT || tok == token::KW_INOUT || tok == token::KW_DISCARD || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2310,6 +2312,21 @@ switch (yykind)
       make_KW_FN (const location_type& l)
       {
         return symbol_type (token::KW_FN, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_KW_LAMBDA (location_type l)
+      {
+        return symbol_type (token::KW_LAMBDA, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_KW_LAMBDA (const location_type& l)
+      {
+        return symbol_type (token::KW_LAMBDA, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -3321,7 +3338,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 622,     ///< Last index in yytable_.
+      yylast_ = 683,     ///< Last index in yytable_.
       yynnts_ = 98,  ///< Number of nonterminal symbols.
       yyfinal_ = 14 ///< Termination state number.
     };
@@ -3336,22 +3353,22 @@ switch (yykind)
   };
 
 
-#line 22 "parser.yy"
+#line 19 "parser.yy"
 } } // pdm::parser
-#line 3342 "parser.tab.hh"
+#line 3359 "parser.tab.hh"
 
 
 // "%code provides" blocks.
-#line 64 "parser.yy"
+#line 61 "parser.yy"
 
     using Tk = pdm::parser::parser::token_kind_type;
-#line 191 "parser.yy"
+#line 188 "parser.yy"
 
     // int yylex(pdm::parser::TokenInfo *lvalp, pdm::source::Loc *llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
     int yylex(pdm::parser::parser::semantic_type* st, pdm::source::Loc* llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
     void yyerror(pdm::source::Loc* llocp, char const* message, pdm::source::Source* source, pdm::parser::Lexer* lexer);
 
-#line 3355 "parser.tab.hh"
+#line 3372 "parser.tab.hh"
 
 
 #endif // !YY_YY_PARSER_TAB_HH_INCLUDED

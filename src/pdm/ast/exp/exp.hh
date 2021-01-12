@@ -23,10 +23,10 @@ namespace pdm::ast {
         // virtual bool is_const_evaluable() const;
 
       public:
-        types::TypeVar* x_evaltype_tv() const {
+        types::TypeVar* x_typeof_tv() const {
             return m_x_evaltype_tv;
         }
-        void x_evaltype_tv(types::TypeVar* evaltype_tv) {
+        void x_typeof_tv(types::TypeVar* evaltype_tv) {
             m_x_evaltype_tv = evaltype_tv;
         }
     };

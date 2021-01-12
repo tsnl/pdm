@@ -248,6 +248,11 @@ namespace pdm::printer {
                 print_dot_name_exp(dynamic_cast<ast::DotNameExp*>(node));
                 break;
             }
+            case ast::Kind::ModuleDotExp:
+            {
+                print_module_dot_exp(dynamic_cast<ast::ModuleDotExp*>(node));
+                break;
+            }
             case ast::Kind::UnaryExp:
             {
                 print_unary_exp(dynamic_cast<ast::UnaryExp*>(node));
@@ -692,7 +697,7 @@ namespace pdm::printer {
         }
     }
     void Printer::print_lambda_exp(ast::LambdaExp* node) {
-        print_cstr("fn ");
+        print_cstr("lambda ");
         print_node(node->lhs_vpattern());
         print_cstr(" = ");
         print_node(node->rhs_body());
@@ -716,7 +721,20 @@ namespace pdm::printer {
     }
     void Printer::print_dot_name_exp(ast::DotNameExp* node) {
         print_node(node->lhs());
-        print_u32_char('.');
+        if (node->rhs_hint() == ast::DotNameExp::RhsHint::LhsStruct) {
+            print_u32_char('.');
+        } else if (node->rhs_hint() == ast::DotNameExp::RhsHint::LhsEnum) {
+            print_u32_char('.');
+        } else {
+            print_cstr(" <dot-?> ");
+        }
+        print_intstr(node->rhs_name());
+    }
+    void Printer::print_module_dot_exp(ast::ModuleDotExp* node) {
+        for (intern::String prefix_module_name: node->lhs_prefix_module_names()) {
+            print_intstr(prefix_module_name);
+            print_cstr(":");
+        }
         print_intstr(node->rhs_name());
     }
     void Printer::print_unary_exp(ast::UnaryExp* node) {
@@ -925,14 +943,7 @@ namespace pdm::printer {
         print_u32_char(']');
     }
     void Printer::print_lpattern(ast::LPattern* node) {
-        if (node->is_singleton_pattern()) {
-            ast::LPattern::Field* field = node->fields()[0];
-            print_intstr(field->lhs_name());
-            if (field->opt_rhs_typespec()) {
-                print_u32_char(' ');
-                print_node(field->opt_rhs_typespec());
-            }
-        } else {
+        if (node->destructure()) {
             print_u32_char('(');
             int field_count = node->fields().size();
             for (int index = 0; index < field_count; index++) {
@@ -947,7 +958,17 @@ namespace pdm::printer {
                     print_u32_char(' ');
                 }
             }
+            if (field_count == 1) {
+                print_u32_char(',');
+            }
             print_u32_char(')');
+        } else {
+            ast::LPattern::Field* field = node->fields()[0];
+            print_intstr(field->lhs_name());
+            if (field->opt_rhs_typespec()) {
+                print_u32_char(' ');
+                print_node(field->opt_rhs_typespec());
+            }
         }
     }
 

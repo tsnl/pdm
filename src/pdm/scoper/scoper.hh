@@ -139,6 +139,7 @@ namespace pdm::scoper {
         virtual bool on_visit__if_exp(ast::IfExp* node, VisitOrder visit_order) override;
         virtual bool on_visit__dot_index_exp(ast::DotIndexExp* node, VisitOrder visit_order) override;
         virtual bool on_visit__dot_name_exp(ast::DotNameExp* node, VisitOrder visit_order) override;
+        virtual bool on_visit__module_dot_exp(ast::ModuleDotExp* node, VisitOrder visit_order) override;
         virtual bool on_visit__unary_exp(ast::UnaryExp* node, VisitOrder visit_order) override;
         virtual bool on_visit__binary_exp(ast::BinaryExp* node, VisitOrder visit_order) override;
         virtual bool on_visit__vcall_exp(ast::VCallExp* node, VisitOrder visit_order) override;

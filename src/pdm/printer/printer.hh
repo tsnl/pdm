@@ -80,6 +80,7 @@ namespace pdm::printer {
         void print_if_exp(ast::IfExp* node);
         void print_dot_index_exp(ast::DotIndexExp* node);
         void print_dot_name_exp(ast::DotNameExp* node);
+        void print_module_dot_exp(ast::ModuleDotExp* node);
         void print_unary_exp(ast::UnaryExp* node);
         void print_binary_exp(ast::BinaryExp* node);
         void print_vcall_exp(ast::VCallExp* node);

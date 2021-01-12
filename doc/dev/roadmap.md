@@ -1,5 +1,39 @@
 # Roadmap
 
+## Jan 11 2021
+- Implemented Constraints (see builtin types and classes' dumps)
+- Next: implement 'apply' for Relations
+  - add a new Relation to qualify builtin types
+- Next: implement 'typer' using Relations
+- Next: implement solver:
+  - In Phase 1, check bitset against...
+    1. VarKind, 
+    2. all supervars
+    If any inconsistencies at this stage, can guarantee typing will be unsuccessful.
+  - In Phase 2, assuming kind-correctness,
+    1. NewIntervalSet = OldIntervalSet U SupervarIntervalSet1 U SupervarIntervalSet2 ... U SupervarIntervalSetN
+    2. If OldIntervalSet != NewIntervalSet, return Change, else return NoChange; **let manager manage dirty Vars with helper state**
+    3. When all Vars return NoChange, means we have finished solving. Henceforth, IntervalSet will not change.
+  - After Phase 2, each TypeVar can select/be assigned a type with all the information required for emission.
+  - **TODO:** 'const' checking, required for templates
+- Next: implement expander:
+  - cf `Roadmap Alf` below
+  - cf `LazilySubAndCopy`-related commit message below
+  - Expander turns templates into monomorphic entities. 
+  - In evaluating templates, it must perform (some) constant evaluation.
+    - Typer ensures evaluation is side-effect free, even with internal mutability
+    - Rather than bytecode, just use the AST + a Visitor to recursively evaluate code.
+      - Note that function LHSes, even function pointers, can evaluate to a 'Callable' value
+        in the module that enums ast::LambdaExp and ast::FnStmt.
+  - Alternatively, treat all templates with value TArgs as functions.
+    - use typer info to substitute template arguments as usual... can be monomorphized out.
+    - turn value targs into vargs!
+      e.g. Array[T AnyType, n Int32] -> array[T] :: Fn (n) -> Array[T]
+    - yeah, I'm confused already
+
+## Jan 10 2021
+- Better name: **Tact**?
+
 ## Jan 9 2021
 - A lot of spec work done for types and typer:
   - see [src/pdm/types/README.md](/src/pdm/types/README.md)

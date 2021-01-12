@@ -99,6 +99,7 @@ namespace pdm::ast {
         BinaryExp* new_binary_exp(source::Loc loc, BinaryOperator binary_operator, Exp* lhs_operand, Exp* rhs_operand);
         ChainExp* new_chain_exp(source::Loc loc, std::vector<Stmt*>&& prefix, Exp* suffix = nullptr);
         DotNameExp* new_dot_name_exp(source::Loc loc, Exp* lhs, intern::String rhs_name, DotNameExp::RhsHint rhs_hint);
+        ModuleDotExp* new_module_dot_exp(source::Loc loc, std::vector<intern::String>&& module_names, intern::String rhs_name);
         DotIndexExp* new_dot_index_exp(source::Loc loc, Exp* lhs, Exp* rhs_exp, DotIndexExp::RhsHint rhs_hint);
         FloatExp* new_float_exp(source::Loc loc, long double value);
         IdExp* new_id_exp(source::Loc loc, intern::String name);
@@ -117,7 +118,7 @@ namespace pdm::ast {
         VCallExp* new_vcall_exp(source::Loc loc, Exp* lhs_called, std::vector<VArg*>&& args);
         StructExp::Field* new_struct_exp_field(source::Loc loc, intern::String name, Exp* value);
         
-        LPattern* new_lpattern(source::Loc loc, std::vector<LPattern::Field*>&& fields);
+        LPattern* new_lpattern(source::Loc loc, std::vector<LPattern::Field*>&& fields, bool destructure);
         TPattern* new_tpattern(source::Loc loc, std::vector<TPattern::Field*>&& fields, bool is_only_captured);
         VPattern* new_vpattern(source::Loc loc, std::vector<VPattern::Field*>&& fields);
         LPattern::Field* new_lpattern_field(source::Loc loc, LPattern::FieldKind kind, intern::String name, Typespec* opt_rhs_typespec = nullptr);

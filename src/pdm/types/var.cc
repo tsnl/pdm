@@ -12,7 +12,14 @@
 
 namespace pdm::types {
 
-    AssumeOpResult Var::assume(Constraint* constraint) {
+    AssumeOpResult Var::assume_constraint_holds(Constraint* constraint) {
+        return assume_constraint_holds_impl(constraint, false);
+    }
+    AssumeOpResult Var::assume_constraint_holds__override_fixed_to_init(Constraint* constraint) {
+        return assume_constraint_holds_impl(constraint, true);
+    }
+
+    AssumeOpResult Var::assume_constraint_holds_impl(Constraint* constraint, bool override_fixed) {
         // if this constraint was not intended for a Var of this VarKind,
         // typer's meta-type error:
         if (var_kind() != constraint->domain_var_kind()) {
@@ -21,11 +28,12 @@ namespace pdm::types {
 
         // unless NotImplemented, AssumeOp will return 'Applied' from here.
         
-        // if the zeroth solve iter is 'AtFixed', this is a constant type.
-        if (m_zeroth_solve_iter_result == SolveIterResult::AtFixedPoint) {
-            // just ignoring extra constraints on constants-- 
-            // constants are constraint sinks upon propagation!
-            return AssumeOpResult::Applied;
+        if (!override_fixed) {
+            if (is_constant()) {
+                // just ignoring extra constraints on constants-- 
+                // constants are constraint sinks upon propagation!
+                return AssumeOpResult::Applied;
+            }
         }
         
         // if a common constraint, adding and applying immediately.
@@ -36,7 +44,6 @@ namespace pdm::types {
             // Kind constraints update the assumed_kind_bitset:
             KindConstraint* kind_constraint = dynamic_cast<KindConstraint*>(constraint);
             if (kind_constraint != nullptr) {
-                m_assumed_common_constraints.push_back(kind_constraint);
                 m_assumed_kind_bitset |= kind_constraint->allowed_type_kinds_bitset();
                 return AssumeOpResult::Applied;
             } 
@@ -62,27 +69,22 @@ namespace pdm::types {
                 return AssumeOpResult::Applied;
             }
 
-            // All kind-dependent constraints go into a list for later.
-            KindDependentConstraint* kd_constraint = dynamic_cast<KindDependentConstraint*>(constraint);
-            if (kd_constraint != nullptr) {
-                m_assumed_kind_dependent_constraints.push_back(kd_constraint);
-                return AssumeOpResult::Applied;
-            }
-
             // Unknown CommonConstraint kind...
             assert(0 && "Unknown CommonConstraint.");
         }
 
         // if a kind-dependent constraint, adding to a list and deferring for later.
+        // - we defer because if a TypeVar is multi-kind, we already have an error, so we can halt with the simplest error message.
+        // - before KindDependentConstraint
         // also adding a kind-constraint corresponding to the assumed kind.
         KindDependentConstraint* kind_dependent_constraint = nullptr;
         if ((kind_dependent_constraint = dynamic_cast<KindDependentConstraint*>(constraint)) != nullptr) {
             // *sweats in bad memory management*
-            AssumeOpResult result = assume(new KindConstraint(
+            AssumeOpResult result = assume_constraint_holds_impl(new KindConstraint(
                 constraint->parent_relation(), 
                 constraint->domain_var_kind(), 
                 static_cast<u64>(kind_dependent_constraint->required_type_kind())
-            ));
+            ), override_fixed);
             
             // kind-dependent constraints deferred for later.
             m_assumed_kind_dependent_constraints.push_back(kind_dependent_constraint);
@@ -94,26 +96,81 @@ namespace pdm::types {
         return AssumeOpResult::ErrorOccurred;
     }
 
-    SolveIterResult Var::solve_iter() {
-        SolveIterResult iter_sir = help_solve_iter();
+    //
+    // Solution:
+    //
+
+    // phase 1:
+    // - check VarKind against TypeKind bitset
+    SolvePhase1_Result Var::solve_phase1() {
+        switch (var_kind())
+        {
+            case VarKind::Type:
+            {
+                TypeVar* self = dynamic_cast<TypeVar*>(this);
+                switch (self->soln_bill())
+                {
+                    case TypeVarSolnBill::Fixed:
+                    case TypeVarSolnBill::Monotype:
+                    {
+                        return help_check_phase1_type_bitset_for_mixed_kinds();
+                    }
+                    case TypeVarSolnBill::ProxyForMany:
+                    {
+                        // ignore any mixed-kind errors
+                        return SolvePhase1_Result::Ok;
+                    }
+                }
+            }
+            case VarKind::ValueTemplate:
+            case VarKind::TypeTemplate:
+            {
+                return help_check_phase1_type_bitset_for_mixed_kinds();
+            }
+            case VarKind::Class:
+            case VarKind::ClassTemplate:
+            {
+                // mixed-kind ok, since disjoint sets ok
+                return SolvePhase1_Result::Ok;
+            }
+        }
+    }
+
+    SolvePhase1_Result Var::help_check_phase1_type_bitset_for_mixed_kinds() {
+        // verifying only a single 'kind' bit is set.
+        // https://stackoverflow.com/questions/51094594/how-to-check-if-exactly-one-bit-is-set-in-an-int/51094793
+        // - all po2 -1 has 1s in every lower position. po2 has 0s in every lower position. 
+        // - '&' them. if (0), then po2.
+        u64 bitset = m_assumed_kind_bitset;
+        if (bitset == 0) {
+            return SolvePhase1_Result::InsufficientInfo;
+        } else if (!(bitset & (bitset-1))) {
+            return SolvePhase1_Result::Ok;
+        } else {
+            return SolvePhase1_Result::Error_MixedKind;
+        }
+    }
+
+    SolvePhase2_Result Var::solve_phase2_iter() {
+        SolvePhase2_Result iter_sir = solve_phase2_iter_impl();
         m_prev_solve_iter_result = iter_sir;
         return iter_sir;
     }
-    SolveIterResult Var::help_solve_iter() {
-        if (m_prev_solve_iter_result == SolveIterResult::AtFixedPoint) {
-            return SolveIterResult::AtFixedPoint;
+    SolvePhase2_Result Var::solve_phase2_iter_impl() {
+        if (m_prev_solve_iter_result == SolvePhase2_Result::AtFixedPoint) {
+            return SolvePhase2_Result::AtFixedPoint;
         }
-        if (m_prev_solve_iter_result == SolveIterResult::AtError) {
-            return SolveIterResult::AtError;
+        if (m_prev_solve_iter_result == SolvePhase2_Result::AtError) {
+            return SolvePhase2_Result::AtError;
         }
         
-        assert(m_prev_solve_iter_result == SolveIterResult::UpdatedOrFresh);
+        assert(m_prev_solve_iter_result == SolvePhase2_Result::UpdatedOrFresh);
 
         // todo: compare kind bitset against all subvars
         // todo: implement rest of `typing.dot`...
 
-        std::cout << "NotImplemented: help_solve_iter" << std::endl;
-        return SolveIterResult::AtError;
+        std::cout << "NotImplemented: solve_phase2_iter_impl" << std::endl;
+        return SolvePhase2_Result::AtError;
     }
 
     TestOpResult Var::test(Constraint* constraint) {
@@ -126,6 +183,24 @@ namespace pdm::types {
         subvar->m_assumed_supervars.push_back(supervar);
         supervar->m_assumed_subvars.push_back(subvar);
     }
+
+    SolvePhase2_Result TypeVar::initial_sp2_result_for_soln_bill(TypeVarSolnBill soln_bill) {
+        switch (soln_bill) {
+            case TypeVarSolnBill::Fixed: 
+            {
+                return SolvePhase2_Result::AtFixedPoint;
+            }
+            case TypeVarSolnBill::Monotype:
+            case TypeVarSolnBill::ProxyForMany:
+            {
+                return SolvePhase2_Result::UpdatedOrFresh;
+            }
+        }
+    }
+
+    //
+    // Printing:
+    //
 
     void Var::print(printer::Printer& p) const {
         help_print_title(p);
@@ -182,7 +257,7 @@ namespace pdm::types {
                 break;
             }
         }
-        p.print_cstr(":");
+        p.print_cstr(" ");
 
         // printing the var name:
         p.print_str(name());
@@ -214,9 +289,9 @@ namespace pdm::types {
             p.print_cstr(" None");
         } else {
             for (Constraint* constraint: assumed_common_constraints()) {
-                p.print_cstr("- ");
-                // todo: print constraint here
                 p.print_newline();
+                p.print_cstr("- ");
+                p.print_str(constraint->name());
             }
         }
     }
@@ -226,9 +301,9 @@ namespace pdm::types {
             p.print_cstr(" None");
         } else {
             for (Constraint* constraint: assumed_kind_dependent_constraints()) {
-                p.print_cstr("- ");
-                // todo: print constraint here
                 p.print_newline();
+                p.print_cstr("- ");
+                p.print_str(constraint->name());
             }
         }
     }
@@ -239,11 +314,9 @@ namespace pdm::types {
         } else {
             for (size_t index = 0; index < m_assumed_subvars.size(); index++) {
                 Var* assumed_subvar = m_assumed_subvars[index];
+                p.print_newline();
                 p.print_cstr("- ");
                 assumed_subvar->help_print_title(p);
-                if (index+1 != m_assumed_subvars.size()) {
-                    p.print_newline();
-                }
             }
         }
     }
@@ -272,17 +345,130 @@ namespace pdm::types {
         }
     }
 
-    SolveIterResult TypeVar::zeroth_solve_iter_result_for_soln_bill(TypeVarSolnBill soln_bill) {
-        switch (soln_bill) {
-            case TypeVarSolnBill::Fixed: 
-            {
-                return SolveIterResult::AtFixedPoint;
-            }
-            case TypeVarSolnBill::Monotype:
-            case TypeVarSolnBill::ProxyForMany:
-            {
-                return SolveIterResult::UpdatedOrFresh;
-            }
-        }
+    //
+    // Constant types:
+    //
+    // todo: implement constant Relations for these constraints to be applied from.
+
+    FixedTypeVar::FixedTypeVar(std::string&& name, Type* fixed_soln)
+    :   TypeVar("FixedType:" + std::move(name), fixed_soln, nullptr, TypeVarSolnBill::Fixed)
+    {}
+    
+    VoidFixedTypeVar::VoidFixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("Void")), VoidType::get()) 
+    { 
+        assume_constraint_holds__override_fixed_to_init(new VoidConstraint(nullptr, VarKind::Type)); 
     }
+    StringFixedTypeVar::StringFixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("String")), StringType::get())
+    {
+        assume_constraint_holds__override_fixed_to_init(new StringConstraint(nullptr, VarKind::Type));
+    }
+    
+    Int8FixedTypeVar::Int8FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("Int8")), IntType::get_i8())
+    {
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Type, 8, 8, true));
+    }
+    Int16FixedTypeVar::Int16FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("Int16")), IntType::get_i16())
+    {
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Type, 16, 16, true));
+    }
+    Int32FixedTypeVar::Int32FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("Int32")), IntType::get_i32())
+    {
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Type, 32, 32, true));
+    }
+    Int64FixedTypeVar::Int64FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("Int64")), IntType::get_i64())
+    {
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Type, 64, 64, true));
+    }
+    Int128FixedTypeVar::Int128FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("Int128")), IntType::get_i128())
+    {
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Type, 128, 128, true));
+    }
+
+    UInt1FixedTypeVar::UInt1FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("UInt1")), IntType::get_u8())
+    {
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Type, 1, 1, false));
+    }
+    UInt8FixedTypeVar::UInt8FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("UInt8")), IntType::get_u8())
+    {
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Type, 8, 8, false));
+    }
+    UInt16FixedTypeVar::UInt16FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("UInt16")), IntType::get_u16())
+    {
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Type, 16, 16, false));
+    }
+    UInt32FixedTypeVar::UInt32FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("UInt32")), IntType::get_u32())
+    {
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Type, 32, 32, false));
+    }
+    UInt64FixedTypeVar::UInt64FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("UInt64")), IntType::get_u64())
+    {
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Type, 64, 64, false));
+    }
+    UInt128FixedTypeVar::UInt128FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("UInt128")), IntType::get_u128())
+    {
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Type, 128, 128, false));
+    }
+
+    Float16FixedTypeVar::Float16FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("Float16")), FloatType::get_f16())
+    {
+        assume_constraint_holds__override_fixed_to_init(new FloatConstraint(nullptr, VarKind::Type, 16, 16));
+    }
+    Float32FixedTypeVar::Float32FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("Float32")), FloatType::get_f32())
+    {
+        assume_constraint_holds__override_fixed_to_init(new FloatConstraint(nullptr, VarKind::Type, 32, 32));
+    }
+    Float64FixedTypeVar::Float64FixedTypeVar()
+    :   FixedTypeVar(std::move(std::string("Float64")), FloatType::get_f32())
+    {
+        assume_constraint_holds__override_fixed_to_init(new FloatConstraint(nullptr, VarKind::Type, 64, 64));
+    }
+    
+    //
+    // Constant classes:
+    //
+    // todo: implement constant Relations for these constraints to be applied from.
+
+    NumberFixedClassVar::NumberFixedClassVar()
+    :   FixedClassVar(std::move(std::string("FixedClass:Number")))
+    {
+        // Int?
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Class, 0, 0, true));
+
+        // UInt?
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Class, 0, 0, false));
+
+        // Float?
+        assume_constraint_holds__override_fixed_to_init(new FloatConstraint(nullptr, VarKind::Class, 0, 0));
+    }
+    SignedIntFixedClassVar::SignedIntFixedClassVar()
+    :   FixedClassVar(std::move(std::string("FixedClass:SignedInt")))
+    {
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Class, 0, 0, true));
+    }
+    UnsignedIntFixedClassVar::UnsignedIntFixedClassVar()
+    :   FixedClassVar(std::move(std::string("FixedClass:UnsignedInt")))
+    {
+        assume_constraint_holds__override_fixed_to_init(new IntConstraint(nullptr, VarKind::Class, 0, 0, false));
+    }
+    FloatFixedClassVar::FloatFixedClassVar()
+    :   FixedClassVar(std::move(std::string("FixedClass:Float")))
+    {
+        assume_constraint_holds__override_fixed_to_init(new FloatConstraint(nullptr, VarKind::Class, 0, 0));
+    }
+    
 }

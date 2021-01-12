@@ -16,9 +16,6 @@
 /* write a parser header file, please */
 %defines
 
-/* expected sr conflicts */
-%expect 1
-
 %define api.namespace {pdm::parser}
 
 // selecting parser type:
@@ -124,6 +121,7 @@
 //
 
 %type <TokenInfo> tid vid floatl stringl
+%type <std::vector<pdm::intern::String>> mod_prefix
 
 //
 // Expression Nonterminals:
@@ -162,7 +160,6 @@
 
 %type <pdm::ast::Typespec*> typespec long_typespec
 %type <pdm::ast::Typespec*> primary_typespec paren_typespec tuple_typespec struct_typespec mod_prefix_tid fn_typespec
-%type <std::vector<pdm::intern::String>> mod_prefix
 %type <pdm::ast::Typespec*> postfix_typespec tcall_typespec dot_typespec
 %type <pdm::ast::Typespec*> unary_typespec
 %type <std::vector<pdm::ast::Typespec*>> typespec_cl1 typespec_cl2
@@ -173,7 +170,7 @@
 // Pattern Nonterminals:
 //
 
-%type <pdm::ast::LPattern*> lpattern lpattern_naked
+%type <pdm::ast::LPattern*> lpattern destructured_lpattern
 %type <pdm::ast::VPattern*> vpattern 
 %type <pdm::ast::TPattern*> tpattern
 %type <pdm::ast::VPattern::Field*> vpattern_field 
@@ -213,6 +210,7 @@
 %token KW_VAR "var"
 %token KW_SET "set" 
 %token KW_FN "fn" 
+%token KW_LAMBDA "lambda"
 %token KW_TFN "Fn"
 %token KW_TYPE "type" 
 %token KW_AND "and" 
@@ -323,13 +321,13 @@ chain_prefix_stmt
     | discard_stmt
     ;
 const_stmt
-    : KW_CONST lpattern_naked BIND expr { $$ = mgr->new_const_stmt(@$, $2, $4); }
+    : KW_CONST lpattern BIND expr { $$ = mgr->new_const_stmt(@$, $2, $4); }
     ;
 val_stmt
-    : KW_VAL lpattern_naked BIND expr   { $$ = mgr->new_val_stmt(@$, $2, $4); }
+    : KW_VAL lpattern BIND expr   { $$ = mgr->new_val_stmt(@$, $2, $4); }
     ;
 var_stmt
-    : KW_VAR lpattern_naked BIND expr   { $$ = mgr->new_var_stmt(@$, $2, $4); }
+    : KW_VAR lpattern BIND expr   { $$ = mgr->new_var_stmt(@$, $2, $4); }
     ;
 set_stmt
     : KW_SET expr BIND expr   { $$ = mgr->new_set_stmt(@$, $2, $4); }
@@ -406,6 +404,10 @@ stringl
     : SQSTRING_LIT
     | DQSTRING_LIT
     ;
+mod_prefix
+    : vid COLON               { $$.push_back($1.ID_intstr); }
+    | mod_prefix vid COLON    { $$ = std::move($1); }
+    ;
 
 /*
  * Expressions:
@@ -480,7 +482,7 @@ chain_prefix
     | chain_prefix chain_prefix_stmt SEMICOLON  { $$ = std::move($1); $$.push_back($2); }
     ;
 lambda_exp
-    : KW_FN vpattern BIND bracketed_exp   { $$ = mgr->new_lambda_exp(@$, $2, $4); }
+    : KW_LAMBDA vpattern BIND bracketed_exp   { $$ = mgr->new_lambda_exp(@$, $2, $4); }
     ;
 
 postfix_exp
@@ -500,6 +502,7 @@ vcall_exp
 dot_name_exp
     : postfix_exp DOT VID   { $$ = mgr->new_dot_name_exp(@$, $1, $3.ID_intstr, ast::DotNameExp::RhsHint::LhsStruct); }
     | postfix_exp DOT TID   { $$ = mgr->new_dot_name_exp(@$, $1, $3.ID_intstr, ast::DotNameExp::RhsHint::LhsEnum); }
+    | mod_prefix VID   { $$ = mgr->new_module_dot_exp(@$, std::move($1), $2.ID_intstr); }
     ;
 dot_index_exp
     : postfix_exp DOT int_expr      { $$ = mgr->new_dot_index_exp(@$, $1, $3, ast::DotIndexExp::RhsHint::LhsNotPtr); }
@@ -619,10 +622,6 @@ tuple_typespec
 mod_prefix_tid
     : mod_prefix tid        { $$ = mgr->new_dot_name_typespec_with_mod_prefix(@$, std::move($1), $2.ID_intstr); }
     ;
-mod_prefix
-    : vid DOT               { $$.push_back($1.ID_intstr); }
-    | mod_prefix vid DOT    { $$ = std::move($1); }
-    ;
 fn_typespec
     : KW_TFN vpattern primary_typespec { $$ = mgr->new_fn_typespec(@$, std::move($2), $3); }
     ;
@@ -687,17 +686,17 @@ tpattern_field
     | tid typespec  { $$ = mgr->new_tpattern_field(@$, ast::TPattern::FieldKind::Type, $1.ID_intstr, $2); }
     ;
 
-lpattern
-    : LPAREN lpattern_field_cl RPAREN  { $$ = mgr->new_lpattern(@$, std::move($2)); }
-    | LPAREN RPAREN                    { $$ = mgr->new_lpattern(@$, std::move(std::vector<ast::LPattern::Field*>{})); }
+destructured_lpattern
+    : LPAREN lpattern_field_cl    RPAREN  { $$ = mgr->new_lpattern(@$, std::move($2), true); }
+ /* | LPAREN lpattern_field COMMA RPAREN  { $$ = mgr->new_lpattern(@$, std::move(std::vector<ast::LPattern::Field*>{1,$2}), true)}  */
     ;
-lpattern_naked
-    : lpattern_field                   { $$ = mgr->new_lpattern(@$, std::move(std::vector<ast::LPattern::Field*>{1,$1})); }
-    | lpattern
+lpattern
+    : lpattern_field    { $$ = mgr->new_lpattern(@$, std::move(std::vector<ast::LPattern::Field*>{1,$1}), false); }
+    | destructured_lpattern
     ;
 vpattern
     : LPAREN vpattern_field_cl RPAREN  { $$ = mgr->new_vpattern(@$, std::move($2)); }
-    | LPAREN RPAREN                   { $$ = mgr->new_vpattern(@$, std::move(std::vector<ast::VPattern::Field*>{})); }
+    | LPAREN RPAREN                    { $$ = mgr->new_vpattern(@$, std::move(std::vector<ast::VPattern::Field*>{})); }
     ;
 tpattern
     :         LSQBRK tpattern_field_cl RSQBRK  { $$ = mgr->new_tpattern(@$, std::move($2), false); }

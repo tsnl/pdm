@@ -61,7 +61,7 @@ mod image {
     fn multiply ![T Any] (i Image[T], x U8) -> Image[T] = {
         name: fmt("({x}*{i.name})"),
         size: i.size,
-        data: map(i.data, fn (p) {multiply(pixel,x)})
+        data: map(i.data, lambda (p Pixel[T]) {multiply(pixel,x)})
     };
 };
 

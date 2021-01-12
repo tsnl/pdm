@@ -41,6 +41,9 @@ namespace pdm::ast {
     DotNameExp* Manager::new_dot_name_exp(source::Loc loc, Exp* lhs, intern::String rhs_name, DotNameExp::RhsHint rhs_hint) {
         return emplace<DotNameExp>(loc, lhs, rhs_name, rhs_hint);
     }
+    ModuleDotExp* Manager::new_module_dot_exp(source::Loc loc, std::vector<intern::String>&& module_names, intern::String rhs_name) {
+        return emplace<ModuleDotExp>(loc, std::move(module_names), rhs_name);
+    }
     DotIndexExp* Manager::new_dot_index_exp(source::Loc loc, Exp* lhs, Exp* rhs_exp, DotIndexExp::RhsHint rhs_hint) {
         return emplace<DotIndexExp>(loc, lhs, rhs_exp, rhs_hint);
     }
@@ -93,8 +96,8 @@ namespace pdm::ast {
         return emplace<StructExp::Field>(loc, name, value);
     }
     
-    LPattern* Manager::new_lpattern(source::Loc loc, std::vector<LPattern::Field*>&& fields) {
-        return emplace<LPattern>(loc, std::move(fields));
+    LPattern* Manager::new_lpattern(source::Loc loc, std::vector<LPattern::Field*>&& fields, bool destructure) {
+        return emplace<LPattern>(loc, std::move(fields), destructure);
     }
     TPattern* Manager::new_tpattern(source::Loc loc, std::vector<TPattern::Field*>&& fields, bool is_only_captured) {
         return emplace<TPattern>(loc, std::move(fields), is_only_captured);

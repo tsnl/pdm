@@ -193,28 +193,41 @@ namespace pdm::types {
     // void:
     class VoidConstraint: public KindDependentConstraint {
       public:
-        VoidConstraint(Relation* parent_relation, VarKind domain_var_kind, std::string name);
+        VoidConstraint(Relation* parent_relation, VarKind domain_var_kind);
     };
-    inline VoidConstraint::VoidConstraint(Relation* parent_relation, VarKind domain_var_kind, std::string name)
-    :   KindDependentConstraint(parent_relation, domain_var_kind, TypeKind::Void, name)
+    inline VoidConstraint::VoidConstraint(Relation* parent_relation, VarKind domain_var_kind)
+    :   KindDependentConstraint(parent_relation, domain_var_kind, TypeKind::Void, "Void")
     {}
 
     // int:
     class IntConstraint: public KindDependentConstraint {
+      private:
+        int m_min_width_in_bits;
+        int m_max_width;
+        bool m_uses_sign_extension;
       public:
-        IntConstraint(Relation* parent_relation, VarKind domain_var_kind, int min_width = -1, int max_width = -1);
+        IntConstraint(Relation* parent_relation, VarKind domain_var_kind, int opt_min_width_in_bits, int opt_max_width_in_bits, bool uses_sign_extension);
     };
-    inline IntConstraint::IntConstraint(Relation* parent_relation, VarKind domain_var_kind, int min_width, int max_width)
-    :   KindDependentConstraint(parent_relation, domain_var_kind, TypeKind::Int, "Int[" + std::to_string(min_width) + ":" + std::to_string(max_width) + "]")
+    inline IntConstraint::IntConstraint(Relation* parent_relation, VarKind domain_var_kind, int opt_min_width_in_bits, int opt_max_width_in_bits, bool uses_sign_extension)
+    :   KindDependentConstraint(parent_relation, domain_var_kind, TypeKind::Int, "Int[" + std::to_string(opt_min_width_in_bits) + ":" + std::to_string(opt_max_width_in_bits) + "]"),
+        m_min_width_in_bits(opt_min_width_in_bits),
+        m_max_width(opt_max_width_in_bits),
+        m_uses_sign_extension(uses_sign_extension)
     {}
 
     // float:
     class FloatConstraint: public KindDependentConstraint {
+      private:
+        int m_opt_min_width_in_bits;
+        int m_opt_max_width_in_bits;
+
       public:
-        FloatConstraint(Relation* parent_relation, VarKind domain_var_kind, int min_width = -1, int max_width = -1);
+        FloatConstraint(Relation* parent_relation, VarKind domain_var_kind, int opt_min_width_in_bits, int opt_max_width_in_bits);
     };
-    inline FloatConstraint::FloatConstraint(Relation* parent_relation, VarKind domain_var_kind, int min_width, int max_width)
-    :   KindDependentConstraint(parent_relation, domain_var_kind, TypeKind::Float, "Float[" + std::to_string(min_width) + ":" + std::to_string(max_width) + "]")
+    inline FloatConstraint::FloatConstraint(Relation* parent_relation, VarKind domain_var_kind, int opt_min_width_in_bits, int opt_max_width_in_bits)
+    :   KindDependentConstraint(parent_relation, domain_var_kind, TypeKind::Float, "Float[" + std::to_string(opt_min_width_in_bits) + ":" + std::to_string(opt_max_width_in_bits) + "]"),
+        m_opt_min_width_in_bits(opt_min_width_in_bits),
+        m_opt_max_width_in_bits(opt_max_width_in_bits)
     {}
 
     // string:

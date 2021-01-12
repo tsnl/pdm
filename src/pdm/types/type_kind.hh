@@ -14,10 +14,11 @@ namespace pdm::types {
         Struct  = 0x40,
         Enum    = 0x80,
         Module  = 0x100,
-        Fn    = 0x200,
+        Fn      = 0x200,
 
         __BitsetLimit = 0x200
     };
+    
 }
 
 #endif  // INCLUDED_PDM_TYPES_TYPE_KIND_HH

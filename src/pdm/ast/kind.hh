@@ -31,7 +31,7 @@ namespace pdm::ast {
         ArrayExp, TupleExp, StructExp, ChainExp,
         LambdaExp,
         IfExp,
-        DotIndexExp, DotNameExp,
+        ModuleDotExp, DotIndexExp, DotNameExp,
         UnaryExp, BinaryExp,
         VCallExp, TCallExp,
         TypeQueryExp,

@@ -53,6 +53,7 @@ namespace pdm::parser::aux {
         intern::String return_intstr;
         intern::String discard_intstr;
         intern::String fn_intstr;
+        intern::String lambda_intstr;
         intern::String val_intstr;
         intern::String var_intstr;
         intern::String const_intstr;
@@ -83,6 +84,7 @@ namespace pdm::parser::aux {
             return_intstr = "return";
             discard_intstr = "discard";
             fn_intstr = "fn";
+            lambda_intstr = "lambda";
             val_intstr = "val";
             var_intstr = "var";
             const_intstr = "const";
@@ -539,6 +541,7 @@ namespace pdm::parser::aux {
         if (intstr == keywords.match_intstr) { return Tk::KW_MATCH; }
         if (intstr == keywords.with_intstr) { return Tk::KW_WITH; }
         if (intstr == keywords.fn_intstr) { return Tk::KW_FN; }
+        if (intstr == keywords.lambda_intstr) { return Tk::KW_LAMBDA; }
         if (intstr == keywords.const_intstr) { return Tk::KW_CONST; }
         if (intstr == keywords.val_intstr) { return Tk::KW_VAL; }
         if (intstr == keywords.var_intstr) { return Tk::KW_VAR; }

@@ -24,7 +24,7 @@ digraph {
             bgcolor="aquamarine";
             
             subgraph cluster_1_1_1 {
-                label="Pass 1: Breaking common Constraints";
+                label="Immediate: Breaking common Constraints";
                 constraint [label="assume(Constraint)", style="filled", fillcolor="grey"];
                 common_constraints [label="common\nConstraints", shape="box", fillcolor="goldenrod", style="filled"]
                 
@@ -34,16 +34,16 @@ digraph {
             }
 
             subgraph cluster_1_1_2 {
-                label="Pass 2: Breaking kind-dependent constraints";
+                label="Solver Phase 1: Breaking kind-dependent constraints";
                 local_interval_set [label="local IntervalSet (basis of type space)", shape="box", fillcolor="goldenrod", style="filled"];
-                check_1_2 [label="check VarKind; abort if bad bitset", style="filled", fillcolor="gray"]
+                check_1_2 [label="check VarKind vs. bitset\ne.g. TypeVar only 1 kind", style="filled", fillcolor="gray"]
                 kd_constraints [label="kind-dependent\nConstraints", shape="box", fillcolor="goldenrod", style="filled"]
             }
 
             subgraph cluster_1_1_3 {
-                label="Pass 3: Iteratively unify all ancestor supvars' IntervalSets\nand unify with own";
+                label="Solver Phase 2: Iteratively unify all ancestor supvars' IntervalSets\nand unify with own";
                 solution [label="solution type", shape="box", fillcolor="yellow", style="filled"];
-                check_1_3 [label="check sup/sub bitsets match"];
+                check_1_3 [label="check sup/sub bitsets match", fillcolor="grey", style="filled"];
                 global_interval_set [label="global IntervalSet (basis of type space)", shape="box", fillcolor="yellow", style="filled"];
             }
 

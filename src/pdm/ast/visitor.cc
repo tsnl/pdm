@@ -214,6 +214,10 @@ namespace pdm::ast {
                 ok = visit(dot_name_exp->lhs()) && ok;
                 break;
             }
+            case Kind::ModuleDotExp:
+            {
+                break;
+            }
             case Kind::UnaryExp:
             {
                 UnaryExp* unary_exp = dynamic_cast<UnaryExp*>(node);
@@ -508,6 +512,10 @@ namespace pdm::ast {
             case Kind::DotNameExp:
             {
                 return on_visit__dot_name_exp(dynamic_cast<DotNameExp*>(node), visit_order);
+            }
+            case Kind::ModuleDotExp:
+            {
+                return on_visit__module_dot_exp(dynamic_cast<ModuleDotExp*>(node), visit_order);
             }
             case Kind::UnaryExp:
             {
