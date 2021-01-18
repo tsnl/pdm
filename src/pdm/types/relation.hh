@@ -11,25 +11,26 @@
 #include "pdm/ast/pattern/tpattern.hh"
 
 #include "var.hh"
+#include "typeop_result.hh"
 
 //
 // forward declarations:
 //
 
 namespace pdm::types {
-    class Constraint;
+    class Manager;
+    class Invariant;
     class Var;
     class TypeVar;
     class ClassVar;
 }
-
 
 //
 // implementation:
 //
 
 namespace pdm::types {
-    
+
     class Relation {
       private:
         enum class ApplyState {
@@ -37,52 +38,117 @@ namespace pdm::types {
             Applied_OK,
             Applied_Fail
         };
-
+        
       // private data members:
       private:
         ast::Node*  m_who;
         std::string m_why;
         ApplyState  m_apply_state;
-        
+
       // protected constructor => pure abstract
       protected:
-        Relation(ast::Node* ast_node, std::string&& why)
-        : m_who(ast_node),
-          m_why(std::move(why)),
-          m_apply_state(ApplyState::NotApplied) {}
+        inline Relation(ast::Node* ast_node, std::string&& why);
 
       // 'apply' interface:
-      // todo: enable and implement for type solution.
       public:
         // apply returns 'true' if any change was made to the system, otherwise 'false'
-        // when all relations apply false, the constraint set is at a fixed point
-        bool apply();
-    };
-
-    // IdTypingRelation for (x T) or <T Cls>
-    class IdTypingRelation: public Relation {
-      private:
-        intern::String m_lhs_name;
-        Var*           m_lhs_tv;
-        Var*           m_rhs_typespec;
+        // when all relations apply false, the invariant set is at a fixed point
+        void on_assume(types::Manager* manager);
 
       protected:
-        IdTypingRelation(ast::Node* ast_node, intern::String lhs_name, Var* lhs_tv, Var* rhs_typespec)
-        : Relation(ast_node, "IdTypingRelation:" + std::string(lhs_name.content())),
-          m_lhs_name(lhs_name), 
-          m_lhs_tv(lhs_tv),
-          m_rhs_typespec(rhs_typespec) {}
+        virtual bool on_assume_impl(types::Manager* manager) = 0;
     };
-    class ValueIdTypingRelation: public IdTypingRelation {
+
+    inline Relation::Relation(ast::Node* ast_node, std::string&& why)
+    :   m_who(ast_node),
+        m_why(std::move(why)),
+        m_apply_state(ApplyState::NotApplied)
+    {}
+
+    // subtype, subclass, class-of
+    class TypeEqualsRelation;
+    class SubtypeOfRelation: public Relation {
+        friend TypeEqualsRelation;
+
+      private:
+        TypeVar* m_subtype_tv;
+        TypeVar* m_supertype_tv;
       public:
-        ValueIdTypingRelation(ast::Node* ast_node, intern::String lhs_vid_name, TypeVar* lhs_tv, TypeVar* rhs_typespec_tv)
-        : IdTypingRelation(ast_node, lhs_vid_name, lhs_tv, rhs_typespec_tv) {}
+        SubtypeOfRelation(ast::Node* node, TypeVar* subtype_tv, TypeVar* supertype_tv);
+      protected:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
-    class TypeIdTypingRelation: public IdTypingRelation {
+    inline SubtypeOfRelation::SubtypeOfRelation(ast::Node* node, TypeVar* subtype_tv, TypeVar* supertype_tv)
+    :   Relation(node, "SubtypeOf"),
+        m_subtype_tv(subtype_tv),
+        m_supertype_tv(supertype_tv)
+    {}
+
+    class ClassEqualsRelation;
+    class SubclassOfRelation: public Relation {
+        friend ClassEqualsRelation;
+
+      private:
+        ClassVar* m_subclass_cv;
+        ClassVar* m_superclass_cv;
       public:
-        TypeIdTypingRelation(ast::Node* ast_node, intern::String lhs_tid_name, ClassVar* lhs_cv, ClassVar* rhs_typespec_cv)
-        : IdTypingRelation(ast_node, lhs_tid_name, lhs_cv, rhs_typespec_cv) {}
+        SubclassOfRelation(ast::Node* node, ClassVar* subclass_cv, ClassVar* superclass_cv);
+      protected:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
+    inline SubclassOfRelation::SubclassOfRelation(ast::Node* node, ClassVar* subclass_cv, ClassVar* superclass_cv)
+    :   Relation(node, "SubclassOf"),
+        m_subclass_cv(subclass_cv),
+        m_superclass_cv(superclass_cv)
+    {}
+
+    class ClassOfRelation: public Relation {
+      private:
+        ClassVar* m_class_cv;
+        TypeVar* m_member_tv;
+      public:
+        ClassOfRelation(ast::Node* node, ClassVar* class_cv, TypeVar* member_tv);
+      protected:
+        virtual bool on_assume_impl(types::Manager* manager) override;
+    };
+  
+    // forced equality relations:
+    class TypeEqualsRelation: public Relation {
+      private:
+        TypeVar* m_lhs_tv;
+        TypeVar* m_rhs_tv;
+        SubtypeOfRelation m_lhs_subtype_of_rhs_relation;
+        SubtypeOfRelation m_rhs_subtype_of_lhs_relation;
+      public:
+        TypeEqualsRelation(ast::Node* node, TypeVar* lhs_tv, TypeVar* rhs_tv);
+      protected:
+        virtual bool on_assume_impl(types::Manager* manager) override;
+    };
+    inline TypeEqualsRelation::TypeEqualsRelation(ast::Node* node, TypeVar* lhs_tv, TypeVar* rhs_tv)
+    :   Relation(node, "TypeEquals"),
+        m_lhs_tv(lhs_tv),
+        m_rhs_tv(rhs_tv),
+        m_lhs_subtype_of_rhs_relation(node, lhs_tv, rhs_tv),
+        m_rhs_subtype_of_lhs_relation(node, rhs_tv, lhs_tv)
+    {}
+    class ClassEqualsRelation: public Relation {
+      private:
+        ClassVar* m_lhs_cv;
+        ClassVar* m_rhs_cv;
+        SubclassOfRelation m_lhs_subclass_of_rhs_relation;
+        SubclassOfRelation m_rhs_subclass_of_lhs_relation;
+      public:
+        ClassEqualsRelation(ast::Node* node, ClassVar* lhs_cv, ClassVar* rhs_cv);
+      protected:
+        virtual bool on_assume_impl(types::Manager* manager) override;
+    };
+    inline ClassEqualsRelation::ClassEqualsRelation(ast::Node* node, ClassVar* lhs_cv, ClassVar* rhs_cv)
+    :   Relation(node, "ClassEquals"),
+        m_lhs_cv(lhs_cv),
+        m_rhs_cv(rhs_cv),
+        m_lhs_subclass_of_rhs_relation(node, lhs_cv, rhs_cv),
+        m_rhs_subclass_of_lhs_relation(node, rhs_cv, lhs_cv)
+    {}
 
     // LetValueRelation is used for const, val, var, and fn statements
     class LetValueRelation: public Relation {
@@ -103,6 +169,9 @@ namespace pdm::types {
         TypeVar* typeof_rhs_tv() const {
             return m_typeof_rhs_tv;
         }
+
+      public:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
 
     // LetTypeRelation is used for type statements
@@ -124,6 +193,9 @@ namespace pdm::types {
         TypeVar* rhs_tv() const {
             return m_rhs_tv;
         }
+
+      public:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
 
     // LetClassRelation is used for typeclass statements
@@ -145,33 +217,44 @@ namespace pdm::types {
         ClassVar* rhs_cv() const {
             return m_rhs_cv;
         }
+
+      public:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
 
     // '.' accessors:
-    enum class DotNameRelationHint {
-        ModuleType,                 // a.T
-        StructFieldOrModuleField,   // a.v
-        EnumField,                  // T.E
-        TypeField                   // T.e
+    enum class DotNameRelationKind {
+        ModuleTypeField,                 // a:T
+        ModuleValueField,                // a:v
+        StructValueField,                // a.v
+        EnumValueField,                  // T.E (...)
+        StructTypeField              // T.e
     };
     class DotNameRelation: public Relation {
       private:
         TypeVar*            m_lhs;
         intern::String      m_rhs_name;
-        DotNameRelationHint m_hint;
-      public:
-        DotNameRelation(ast::Node* ast_node, TypeVar* lhs, intern::String rhs_name, DotNameRelationHint hint);
+        TypeVar*            m_eval_type;
+        DotNameRelationKind m_dot_name_relation_kind;
+
+      protected:
+        inline DotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name, DotNameRelationKind dot_name_relation_kind);
 
       public:
         TypeVar* lhs() const;
         intern::String rhs_name() const;
-        DotNameRelationHint hint() const;
+        TypeVar* eval_type() const;
+        DotNameRelationKind dot_name_relation_kind() const;
+
+      public:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
-    inline DotNameRelation::DotNameRelation(ast::Node* ast_node, TypeVar* lhs, intern::String rhs_name, DotNameRelationHint hint)
+    inline DotNameRelation::DotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name, DotNameRelationKind dot_name_relation_kind)
     :   Relation(ast_node, "DotNameRelation"),
         m_lhs(lhs),
+        m_eval_type(eval_type),
         m_rhs_name(rhs_name),
-        m_hint(hint) 
+        m_dot_name_relation_kind(dot_name_relation_kind)
     {}
     inline TypeVar* DotNameRelation::lhs() const {
         return m_lhs;
@@ -179,31 +262,75 @@ namespace pdm::types {
     inline intern::String DotNameRelation::rhs_name() const {
         return m_rhs_name;
     }
-    inline DotNameRelationHint DotNameRelation::hint() const {
-        return m_hint;
+    inline TypeVar* DotNameRelation::eval_type() const {
+        return m_eval_type;
     }
+    inline DotNameRelationKind DotNameRelation::dot_name_relation_kind() const {
+        return m_dot_name_relation_kind;
+    }
+    struct ModuleDotTypeRelation: public DotNameRelation {
+        inline ModuleDotTypeRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name);
+    };
+    struct ModuleDotValueRelation: public DotNameRelation {
+        inline ModuleDotValueRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name);
+    };
+    struct StructDotValueRelation: public DotNameRelation {
+        inline StructDotValueRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name);
+    };
+    class EnumDotNameRelation: public DotNameRelation {
+      private:
+        std::vector<TypeVar*> m_args;
+      public:
+        inline EnumDotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name, std::vector<TypeVar*>&& typeof_args_tvs);
+      public:
+        std::vector<TypeVar*> const& args() const {
+            return m_args;
+        }
+    };
+    struct StructTypeDotNameRelation: public DotNameRelation {
+        inline StructTypeDotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name);
+    };
+
+    inline ModuleDotTypeRelation::ModuleDotTypeRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name)
+    :   DotNameRelation(ast_node, lhs, eval_type, rhs_name, DotNameRelationKind::ModuleTypeField)
+    {}
+    inline ModuleDotValueRelation::ModuleDotValueRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name)
+    :   DotNameRelation(ast_node, lhs, eval_type, rhs_name, DotNameRelationKind::ModuleValueField)
+    {}
+    inline StructDotValueRelation::StructDotValueRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name)
+    :   DotNameRelation(ast_node, lhs, eval_type, rhs_name, DotNameRelationKind::StructValueField)
+    {}
+    inline EnumDotNameRelation::EnumDotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name, std::vector<TypeVar*>&& typeof_args_tvs)
+    :   DotNameRelation(ast_node, lhs, eval_type, rhs_name, DotNameRelationKind::EnumValueField)
+    {}
+    inline StructTypeDotNameRelation::StructTypeDotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name)
+    :   DotNameRelation(ast_node, lhs, eval_type, rhs_name, DotNameRelationKind::StructTypeField)
+    {}
 
     class DotIndexRelation: public Relation {
       private:
-        TypeVar* m_lhs;
-        int      m_rhs_index;
+        TypeVar* m_typeof_lhs_tv;
+        TypeVar* m_typeof_rhs_index_tv;
 
       public:
-        DotIndexRelation(ast::Node* ast_node, TypeVar* lhs, int rhs_index);
+        DotIndexRelation(ast::Node* ast_node, TypeVar* typeof_lhs_tv, TypeVar* typeof_rhs_tv);
 
       public:
-        TypeVar* lhs() const;
-        int rhs_index() const;
+        TypeVar* typeof_lhs_tv() const;
+        TypeVar* typeof_rhs_index_tv() const;
+
+      public:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
-    inline DotIndexRelation::DotIndexRelation(ast::Node* ast_node, TypeVar* lhs, int rhs_index)
+    inline DotIndexRelation::DotIndexRelation(ast::Node* ast_node, TypeVar* typeof_lhs_tv, TypeVar* typeof_rhs_index_tv)
     :   Relation(ast_node, "DotIndexRelation"),
-        m_lhs(lhs),
-        m_rhs_index(rhs_index) {};
-    inline TypeVar* DotIndexRelation::lhs() const {
-        return m_lhs;
+        m_typeof_lhs_tv(typeof_lhs_tv),
+        m_typeof_rhs_index_tv(typeof_rhs_index_tv) {};
+    inline TypeVar* DotIndexRelation::typeof_lhs_tv() const {
+        return m_typeof_lhs_tv;
     }
-    inline int DotIndexRelation::rhs_index() const {
-        return m_rhs_index;
+    inline TypeVar* DotIndexRelation::typeof_rhs_index_tv() const {
+        return m_typeof_rhs_index_tv;
     }
 
     // vcall (func()): definition and use
@@ -217,14 +344,14 @@ namespace pdm::types {
         TypeVar*              m_fn_tv;
         std::vector<TypeVar*> m_args_tvs;
         TypeVar*              m_ret_tv;
-      
+
       protected:
         FnRelation(FnRelationStrength strength, ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
         :   Relation(ast_node, "FnRelation"),
             m_strength(strength),
             m_fn_tv(fn_tv),
             m_args_tvs(std::move(args_tvs)),
-            m_ret_tv(ret_tv) 
+            m_ret_tv(ret_tv)
         {}
 
       public:
@@ -240,42 +367,61 @@ namespace pdm::types {
         TypeVar* ret_tv() const {
             return m_ret_tv;
         }
+
+      public:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
     class FormalFnRelation: public FnRelation {
       public:
-        FormalFnRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
-        :   FnRelation(FnRelationStrength::Formal, ast_node, fn_tv, std::move(args_tvs), ret_tv)
-        {}
+        FormalFnRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv);
+
+      public:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
     class ActualFnRelation: public FnRelation {
       public:
-        ActualFnRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
-        :   FnRelation(FnRelationStrength::Actual, ast_node, fn_tv, std::move(args_tvs), ret_tv)
-        {}
+        ActualFnRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv);
+
+      public:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
+    inline FormalFnRelation::FormalFnRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
+    :   FnRelation(FnRelationStrength::Formal, ast_node, fn_tv, std::move(args_tvs), ret_tv)
+    {}
+    inline ActualFnRelation::ActualFnRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
+    :   FnRelation(FnRelationStrength::Actual, ast_node, fn_tv, std::move(args_tvs), ret_tv)
+    {}
 
     // if-then, if-then-else:
     class IfThenRelation: public Relation {
       private:
         TypeVar* m_cond;
         TypeVar* m_then;
+
       public:
         IfThenRelation(ast::Node* ast_node, TypeVar* cond, TypeVar* then)
         : Relation(ast_node, "IfThenRelation"),
           m_cond(cond),
           m_then(then) {}
+
+      public:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
     class IfThenElseRelation: public Relation {
       private:
         TypeVar* m_cond;
         TypeVar* m_then;
         TypeVar* m_else;
+
       public:
         IfThenElseRelation(ast::Node* ast_node, TypeVar* cond_tv, TypeVar* then_tv, TypeVar* else_tv)
         : Relation(ast_node, "IfThenElseRelation"),
           m_cond(cond_tv),
           m_then(then_tv),
           m_else(else_tv) {}
+
+      public:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
 
     // cast
@@ -283,11 +429,15 @@ namespace pdm::types {
       private:
         TypeVar* m_dst;
         TypeVar* m_src;
+
       public:
         BitcastableRelation(ast::Node* ast_node, TypeVar* dst_tv, TypeVar* src_tv)
         : Relation(ast_node, "BitcastableRelation"),
           m_dst(dst_tv),
           m_src(src_tv) {}
+
+      public:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
 
     // convert
@@ -295,9 +445,14 @@ namespace pdm::types {
       private:
         TypeVar* m_dst;
         TypeVar* m_src;
+
       public:
         ConvertableRelation(ast::Node* ast_node, TypeVar* dst_tv, TypeVar* src_tv)
         : Relation(ast_node, "ConvertableRelation") {}
+
+      public:
+        // todo: pass a types_mgr arg
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
 
     // templates:
@@ -323,12 +478,15 @@ namespace pdm::types {
 
       protected:
         TemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, Var* rhs_var, TemplateRelationExpectedRhsKind template_relation_expected_lhs_kind, std::string template_name_suffix, TemplateRelationStrength strength);
+
+      public:
+        virtual bool on_assume_impl(types::Manager* manager) override;
     };
-    inline TemplateRelation::TemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, Var* rhs_var, TemplateRelationExpectedRhsKind expected_lhs_kind, std::string template_name_suffix, TemplateRelationStrength strength)
+    inline TemplateRelation::TemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, Var* rhs_var, TemplateRelationExpectedRhsKind expected_rhs_kind, std::string template_name_suffix, TemplateRelationStrength strength)
     :   Relation(ast_node, "Template:" + template_name_suffix),
         m_lhs_template_var(lhs_template_var),
         m_strength(strength),
-        m_expected_rhs_kind(expected_lhs_kind),
+        m_expected_rhs_kind(expected_rhs_kind),
         m_rhs_var(rhs_var)
     {}
 
@@ -337,15 +495,15 @@ namespace pdm::types {
         std::vector<ast::TPattern*> m_tpatterns;
 
       protected:
-        FormalTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedRhsKind expected_lhs_kind, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
+        FormalTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedRhsKind expected_rhs_kind, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
 
       public:
         inline static FormalTemplateRelation* new_formal_value_template_relation(ast::Node* ast_node, ValueTemplateVar* lhs_value_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
         inline static FormalTemplateRelation* new_formal_type_template_relation(ast::Node* ast_node, TypeTemplateVar* lhs_type_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
         inline static FormalTemplateRelation* new_formal_class_template_relation(ast::Node* ast_node, ClassTemplateVar* lhs_class_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
     };
-    inline FormalTemplateRelation::FormalTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedRhsKind expected_lhs_kind, std::vector<ast::TPattern*> tpatterns, Var* rhs_var)
-    :   TemplateRelation(ast_node, lhs_template_var, rhs_var, expected_lhs_kind, "Formal", TemplateRelationStrength::Formal),
+    inline FormalTemplateRelation::FormalTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedRhsKind expected_rhs_kind, std::vector<ast::TPattern*> tpatterns, Var* rhs_var)
+    :   TemplateRelation(ast_node, lhs_template_var, rhs_var, expected_rhs_kind, "Formal", TemplateRelationStrength::Formal),
         m_tpatterns(tpatterns)
     {}
     inline FormalTemplateRelation* FormalTemplateRelation::new_formal_value_template_relation(ast::Node* ast_node, ValueTemplateVar* lhs_value_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var) {
@@ -361,17 +519,17 @@ namespace pdm::types {
     class ActualTemplateRelation: public TemplateRelation {
       private:
         std::vector<ast::TArg*> m_actual_targs;
-        
+
       protected:
-        ActualTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedRhsKind expected_lhs_kind, std::vector<ast::TArg*> actual_targs, Var* rhs_var);
+        ActualTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedRhsKind expected_rhs_kind, std::vector<ast::TArg*> actual_targs, Var* rhs_var);
 
       public:
         inline static ActualTemplateRelation* new_actual_value_template_relation(ast::Node* ast_node, ValueTemplateVar* lhs_value_template_var, std::vector<ast::TArg*> targs, Var* rhs_var);
         inline static ActualTemplateRelation* new_actual_type_template_relation(ast::Node* ast_node, TypeTemplateVar* lhs_type_template_var, std::vector<ast::TArg*> targs, Var* rhs_var);
         inline static ActualTemplateRelation* new_actual_class_template_relation(ast::Node* ast_node, ClassTemplateVar* lhs_class_template_var, std::vector<ast::TArg*> targs, Var* rhs_var);
     };
-    inline ActualTemplateRelation::ActualTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedRhsKind expected_lhs_kind, std::vector<ast::TArg*> actual_targs, Var* rhs_var)
-    :   TemplateRelation(ast_node, lhs_template_var, rhs_var, expected_lhs_kind, "Actual", TemplateRelationStrength::Actual)
+    inline ActualTemplateRelation::ActualTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedRhsKind expected_rhs_kind, std::vector<ast::TArg*> actual_targs, Var* rhs_var)
+    :   TemplateRelation(ast_node, lhs_template_var, rhs_var, expected_rhs_kind, "Actual", TemplateRelationStrength::Actual)
     {}
     inline ActualTemplateRelation* ActualTemplateRelation::new_actual_value_template_relation(ast::Node* ast_node, ValueTemplateVar* lhs_value_template_var, std::vector<ast::TArg*> targs, Var* rhs_var) {
         return new ActualTemplateRelation(ast_node, lhs_value_template_var, TemplateRelationExpectedRhsKind::Value, targs, rhs_var);

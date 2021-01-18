@@ -512,7 +512,6 @@ namespace pdm { namespace parser {
       // fn_typespec
       // postfix_typespec
       // tcall_typespec
-      // dot_typespec
       // unary_typespec
       // long_typespec
       // struct_typespec
@@ -534,6 +533,7 @@ namespace pdm { namespace parser {
       // unprefixed_enum_field_pl
       char dummy21[sizeof (std::vector<pdm::ast::EnumStmt::Field*>)];
 
+      // expr_cl0
       // expr_cl2
       char dummy22[sizeof (std::vector<pdm::ast::Exp*>)];
 
@@ -809,54 +809,54 @@ namespace pdm { namespace parser {
         S_mod_prefix = 96,                       // mod_prefix
         S_expr = 97,                             // expr
         S_long_exp = 98,                         // long_exp
-        S_expr_cl2 = 99,                         // expr_cl2
-        S_type_query_exp_sl = 100,               // type_query_exp_sl
-        S_bracketed_exp = 101,                   // bracketed_exp
-        S_unit_exp = 102,                        // unit_exp
-        S_paren_exp = 103,                       // paren_exp
-        S_vtupleExpr = 104,                      // vtupleExpr
-        S_vstructExpr = 105,                     // vstructExpr
-        S_primary_exp = 106,                     // primary_exp
-        S_int_expr = 107,                        // int_expr
-        S_stringls = 108,                        // stringls
-        S_if_exp = 109,                          // if_exp
-        S_chain_exp = 110,                       // chain_exp
-        S_chain_prefix = 111,                    // chain_prefix
-        S_lambda_exp = 112,                      // lambda_exp
-        S_postfix_exp = 113,                     // postfix_exp
-        S_tcall_exp = 114,                       // tcall_exp
-        S_vcall_exp = 115,                       // vcall_exp
-        S_dot_name_exp = 116,                    // dot_name_exp
-        S_dot_index_exp = 117,                   // dot_index_exp
-        S_unary_exp = 118,                       // unary_exp
-        S_unary_op = 119,                        // unary_op
-        S_binary_exp = 120,                      // binary_exp
-        S_mul_binary_op = 121,                   // mul_binary_op
-        S_mul_binary_exp = 122,                  // mul_binary_exp
-        S_add_binary_op = 123,                   // add_binary_op
-        S_add_binary_exp = 124,                  // add_binary_exp
-        S_cmp_binary_op = 125,                   // cmp_binary_op
-        S_cmp_binary_exp = 126,                  // cmp_binary_exp
-        S_eq_binary_op = 127,                    // eq_binary_op
-        S_eq_binary_exp = 128,                   // eq_binary_exp
-        S_and_binary_exp = 129,                  // and_binary_exp
-        S_xor_binary_exp = 130,                  // xor_binary_exp
-        S_or_binary_exp = 131,                   // or_binary_exp
-        S_type_query_exp = 132,                  // type_query_exp
-        S_type_query_op = 133,                   // type_query_op
-        S_typespec = 134,                        // typespec
-        S_typespec_cl1 = 135,                    // typespec_cl1
-        S_typespec_cl2 = 136,                    // typespec_cl2
-        S_struct_typespec_field = 137,           // struct_typespec_field
-        S_struct_typespec_field_cl = 138,        // struct_typespec_field_cl
-        S_primary_typespec = 139,                // primary_typespec
-        S_paren_typespec = 140,                  // paren_typespec
-        S_tuple_typespec = 141,                  // tuple_typespec
-        S_mod_prefix_tid = 142,                  // mod_prefix_tid
-        S_fn_typespec = 143,                     // fn_typespec
-        S_postfix_typespec = 144,                // postfix_typespec
-        S_tcall_typespec = 145,                  // tcall_typespec
-        S_dot_typespec = 146,                    // dot_typespec
+        S_expr_cl0 = 99,                         // expr_cl0
+        S_expr_cl2 = 100,                        // expr_cl2
+        S_type_query_exp_sl = 101,               // type_query_exp_sl
+        S_bracketed_exp = 102,                   // bracketed_exp
+        S_unit_exp = 103,                        // unit_exp
+        S_paren_exp = 104,                       // paren_exp
+        S_vtupleExpr = 105,                      // vtupleExpr
+        S_vstructExpr = 106,                     // vstructExpr
+        S_primary_exp = 107,                     // primary_exp
+        S_int_expr = 108,                        // int_expr
+        S_stringls = 109,                        // stringls
+        S_if_exp = 110,                          // if_exp
+        S_chain_exp = 111,                       // chain_exp
+        S_chain_prefix = 112,                    // chain_prefix
+        S_lambda_exp = 113,                      // lambda_exp
+        S_postfix_exp = 114,                     // postfix_exp
+        S_tcall_exp = 115,                       // tcall_exp
+        S_vcall_exp = 116,                       // vcall_exp
+        S_dot_name_exp = 117,                    // dot_name_exp
+        S_dot_index_exp = 118,                   // dot_index_exp
+        S_unary_exp = 119,                       // unary_exp
+        S_unary_op = 120,                        // unary_op
+        S_binary_exp = 121,                      // binary_exp
+        S_mul_binary_op = 122,                   // mul_binary_op
+        S_mul_binary_exp = 123,                  // mul_binary_exp
+        S_add_binary_op = 124,                   // add_binary_op
+        S_add_binary_exp = 125,                  // add_binary_exp
+        S_cmp_binary_op = 126,                   // cmp_binary_op
+        S_cmp_binary_exp = 127,                  // cmp_binary_exp
+        S_eq_binary_op = 128,                    // eq_binary_op
+        S_eq_binary_exp = 129,                   // eq_binary_exp
+        S_and_binary_exp = 130,                  // and_binary_exp
+        S_xor_binary_exp = 131,                  // xor_binary_exp
+        S_or_binary_exp = 132,                   // or_binary_exp
+        S_type_query_exp = 133,                  // type_query_exp
+        S_type_query_op = 134,                   // type_query_op
+        S_typespec = 135,                        // typespec
+        S_typespec_cl1 = 136,                    // typespec_cl1
+        S_typespec_cl2 = 137,                    // typespec_cl2
+        S_struct_typespec_field = 138,           // struct_typespec_field
+        S_struct_typespec_field_cl = 139,        // struct_typespec_field_cl
+        S_primary_typespec = 140,                // primary_typespec
+        S_paren_typespec = 141,                  // paren_typespec
+        S_tuple_typespec = 142,                  // tuple_typespec
+        S_mod_prefix_tid = 143,                  // mod_prefix_tid
+        S_fn_typespec = 144,                     // fn_typespec
+        S_postfix_typespec = 145,                // postfix_typespec
+        S_tcall_typespec = 146,                  // tcall_typespec
         S_unary_typespec = 147,                  // unary_typespec
         S_long_typespec = 148,                   // long_typespec
         S_struct_typespec = 149,                 // struct_typespec
@@ -1036,7 +1036,6 @@ namespace pdm { namespace parser {
       case symbol_kind::S_fn_typespec: // fn_typespec
       case symbol_kind::S_postfix_typespec: // postfix_typespec
       case symbol_kind::S_tcall_typespec: // tcall_typespec
-      case symbol_kind::S_dot_typespec: // dot_typespec
       case symbol_kind::S_unary_typespec: // unary_typespec
       case symbol_kind::S_long_typespec: // long_typespec
       case symbol_kind::S_struct_typespec: // struct_typespec
@@ -1064,6 +1063,7 @@ namespace pdm { namespace parser {
         value.move< std::vector<pdm::ast::EnumStmt::Field*> > (std::move (that.value));
         break;
 
+      case symbol_kind::S_expr_cl0: // expr_cl0
       case symbol_kind::S_expr_cl2: // expr_cl2
         value.move< std::vector<pdm::ast::Exp*> > (std::move (that.value));
         break;
@@ -1746,7 +1746,6 @@ switch (yykind)
       case symbol_kind::S_fn_typespec: // fn_typespec
       case symbol_kind::S_postfix_typespec: // postfix_typespec
       case symbol_kind::S_tcall_typespec: // tcall_typespec
-      case symbol_kind::S_dot_typespec: // dot_typespec
       case symbol_kind::S_unary_typespec: // unary_typespec
       case symbol_kind::S_long_typespec: // long_typespec
       case symbol_kind::S_struct_typespec: // struct_typespec
@@ -1774,6 +1773,7 @@ switch (yykind)
         value.template destroy< std::vector<pdm::ast::EnumStmt::Field*> > ();
         break;
 
+      case symbol_kind::S_expr_cl0: // expr_cl0
       case symbol_kind::S_expr_cl2: // expr_cl2
         value.template destroy< std::vector<pdm::ast::Exp*> > ();
         break;
@@ -3338,9 +3338,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 683,     ///< Last index in yytable_.
+      yylast_ = 812,     ///< Last index in yytable_.
       yynnts_ = 98,  ///< Number of nonterminal symbols.
-      yyfinal_ = 14 ///< Termination state number.
+      yyfinal_ = 15 ///< Termination state number.
     };
 
 

@@ -314,12 +314,12 @@ namespace pdm::ast {
                 }
                 break;
             }
-            case Kind::DotNameTypespec_TypePrefix:
-            {
-                DotNameTypespec_TypePrefix* dot_name_typespec_w_type_prefix = dynamic_cast<DotNameTypespec_TypePrefix*>(node);
-                ok = visit(dot_name_typespec_w_type_prefix->lhs_typespec());
-                break;
-            }
+            // case Kind::DotNameTypespec_TypePrefix:
+            // {
+            //     DotNameTypespec_TypePrefix* dot_name_typespec_w_type_prefix = dynamic_cast<DotNameTypespec_TypePrefix*>(node);
+            //     ok = visit(dot_name_typespec_w_type_prefix->lhs_typespec());
+            //     break;
+            // }
             case Kind::StructTypespec:
             {
                 StructTypespec* struct_typespec = dynamic_cast<StructTypespec*>(node);
@@ -569,10 +569,10 @@ namespace pdm::ast {
             {
                 return on_visit__tuple_typespec(dynamic_cast<TupleTypespec*>(node), visit_order);
             }
-            case Kind::DotNameTypespec_TypePrefix:
-            {
-                return on_visit__dot_name_typespec_type_prefix(dynamic_cast<DotNameTypespec_TypePrefix*>(node), visit_order);
-            }
+            // case Kind::DotNameTypespec_TypePrefix:
+            // {
+            //     return on_visit__dot_name_typespec_type_prefix(dynamic_cast<DotNameTypespec_TypePrefix*>(node), visit_order);
+            // }
             case Kind::DotNameTypespec_ModPrefix:
             {
                 return on_visit__dot_name_typespec_mod_prefix(dynamic_cast<DotNameTypespec_ModPrefix*>(node), visit_order);

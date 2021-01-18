@@ -1,0 +1,89 @@
+// https://graphs.grevian.org/example
+
+digraph {
+    splines=line;
+
+    subgraph cluster_0 {
+        label="Typer";
+        bgcolor="grey";
+        typer_fn [label="typer"]
+    }
+
+    subgraph cluster_1 {
+        label="Types Manager\nContains multiple Vars";
+        bgcolor="turquoise";
+
+        assume [label="assume(Relation)", style="filled", fillcolor="grey", shape="box"];
+        test [label="test(Relation)", style="filled", fillcolor="grey", shape="box"];
+
+        // edges:
+        typer_fn -> assume;
+
+        subgraph cluster_types_mgr {
+            label="Varᵢ";
+            bgcolor="aquamarine";
+            
+            subgraph cluster_assume {
+                label="Assume Invariant by adding to IntervalSet";
+                invariant [label="assume(Invariant)", shape="box", style="filled", fillcolor="grey"];
+                assumed_kind_bitset [label="assumed\nkind\nbitset", shape="box", fillcolor="coral1", style="filled"];
+                assumed_supervars [label="assumed\nSuper-vars", shape="box", fillcolor="coral1", style="filled"];
+                assumed_subvars [label="assumed\nSub-vars", shape="box", fillcolor="coral1", style="filled"];
+                assumed_deferred_kd_invariants [label="assumed\n(deferred)\nkind-dependent\ninvariants", style="filled", fillcolor="coral1", shape="box"]
+            }
+
+            subgraph cluster_sp1 {
+                label="Solver Phase 1 (SP1): Solve for GlobalInvariantSet"
+                local_interval_set [label="RunningInvariantSet", shape="box", fillcolor="coral1", style="filled"];
+                sp1_loopcheck [label="RunningInvariantSet changed?", fillcolor="gray", style="filled"]
+                sp1_spread_to_sub
+                [label="Spread invariants to\nimmediate Sub-vars", shape="box", style="filled", fillcolor="turquoise"]
+            }
+
+            // subgraph cluster_sp1 {
+            //     label="Solver Phase 1 (SP1): Check kind bitset, supervar, subvar, VarKind"
+            //     local_interval_set [label="Running Invariant set", shape="box", fillcolor="coral1", style="filled"];
+            //     sp1_entry_point_first_time [label="(first-time)", shape="diamond", fillcolor="gray", style="filled"]
+            //     sp1_entry_point_repeat [label="(repeat with new local)", shape="diamond", fillcolor="gray", style="filled"]
+            //     sp1_loopcheck [label="Check Running Invariant set against VarKind", fillcolor="gray", style="filled"]
+            // }
+
+            subgraph cluster_sp2 {
+                label="Solver Phase 2 (SP2): Solve and check Type\nfrom GlobalInvariantSet";
+                sp2_alg_soln [label="algebraic solution type", shape="box", fillcolor="coral", style="filled"];
+                sp2_fin_soln [label="finite solution type", shape="box", fillcolor="yellow2", style="filled"]
+                sp2_global_invariant_set [label="GlobalInvariantSet", shape="box", fillcolor="coral", style="filled"];
+                sp2_fin_check [label="check soln. finite\ne.g. type T = {x T} infinite", fillcolor="grey", style="filled"]
+            }
+
+            // Assume:
+            invariant -> {assumed_kind_bitset, assumed_subvars, assumed_supervars, assumed_deferred_kd_invariants};
+
+            // SP1:
+            {assumed_kind_bitset, assumed_subvars, assumed_supervars, assumed_deferred_kd_invariants} -> sp1_spread_to_sub;
+
+            sp1_spread_to_sub -> local_interval_set
+            [label="Updates"];
+
+            local_interval_set -> sp1_loopcheck
+
+            // SP2
+            sp1_loopcheck -> sp1_spread_to_sub
+            [label="Yes"];
+            sp1_loopcheck -> sp2_global_invariant_set
+            [label="No-- stable"]
+            sp2_global_invariant_set -> sp2_alg_soln -> sp2_fin_check -> sp2_fin_soln;
+        }
+        
+        assume -> invariant;
+        sp2_fin_soln -> test;
+    }
+
+    subgraph cluster_2 {
+        label="Backend";
+        bgcolor="grey";
+        templater [label="Templater"];
+        emitter [label="Emitter"];
+    }
+    test -> {templater, emitter};
+}

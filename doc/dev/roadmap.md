@@ -1,5 +1,16 @@
 # Roadmap
 
+## Jan 17 2021
+- Typer WIP! Phew!
+- The following language changes need to be made:
+  - remove T.vid as a way to access fields; instead use T :< {vid FieldType}
+  - assume structs' fields work out-of-order
+  - assume TIds used for module names and prefices.
+- Problems solved:
+    1.  Memory fragmentation introduced by OO
+    2.  Code that changes over time without tests/constraints also changing
+    3.  Less composability => more verbosity
+
 ## Jan 11 2021
 - Implemented Constraints (see builtin types and classes' dumps)
 - Next: implement 'apply' for Relations

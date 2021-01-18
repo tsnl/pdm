@@ -156,9 +156,9 @@ namespace pdm::scoper {
         virtual bool on_visit__tcall_typespec(ast::TCallTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__paren_typespec(ast::ParenTypespec* node, VisitOrder visit_order) override;
         virtual bool on_visit__tuple_typespec(ast::TupleTypespec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__dot_name_typespec_type_prefix(ast::DotNameTypespec_TypePrefix* node, VisitOrder visit_order) override;
         virtual bool on_visit__dot_name_typespec_mod_prefix(ast::DotNameTypespec_ModPrefix* node, VisitOrder visit_order) override;
         virtual bool on_visit__struct_typespec(ast::StructTypespec* node, VisitOrder visit_order) override;
+        // virtual bool on_visit__dot_name_typespec_type_prefix(ast::DotNameTypespec_TypePrefix* node, VisitOrder visit_order) override;
 
         // args:
         virtual bool on_visit__targ(ast::TArg* targ, VisitOrder visit_order) override;

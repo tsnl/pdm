@@ -137,7 +137,7 @@ namespace pdm::ast {
         virtual bool on_visit__fn_typespec(FnTypespec* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__tcall_typespec(TCallTypespec* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__tuple_typespec(TupleTypespec* node, VisitOrder visit_order) = 0;
-        virtual bool on_visit__dot_name_typespec_type_prefix(DotNameTypespec_TypePrefix* node, VisitOrder visit_order) = 0;
+        // virtual bool on_visit__dot_name_typespec_type_prefix(DotNameTypespec_TypePrefix* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__dot_name_typespec_mod_prefix(DotNameTypespec_ModPrefix* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__struct_typespec(StructTypespec* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__paren_typespec(ParenTypespec* node, VisitOrder visit_order) = 0;
@@ -284,9 +284,9 @@ namespace pdm::ast {
         virtual bool on_visit__tuple_typespec(TupleTypespec* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__dot_name_typespec_type_prefix(DotNameTypespec_TypePrefix* node, VisitOrder visit_order) override {
-            return true;
-        }
+        // virtual bool on_visit__dot_name_typespec_type_prefix(DotNameTypespec_TypePrefix* node, VisitOrder visit_order) override {
+        //     return true;
+        // }
         virtual bool on_visit__dot_name_typespec_mod_prefix(DotNameTypespec_ModPrefix* node, VisitOrder visit_order) override {
             return true;
         }

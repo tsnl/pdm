@@ -28,7 +28,7 @@ namespace pdm::typer {
 // are objects.
 // - everything in the system is a Var
 // - you can define relations (rules) that are potentially recursive
-// - the PL computes & checks constraints from these relations
+// - the PL computes & checks invariants from these relations
 // - to find solutions to TypeVars
 // * allow values (incl. functions) as interned constants by AST node
 namespace pdm::types {
@@ -68,11 +68,12 @@ namespace pdm::types {
         Float32FixedTypeVar m_f32_tv;
         Float64FixedTypeVar m_f64_tv;
 
-        NumberFixedClassVar m_number_cv;
         SignedIntFixedClassVar m_signed_int_cv;
         UnsignedIntFixedClassVar m_unsigned_int_cv;
+        IntFixedClassVar m_int_cv;
         FloatFixedClassVar m_float_cv;
-
+        NumberFixedClassVar m_number_cv;
+        
       public:
         Manager(Compiler* opt_compiler_ptr = nullptr);
 
@@ -110,15 +111,16 @@ namespace pdm::types {
         TypeVar* get_f32_tv() { return &m_f32_tv; }
         TypeVar* get_f64_tv() { return &m_f64_tv; }
 
-        ClassVar* get_number_cv() { return &m_number_cv; }
         ClassVar* get_signed_int_cv() { return &m_signed_int_cv; }
         ClassVar* get_unsigned_int_cv() { return &m_unsigned_int_cv; }
+        ClassVar* get_int_cv() { return &m_int_cv; }
         ClassVar* get_float_cv() { return &m_float_cv; }
-
+        ClassVar* get_number_cv() { return &m_number_cv; }
+        
       // interface
       public:
         // map each 'Relation' class to a function application here.
-        AssumeOpResult assume(Relation* relation);
+        SolvePhase2_Result assume_relation_holds(Relation* relation);
         TestOpResult test(Relation* relation);
 
       // Dump:

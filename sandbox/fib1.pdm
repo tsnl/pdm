@@ -1,6 +1,6 @@
-import fibx from "fibx.pdm" type "pdm/script";
+import Fibx from "fibx.pdm" type "pdm/script";
 
-mod fibonacci {
+mod Fibonacci {
     fn fib (x Int32) -> Int32 = {
         val result = (
             if (x == 0 or x == 1) then {
@@ -9,7 +9,7 @@ mod fibonacci {
                 fib(x-1) + fib(x-2)
             }
         );
-        discard fibx.register(x, result);
+        discard Fibx:register(x, result);
         result
     };
     fn fib2 (y Int32) -> Int32 = {

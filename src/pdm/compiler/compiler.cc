@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "pdm/core/intern.hh"
+#include "pdm/core/config.hh"
 
 #include "pdm/ast/script/script.hh"
 
@@ -236,7 +237,8 @@ namespace pdm {
                 "If this doesn't fix your issue, you will need to file a bug report. "
                 "Try rewriting your code to reproduce and isolate what causes this issue. "
                 "Then, work around the issue while we work on the compiler to fix this, "
-                "or fix it yourself and submit the code."
+                "or fix it yourself and submit the code using a Pull Request at "
+                PDMSDK_REPO_URL_CMACRO
             );
             feedback::post(new feedback::Letter(
                 feedback::Severity::CompilerError,

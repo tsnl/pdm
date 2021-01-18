@@ -11,6 +11,8 @@
 #include "var_kind.hh"
 #include "typeop_result.hh"
 #include "solving.hh"
+#include "invariant.hh"
+#include "kd_var_solver.hh"
 
 #include "interval.hh"
 
@@ -25,7 +27,7 @@ namespace pdm::types {
     class ClassTemplateVar;
 
     class Relation;
-    class Constraint;
+    class Invariant;
 }
 namespace pdm::ast {
     class Node;
@@ -33,38 +35,34 @@ namespace pdm::ast {
 
 namespace pdm::types {
 
-    // A 'Var' is a bag of constraints that identifies a set of types.
-    // All types in this set satisfy all assumed constraints.
-    // All typing operations boil down to supervar and subvar relationships
-    // between Vars and easily unifiable IntervalSets
-    // - a type T is in a class C              <=> T \subvar C
-    // - a type T is a subtype of a type U     <=> T \subvar U
-    // - a class C is a subclass of class D    <=> C \subvar D
-    // - a template T is equal to a template U <=> T \subvar U and U \subvar T
-    // * use 'VarKind' to determine if a Var is a type, class, or template.
-    // * 'equality' is just subtype+supertype or subclass+superclass
-    // Once constraints are stored, can later query
+    // A 'Var' is a bag of invariants that identifies a type, typeclass, or specific value.
+    // A value is in a Var if it satisfies all invariants.
+    // - each Var only has kd-invariants of one kind <=> each Var has exactly one kind.
+    // - no Var (even typeclass) may span kinds.
     class Var {
       private:
         std::string m_name;
         ast::Node* m_opt_client_ast_node;
         VarKind m_var_kind;
 
-        // all applied constraints stored as common or kind-dependent:
-        std::vector<CommonConstraint*> m_assumed_common_constraints;
-        std::vector<KindDependentConstraint*> m_assumed_kind_dependent_constraints;
+        // all applied invariants stored as common or kind-dependent.
+        std::vector<CommonInvariant*> m_assumed_common_invariants;
+        std::vector<KindDependentInvariant*> m_assumed_kind_dependent_invariants;
 
-        // common constraints broken into a bitset, subvars, and supervars:
-        u64 m_assumed_kind_bitset;
+        // (common attributes)
+        // common invariants broken into a bitset, subvars, and supervars:
+        TypeKindBitset m_assumed_kind_bitset;
         std::vector<Var*> m_assumed_subvars;
         std::vector<Var*> m_assumed_supervars;
+        size_t m_sp2_propagated_sofar_subvar_count;
+        size_t m_sp2_propagated_sofar_kd_invariant_count;
 
-        // after checking all supervar/subvar bitsets, kind-dependent constraints are broken
-        // into an 'IntervalSet' that is then iteratively expanded.
-        // Finally, the IntervalSet can be checked for validity based on VarKind.
-        IntervalSet m_assumed_interval_set;
+        // (kind-dependent attributes)
+        // based on common attributes, create a kind-dependent var solver subclass:
+        KindDependentVarSolver* m_kd_var_solver;
 
         // for each solution iter, we cache the previous iter's result:
+        Type* m_opt_type_soln;
         SolvePhase2_Result m_initial_solve_iter_result;
         SolvePhase2_Result m_prev_solve_iter_result;
 
@@ -78,20 +76,22 @@ namespace pdm::types {
         std::string const& name() const;
         VarKind var_kind() const;
         ast::Node* opt_client_ast_node() const;
-        std::vector<CommonConstraint*> const& assumed_common_constraints() const;
-        std::vector<KindDependentConstraint*> const& assumed_kind_dependent_constraints() const;
+        std::vector<CommonInvariant*> const& assumed_common_invariants() const;
+        std::vector<KindDependentInvariant*> const& assumed_kind_dependent_invariants() const;
         std::vector<Var*> const& assumed_subvars() const;
         std::vector<Var*> const& assumed_supervars() const;
         bool is_constant() const;
 
-      // Assuming: setting up type constraints.
+      // Assuming: setting up type invariants.
       // - assume updates the IntervalSet representation
       // - solve (called after all 'assume')
       public:
-        AssumeOpResult assume_constraint_holds(Constraint* constraint);
-        AssumeOpResult assume_constraint_holds__override_fixed_to_init(Constraint* constraint);
+        SolvePhase2_Result assume_invariant_holds(Invariant* invariant);
+        SolvePhase2_Result assume_invariant_holds__override_fixed_to_init(Invariant* invariant);
+        SolvePhase2_Result higher_order_assume_equals(Var* var);
+        SolvePhase2_Result higher_order_assume_subvar(Var* var);
       private:
-        AssumeOpResult assume_constraint_holds_impl(Constraint* constraint, bool override_fixed);
+        SolvePhase2_Result assume_invariant_holds_impl(Invariant* invariant, bool override_fixed);
 
       // Solving: Phase 1 (SP1)
       public:
@@ -106,10 +106,10 @@ namespace pdm::types {
         SolvePhase2_Result solve_phase2_iter_impl();
 
       public:
-        TestOpResult test(Constraint* constraint);
+        TestOpResult test(Invariant* invariant);
 
       private:
-        static void help_assume_subvar(Var* subvar, Var* supervar);
+        static SolvePhase2_Result help_assume_subvar(Var* subvar, Var* supervar, bool is_second_order_invariant);
 
       // debug printing:
       public:
@@ -117,8 +117,8 @@ namespace pdm::types {
       private:
         void help_print_title(printer::Printer& p) const;
         void help_print_assumed_kind_bitset(printer::Printer& p) const;
-        void help_print_assumed_common_constraints(printer::Printer& p) const;
-        void help_print_assumed_kind_dependent_constraints(printer::Printer& p) const;
+        void help_print_assumed_common_invariants(printer::Printer& p) const;
+        void help_print_assumed_kind_dependent_invariants(printer::Printer& p) const;
         void help_print_assumed_subvars(printer::Printer& p) const;
         void help_print_assumed_supervars(printer::Printer& p) const;
         void help_print_opt_client_ast_node(printer::Printer& p) const;
@@ -127,12 +127,13 @@ namespace pdm::types {
     :   m_name(std::move(name)),
         m_opt_client_ast_node(opt_client_ast_node),
         m_var_kind(var_kind),
-        m_assumed_common_constraints(),
-        m_assumed_kind_dependent_constraints(),
+        m_assumed_common_invariants(),
+        m_assumed_kind_dependent_invariants(),
         m_assumed_kind_bitset(0),
         m_assumed_subvars(),
         m_assumed_supervars(),
-        m_assumed_interval_set(),
+        m_sp2_propagated_sofar_subvar_count(0),
+        m_sp2_propagated_sofar_kd_invariant_count(0),
         m_initial_solve_iter_result(initial_solve_iter_result),
         m_prev_solve_iter_result(initial_solve_iter_result)
     {}
@@ -145,11 +146,11 @@ namespace pdm::types {
     inline ast::Node* Var::opt_client_ast_node() const {
         return m_opt_client_ast_node;
     }
-    inline std::vector<CommonConstraint*> const& Var::assumed_common_constraints() const {
-        return m_assumed_common_constraints;
+    inline std::vector<CommonInvariant*> const& Var::assumed_common_invariants() const {
+        return m_assumed_common_invariants;
     }
-    inline std::vector<KindDependentConstraint*> const& Var::assumed_kind_dependent_constraints() const {
-        return m_assumed_kind_dependent_constraints;
+    inline std::vector<KindDependentInvariant*> const& Var::assumed_kind_dependent_invariants() const {
+        return m_assumed_kind_dependent_invariants;
     }
     inline std::vector<Var*> const& Var::assumed_subvars() const {
         return m_assumed_subvars;
@@ -158,7 +159,7 @@ namespace pdm::types {
         return m_assumed_supervars;
     }
     inline bool Var::is_constant() const {
-        return m_initial_solve_iter_result == SolvePhase2_Result::AtFixedPoint;
+        return m_initial_solve_iter_result == SolvePhase2_Result::NoChange;
     }
 
     // typevar:
@@ -251,15 +252,6 @@ namespace pdm::types {
     class ClassVar: public Var {
       protected:
         inline ClassVar(std::string&& name, ast::Node* client_ast_node, SolvePhase2_Result sp2_result);
-
-      public:
-        void assume_constraint(Constraint* constraint);
-        void assume_subclass_of(ClassVar* superclass_cv);
-        void assume_superclass_of(ClassVar* subclass_cv);
-
-        void test_constraint(Constraint* constraint);
-        void test_subclass_of(ClassVar* superclass_cv);
-        void test_superclass_of(ClassVar* subclass_cv);
     };
     inline ClassVar::ClassVar(std::string&& name, ast::Node* client_ast_node, SolvePhase2_Result sp2_result)
     :   Var(std::move(name), client_ast_node, VarKind::Class, sp2_result)
@@ -278,12 +270,13 @@ namespace pdm::types {
         inline FixedClassVar(std::string&& name);
     };
     inline FixedClassVar::FixedClassVar(std::string&& name)
-    :   ClassVar(std::move(name), nullptr, SolvePhase2_Result::AtFixedPoint)
+    :   ClassVar(std::move(name), nullptr, SolvePhase2_Result::NoChange)
     {}
-    struct NumberFixedClassVar: public FixedClassVar { NumberFixedClassVar(); };
     struct SignedIntFixedClassVar: public FixedClassVar { SignedIntFixedClassVar(); };
     struct UnsignedIntFixedClassVar: public FixedClassVar { UnsignedIntFixedClassVar(); };
+    struct IntFixedClassVar: public FixedClassVar { IntFixedClassVar(); };
     struct FloatFixedClassVar: public FixedClassVar { FloatFixedClassVar(); };
+    struct NumberFixedClassVar: public FixedClassVar { NumberFixedClassVar(); };
     
     // templates helpers:
     class TemplateFormalArg {

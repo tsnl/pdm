@@ -45,8 +45,9 @@ namespace pdm::ast {
         IdTypespec,
         ParenTypespec,
         FnTypespec, TCallTypespec,
-        DotNameTypespec_TypePrefix, DotNameTypespec_ModPrefix,
+        DotNameTypespec_ModPrefix,
         TupleTypespec, StructTypespec,
+        // DotNameTypespec_TypePrefix,
 
         // args:
         TArg, VArg,

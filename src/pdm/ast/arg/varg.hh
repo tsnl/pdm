@@ -1,6 +1,8 @@
 #ifndef INCLUDED_PDM_AST_ARG_VARG_HH
 #define INCLUDED_PDM_AST_ARG_VARG_HH
 
+#include <algorithm>
+
 #include "pdm/ast/node.hh"
 
 namespace pdm::ast {
@@ -11,11 +13,15 @@ namespace pdm::ast {
 namespace pdm::ast {
     
     enum class VArgAccessSpec {
-        Opaque,
-        In,
-        Out,
-        InOut,
+        In,     // input, cannot write
+        Out,    // output ptr, MUST write.
+        InOut,  // input/output ptr, may read or write.
     };
+    inline VArgAccessSpec varg_access_spec_intersection(VArgAccessSpec vaas1, VArgAccessSpec vaas2) {
+        return static_cast<VArgAccessSpec>(
+            std::min(static_cast<int>(vaas1), static_cast<int>(vaas2))
+        );
+    }
 
     // used for function calls:
     class VArg: public Node {

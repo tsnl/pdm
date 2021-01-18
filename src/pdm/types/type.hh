@@ -5,7 +5,9 @@
 #include <vector>
 
 #include "pdm/core/intern.hh"
-#include "constraint.hh"
+#include "pdm/ast/arg/varg.hh"
+
+#include "invariant.hh"
 #include "type_kind.hh"
 
 namespace pdm::types {
@@ -21,7 +23,7 @@ namespace pdm::types {
       private:
         std::string m_name;
         TypeKind    m_type_kind;
-              
+
       protected:
         Type(std::string name, TypeKind type_kind)
         : m_name(std::move(name)),
@@ -30,11 +32,11 @@ namespace pdm::types {
       public:
         std::string const& name() const;
         TypeKind type_kind() const;
-        
+
       public:
         bool test_subtypeOf(Type const* supertype) const;
-        bool test_supertypeOf(Type const* subtype) const;
-      
+        inline bool test_supertypeOf(Type const* subtype) const;
+
       private:
         virtual bool help_test_subtypeOf_postKindCheck(Type const* supertype_of_same_type_kind) const;
     };
@@ -58,8 +60,8 @@ namespace pdm::types {
         static VoidType s_singleton;
 
       public:
-        static VoidType* get() { 
-            return &s_singleton; 
+        static VoidType* get() {
+            return &s_singleton;
         }
 
       // protected constructor:
@@ -129,9 +131,10 @@ namespace pdm::types {
       // protected constructor:
       protected:
         IntType(std::string&& name, int width_in_bits, bool using_sign_ext)
-        : Type("IntType:" + std::move(name), TypeKind::Int), 
-          m_width_in_bits(width_in_bits),
-          m_using_sign_ext(using_sign_ext) {}
+        :   Type("IntType:" + std::move(name), (using_sign_ext ? TypeKind::SignedInt : TypeKind::UnsignedInt)),
+            m_width_in_bits(width_in_bits),
+            m_using_sign_ext(using_sign_ext)
+        {}
     };
 
     //
@@ -155,26 +158,6 @@ namespace pdm::types {
         FloatType(std::string&& name, int width_in_bits)
         : Type("FloatType:" + std::move(name), TypeKind::Float),
           m_width_in_bits(width_in_bits) {}
-    };
-
-    //
-    // RefType:
-    //
-
-    // note: there is no type specifier for reference types; they cannot be freely manipulated in the language.
-    //       they are used within the typer exclusively to check mutability of references (i.e. out, inout)
-    class RefType: public Type {
-      private:
-        Type* m_pointee_soln;
-        bool  m_readable;
-        bool  m_writable;
-      
-      public:
-        RefType(std::string&& name, Type* pointee_soln, bool readable, bool writable)
-        : Type("RefType:" + std::move(name), TypeKind::Ref),
-          m_pointee_soln(pointee_soln),
-          m_readable(readable),
-          m_writable(writable) {}
     };
 
     //
@@ -210,7 +193,7 @@ namespace pdm::types {
     class StructType: public Type {
       private:
         std::vector<StructTypeField> m_fields;
-      
+
       public:
         StructType(std::string&& name, std::vector<StructTypeField>&& fields)
         : Type("StructType:" + std::move(name), TypeKind::Struct),
@@ -231,7 +214,7 @@ namespace pdm::types {
         EnumFieldKind   m_kind;
         intern::String  m_name;
         Type*           m_typepsec_soln;
-      
+
       public:
         EnumTypeField(intern::String name)
         : m_kind(EnumFieldKind::DefaultTs),
@@ -252,7 +235,7 @@ namespace pdm::types {
         : Type("EnumType:" + std::move(name), TypeKind::Enum),
           m_fields(std::move(fields)) {}
     };
-    
+
     //
     // Modules:
     //
@@ -296,24 +279,25 @@ namespace pdm::types {
     };
     class FuncTypeFormalArg {
       private:
-        FuncArgReadWriteSpec m_read_write_spec;
-        intern::String       m_name;
-        Type*                m_arg_typespec;
+        ast::VArgAccessSpec m_arg_access_spec;
+        intern::String      m_name;
+        Type*               m_arg_typespec;
 
       public:
-        FuncTypeFormalArg(FuncArgReadWriteSpec read_write_spec, intern::String name, Type* arg_typespec)
-        :   m_read_write_spec(read_write_spec),
-            m_name(name),
-            m_arg_typespec(arg_typespec)
-        {}
+        FuncTypeFormalArg(ast::VArgAccessSpec arg_access_spec, intern::String name, Type* arg_typespec);
 
       public:
-        FuncArgReadWriteSpec read_write_spec() const;
+        ast::VArgAccessSpec arg_access_spec() const;
         intern::String name() const;
         Type* arg_typespec() const;
     };
-    inline FuncArgReadWriteSpec FuncTypeFormalArg::read_write_spec() const {
-        return m_read_write_spec;
+    inline FuncTypeFormalArg::FuncTypeFormalArg(ast::VArgAccessSpec arg_access_spec, intern::String name, Type* arg_typespec)
+    :   m_arg_access_spec(arg_access_spec),
+        m_name(name),
+        m_arg_typespec(arg_typespec)
+    {}
+    inline ast::VArgAccessSpec FuncTypeFormalArg::arg_access_spec() const {
+        return m_arg_access_spec;
     }
     inline intern::String FuncTypeFormalArg::name() const {
         return m_name;
@@ -331,7 +315,7 @@ namespace pdm::types {
         :   m_read_write_spec(read_write_spec),
             m_arg_typespec(arg_typespec)
         {}
-      
+
       public:
         FuncArgReadWriteSpec read_write_spec() const {
             return m_read_write_spec;

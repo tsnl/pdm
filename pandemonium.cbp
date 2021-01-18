@@ -1,0 +1,791 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="pandemonium"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;CMake Files\dep\;CMake Files\dep\intern\;CMake Files\dev\;CMake Files\dev\vcpkg\;CMake Files\dev\vcpkg\scripts\;CMake Files\dev\vcpkg\scripts\buildsystems\;CMake Files\dev\vcpkg\installed\;CMake Files\dev\vcpkg\installed\x64-osx\;CMake Files\dev\vcpkg\installed\x64-osx\share\;CMake Files\dev\vcpkg\installed\x64-osx\share\llvm\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="install/strip">
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 install/strip"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="install/local">
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 install/local"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="install">
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 install"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="list_install_components">
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 list_install_components"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="pdm_sandbox">
+				<Option output="/Users/nti/Workshop/Pandemonium/pdm.master/pdm_sandbox" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/include"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/src"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 pdm_sandbox"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="pdm_sandbox/fast">
+				<Option output="/Users/nti/Workshop/Pandemonium/pdm.master/pdm_sandbox" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/include"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/src"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 pdm_sandbox/fast"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="utf8proc">
+				<Option output="/Users/nti/Workshop/Pandemonium/pdm.master/libutf8proc.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/include"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/src"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 utf8proc"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="utf8proc/fast">
+				<Option output="/Users/nti/Workshop/Pandemonium/pdm.master/libutf8proc.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/include"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/src"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 utf8proc/fast"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="omp_gen">
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 omp_gen"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="acc_gen">
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 acc_gen"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="pdm">
+				<Option output="/Users/nti/Workshop/Pandemonium/pdm.master/libpdm.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/include"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/src"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 pdm"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="pdm/fast">
+				<Option output="/Users/nti/Workshop/Pandemonium/pdm.master/libpdm.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/include"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/src"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 pdm/fast"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="intrinsics_gen">
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 intrinsics_gen"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="tests">
+				<Option output="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/tests" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/include"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/src"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 tests"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="tests/fast">
+				<Option output="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/tests" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/include"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/src"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 tests/fast"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="benchmark">
+				<Option output="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/benchmark" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/include"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/src"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 benchmark"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="benchmark/fast">
+				<Option output="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/benchmark" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/include"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/src"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 benchmark/fast"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="check">
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 check"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="intern">
+				<Option output="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/libintern.dylib" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern"/>
+				<Option object_output="./"/>
+				<Option type="3"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/include"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/src"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 intern"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="intern/fast">
+				<Option output="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/libintern.dylib" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern"/>
+				<Option object_output="./"/>
+				<Option type="3"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/include"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/src"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep"/>
+					<Add directory="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 intern/fast"/>
+					<CompileFile command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -f &quot;/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/benchmark.c">
+			<Option target="benchmark"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/block.c">
+			<Option target="intern"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/block.h">
+			<Option target="intern"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/optimize.c">
+			<Option target="intern"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/optimize.h">
+			<Option target="intern"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/strings.c">
+			<Option target="intern"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/strings.h">
+			<Option target="intern"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/tests.c">
+			<Option target="tests"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dep/utf8proc/utf8proc.c">
+			<Option target="utf8proc"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dep/utf8proc/utf8proc.h">
+			<Option target="utf8proc"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/arg/targ.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/arg/varg.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/array.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/binary.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/chain.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/dot.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/exp.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/float.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/id.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/if.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/int.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/lambda.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/paren.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/string.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/struct.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/tcall.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/tuple.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/type_query.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/unary.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/unit.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/exp/vcall.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/kind.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/kind.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/manager.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/manager.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/node.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/node.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/pattern/base_field.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/pattern/lpattern.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/pattern/tpattern.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/pattern/vpattern.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/script/script.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/script/script.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/builtin_type.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/builtin_type.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/const.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/discard.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/enum.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/extern.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/fn.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/import.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/import.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/mod.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/mod.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/set.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/stmt.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/type.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/typeclass.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/using.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/val.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/stmt/var.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/typespec/dot.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/typespec/fn.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/typespec/id.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/typespec/struct.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/typespec/tcall.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/typespec/typespec.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/typespec/typespec.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/visitor.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/ast/visitor.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/compiler/compiler.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/compiler/compiler.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/core/bitsets.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/core/integer.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/core/intern.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/core/intern.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/core/units.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/core/utf8.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/core/utf8.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/dependency_dispatcher/dependency_dispatcher.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/dependency_dispatcher/dependency_dispatcher.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/feedback/feedback.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/feedback/feedback.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/feedback/letter.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/feedback/letter.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/feedback/manager.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/feedback/manager.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/feedback/note.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/feedback/note.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/feedback/severity.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/parser/lexer.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/parser/lexer.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/parser/parser.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/parser/parser.tab.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/parser/parser.tab.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/parser/reader.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/parser/reader.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/printer/printer.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/printer/printer.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/scoper/context.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/scoper/context.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/scoper/defn.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/scoper/defn.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/scoper/frame.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/scoper/frame.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/scoper/root_frame.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/scoper/root_frame.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/scoper/scoper.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/scoper/scoper.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/source/loc.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/source/loc.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/source/pos.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/source/pos.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/source/source.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/typer/typer.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/typer/typer.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/interval.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/interval.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/invariant.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/invariant.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/kd_var_solver.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/kd_var_solver.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/manager.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/manager.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/relation.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/relation.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/solving.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/type.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/type.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/type_kind.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/typeop_result.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/var.cc">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/var.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm/types/var_kind.hh">
+			<Option target="pdm"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm_sandbox/feedback_demo.cc">
+			<Option target="pdm_sandbox"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm_sandbox/feedback_demo.hh">
+			<Option target="pdm_sandbox"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm_sandbox/main.cc">
+			<Option target="pdm_sandbox"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm_sandbox/typer_demo.cc">
+			<Option target="pdm_sandbox"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/src/pdm_sandbox/typer_demo.hh">
+			<Option target="pdm_sandbox"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\dep\intern\"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dep/intern/config.h.in">
+			<Option virtualFolder="CMake Files\dep\intern\"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/scripts/buildsystems/vcpkg.cmake">
+			<Option virtualFolder="CMake Files\dev\vcpkg\scripts\buildsystems\"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/share/llvm/LLVM-Config.cmake">
+			<Option virtualFolder="CMake Files\dev\vcpkg\installed\x64-osx\share\llvm\"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/share/llvm/LLVMConfig.cmake">
+			<Option virtualFolder="CMake Files\dev\vcpkg\installed\x64-osx\share\llvm\"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/share/llvm/LLVMConfigVersion.cmake">
+			<Option virtualFolder="CMake Files\dev\vcpkg\installed\x64-osx\share\llvm\"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/share/llvm/LLVMExports-debug.cmake">
+			<Option virtualFolder="CMake Files\dev\vcpkg\installed\x64-osx\share\llvm\"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/share/llvm/LLVMExports-release.cmake">
+			<Option virtualFolder="CMake Files\dev\vcpkg\installed\x64-osx\share\llvm\"/>
+		</Unit>
+		<Unit filename="/Users/nti/Workshop/Pandemonium/pdm.master/dev/vcpkg/installed/x64-osx/share/llvm/LLVMExports.cmake">
+			<Option virtualFolder="CMake Files\dev\vcpkg\installed\x64-osx\share\llvm\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>

@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "solving.hh"
+
 namespace pdm::types {
 
     Manager::Manager(Compiler* opt_compiler_ptr)
@@ -36,10 +38,11 @@ namespace pdm::types {
             m_f64_tv.print(p);
 
             // fixed classes:
-            m_number_cv.print(p);
             m_signed_int_cv.print(p);
             m_unsigned_int_cv.print(p);
+            m_int_cv.print(p);
             m_float_cv.print(p);
+            m_number_cv.print(p);
 
             // holes:
             for (TypeVar const& tv: m_all_monotype_tvs) {
@@ -88,14 +91,14 @@ namespace pdm::types {
         return &m_all_class_template_vars.back();
     }
 
-    AssumeOpResult Manager::assume(Relation* relation) {
+    SolvePhase2_Result Manager::assume_relation_holds(Relation* relation) {
         m_all_relations.push_back(relation);
-        // todo: apply the relation to argument variables in terms of component constraints.
-        return AssumeOpResult::Applied;
+        // todo: apply the relation to argument variables in terms of component invariants.
+        return SolvePhase2_Result::UpdatedOrFresh;
     }
     TestOpResult Manager::test(Relation* relation) {
         std::cout << "NotImplemented: typer::Manager::test" << std::endl;
-        // todo: test if the relation is true given argument variables using 'test_constraint'
+        // todo: test if the relation is true given argument variables using 'test_invariant'
         return TestOpResult::ErrorOccurred;
     }
 }

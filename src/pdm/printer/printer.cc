@@ -310,11 +310,6 @@ namespace pdm::printer {
                 print_tuple_typespec(dynamic_cast<ast::TupleTypespec*>(node));
                 break;
             }
-            case ast::Kind::DotNameTypespec_TypePrefix:
-            {
-                print_dot_name_typespec_type_prefix(dynamic_cast<ast::DotNameTypespec_TypePrefix*>(node));
-                break;
-            }
             case ast::Kind::DotNameTypespec_ModPrefix:
             {
                 print_dot_name_typespec_mod_prefix(dynamic_cast<ast::DotNameTypespec_ModPrefix*>(node));
@@ -907,11 +902,6 @@ namespace pdm::printer {
                     print_cstr("inout ");
                     break;
                 }
-                case ast::VArgAccessSpec::Opaque:
-                {
-                    print_cstr("opaque ");
-                    break;
-                }
             }
 
             print_intstr(field->lhs_name());
@@ -1014,11 +1004,6 @@ namespace pdm::printer {
         }
         print_u32_char(')');
     }
-    void Printer::print_dot_name_typespec_type_prefix(ast::DotNameTypespec_TypePrefix* node) {
-        print_node(node->lhs_typespec());
-        print_u32_char('.');
-        print_intstr(node->rhs_name());
-    }
     void Printer::print_dot_name_typespec_mod_prefix(ast::DotNameTypespec_ModPrefix* node) {
         for (intern::String mod_name: node->lhs_prefixes()) {
             print_intstr(mod_name);
@@ -1069,11 +1054,6 @@ namespace pdm::printer {
             case ast::VArgAccessSpec::InOut:
             {
                 print_cstr("inout ");
-                break;
-            }
-            case ast::VArgAccessSpec::Opaque:
-            {
-                print_cstr("opaque ");
                 break;
             }
         }

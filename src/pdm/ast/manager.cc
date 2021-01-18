@@ -38,8 +38,11 @@ namespace pdm::ast {
     ChainExp* Manager::new_chain_exp(source::Loc loc, std::vector<Stmt*>&& prefix, Exp* suffix) {
         return emplace<ChainExp>(loc, std::move(prefix), suffix);
     }
-    DotNameExp* Manager::new_dot_name_exp(source::Loc loc, Exp* lhs, intern::String rhs_name, DotNameExp::RhsHint rhs_hint) {
-        return emplace<DotNameExp>(loc, lhs, rhs_name, rhs_hint);
+    StructDotNameExp* Manager::new_struct_dot_name_exp(source::Loc loc, Exp* lhs, intern::String rhs_name) {
+        return emplace<StructDotNameExp>(loc, lhs, rhs_name);
+    }
+    EnumDotNameExp* Manager::new_enum_dot_name_exp(source::Loc loc, Exp* lhs, intern::String rhs_name, std::vector<ast::Exp*>&& args) {
+        return emplace<EnumDotNameExp>(loc, lhs, rhs_name, std::move(args));
     }
     ModuleDotExp* Manager::new_module_dot_exp(source::Loc loc, std::vector<intern::String>&& module_names, intern::String rhs_name) {
         return emplace<ModuleDotExp>(loc, std::move(module_names), rhs_name);
@@ -162,9 +165,6 @@ namespace pdm::ast {
         return emplace<EnumStmt::Field>(loc, name, std::move(typespecs), has_explicit_typespecs);
     }
     
-    DotNameTypespec_TypePrefix* Manager::new_dot_name_typespec_with_type_prefix(source::Loc loc, Typespec* lhs_typespec, intern::String rhs_name) {
-        return emplace<DotNameTypespec_TypePrefix>(loc, lhs_typespec, rhs_name);
-    }
     DotNameTypespec_ModPrefix* Manager::new_dot_name_typespec_with_mod_prefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name) {
         return emplace<DotNameTypespec_ModPrefix>(loc, std::move(lhs_prefixes), rhs_name);
     }

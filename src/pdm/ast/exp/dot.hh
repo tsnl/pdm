@@ -10,8 +10,11 @@
 #include "pdm/ast/exp/exp.hh"
 
 namespace pdm::ast {
-
     class Manager;
+    class Exp;
+}
+
+namespace pdm::ast {
 
     // vid-prefixed modules:
     class ModuleDotExp: public Exp {
@@ -85,6 +88,28 @@ namespace pdm::ast {
             return m_rhs_hint;
         }
     };
+    class StructDotNameExp: public DotNameExp {
+        friend Manager;
+
+      public:
+        inline StructDotNameExp(source::Loc loc, Exp* lhs, intern::String rhs_name);
+    };
+    inline StructDotNameExp::StructDotNameExp(source::Loc loc, Exp* lhs, intern::String rhs_name)
+    :   DotNameExp(loc, lhs, rhs_name, DotNameExp::RhsHint::LhsStruct)
+    {}
+    class EnumDotNameExp: public DotNameExp {
+        friend Manager;
+
+      private:
+        std::vector<Exp*> m_args;
+
+      public:
+        inline EnumDotNameExp(source::Loc loc, Exp* lhs, intern::String rhs_name, std::vector<Exp*>&& args);
+    };
+    inline EnumDotNameExp::EnumDotNameExp(source::Loc loc, Exp* lhs, intern::String rhs_name, std::vector<ast::Exp*>&& args)
+    :   DotNameExp(loc, lhs, rhs_name, DotNameExp::RhsHint::LhsEnum),
+        m_args(std::move(args))
+    {}
 
     class DotIndexExp: public DotExp {
         friend Manager;

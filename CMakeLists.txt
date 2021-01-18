@@ -136,6 +136,7 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.hh
 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/core/bitsets.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/core/integer.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/core/intern.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/core/intern.hh
@@ -163,8 +164,8 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/manager.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/manager.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/typeop_result.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/constraint.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/constraint.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/invariant.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/invariant.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type_kind.hh
@@ -176,6 +177,8 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/relation.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/relation.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/solving.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/kd_var_solver.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/kd_var_solver.cc
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/typer/typer.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/typer/typer.hh

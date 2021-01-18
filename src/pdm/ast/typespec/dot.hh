@@ -12,28 +12,6 @@ namespace pdm::ast {
 
     class Manager;
 
-    class DotNameTypespec_TypePrefix: public Typespec {
-        friend Manager;
-
-      private:
-        Typespec*      m_lhs_typespec;
-        intern::String m_rhs_name;
-
-      protected:
-        DotNameTypespec_TypePrefix(source::Loc loc, Typespec* lhs_typespec, intern::String rhs_name)
-        : Typespec(loc, Kind::DotNameTypespec_TypePrefix),
-          m_lhs_typespec(lhs_typespec),
-          m_rhs_name(rhs_name) {}
-      
-      public:
-        Typespec* lhs_typespec() const {
-            return m_lhs_typespec;
-        }
-        intern::String rhs_name() const {
-            return m_rhs_name;
-        }
-    };
-
     class DotNameTypespec_ModPrefix: public Typespec {
         friend Manager;
 
@@ -56,6 +34,31 @@ namespace pdm::ast {
         }
     };
 
+    //
+    // Removed:
+    //
+
+    // class DotNameTypespec_TypePrefix: public Typespec {
+    //     friend Manager;
+
+    //   private:
+    //     Typespec*      m_lhs_typespec;
+    //     intern::String m_rhs_name;
+
+    //   protected:
+    //     DotNameTypespec_TypePrefix(source::Loc loc, Typespec* lhs_typespec, intern::String rhs_name)
+    //     : Typespec(loc, Kind::DotNameTypespec_TypePrefix),
+    //       m_lhs_typespec(lhs_typespec),
+    //       m_rhs_name(rhs_name) {}
+      
+    //   public:
+    //     Typespec* lhs_typespec() const {
+    //         return m_lhs_typespec;
+    //     }
+    //     intern::String rhs_name() const {
+    //         return m_rhs_name;
+    //     }
+    // };
 }
 
 #endif  // INCLUDED_PDM_AST_TYPESPEC_DOT_HH

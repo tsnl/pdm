@@ -35,8 +35,21 @@ namespace pdm::intern {
         char const* content() const;
 
       public:
-        inline bool operator== (String other) {
+        inline bool operator== (String const& other) const {
             return m_id == other.m_id;
+        }
+
+        inline bool operator< (String const& other) const {
+            return m_id < other.m_id;
+        }
+        inline bool operator> (String const& other) const {
+            return m_id > other.m_id;
+        }
+        inline bool operator<= (String const& other) const {
+            return m_id <= other.m_id;
+        }
+        inline bool operator>= (String const& other) const {
+            return m_id >= other.m_id;
         }
     };
 

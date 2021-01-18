@@ -1,72 +1,149 @@
 #ifndef INCLUDED__PDM__TYPES__SUBSPACE_HH
 #define INCLUDED__PDM__TYPES__SUBSPACE_HH
 
+//
+// Unfortunately not in use-- will instead solve types iteratively.
+// Compounds are complex to store.
+//
+
 #include <vector>
+#include <deque>
+#include <list>
+#include <map>
+
+#include <cassert>
+
 #include "type.hh"
 
 namespace pdm::types {
 
-    template <typename T>
-    class Interval {
-        T* m_beg;
-        T* m_end;
+    class TypeSet;
+    class Interval;
+    class OrderedIntervalSet;
+    class DisjointIntervalSet;
+
+    // TypeSet => something we can test existence of a type within.
+    class TypeSet {
+      protected:
+        TypeSet() = default;
+        virtual ~TypeSet() = default;
     };
-    using VoidInterval = Interval<VoidType>;
-    using IntInterval = Interval<IntType>;
-    using FloatInterval = Interval<FloatType>;
-    using StringInterval = Interval<StringType>;
-    using TupleInterval = Interval<TupleType>;
-    using StructInterval = Interval<StructType>;
-    using EnumInterval = Interval<EnumType>;
-    using FnInterval = Interval<FnType>;
-    using ModuleInterval = Interval<ModuleType>;
-    
-    class IntervalSet {
+
+    // Interval represents a set of types {Y} _between_ [T,U] such that
+    //  assuming T :< U,
+    //    T :< Y and Y :< U
+    // Compare this with the notion of an interval on the real line, [a,b], s.t x in [a,b] =>
+    //    a <= x and x <= b
+    // Note when T = u, T :< Y and Y :< T <=> Y = T <=> single type soln.
+    // Note that T :< U required (exist on the same line)
+    class Interval: public TypeSet {
       private:
-        std::vector<VoidInterval> m_void_intervals;
-        std::vector<IntInterval> m_int_intervals;
-        std::vector<FloatInterval> m_float_intervals;
-        std::vector<StringInterval> m_string_intervals;
-        std::vector<TupleInterval> m_tuple_intervals;
-        std::vector<StructInterval> m_struct_intervals;
-        std::vector<EnumInterval> m_enum_intervals;
-        std::vector<FnInterval> m_fn_intervals;
-        std::vector<ModuleInterval> m_module_intervals;
+        Type* m_submost_type;
+        Type* m_supermost_type;
 
       public:
-        IntervalSet() = default;
+        inline Interval();
+        inline Interval(Type* submost, Type* supermost);
+        inline explicit Interval(Type* point);
 
       public:
-        std::vector<VoidInterval> const& void_intervals() const;
-        std::vector<IntInterval> const& int_intervals() const;
-        std::vector<FloatInterval> const& float_intervals() const;
-        std::vector<StringInterval> const& string_intervals() const;
-        std::vector<TupleInterval> const& tuple_intervals() const;
-        std::vector<StructInterval> const& struct_intervals() const;
-        std::vector<EnumInterval> const& enum_intervals() const;
-        std::vector<FnInterval> const& fn_intervals() const;
-        std::vector<ModuleInterval> const& module_intervals() const;
+        inline Type* submost_type() const;
+        inline Type* supermost_type() const;
+        inline void submost_type(Type* type);
+        inline void supermost_type(Type* type);
 
       public:
-        void insert_void_interval(VoidInterval void_interval);
-        void insert_int_interval(IntInterval int_interval);
-        void insert_float_interval(FloatInterval float_interval);
-        void insert_string_interval(StringInterval string_interval);
-        void insert_tuple_interval(TupleInterval tuple_interval);
-        void insert_struct_interval(StructInterval struct_interval);
-        void insert_enum_interval(EnumInterval enum_interval);
-        void insert_fn_interval(FnInterval fn_interval);
-        void insert_module_interval(ModuleInterval module_interval);
+        inline bool contains(Type* t) const;
+
     };
-    inline std::vector<VoidInterval> const& IntervalSet::void_intervals() const { return m_void_intervals; }
-    inline std::vector<IntInterval> const& IntervalSet::int_intervals() const { return m_int_intervals; }
-    inline std::vector<FloatInterval> const& IntervalSet::float_intervals() const { return m_float_intervals; }
-    inline std::vector<StringInterval> const& IntervalSet::string_intervals() const { return m_string_intervals; }
-    inline std::vector<TupleInterval> const& IntervalSet::tuple_intervals() const { return m_tuple_intervals; }
-    inline std::vector<StructInterval> const& IntervalSet::struct_intervals() const { return m_struct_intervals; }
-    inline std::vector<EnumInterval> const& IntervalSet::enum_intervals() const { return m_enum_intervals; }
-    inline std::vector<FnInterval> const& IntervalSet::fn_intervals() const { return m_fn_intervals; }
-    inline std::vector<ModuleInterval> const& IntervalSet::module_intervals() const { return m_module_intervals; }
+    inline Interval::Interval()
+    :   Interval(nullptr, nullptr)
+    {}
+    inline Interval::Interval(Type* submost_type, Type* supermost_type)
+    :   m_submost_type(submost_type),
+        m_supermost_type(supermost_type)
+    {
+        // check submost :< supermost
+        assert (
+            submost_type->test_subtypeOf(supermost_type) &&
+            "Cannot construct an Interval s.t. endpoints [T,U] do not satisfy T :< U"
+        );
+    }
+    inline Interval::Interval(Type* point)
+    :   Interval(point, point)
+    {}
+    inline Type* Interval::submost_type() const {
+        return m_submost_type;
+    }
+    inline Type* Interval::supermost_type() const {
+        return m_supermost_type;
+    }
+    inline void Interval::submost_type(Type* type) {
+        m_submost_type = type;
+    }
+    inline void Interval::supermost_type(Type* type) {
+        m_supermost_type = type;
+    }
+    inline bool Interval::contains(Type* t) const {
+        return submost_type()->test_subtypeOf(t) && supermost_type()->test_supertypeOf(t);
+    }
+
+    // An OrderedIntervalSet is a collection of Intervals [T1,U1], [T2,U2], ...
+    // such that T1 :< U1 :< T2 :< U2 :< ...
+    // The existence of an ordering relation between intervals does not always hold
+    // true. Thus, an OrderedIntervalSet is unique because the endpoints of intervals
+    // are related by a subtyping relation.
+    // NOTE: elements in (U1, T2) are NOT included in this set: not connected.
+    class OrderedIntervalSet: public TypeSet {
+      private:
+        std::list<Interval> m_intervals;
+
+      public:
+        inline OrderedIntervalSet();
+
+      public:
+        inline Type* submost_type() const;
+        inline Type* supermost_type() const;
+
+      public:
+        // add_interval unifies the given interval with this OrderedIntervalSet.
+        // a runtime error occurs iff the interval does not fit in the existing order.
+        void add_interval(Interval interval);
+        
+        // fits returns whether or not a type fits in this ordering system,
+        // i.e. if type is a subtype or supertype to any of the endpoints of any of the intervals
+        //      then it is a subtype or supertype to all of the endpoints of all of the intervals
+        bool order_fits_type(Type* type);
+        bool order_fits_interval(Interval interval);
+
+      public:
+        inline bool contains(Type* t) const;
+    };
+    inline OrderedIntervalSet::OrderedIntervalSet()
+    :   TypeSet()
+    {}
+    inline Type* OrderedIntervalSet::submost_type() const {
+        if (m_intervals.empty()) {
+            return nullptr;
+        } else {
+            return m_intervals.front().submost_type();
+        }
+    }
+    inline Type* OrderedIntervalSet::supermost_type() const {
+        if (m_intervals.empty()) {
+            return nullptr;
+        } else {
+            return m_intervals.back().supermost_type();
+        }
+    }
+    inline bool OrderedIntervalSet::contains(Type* t) const {
+        for (Interval const& interval: m_intervals) {
+            if (interval.contains(t)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
 }
 

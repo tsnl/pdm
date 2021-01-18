@@ -128,7 +128,7 @@
 //
 
 %type <pdm::ast::Exp*> expr long_exp
-%type <std::vector<pdm::ast::Exp*>> /* expr_cl1 */ expr_cl2
+%type <std::vector<pdm::ast::Exp*>> expr_cl0 expr_cl2
 %type <std::vector<pdm::ast::TypeQueryExp*>> type_query_exp_sl
 
 %type <pdm::ast::Exp*> bracketed_exp unit_exp int_expr
@@ -160,7 +160,7 @@
 
 %type <pdm::ast::Typespec*> typespec long_typespec
 %type <pdm::ast::Typespec*> primary_typespec paren_typespec tuple_typespec struct_typespec mod_prefix_tid fn_typespec
-%type <pdm::ast::Typespec*> postfix_typespec tcall_typespec dot_typespec
+%type <pdm::ast::Typespec*> postfix_typespec tcall_typespec
 %type <pdm::ast::Typespec*> unary_typespec
 %type <std::vector<pdm::ast::Typespec*>> typespec_cl1 typespec_cl2
 %type <pdm::ast::StructTypespec::Field*> struct_typespec_field
@@ -302,7 +302,7 @@ scriptContentStmt
  */
 
 mod_stmt
-    : KW_MOD VID LCYBRK moduleContent RCYBRK    { $$ = mgr->new_mod_stmt(@$, $2.ID_intstr, std::move($4)); }
+    : KW_MOD TID LCYBRK moduleContent RCYBRK    { $$ = mgr->new_mod_stmt(@$, $2.ID_intstr, std::move($4)); }
     ;
 moduleContent
     : moduleContentStmt SEMICOLON                   { $$.push_back($1); }
@@ -385,7 +385,7 @@ using_stmt
     | KW_USING vid DOT vid  ASTERISK    { $$ = mgr->new_using_stmt(@$, $2.ID_intstr, $4.ID_intstr.content()); }
     ;
 import_stmt
-    : KW_IMPORT vid KW_FROM stringl KW_TYPE stringl    { $$ = mgr->new_import_stmt(@$, $2.ID_intstr, *$4.String_utf8string, *$6.String_utf8string); }
+    : KW_IMPORT tid KW_FROM stringl KW_TYPE stringl    { $$ = mgr->new_import_stmt(@$, $2.ID_intstr, *$4.String_utf8string, *$6.String_utf8string); }
     ;
 extern_stmt
     : KW_EXTERN vid KW_FROM expr    { $$ = mgr->new_extern_stmt(@$, $2.ID_intstr, $4); }
@@ -405,7 +405,7 @@ stringl
     | DQSTRING_LIT
     ;
 mod_prefix
-    : vid COLON               { $$.push_back($1.ID_intstr); }
+    : tid COLON               { $$.push_back($1.ID_intstr); }
     | mod_prefix vid COLON    { $$ = std::move($1); }
     ;
 
@@ -416,8 +416,12 @@ mod_prefix
 expr: binary_exp
     ;
 long_exp
-    : type_query_exp   { $$ = dynamic_cast<ast::Exp*>($1); }
-    | expr
+    : expr
+    ;
+
+expr_cl0
+    : %empty                 {}
+    | expr_cl0 COMMA expr    { $$ = std::move($1); $$.push_back($3); }
     ;
 expr_cl2
     : expr COMMA expr        { $$.reserve(2); $$.push_back($1); $$.push_back($3); }
@@ -500,8 +504,8 @@ vcall_exp
     | postfix_exp LPAREN varg_cl RPAREN     { $$ = mgr->new_vcall_exp(@$, $1, std::move($3)); }
     ;
 dot_name_exp
-    : postfix_exp DOT VID   { $$ = mgr->new_dot_name_exp(@$, $1, $3.ID_intstr, ast::DotNameExp::RhsHint::LhsStruct); }
-    | postfix_exp DOT TID   { $$ = mgr->new_dot_name_exp(@$, $1, $3.ID_intstr, ast::DotNameExp::RhsHint::LhsEnum); }
+    : postfix_exp DOT VID                           { $$ = mgr->new_struct_dot_name_exp(@$, $1, $3.ID_intstr); }
+    | postfix_exp DOT TID LPAREN expr_cl0 RPAREN    { $$ = mgr->new_enum_dot_name_exp(@$, $1, $3.ID_intstr, std::move($5)); }
     | mod_prefix VID   { $$ = mgr->new_module_dot_exp(@$, std::move($1), $2.ID_intstr); }
     ;
 dot_index_exp
@@ -629,12 +633,9 @@ fn_typespec
 postfix_typespec
     : primary_typespec
     | tcall_typespec
-    | dot_typespec
     ;
 tcall_typespec
     : postfix_typespec LSQBRK targ_cl RSQBRK  { $$ = mgr->new_tcall_typespec(@$, $1, std::move($3)); }
-    ;
-dot_typespec: postfix_typespec DOT VID   { $$ = mgr->new_dot_name_typespec_with_type_prefix(@$, $1, $3.ID_intstr); }
     ;
 
 unary_typespec
