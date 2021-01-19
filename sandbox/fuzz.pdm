@@ -1,24 +1,23 @@
-import math from "math.pdm" type "pdm/script";
-
-mod vec {
-    type Vec2 = {
+mod Vec {
+    Vec2 = {
         x Float32,
         y Float32
     };
 
-    fn mul (v Vec2, s Float32) -> Vec2 = {
+    mul = fn (v Vec2, s Float32) -> Vec2 {
         x = v.x * s,
         y = v.y * s
     };
 
-    fn dot (v Vec2, w Vec2) -> Float32 = {
+    dot = fn (v Vec2, w Vec2) -> Float32 {
         v.x * w.x + v.y * w.y
     };
-    fn length_sqr (v Vec2) -> Float32 = {
+    length_sqr = fn (v Vec2) -> Float32 {
         dot(v, v)
     };
-    fn length (v Vec2) -> Float32 = {
-        math.sqrt(length_sqr(v))
+    length = fn (v Vec2) -> Float32 {
+        # TODO: math, sqrt ;-;
+        # math.sqrt(length_sqr(v))
     };
 
     # returns a vector pointing in the same direction of unit length
@@ -27,7 +26,7 @@ mod vec {
     #   - raise this error if user forgets the 'if'
     #   - disable this error when 'if' is present
     #   * the compiler helps check your code
-    fn normalize (v Vec2) -> Vec2 = {
+    normalize = fn (v Vec2) -> Vec2 {
         val v_length = length(v);
         if (v_length == 0) then {
             v
@@ -35,4 +34,5 @@ mod vec {
             mul(v, 1/v_length)
         }
     };
+    
 };

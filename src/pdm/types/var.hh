@@ -22,9 +22,9 @@ namespace pdm::types {
     class Var;
     class TypeVar;
     class ClassVar;
-    class ValueTemplateVar;
-    class TypeTemplateVar;
-    class ClassTemplateVar;
+    class TemplateVar_RetValue;
+    class TemplateVar_RetType;
+    class TemplateVar_ClassType;
 
     class Relation;
     class Invariant;
@@ -332,7 +332,10 @@ namespace pdm::types {
         return m_classof_formal_cv;
     }
 
+    //
     // templates:
+    //
+    
     class TemplateVar: public Var {
       private:
         std::vector<TemplateFormalArg> m_formal_args;
@@ -342,35 +345,36 @@ namespace pdm::types {
       public:
         std::vector<TemplateFormalArg> const& formal_args() const;
     };
-    class ValueTemplateVar: public TemplateVar {
-      public:
-        inline ValueTemplateVar(std::string&& name, ast::Node* client_ast_node);
-    };
-    class TypeTemplateVar: public TemplateVar {
-      public:
-        inline TypeTemplateVar(std::string&& name, ast::Node* client_ast_node);
-    };
-    class ClassTemplateVar: public TemplateVar {
-      public:
-        inline ClassTemplateVar(std::string&& name, ast::Node* client_ast_node);
-    };
-
     inline TemplateVar::TemplateVar(std::string&& name, ast::Node* client_ast_node, VarKind var_kind)
     :   Var(std::move(name), client_ast_node, var_kind, SolvePhase2_Result::UpdatedOrFresh),
         m_formal_args()
     {}
-
     inline std::vector<TemplateFormalArg> const& TemplateVar::formal_args() const {
         return m_formal_args;
     }
-    inline ValueTemplateVar::ValueTemplateVar(std::string&& name, ast::Node* client_ast_node)
-    :   TemplateVar(std::move(name), client_ast_node, VarKind::ValueTemplate)
+    
+    class TemplateVar_RetValue: public TemplateVar {
+      public:
+        inline TemplateVar_RetValue(std::string&& name, ast::Node* client_ast_node);
+    };
+    inline TemplateVar_RetValue::TemplateVar_RetValue(std::string&& name, ast::Node* client_ast_node)
+    :   TemplateVar(std::move(name), client_ast_node, VarKind::Template_RetValue)
     {}
-    inline TypeTemplateVar::TypeTemplateVar(std::string&& name, ast::Node* client_ast_node)
-    :   TemplateVar(std::move(name), client_ast_node, VarKind::TypeTemplate)
+
+    class TemplateVar_RetType: public TemplateVar {
+      public:
+        inline TemplateVar_RetType(std::string&& name, ast::Node* client_ast_node);
+    };
+    inline TemplateVar_RetType::TemplateVar_RetType(std::string&& name, ast::Node* client_ast_node)
+    :   TemplateVar(std::move(name), client_ast_node, VarKind::Template_RetType)
     {}
-    inline ClassTemplateVar::ClassTemplateVar(std::string&& name, ast::Node* client_ast_node)
-    :   TemplateVar(std::move(name), client_ast_node, VarKind::ClassTemplate)
+    
+    class TemplateVar_ClassType: public TemplateVar {
+      public:
+        inline TemplateVar_ClassType(std::string&& name, ast::Node* client_ast_node);
+    };
+    inline TemplateVar_ClassType::TemplateVar_ClassType(std::string&& name, ast::Node* client_ast_node)
+    :   TemplateVar(std::move(name), client_ast_node, VarKind::Template_RetClass)
     {}
 
 }   // namespace pdm::typer

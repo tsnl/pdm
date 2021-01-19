@@ -14,9 +14,15 @@ mod Anything {
         }
     };
 
-    # Every TID is a type or typeclass
-    # (typeclasses are really useful with args)
-    IntLinkedList [T All] = {
+    # Every TID is a type or typeclass:
+    IntLinkedList  = {
+        x Int32,
+        next_index UInt32,
+        prev_index UInt32
+    };
+
+    # Any definition can also accept tpaterns:
+    LinkedList [T AnyType] = {
         x T,
         next_index UInt32,
         prev_index UInt32
@@ -26,7 +32,10 @@ mod Anything {
     # - the distinctive <...> arg indicates a typeclass
     # - typeclass bodies are special too: chain of type-queries.
     # implementing Elm's init/update/view MVC pattern
-    InteractiveAppInterface [Message Enum, Model All, RenderBill All] <V Struct> = {
+    InteractiveAppInterface 
+        [Message Enum, Model All, RenderBill All] 
+        <V Struct> = 
+    {
         V :< {
             init    Fn () -> Model,
             update  Fn (Model) -> Model,
@@ -35,7 +44,7 @@ mod Anything {
     };
     
     # And here's a C++-like example of subclassing with optional methods:
-    # Adding template args for modules would allow this cleanliness:
+    # Adding template args for modules would allow this sort of factorization:
     mod SkeletonApp [Message Enum, Model All, RenderBill All] {
         Interface <V Struct> = {
             opt_custom_init     Opt[Fn () -> Model],
@@ -52,7 +61,7 @@ mod Anything {
             name = name,
             model = match (interface.opt_custom_init) with {
                 Some (init_fn) then { init_fn() },
-                None ()        then {}
+                None ()        then { default[Model] }
             },
             epoch_frame_time_msec = 0
         };

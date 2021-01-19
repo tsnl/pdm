@@ -62,8 +62,8 @@ namespace pdm::ast {
     IntExp* Manager::new_int_exp(source::Loc loc, u64 value, IntExp::Base base) {
         return emplace<IntExp>(loc, value, base);
     }
-    LambdaExp* Manager::new_lambda_exp(source::Loc loc, VPattern* lhs_lpattern, Exp* body) {
-        return emplace<LambdaExp>(loc, lhs_lpattern, body);
+    LambdaExp* Manager::new_lambda_exp(source::Loc loc, VPattern* lhs_lpattern, Typespec* opt_ret_typespec, Exp* body) {
+        return emplace<LambdaExp>(loc, lhs_lpattern, opt_ret_typespec, body);
     }
     ParenExp* Manager::new_paren_exp(source::Loc loc, Exp* nested) {
         return emplace<ParenExp>(loc, nested);
@@ -118,8 +118,8 @@ namespace pdm::ast {
         return emplace<VPattern::Field>(loc, name, rhs_typespec, varg_kind);
     }
 
-    BuiltinTypeStmt* Manager::new_builtin_type_stmt(std::string&& desc) {
-        return emplace<BuiltinTypeStmt>(std::move(desc));
+    BuiltinStmt* Manager::new_builtin_stmt(std::string&& desc) {
+        return emplace<BuiltinStmt>(std::move(desc));
     }
     ConstStmt* Manager::new_const_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp) {
         return emplace<ConstStmt>(loc, lhs_lpattern, rhs_exp);
@@ -146,23 +146,38 @@ namespace pdm::ast {
     ExternStmt* Manager::new_extern_stmt(source::Loc loc, intern::String ext_mod_name, Exp* link_arg) {
         return emplace<ExternStmt>(loc, ext_mod_name, link_arg);
     }
-    ModStmt* Manager::new_mod_stmt(source::Loc loc, intern::String module_name, std::vector<Stmt*>&& defns) {
-        return emplace<ModStmt>(loc, module_name, std::move(defns));
+    ModStmt* Manager::new_mod_stmt(source::Loc loc, intern::String module_name, std::vector<TPattern*>&& args, std::vector<ModContentStmt*>&& defns) {
+        return emplace<ModStmt>(loc, module_name, std::move(args), std::move(defns));
     }
-    FnStmt* Manager::new_fn_stmt(source::Loc loc, intern::String name, std::vector<TPattern*>&& tpatterns, VPattern* vpattern, Typespec* opt_return_ts, Exp* body) {
-        return emplace<FnStmt>(loc, name, std::move(tpatterns), vpattern, opt_return_ts, body);
+    ModValStmt* Manager::new_internal_mod_val_stmt(
+        source::Loc loc,
+        intern::String name,
+        std::vector<TPattern*>&& tpatterns,
+        Exp* body
+    ) {
+        return emplace<ModValStmt>(loc, name, std::move(tpatterns), body);
     }
-    TypeStmt* Manager::new_type_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, Typespec* rhs_typespec) {
-        return emplace<TypeStmt>(loc, lhs_name, std::move(tpatterns), rhs_typespec);
+    ModValStmt* Manager::new_external_mod_val_stmt(
+        source::Loc loc,
+        intern::String name,
+        std::vector<TPattern*>&& tpatterns,
+        Typespec* ext_typespec,
+        intern::String ext_mod_name,
+        utf8::String ext_fn_name
+    ) {
+        return emplace<ModValStmt>(loc, name, std::move(tpatterns), ext_typespec, ext_mod_name, ext_fn_name);
     }
-    EnumStmt* Manager::new_enum_stmt(source::Loc loc, intern::String name, std::vector<TPattern*>&& tpatterns, std::vector<EnumStmt::Field*>&& fields) {
-        return emplace<EnumStmt>(loc, name, std::move(tpatterns), std::move(fields));
+    ModTypeStmt* Manager::new_mod_type_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, Typespec* rhs_typespec) {
+        return emplace<ModTypeStmt>(loc, lhs_name, std::move(tpatterns), rhs_typespec);
     }
-    TypeclassStmt* Manager::new_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, Typespec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions) {
-        return emplace<TypeclassStmt>(loc, lhs_name, candidate_name, candidate_typespec, std::move(tpatterns), std::move(conditions));
+    ModEnumStmt* Manager::new_mod_enum_stmt(source::Loc loc, intern::String name, std::vector<TPattern*>&& tpatterns, std::vector<ModEnumStmt::Field*>&& fields) {
+        return emplace<ModEnumStmt>(loc, name, std::move(tpatterns), std::move(fields));
     }
-    EnumStmt::Field* Manager::new_enum_stmt_field(source::Loc loc, intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs) {
-        return emplace<EnumStmt::Field>(loc, name, std::move(typespecs), has_explicit_typespecs);
+    ModTypeclassStmt* Manager::new_mod_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, Typespec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions) {
+        return emplace<ModTypeclassStmt>(loc, lhs_name, candidate_name, candidate_typespec, std::move(tpatterns), std::move(conditions));
+    }
+    ModEnumStmt::Field* Manager::new_enum_stmt_field(source::Loc loc, intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs) {
+        return emplace<ModEnumStmt::Field>(loc, name, std::move(typespecs), has_explicit_typespecs);
     }
     
     DotNameTypespec_ModPrefix* Manager::new_dot_name_typespec_with_mod_prefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name) {

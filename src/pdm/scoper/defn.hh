@@ -19,7 +19,6 @@ namespace pdm::scoper {
     enum class DefnKind {
         BuiltinType,
         Module, ImportModule,
-        Fn,
         Const,
         Val, Var,
         Type, Enum,

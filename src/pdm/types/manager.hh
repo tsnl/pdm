@@ -5,7 +5,7 @@
 #include <deque>
 
 #include "pdm/core/integer.hh"
-#include "pdm/ast/stmt/builtin_type.hh"
+#include "pdm/ast/stmt/builtin.hh"
 #include "pdm/printer/printer.hh"
 
 #include "var.hh"
@@ -43,9 +43,9 @@ namespace pdm::types {
         std::deque<MonotypeTypeVar>   m_all_monotype_tvs;
         std::deque<ProxyTypeVar>      m_all_proxy_tvs;
         std::deque<UnknownClassVar>   m_all_unknown_cvs;
-        std::deque<ValueTemplateVar>  m_all_value_template_vars;
-        std::deque<TypeTemplateVar>   m_all_type_template_vars;
-        std::deque<ClassTemplateVar>  m_all_class_template_vars;
+        std::deque<TemplateVar_RetValue>  m_all_value_template_vars;
+        std::deque<TemplateVar_RetType>   m_all_type_template_vars;
+        std::deque<TemplateVar_ClassType>  m_all_class_template_vars;
         std::vector<Relation*>        m_all_relations;
 
         VoidFixedTypeVar m_void_tv;
@@ -83,9 +83,9 @@ namespace pdm::types {
         TypeVar* new_proxy_tv(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
         ClassVar* new_unknown_cv(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
 
-        ValueTemplateVar* new_value_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
-        TypeTemplateVar*  new_type_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
-        ClassTemplateVar* new_class_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        TemplateVar_RetValue* new_value_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        TemplateVar_RetType*  new_type_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        TemplateVar_ClassType* new_class_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
 
       //
       // TVs:

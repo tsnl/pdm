@@ -51,13 +51,13 @@ namespace pdm::types {
             for (ClassVar const& cv: m_all_unknown_cvs) {
                 cv.print(p);
             }
-            for (ValueTemplateVar const& vtv: m_all_value_template_vars) {
+            for (TemplateVar_RetValue const& vtv: m_all_value_template_vars) {
                 vtv.print(p);
             }
-            for (TypeTemplateVar const& ttv: m_all_type_template_vars) {
+            for (TemplateVar_RetType const& ttv: m_all_type_template_vars) {
                 ttv.print(p);
             }
-            for (ClassTemplateVar const& ctv: m_all_class_template_vars) {
+            for (TemplateVar_ClassType const& ctv: m_all_class_template_vars) {
                 ctv.print(p);
             }
             
@@ -72,21 +72,21 @@ namespace pdm::types {
     }
     TypeVar* Manager::new_proxy_tv(std::string&& name, ast::Node* opt_client_ast_node) {
         m_all_proxy_tvs.emplace_back(std::move(name), opt_client_ast_node);
-        return &m_all_monotype_tvs.back();
+        return &m_all_proxy_tvs.back();
     }
     ClassVar* Manager::new_unknown_cv(std::string&& name, ast::Node* opt_client_ast_node) {
         m_all_unknown_cvs.emplace_back(std::move(name), opt_client_ast_node);
         return &m_all_unknown_cvs.back();
     }
-    ValueTemplateVar* Manager::new_value_template_var(std::string&& name, ast::Node* opt_client_ast_node) {
+    TemplateVar_RetValue* Manager::new_value_template_var(std::string&& name, ast::Node* opt_client_ast_node) {
         m_all_value_template_vars.emplace_back(std::move(name), opt_client_ast_node);
         return &m_all_value_template_vars.back();
     }
-    TypeTemplateVar* Manager::new_type_template_var(std::string&& name, ast::Node* opt_client_ast_node) {
+    TemplateVar_RetType* Manager::new_type_template_var(std::string&& name, ast::Node* opt_client_ast_node) {
         m_all_type_template_vars.emplace_back(std::move(name), opt_client_ast_node);
         return &m_all_type_template_vars.back();
     }
-    ClassTemplateVar* Manager::new_class_template_var(std::string&& name, ast::Node* opt_client_ast_node) {
+    TemplateVar_ClassType* Manager::new_class_template_var(std::string&& name, ast::Node* opt_client_ast_node) {
         m_all_class_template_vars.emplace_back(std::move(name), opt_client_ast_node);
         return &m_all_class_template_vars.back();
     }

@@ -7,6 +7,7 @@
 #include "pdm/ast/kind.hh"
 #include "pdm/core/intern.hh"
 #include "pdm/source/loc.hh"
+#include "mod_content.hh"
 
 namespace pdm::ast {   
     class Manager;
@@ -21,9 +22,14 @@ namespace pdm::types {
 
 namespace pdm::ast {
 
-    class FnStmt: public Stmt {
+    class ModValStmt: public ModContentStmt {
         friend Manager;
 
+      public:
+        enum class RhsKind {
+            Internal,
+            External
+        };
       private:
         struct ExpRhs {
             Exp* exp;
@@ -31,33 +37,43 @@ namespace pdm::ast {
         struct ExternRhs {
             intern::String ext_mod_name;
             utf8::String   ext_fn_name;
+            Typespec*      ext_typespec;
         };
 
       private:
         intern::String                  m_name;
         std::vector<TPattern*>          m_tpatterns;
-        VPattern*                       m_vpattern;
-        Typespec*                       m_return_ts;
         std::variant<ExpRhs, ExternRhs> m_rhs;
         types::Var*                     m_x_defn_var;
 
       protected:
-        FnStmt(source::Loc loc, intern::String name, std::vector<TPattern*> tpatterns, VPattern* vpattern, Typespec* opt_return_ts, Exp* rhs)
-        : Stmt(loc, Kind::FnStmt),
-          m_name(name),
-          m_tpatterns(std::move(tpatterns)),
-          m_vpattern(vpattern),
-          m_return_ts(opt_return_ts),
-          m_rhs(ExpRhs{rhs}) {}
+        ModValStmt(
+            source::Loc loc,
+            intern::String name,
+            std::vector<TPattern*> tpatterns,
+            Exp* rhs
+        )
+        :   ModContentStmt(loc, Kind::ModValStmt),
+            m_name(name),
+            m_tpatterns(std::move(tpatterns)),
+            m_rhs(ExpRhs{rhs}),
+            m_x_defn_var(nullptr)
+        {}
 
-        FnStmt(source::Loc loc, intern::String name, std::vector<TPattern*> tpatterns, VPattern* vpattern, Typespec* opt_return_ts, intern::String ext_mod_name, utf8::String ext_fn_name)
-        : Stmt(loc, Kind::FnStmt),
-          m_name(name),
-          m_tpatterns(std::move(tpatterns)),
-          m_vpattern(vpattern),
-          m_return_ts(opt_return_ts),
-          m_rhs(ExternRhs{ext_mod_name, ext_fn_name}),
-          m_x_defn_var(nullptr) {}
+        ModValStmt(
+            source::Loc loc,
+            intern::String name,
+            std::vector<TPattern*> tpatterns,
+            Typespec* ext_typespec,
+            intern::String ext_mod_name,
+            utf8::String ext_fn_name
+        )
+        :   ModContentStmt(loc, Kind::ModValStmt),
+            m_name(name),
+            m_tpatterns(std::move(tpatterns)),
+            m_rhs(ExternRhs{ext_mod_name, ext_fn_name, ext_typespec}),
+            m_x_defn_var(nullptr)
+        {}
 
       public:
         intern::String name() const {
@@ -66,22 +82,12 @@ namespace pdm::ast {
         std::vector<TPattern*> const& tpatterns() const {
             return m_tpatterns;
         }
-        VPattern* vpattern() const {
-            return m_vpattern;
-        }
-        Typespec* opt_return_ts() const {
-            return m_return_ts;
-        }
       public:
-        enum class RhsKind {
-            Exp,
-            Extern
-        };
         RhsKind rhs_kind() const {
             if (std::holds_alternative<ExpRhs>(m_rhs)) {
-                return RhsKind::Exp;
+                return RhsKind::Internal;
             } else {
-                return RhsKind::Extern;
+                return RhsKind::External;
             }
         }
         Exp* opt_rhs_exp() const {

@@ -79,7 +79,17 @@
             "unordered_map": "cpp",
             "utility": "cpp",
             "variant": "cpp",
-            "vector": "cpp"
+            "vector": "cpp",
+            "cinttypes": "cpp",
+            "condition_variable": "cpp",
+            "forward_list": "cpp",
+            "future": "cpp",
+            "iomanip": "cpp",
+            "queue": "cpp",
+            "shared_mutex": "cpp",
+            "stack": "cpp",
+            "thread": "cpp",
+            "unordered_set": "cpp"
         },
         "editor.detectIndentation": false
 	}

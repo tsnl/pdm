@@ -112,24 +112,24 @@ namespace pdm::printer {
                 print_mod_stmt(dynamic_cast<ast::ModStmt*>(node));
                 break;
             }
-            case ast::Kind::TypeclassStmt:
+            case ast::Kind::ModTypeclassStmt:
             {
-                print_typeclass_stmt(dynamic_cast<ast::TypeclassStmt*>(node));
+                print_mod_typeclass_stmt(dynamic_cast<ast::ModTypeclassStmt*>(node));
                 break;
             }
-            case ast::Kind::TypeStmt:
+            case ast::Kind::ModTypeStmt:
             {
-                print_type_stmt(dynamic_cast<ast::TypeStmt*>(node));
+                print_mod_type_stmt(dynamic_cast<ast::ModTypeStmt*>(node));
                 break;
             }
-            case ast::Kind::EnumStmt:
+            case ast::Kind::ModEnumStmt:
             {
-                print_enum_stmt(dynamic_cast<ast::EnumStmt*>(node));
+                print_mod_enum_stmt(dynamic_cast<ast::ModEnumStmt*>(node));
                 break;
             }
-            case ast::Kind::FnStmt:
+            case ast::Kind::ModValStmt:
             {
-                print_fn_stmt(dynamic_cast<ast::FnStmt*>(node));
+                print_mod_val_stmt(dynamic_cast<ast::ModValStmt*>(node));
                 break;
             }
             case ast::Kind::ConstStmt:
@@ -339,9 +339,9 @@ namespace pdm::printer {
             }
 
             // non-syntactic elements:
-            case ast::Kind::BuiltinTypeStmt:
+            case ast::Kind::BuiltinStmt:
             {
-                print_builtin_type_stmt(dynamic_cast<ast::BuiltinTypeStmt*>(node));
+                print_builtin_type_stmt(dynamic_cast<ast::BuiltinStmt*>(node));
                 break;
             }
 
@@ -372,21 +372,25 @@ namespace pdm::printer {
     void Printer::print_mod_stmt(ast::ModStmt* mod) {
         print_cstr("mod ");
         print_intstr(mod->module_name());
+        // todo: print targs
         print_u32_char(' ');
         help_print_chain(this, mod->defns(), nullptr);
     }
-    void Printer::print_typeclass_stmt(ast::TypeclassStmt* tcs) {
-        print_cstr("typeclass ");
+    void Printer::print_mod_typeclass_stmt(ast::ModTypeclassStmt* tcs) {
+        // print_cstr("typeclass ");
         print_intstr(tcs->typeclass_name());
+        
+        // todo: print targs
+        
         print_cstr(" <");
         print_intstr(tcs->candidate_name());
         print_cstr(" ");
         print_node(tcs->candidate_typespec());
         print_cstr("> ");
+        
         help_print_chain(this, tcs->conditions(), nullptr);
     }
-    void Printer::print_type_stmt(ast::TypeStmt* ts) {
-        print_cstr("type ");
+    void Printer::print_mod_type_stmt(ast::ModTypeStmt* ts) {
         print_intstr(ts->lhs_name());
 
         for (ast::TPattern* tpattern: ts->lhs_tpatterns()) {
@@ -396,13 +400,13 @@ namespace pdm::printer {
 
         switch (ts->rhs_kind())
         {
-            case ast::TypeStmt::RhsKind::Typespec:
+            case ast::ModTypeStmt::RhsKind::Typespec:
             {
                 print_str(" = ");
                 print_node(ts->opt_rhs_typespec());
                 break;
             }
-            case ast::TypeStmt::RhsKind::Extern:
+            case ast::ModTypeStmt::RhsKind::Extern:
             {
                 print_cstr(" from ");
                 print_intstr(ts->opt_rhs_ext_mod_name());
@@ -414,14 +418,16 @@ namespace pdm::printer {
             }
         }
     }
-    void Printer::print_enum_stmt(ast::EnumStmt* enm) {
-        print_cstr("enum ");
+    void Printer::print_mod_enum_stmt(ast::ModEnumStmt* enm) {
         print_intstr(enm->name());
+
+        // todo: print targs
+
         print_cstr(" = ");
 
         print_newline();
         {
-            for (ast::EnumStmt::Field* field: enm->fields()) {
+            for (ast::ModEnumStmt::Field* field: enm->fields()) {
                 print_cstr("| ");
                 print_intstr(field->name());
                 if (field->has_explicit_typespecs()) {
@@ -439,37 +445,29 @@ namespace pdm::printer {
             }
         }
     }
-    void Printer::print_fn_stmt(ast::FnStmt* fns) {
-        print_cstr("fn ");
-        print_intstr(fns->name());
+    void Printer::print_mod_val_stmt(ast::ModValStmt* mod_val_stmt) {
+        print_intstr(mod_val_stmt->name());
         print_u32_char(' ');
 
-        for (ast::TPattern* tpattern: fns->tpatterns()) {
+        for (ast::TPattern* tpattern: mod_val_stmt->tpatterns()) {
             print_node(tpattern);
             print_u32_char(' ');
         }
 
-        print_node(fns->vpattern());
-
-        if (fns->opt_return_ts()) {
-            print_cstr(" -> ");
-            print_node(fns->opt_return_ts());
-        }
-
-        switch (fns->rhs_kind()) {
-            case ast::FnStmt::RhsKind::Exp:
+        switch (mod_val_stmt->rhs_kind()) {
+            case ast::ModValStmt::RhsKind::Internal:
             {
-                print_cstr(" = ");
-                print_node(fns->opt_rhs_exp());
+                print_cstr("= ");
+                print_node(mod_val_stmt->opt_rhs_exp());
                 break;
             }
-            case ast::FnStmt::RhsKind::Extern:
+            case ast::ModValStmt::RhsKind::External:
             {
-                print_cstr(" from ");
-                print_intstr(fns->opt_rhs_ext_mod_name());
+                print_cstr("from ");
+                print_intstr(mod_val_stmt->opt_rhs_ext_mod_name());
                 print_u32_char(' ');
                 print_u32_char('"');
-                print_u8_str(fns->opt_rhs_ext_fn_name());
+                print_u8_str(mod_val_stmt->opt_rhs_ext_fn_name());
                 print_u32_char('"');
             }
         }
@@ -692,9 +690,14 @@ namespace pdm::printer {
         }
     }
     void Printer::print_lambda_exp(ast::LambdaExp* node) {
-        print_cstr("lambda ");
+        print_cstr("fn ");
         print_node(node->lhs_vpattern());
-        print_cstr(" = ");
+        print_cstr(" ");
+        if (node->opt_ret_typespec() != nullptr) {
+            print_cstr("-> ");
+            print_node(node->opt_ret_typespec());
+            print_cstr(" ");
+        }
         print_node(node->rhs_body());
     }
     void Printer::print_if_exp(ast::IfExp* node) {
@@ -1061,7 +1064,7 @@ namespace pdm::printer {
     }
 
     // non-syntactic elements:
-    void Printer::print_builtin_type_stmt(ast::BuiltinTypeStmt* node) {
+    void Printer::print_builtin_type_stmt(ast::BuiltinStmt* node) {
         print_cstr("[builtin-type ");
         print_u32_char('"');
         print_str(node->desc());

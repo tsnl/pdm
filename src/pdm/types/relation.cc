@@ -70,12 +70,13 @@ namespace pdm::types {
     bool DotNameRelation::on_assume_impl(types::Manager* manager) {
         Invariant* the_invariant = nullptr;
         
-        // todo: create appropriate relations here.
+        // todo: create appropriate invariants here.
         switch (m_dot_name_relation_kind)
         {
             case DotNameRelationKind::ModuleValueField:
             {
                 // the_invariant = new ModuleWithValueFieldInvariant(this, VarKind::Type, m_rhs_name, m_eval_type);
+                // the_invariant = new IsModuleInvariant(this, VarKind::Type, )
                 break;
             }
             case DotNameRelationKind::ModuleTypeField:
@@ -101,20 +102,19 @@ namespace pdm::types {
     bool DotIndexRelation::on_assume_impl(types::Manager* manager) {
         Invariant* the_invariant = nullptr;
         // todo: require LHS is an array or a tuple.
-        
         // todo: require index is an int.
         return false;
     }
 
-    bool FnRelation::on_assume_impl(types::Manager* manager) {
+    bool VCallableRelation::on_assume_impl(types::Manager* manager) {
         // todo: implement me!
         return true;
     }
-    bool FormalFnRelation::on_assume_impl(types::Manager* manager) {
+    bool FormalVCallableRelation::on_assume_impl(types::Manager* manager) {
         // todo: implement me!
         return true;
     }
-    bool ActualFnRelation::on_assume_impl(types::Manager* manager) {
+    bool ActualVCallableRelation::on_assume_impl(types::Manager* manager) {
         // todo: implement me!
         return true;
     }

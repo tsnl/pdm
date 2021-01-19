@@ -140,13 +140,13 @@ namespace pdm::types {
                     }
                 }
             }
-            case VarKind::ValueTemplate:
-            case VarKind::TypeTemplate:
+            case VarKind::Template_RetValue:
+            case VarKind::Template_RetType:
             {
                 return help_check_phase1_type_bitset_for_mixed_kinds();
             }
             case VarKind::Class:
-            case VarKind::ClassTemplate:
+            case VarKind::Template_RetClass:
             {
                 // mixed-kind ok, since disjoint sets ok
                 return SolvePhase1_Result::Ok;
@@ -320,17 +320,17 @@ namespace pdm::types {
                 p.print_cstr("Class");
                 break;
             }
-            case VarKind::ValueTemplate:
+            case VarKind::Template_RetValue:
             {
                 p.print_cstr("ValueTemplate");
                 break;
             }
-            case VarKind::TypeTemplate:
+            case VarKind::Template_RetType:
             {
                 p.print_cstr("TypeTemplate");
                 break;
             }
-            case VarKind::ClassTemplate:
+            case VarKind::Template_RetClass:
             {
                 p.print_cstr("ClassTemplate");
                 break;
@@ -441,85 +441,85 @@ namespace pdm::types {
     VoidFixedTypeVar::VoidFixedTypeVar()
     :   FixedTypeVar(std::move(std::string("Void")), VoidType::get()) 
     { 
-        assume_invariant_holds__override_fixed_to_init(new VoidInvariant(nullptr, VarKind::Type)); 
+        assume_invariant_holds__override_fixed_to_init(new IsVoidInvariant(nullptr, VarKind::Type)); 
     }
     StringFixedTypeVar::StringFixedTypeVar()
     :   FixedTypeVar(std::move(std::string("String")), StringType::get())
     {
-        assume_invariant_holds__override_fixed_to_init(new StringInvariant(nullptr, VarKind::Type));
+        assume_invariant_holds__override_fixed_to_init(new IsStringInvariant(nullptr, VarKind::Type));
     }
     
     Int8FixedTypeVar::Int8FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("Int8")), IntType::get_i8())
     {
-        assume_invariant_holds__override_fixed_to_init(new IntInvariant(nullptr, VarKind::Type, 8, 8, true));
+        assume_invariant_holds__override_fixed_to_init(new IsIntInvariant(nullptr, VarKind::Type, 8, 8, true));
     }
     Int16FixedTypeVar::Int16FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("Int16")), IntType::get_i16())
     {
-        assume_invariant_holds__override_fixed_to_init(new IntInvariant(nullptr, VarKind::Type, 16, 16, true));
+        assume_invariant_holds__override_fixed_to_init(new IsIntInvariant(nullptr, VarKind::Type, 16, 16, true));
     }
     Int32FixedTypeVar::Int32FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("Int32")), IntType::get_i32())
     {
-        assume_invariant_holds__override_fixed_to_init(new IntInvariant(nullptr, VarKind::Type, 32, 32, true));
+        assume_invariant_holds__override_fixed_to_init(new IsIntInvariant(nullptr, VarKind::Type, 32, 32, true));
     }
     Int64FixedTypeVar::Int64FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("Int64")), IntType::get_i64())
     {
-        assume_invariant_holds__override_fixed_to_init(new IntInvariant(nullptr, VarKind::Type, 64, 64, true));
+        assume_invariant_holds__override_fixed_to_init(new IsIntInvariant(nullptr, VarKind::Type, 64, 64, true));
     }
     Int128FixedTypeVar::Int128FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("Int128")), IntType::get_i128())
     {
-        assume_invariant_holds__override_fixed_to_init(new IntInvariant(nullptr, VarKind::Type, 128, 128, true));
+        assume_invariant_holds__override_fixed_to_init(new IsIntInvariant(nullptr, VarKind::Type, 128, 128, true));
     }
 
     UInt1FixedTypeVar::UInt1FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("UInt1")), IntType::get_u8())
     {
-        assume_invariant_holds__override_fixed_to_init(new IntInvariant(nullptr, VarKind::Type, 1, 1, false));
+        assume_invariant_holds__override_fixed_to_init(new IsIntInvariant(nullptr, VarKind::Type, 1, 1, false));
     }
     UInt8FixedTypeVar::UInt8FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("UInt8")), IntType::get_u8())
     {
-        assume_invariant_holds__override_fixed_to_init(new IntInvariant(nullptr, VarKind::Type, 8, 8, false));
+        assume_invariant_holds__override_fixed_to_init(new IsIntInvariant(nullptr, VarKind::Type, 8, 8, false));
     }
     UInt16FixedTypeVar::UInt16FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("UInt16")), IntType::get_u16())
     {
-        assume_invariant_holds__override_fixed_to_init(new IntInvariant(nullptr, VarKind::Type, 16, 16, false));
+        assume_invariant_holds__override_fixed_to_init(new IsIntInvariant(nullptr, VarKind::Type, 16, 16, false));
     }
     UInt32FixedTypeVar::UInt32FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("UInt32")), IntType::get_u32())
     {
-        assume_invariant_holds__override_fixed_to_init(new IntInvariant(nullptr, VarKind::Type, 32, 32, false));
+        assume_invariant_holds__override_fixed_to_init(new IsIntInvariant(nullptr, VarKind::Type, 32, 32, false));
     }
     UInt64FixedTypeVar::UInt64FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("UInt64")), IntType::get_u64())
     {
-        assume_invariant_holds__override_fixed_to_init(new IntInvariant(nullptr, VarKind::Type, 64, 64, false));
+        assume_invariant_holds__override_fixed_to_init(new IsIntInvariant(nullptr, VarKind::Type, 64, 64, false));
     }
     UInt128FixedTypeVar::UInt128FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("UInt128")), IntType::get_u128())
     {
-        assume_invariant_holds__override_fixed_to_init(new IntInvariant(nullptr, VarKind::Type, 128, 128, false));
+        assume_invariant_holds__override_fixed_to_init(new IsIntInvariant(nullptr, VarKind::Type, 128, 128, false));
     }
 
     Float16FixedTypeVar::Float16FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("Float16")), FloatType::get_f16())
     {
-        assume_invariant_holds__override_fixed_to_init(new FloatInvariant(nullptr, VarKind::Type, 16, 16));
+        assume_invariant_holds__override_fixed_to_init(new IsFloatInvariant(nullptr, VarKind::Type, 16, 16));
     }
     Float32FixedTypeVar::Float32FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("Float32")), FloatType::get_f32())
     {
-        assume_invariant_holds__override_fixed_to_init(new FloatInvariant(nullptr, VarKind::Type, 32, 32));
+        assume_invariant_holds__override_fixed_to_init(new IsFloatInvariant(nullptr, VarKind::Type, 32, 32));
     }
     Float64FixedTypeVar::Float64FixedTypeVar()
     :   FixedTypeVar(std::move(std::string("Float64")), FloatType::get_f32())
     {
-        assume_invariant_holds__override_fixed_to_init(new FloatInvariant(nullptr, VarKind::Type, 64, 64));
+        assume_invariant_holds__override_fixed_to_init(new IsFloatInvariant(nullptr, VarKind::Type, 64, 64));
     }
     
     //

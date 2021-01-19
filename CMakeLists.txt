@@ -104,20 +104,20 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/script/script.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/stmt.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/builtin_type.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/builtin_type.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/builtin.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/builtin.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/const.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/discard.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/enum.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/extern.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/fn.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/import.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/import.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/set.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/type.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/typeclass.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod_val.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod_enum.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod_type.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod_typeclass.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/using.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/val.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/var.hh

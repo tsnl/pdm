@@ -13,7 +13,7 @@
 # any linked declarations must be declared in (and thus parsed from) headers; thus, headers are the only
 # non-optional field for type "c".
 # see https://shaharmike.com/cpp/libclang/ for how to parse C/C++ headers and source with libclang.
-extern csdl from {
+extern CSDL from {
     lang: "c",
     headers: [
         "./include/SDL.h"
@@ -34,9 +34,9 @@ extern csdl from {
 # language-based bindings can then be provided by linking against this external module.
 # note that templates can be used, and that multiple symbols can link against the same definition using
 # type translation (T const* -> T, T const -> T, etc...)
-mod sdl {
-    fn init(flags I32) -> I32
-    from csdl "SDL_Init";
+mod SDL {
+    init Fn (flags I32) -> I32
+    from CSDL "SDL_Init";
 
     type Event from csdl "SDL_Event";
 };

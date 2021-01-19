@@ -7,41 +7,41 @@
 #include "pdm/source/loc.hh"
 #include "pdm/ast/stmt/stmt.hh"
 
+#include "mod_content.hh"
+
 namespace pdm::scoper {
     class Frame;
 }
 namespace pdm::types {
     class TypeVar;
 }
+namespace pdm::ast {
+    class Manager;
+    class TPattern;
+}
 
 namespace pdm::ast {
 
-    class Manager;
-
-    class ModStmt: public Stmt {
+    class ModStmt: public ModContentStmt {
         friend Manager;
 
       private:
-        intern::String     m_module_name;
-        std::vector<Stmt*> m_defns;
+        intern::String               m_module_name;
+        std::vector<TPattern*>       m_module_tpatterns;
+        std::vector<ModContentStmt*> m_defns;
 
       private:
         scoper::Frame*  m_x_module_frame;
         types::TypeVar* m_x_module_tv;
 
       public:
-        ModStmt(source::Loc loc, intern::String module_name, std::vector<Stmt*>&& defns)
-        : Stmt(loc, Kind::ModStmt),
-          m_module_name(module_name),
-          m_defns(defns),
-          m_x_module_frame(nullptr),
-          m_x_module_tv(nullptr) {}
+        ModStmt(source::Loc loc, intern::String module_name, std::vector<TPattern*> module_tpatterns, std::vector<ModContentStmt*>&& defns);
       
       public:
         intern::String module_name() const {
             return m_module_name;
         }
-        std::vector<Stmt*> const& defns() const {
+        std::vector<ModContentStmt*> const& defns() const {
             return m_defns;
         }
 
@@ -61,6 +61,18 @@ namespace pdm::ast {
             m_x_module_tv = module_tv;
         }
     };
+
+    inline ModStmt::ModStmt(source::Loc loc, intern::String module_name, std::vector<TPattern*> module_tpatterns, std::vector<ModContentStmt*>&& defns)
+    :   ModContentStmt(loc, Kind::ModStmt),
+        m_module_name(module_name),
+        m_defns(defns),
+        m_x_module_frame(nullptr),
+        m_x_module_tv(nullptr) 
+    {
+        for (ModContentStmt* child_stmt: defns) {
+            child_stmt->opt_parent_mod_stmt(this);
+        }
+    }
 
 }
 

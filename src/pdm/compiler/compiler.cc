@@ -61,9 +61,9 @@ namespace pdm {
         }
     }
 
-    ast::BuiltinTypeStmt* Compiler::help_define_builtin_type(scoper::Scoper& scoper, intern::String name, types::Var* typer_var) {
+    ast::BuiltinStmt* Compiler::help_define_builtin_type(scoper::Scoper& scoper, intern::String name, types::Var* typer_var) {
         std::string debug_name = std::string("RootType:") + std::string(name.content());
-        ast::BuiltinTypeStmt* stmt = m_ast_mgr.new_builtin_type_stmt(std::move(debug_name));
+        ast::BuiltinStmt* stmt = m_ast_mgr.new_builtin_stmt(std::move(debug_name));
         scoper::Defn defn {scoper::DefnKind::BuiltinType, name, stmt, typer_var};
         assert(scoper.root_frame()->define(defn) && "Bad builtins setup.");
         return stmt;

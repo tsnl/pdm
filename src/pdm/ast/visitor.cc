@@ -68,35 +68,31 @@ namespace pdm::ast {
                 ok = visit(set_stmt->rhs_exp()) && ok;
                 break;
             }
-            case Kind::FnStmt:
+            case Kind::ModValStmt:
             {
-                FnStmt* fn_stmt = dynamic_cast<FnStmt*>(node);
-                for (TPattern* tpattern: fn_stmt->tpatterns()) {
+                ModValStmt* mod_val_stmt = dynamic_cast<ModValStmt*>(node);
+                for (TPattern* tpattern: mod_val_stmt->tpatterns()) {
                     ok = visit(tpattern) && ok;
                 }
-                ok = visit(fn_stmt->vpattern()) && ok;
-                if (fn_stmt->opt_return_ts()) {
-                    ok = visit(fn_stmt->opt_return_ts()) && ok;
-                }
-                if (fn_stmt->opt_rhs_exp()) {
-                    ok = visit(fn_stmt->opt_rhs_exp()) && ok;
+                if (mod_val_stmt->opt_rhs_exp()) {
+                    ok = visit(mod_val_stmt->opt_rhs_exp()) && ok;
                 }
                 break;
             }
-            case Kind::TypeStmt:
+            case Kind::ModTypeStmt:
             {
-                TypeStmt* type_stmt = dynamic_cast<TypeStmt*>(node);
+                ModTypeStmt* type_stmt = dynamic_cast<ModTypeStmt*>(node);
                 ok = visit(type_stmt->opt_rhs_typespec()) && ok;
                 break;
             }
-            case Kind::EnumStmt:
+            case Kind::ModEnumStmt:
             {
                 // notably, enum doesn't need any visits; all fields should be processed in this node's pre or post visit handler.
                 break;
             }
-            case Kind::TypeclassStmt:
+            case Kind::ModTypeclassStmt:
             {
-                TypeclassStmt* typeclass_stmt = dynamic_cast<TypeclassStmt*>(node);
+                ModTypeclassStmt* typeclass_stmt = dynamic_cast<ModTypeclassStmt*>(node);
                 
                 ok = visit(typeclass_stmt->candidate_typespec()) && ok;
                 for (TPattern* tpattern: typeclass_stmt->tpatterns()) {
@@ -365,7 +361,7 @@ namespace pdm::ast {
             // (never parsed, only compiler-created)
             //
 
-            case Kind::BuiltinTypeStmt:
+            case Kind::BuiltinStmt:
             {
                 break;
             }
@@ -423,21 +419,21 @@ namespace pdm::ast {
             {
                 return on_visit__set_stmt(dynamic_cast<SetStmt*>(node), visit_order);
             }
-            case Kind::FnStmt:
+            case Kind::ModValStmt:
             {
-                return on_visit__fn_stmt(dynamic_cast<FnStmt*>(node), visit_order);
+                return on_visit__mod_val_stmt(dynamic_cast<ModValStmt*>(node), visit_order);
             }
-            case Kind::TypeStmt:
+            case Kind::ModTypeStmt:
             {
-                return on_visit__type_stmt(dynamic_cast<TypeStmt*>(node), visit_order);
+                return on_visit__mod_type_stmt(dynamic_cast<ModTypeStmt*>(node), visit_order);
             }
-            case Kind::EnumStmt:
+            case Kind::ModEnumStmt:
             {
-                return on_visit__enum_stmt(dynamic_cast<EnumStmt*>(node), visit_order);
+                return on_visit__mod_enum_stmt(dynamic_cast<ModEnumStmt*>(node), visit_order);
             }
-            case Kind::TypeclassStmt:
+            case Kind::ModTypeclassStmt:
             {
-                return on_visit__typeclass_stmt(dynamic_cast<TypeclassStmt*>(node), visit_order);
+                return on_visit__mod_typeclass_stmt(dynamic_cast<ModTypeclassStmt*>(node), visit_order);
             }
             case Kind::ModStmt:
             {
@@ -597,9 +593,9 @@ namespace pdm::ast {
             }
 
             // non-syntactic elements:
-            case Kind::BuiltinTypeStmt:
+            case Kind::BuiltinStmt:
             {
-                return on_visit__builtin_type_stmt(dynamic_cast<BuiltinTypeStmt*>(node), visit_order);
+                return on_visit__builtin_type_stmt(dynamic_cast<BuiltinStmt*>(node), visit_order);
             }
 
             // meta elements:

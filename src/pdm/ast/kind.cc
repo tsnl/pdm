@@ -4,7 +4,7 @@ namespace pdm::ast {
     static char kind_as_cstr_table[][(int)Kind::__Count] = {
         "Script",
         
-        "BuiltinTypeStmt",
+        "BuiltinStmt",
         "DiscardStmt",
         "ConstStmt",
         "LetStmt",

@@ -52,14 +52,11 @@ namespace pdm::types {
         std::string const& name() const;
         Var* opt_supermost_arg_var() const;
         void supermost_arg(Var* supermost_arg);
-
-      public:
-        virtual bool implies(Invariant const& other) = 0;
     };
     inline Invariant::Invariant(Relation* parent_relation, VarKind domain_var_kind, std::string name)
     :   m_parent_relation(parent_relation),
         m_domain_var_kind(domain_var_kind),
-        m_name(name),
+        m_name(std::move(name)),
         m_supermost_arg_var(nullptr)
     {}
     inline Relation* Invariant::parent_relation() const {
@@ -103,9 +100,6 @@ namespace pdm::types {
       public:
         pdm::u64 allowed_type_kinds_bitset() const;
         bool type_kind_allowed(TypeKind type_kind) const;
-
-      public:
-        virtual bool implies(Invariant const& other) override;
     };
 
     inline KindInvariant::KindInvariant(Relation* parent_relation, VarKind domain_var_kind, pdm::u64 allowed_kinds_bitset)
@@ -128,9 +122,6 @@ namespace pdm::types {
 
       public:
         TypeVar* supertype_tv() const;
-
-      public:
-        virtual bool implies(Invariant const& other) override;
     };
 
     inline SubtypeOfInvariant::SubtypeOfInvariant(Relation* parent_relation, TypeVar* supertype_tv)
@@ -150,9 +141,6 @@ namespace pdm::types {
 
       public:
         ClassVar* superclass_cv() const;
-
-      public:
-        virtual bool implies(Invariant const& other) override;
     };
 
     inline SubclassOfInvariant::SubclassOfInvariant(Relation* parent_relation, ClassVar* superclass_cv)
@@ -172,9 +160,6 @@ namespace pdm::types {
 
       public:
         TypeVar* member_tv() const;
-
-      public:
-        virtual bool implies(Invariant const& other) override;
     };
     inline ClassOfInvariant::ClassOfInvariant(Relation* parent_relation, TypeVar* member_tv)
     :   CommonInvariant(parent_relation, VarKind::Class, "ClassOfInvariant"),
@@ -207,48 +192,39 @@ namespace pdm::types {
     }
 
     // void:
-    class VoidInvariant: public KindDependentInvariant {
+    class IsVoidInvariant: public KindDependentInvariant {
       public:
-        VoidInvariant(Relation* parent_relation, VarKind domain_var_kind);
-
-      public:
-        virtual bool implies(Invariant const& other) override;
+        IsVoidInvariant(Relation* parent_relation, VarKind domain_var_kind);
     };
-    inline VoidInvariant::VoidInvariant(Relation* parent_relation, VarKind domain_var_kind)
+    inline IsVoidInvariant::IsVoidInvariant(Relation* parent_relation, VarKind domain_var_kind)
     :   KindDependentInvariant(parent_relation, domain_var_kind, TypeKind::Void, "IsVoid")
     {}
 
     // string:
-    class StringInvariant: public KindDependentInvariant {
+    class IsStringInvariant: public KindDependentInvariant {
       public:
-        StringInvariant(Relation* parent_relation, VarKind domain_var_kind);
-
-      public:
-        virtual bool implies(Invariant const& other) override;
+        IsStringInvariant(Relation* parent_relation, VarKind domain_var_kind);
     };
-    inline StringInvariant::StringInvariant(Relation* parent_relation, VarKind domain_var_kind)
+    inline IsStringInvariant::IsStringInvariant(Relation* parent_relation, VarKind domain_var_kind)
     :   KindDependentInvariant(parent_relation, domain_var_kind, TypeKind::String, "IsString")
     {}
 
     // int:
-    class IntInvariant: public KindDependentInvariant {
+    class IsIntInvariant: public KindDependentInvariant {
       private:
         int m_min_width_in_bits;
         int m_max_width_in_bits;
         bool m_uses_sign_extension;
 
       public:
-        IntInvariant(Relation* parent_relation, VarKind domain_var_kind, int opt_min_width_in_bits, int opt_max_width_in_bits, bool uses_sign_extension);
+        IsIntInvariant(Relation* parent_relation, VarKind domain_var_kind, int opt_min_width_in_bits, int opt_max_width_in_bits, bool uses_sign_extension);
 
       public:
         inline bool uses_sign_extension() const;
         inline int min_width_in_bits() const;
         inline int max_width_in_bits() const;
-
-      public:
-        virtual bool implies(Invariant const& other) override;
     };
-    inline IntInvariant::IntInvariant(Relation* parent_relation, VarKind domain_var_kind, int min_width_in_bits, int max_width_in_bits, bool uses_sign_extension)
+    inline IsIntInvariant::IsIntInvariant(Relation* parent_relation, VarKind domain_var_kind, int min_width_in_bits, int max_width_in_bits, bool uses_sign_extension)
     :   KindDependentInvariant(
             parent_relation, domain_var_kind, 
             (uses_sign_extension ? TypeKind::SignedInt : TypeKind::UnsignedInt), 
@@ -262,33 +238,30 @@ namespace pdm::types {
         m_max_width_in_bits(max_width_in_bits),
         m_uses_sign_extension(uses_sign_extension)
     {}
-    inline bool IntInvariant::uses_sign_extension() const {
+    inline bool IsIntInvariant::uses_sign_extension() const {
         return m_uses_sign_extension;
     }
-    inline int IntInvariant::min_width_in_bits() const {
+    inline int IsIntInvariant::min_width_in_bits() const {
         return m_min_width_in_bits;
     }
-    inline int IntInvariant::max_width_in_bits() const {
+    inline int IsIntInvariant::max_width_in_bits() const {
         return m_max_width_in_bits;
     }
 
     // float:
-    class FloatInvariant: public KindDependentInvariant {
+    class IsFloatInvariant: public KindDependentInvariant {
       private:
         int m_min_width_in_bits;
         int m_max_width_in_bits;
 
       public:
-        FloatInvariant(Relation* parent_relation, VarKind domain_var_kind, int opt_min_width_in_bits, int opt_max_width_in_bits);
+        IsFloatInvariant(Relation* parent_relation, VarKind domain_var_kind, int opt_min_width_in_bits, int opt_max_width_in_bits);
 
       public:
         inline int min_width_in_bits() const;
         inline int max_width_in_bits() const;
-
-      public:
-        virtual bool implies(Invariant const& other) override;
     };
-    inline FloatInvariant::FloatInvariant(Relation* parent_relation, VarKind domain_var_kind, int opt_min_width_in_bits, int opt_max_width_in_bits)
+    inline IsFloatInvariant::IsFloatInvariant(Relation* parent_relation, VarKind domain_var_kind, int opt_min_width_in_bits, int opt_max_width_in_bits)
     :   KindDependentInvariant(
             parent_relation, domain_var_kind, TypeKind::Float, 
             "IsFloat[" + 
@@ -298,133 +271,132 @@ namespace pdm::types {
         m_min_width_in_bits(opt_min_width_in_bits),
         m_max_width_in_bits(opt_max_width_in_bits)
     {}
-    inline int FloatInvariant::min_width_in_bits() const {
+    inline int IsFloatInvariant::min_width_in_bits() const {
         return m_min_width_in_bits;
     }
-    inline int FloatInvariant::max_width_in_bits() const {
+    inline int IsFloatInvariant::max_width_in_bits() const {
         return m_max_width_in_bits;
     }
     
     // tuple:
-    class TupleInvariant: public KindDependentInvariant {
+    class IsTupleInvariant: public KindDependentInvariant {
       private:
         std::vector<TypeVar*> m_typeof_items_tvs;
 
       public:
-        inline TupleInvariant(Relation* parent_relation, VarKind domain_var_kind, std::vector<TypeVar*>&& typeof_items_tvs);
+        inline IsTupleInvariant(Relation* parent_relation, VarKind domain_var_kind, std::vector<TypeVar*>&& typeof_items_tvs);
 
       public:
         inline std::vector<TypeVar*> const& typeof_items_tvs() const;
-        
-      public:
-        virtual bool implies(Invariant const& other) override;
     };
-    inline TupleInvariant::TupleInvariant(Relation* parent_relation, VarKind domain_var_kind, std::vector<TypeVar*>&& typeof_items_tvs)
+    inline IsTupleInvariant::IsTupleInvariant(Relation* parent_relation, VarKind domain_var_kind, std::vector<TypeVar*>&& typeof_items_tvs)
     :   KindDependentInvariant(parent_relation, domain_var_kind, TypeKind::Tuple, "IsTuple"),
         m_typeof_items_tvs(std::move(typeof_items_tvs))
     {}
-    inline std::vector<TypeVar*> const& TupleInvariant::typeof_items_tvs() const {
+    inline std::vector<TypeVar*> const& IsTupleInvariant::typeof_items_tvs() const {
         return m_typeof_items_tvs;
     }
     
     // struct, enum, module:
-    class FieldCollectionInvariant: public KindDependentInvariant {
+    class IsFieldCollectionInvariant: public KindDependentInvariant {
       private:
         std::map<intern::String, Var*> m_fields;
 
       public:
-        FieldCollectionInvariant(Relation* parent_relation, VarKind domain_var_kind, TypeKind required_type_kind, std::string name);
+        IsFieldCollectionInvariant(Relation* parent_relation, VarKind domain_var_kind, TypeKind required_type_kind, std::string name, std::map<intern::String, Var*>&& fields);
   
       public:
         inline std::map<intern::String, Var*> const& fields() const;
-
-      // todo: implement amend_field as a get_cached/create func
-
-      public:
-        virtual bool implies(Invariant const& other) override;
     };
-    inline std::map<intern::String, Var*> const& FieldCollectionInvariant::fields() const {
+    inline std::map<intern::String, Var*> const& IsFieldCollectionInvariant::fields() const {
         return m_fields;
     }
 
-    class StructInvariant: public FieldCollectionInvariant {
+    class IsStructInvariant: public IsFieldCollectionInvariant {
       public:
-        StructInvariant(Relation* parent_relation, VarKind domain_var_kind, std::string opt_name_suffix = "");
+        IsStructInvariant(Relation* parent_relation, VarKind domain_var_kind, std::string opt_name_suffix = "");
     };
-    class EnumInvariant: public FieldCollectionInvariant {
+    class IsEnumInvariant: public IsFieldCollectionInvariant {
       public:
-        EnumInvariant(Relation* parent_relation, VarKind domain_var_kind, std::string opt_name_suffix = "");
+        IsEnumInvariant(Relation* parent_relation, VarKind domain_var_kind, std::string opt_name_suffix = "");
     };
-    class ModuleInvariant: public FieldCollectionInvariant {
+    class IsModuleInvariant: public IsFieldCollectionInvariant {
       public:
-        ModuleInvariant(Relation* parent_relation, VarKind domain_var_kind);
+        IsModuleInvariant(Relation* parent_relation, VarKind domain_var_kind);
     };
     
     // array
-    class ArrayInvariant: public KindDependentInvariant {
+    class IsArrayInvariant: public KindDependentInvariant {
       private:
         TypeVar* m_item_tv;
 
       public:
-        ArrayInvariant(Relation* parent_relation, VarKind domain_var_kind, TypeVar* item_tv);
+        IsArrayInvariant(Relation* parent_relation, VarKind domain_var_kind, TypeVar* item_tv);
 
       public:
         inline TypeVar* item_tv() const;
-
-      public:
-        virtual bool implies(Invariant const& other) override;
     };
-    inline ArrayInvariant::ArrayInvariant(Relation* parent_relation, VarKind domain_var_kind, TypeVar* field_tv)
+    inline IsArrayInvariant::IsArrayInvariant(Relation* parent_relation, VarKind domain_var_kind, TypeVar* field_tv)
     :   KindDependentInvariant(parent_relation, domain_var_kind, TypeKind::Tuple, "Array")
     {}
-    inline TypeVar* ArrayInvariant::item_tv() const {
+    inline TypeVar* IsArrayInvariant::item_tv() const {
         return m_item_tv;
     }
     
-    // func
-    struct FnInvariant_FnArg {
+    // func/vcall:
+    struct VCallArg {
         ast::VArgAccessSpec varg_access_spec; 
         TypeVar*            typeof_arg_tv;
 
       public:
-        bool operator== (FnInvariant_FnArg const& other) const = default;
+        bool operator== (VCallArg const& other) const = default;
     };
-    enum class FnInvariant_Strength {
+    enum class VCallInvariantStrength {
         Formal,
         Actual
     };
-    class FnInvariant: public KindDependentInvariant {
+    class IsVCallableInvariant: public KindDependentInvariant {
       private:
-        FnInvariant_Strength m_strength;
-        std::vector<FnInvariant_FnArg>&& m_formal_args;
+        VCallInvariantStrength m_strength;
+        std::vector<VCallArg>&& m_formal_args;
         TypeVar* m_typeof_ret_tv;
 
       public:
-        FnInvariant(FnInvariant_Strength strength, Relation* parent_relation, VarKind domain_var_kind, std::vector<FnInvariant_FnArg>&& formal_args_tvs, TypeVar* ret_tv);
+        IsVCallableInvariant(
+            VCallInvariantStrength strength,
+            Relation* parent_relation,
+            VarKind domain_var_kind,
+            std::vector<VCallArg>&& formal_args_tvs,
+            TypeVar* ret_tv
+        );
 
       public:
-        FnInvariant_Strength strength() const;
-        std::vector<FnInvariant_FnArg> const& formal_args() const;
+        VCallInvariantStrength strength() const;
+        std::vector<VCallArg> const& formal_args() const;
         TypeVar* typeof_ret_tv() const;
-
-      public:
-        virtual bool implies(Invariant const& other) override;
     };
-    inline FnInvariant::FnInvariant(FnInvariant_Strength strength, Relation* parent_relation, VarKind domain_var_kind, std::vector<FnInvariant_FnArg>&& formal_args, TypeVar* typeof_ret_tv)
+    inline IsVCallableInvariant::IsVCallableInvariant(VCallInvariantStrength strength, Relation* parent_relation, VarKind domain_var_kind, std::vector<VCallArg>&& formal_args, TypeVar* typeof_ret_tv)
     :   KindDependentInvariant(parent_relation, domain_var_kind, TypeKind::Fn, "Fn"),
         m_strength(strength),
         m_formal_args(std::move(formal_args)),
         m_typeof_ret_tv(typeof_ret_tv)
     {}
-    inline FnInvariant_Strength FnInvariant::strength() const {
+    inline VCallInvariantStrength IsVCallableInvariant::strength() const {
         return m_strength;
     }
-    inline std::vector<FnInvariant_FnArg> const& FnInvariant::formal_args() const {
+    inline std::vector<VCallArg> const& IsVCallableInvariant::formal_args() const {
         return m_formal_args;
     }
-    inline TypeVar* FnInvariant::typeof_ret_tv() const {
+    inline TypeVar* IsVCallableInvariant::typeof_ret_tv() const {
         return m_typeof_ret_tv;
     }
+
+    // todo: implement
+    // - template in value context (as exp)
+    // - template in type context
+    //   - template -> class context
+    //   - template -> type
+    //   * totally determined from grammar!
 
 }
 

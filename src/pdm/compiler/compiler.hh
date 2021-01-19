@@ -69,22 +69,22 @@ namespace pdm {
 
       // builtin type stmts:
       private:
-        ast::BuiltinTypeStmt* m_void_tv_client_astn;
-        ast::BuiltinTypeStmt* m_string_tv_client_astn;
-        ast::BuiltinTypeStmt* m_i8_tv_client_astn;
-        ast::BuiltinTypeStmt* m_i16_tv_client_astn;
-        ast::BuiltinTypeStmt* m_i32_tv_client_astn;
-        ast::BuiltinTypeStmt* m_i64_tv_client_astn;
-        ast::BuiltinTypeStmt* m_i128_tv_client_astn;
-        ast::BuiltinTypeStmt* m_u1_tv_client_astn;
-        ast::BuiltinTypeStmt* m_u8_tv_client_astn;
-        ast::BuiltinTypeStmt* m_u16_tv_client_astn;
-        ast::BuiltinTypeStmt* m_u32_tv_client_astn;
-        ast::BuiltinTypeStmt* m_u64_tv_client_astn;
-        ast::BuiltinTypeStmt* m_u128_tv_client_astn;
-        ast::BuiltinTypeStmt* m_f16_tv_client_astn;
-        ast::BuiltinTypeStmt* m_f32_tv_client_astn;
-        ast::BuiltinTypeStmt* m_f64_tv_client_astn;
+        ast::BuiltinStmt* m_void_tv_client_astn;
+        ast::BuiltinStmt* m_string_tv_client_astn;
+        ast::BuiltinStmt* m_i8_tv_client_astn;
+        ast::BuiltinStmt* m_i16_tv_client_astn;
+        ast::BuiltinStmt* m_i32_tv_client_astn;
+        ast::BuiltinStmt* m_i64_tv_client_astn;
+        ast::BuiltinStmt* m_i128_tv_client_astn;
+        ast::BuiltinStmt* m_u1_tv_client_astn;
+        ast::BuiltinStmt* m_u8_tv_client_astn;
+        ast::BuiltinStmt* m_u16_tv_client_astn;
+        ast::BuiltinStmt* m_u32_tv_client_astn;
+        ast::BuiltinStmt* m_u64_tv_client_astn;
+        ast::BuiltinStmt* m_u128_tv_client_astn;
+        ast::BuiltinStmt* m_f16_tv_client_astn;
+        ast::BuiltinStmt* m_f32_tv_client_astn;
+        ast::BuiltinStmt* m_f64_tv_client_astn;
 
       public:
         Compiler(std::string&& cwd, std::string&& entry_point_path, u64 print_flags = 0);
@@ -95,7 +95,7 @@ namespace pdm {
       private:
         // help_define_builtin_type is called during the constructor, post initialization to define
         // universal types.
-        ast::BuiltinTypeStmt* help_define_builtin_type(scoper::Scoper& scoper, intern::String name, types::Var* typer_var);
+        ast::BuiltinStmt* help_define_builtin_type(scoper::Scoper& scoper, intern::String name, types::Var* typer_var);
         
         // help_import_script_1 is called for every imported function, regardless of whether imported before or not.
         ast::Script* help_import_script_1(std::string const& from_path, std::string const& type);

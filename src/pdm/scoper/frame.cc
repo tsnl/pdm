@@ -25,7 +25,7 @@ namespace pdm::scoper {
         p.print_cstr("Frame ");
         p.print_cstr(frame_kind_as_text(kind()));
         p.print_cstr(" at ");
-        p.print_uint_dec(reinterpret_cast<u64>(this));
+        p.print_uint_hex(reinterpret_cast<u64>(this));
         p.print_cstr(" {");
         p.print_newline_indent();
         {
@@ -61,7 +61,7 @@ namespace pdm::scoper {
 
             // child frames:
             p.print_cstr("Subframes: (");
-            p.print_uint_dec(m_child_frames.size());
+            p.print_uint_hex(m_child_frames.size());
             p.print_cstr(") ...");
             if (m_child_frames.empty()) {
                 // p.print_newline();

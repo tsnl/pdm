@@ -65,8 +65,17 @@ namespace pdm::types {
         m_apply_state(ApplyState::NotApplied)
     {}
 
-    // subtype, subclass, class-of
+    //
+    // subtype, subclass, class-of, and equality
+    //
+
+    class SubtypeOfRelation;
+    class SubclassOfRelation;
+    class ClassOfRelation;
+
     class TypeEqualsRelation;
+    class ClassEqualsRelation;
+
     class SubtypeOfRelation: public Relation {
         friend TypeEqualsRelation;
 
@@ -84,7 +93,6 @@ namespace pdm::types {
         m_supertype_tv(supertype_tv)
     {}
 
-    class ClassEqualsRelation;
     class SubclassOfRelation: public Relation {
         friend ClassEqualsRelation;
 
@@ -334,20 +342,20 @@ namespace pdm::types {
     }
 
     // vcall (func()): definition and use
-    enum class FnRelationStrength {
+    enum class VCallableRelationStrength {
         Formal,   // in this call, formal arguments are equal to actual arguments
         Actual    // in this call, formal arguments are supertypes of actual arguments
     };
-    class FnRelation: public Relation {
+    class VCallableRelation: public Relation {
       private:
-        FnRelationStrength    m_strength;
+        VCallableRelationStrength    m_strength;
         TypeVar*              m_fn_tv;
         std::vector<TypeVar*> m_args_tvs;
         TypeVar*              m_ret_tv;
 
       protected:
-        FnRelation(FnRelationStrength strength, ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
-        :   Relation(ast_node, "FnRelation"),
+        VCallableRelation(VCallableRelationStrength strength, ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
+        :   Relation(ast_node, "VCallableRelation"),
             m_strength(strength),
             m_fn_tv(fn_tv),
             m_args_tvs(std::move(args_tvs)),
@@ -355,7 +363,7 @@ namespace pdm::types {
         {}
 
       public:
-        FnRelationStrength strength() const {
+        VCallableRelationStrength strength() const {
             return m_strength;
         }
         TypeVar* fn_tv() const {
@@ -371,25 +379,25 @@ namespace pdm::types {
       public:
         virtual bool on_assume_impl(types::Manager* manager) override;
     };
-    class FormalFnRelation: public FnRelation {
+    class FormalVCallableRelation: public VCallableRelation {
       public:
-        FormalFnRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv);
+        FormalVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv);
 
       public:
         virtual bool on_assume_impl(types::Manager* manager) override;
     };
-    class ActualFnRelation: public FnRelation {
+    class ActualVCallableRelation: public VCallableRelation {
       public:
-        ActualFnRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv);
+        ActualVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv);
 
       public:
         virtual bool on_assume_impl(types::Manager* manager) override;
     };
-    inline FormalFnRelation::FormalFnRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
-    :   FnRelation(FnRelationStrength::Formal, ast_node, fn_tv, std::move(args_tvs), ret_tv)
+    inline FormalVCallableRelation::FormalVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
+    :   VCallableRelation(VCallableRelationStrength::Formal, ast_node, fn_tv, std::move(args_tvs), ret_tv)
     {}
-    inline ActualFnRelation::ActualFnRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
-    :   FnRelation(FnRelationStrength::Actual, ast_node, fn_tv, std::move(args_tvs), ret_tv)
+    inline ActualVCallableRelation::ActualVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
+    :   VCallableRelation(VCallableRelationStrength::Actual, ast_node, fn_tv, std::move(args_tvs), ret_tv)
     {}
 
     // if-then, if-then-else:
@@ -464,81 +472,108 @@ namespace pdm::types {
         Formal,
         Actual
     };
-    enum class TemplateRelationExpectedRhsKind {
+    enum class TemplateRelationExpectedMonoKind {
         Value,
         Type,
         Class
     };
     class TemplateRelation: public Relation {
       private:
-        TemplateVar*                    m_lhs_template_var;
-        TemplateRelationStrength        m_strength;
-        TemplateRelationExpectedRhsKind m_expected_rhs_kind;
-        Var*                            m_rhs_var;
+        TemplateVar*                     m_lhs_template_var;
+        TemplateRelationStrength         m_strength;
+        TemplateRelationExpectedMonoKind m_expected_rhs_kind;
+        Var*                             m_rhs_var;
 
       protected:
-        TemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, Var* rhs_var, TemplateRelationExpectedRhsKind template_relation_expected_lhs_kind, std::string template_name_suffix, TemplateRelationStrength strength);
+        TemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, Var* rhs_var, TemplateRelationExpectedMonoKind template_relation_expected_lhs_kind, std::string template_name_suffix, TemplateRelationStrength strength);
 
       public:
         virtual bool on_assume_impl(types::Manager* manager) override;
     };
-    inline TemplateRelation::TemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, Var* rhs_var, TemplateRelationExpectedRhsKind expected_rhs_kind, std::string template_name_suffix, TemplateRelationStrength strength)
+    inline TemplateRelation::TemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, Var* rhs_var, TemplateRelationExpectedMonoKind expected_rhs_kind, std::string template_name_suffix, TemplateRelationStrength strength)
     :   Relation(ast_node, "Template:" + template_name_suffix),
         m_lhs_template_var(lhs_template_var),
         m_strength(strength),
         m_expected_rhs_kind(expected_rhs_kind),
         m_rhs_var(rhs_var)
-    {}
+    {
+        // ensuring TemplateVar matches
+        switch (expected_rhs_kind)
+        {
+            case TemplateRelationExpectedMonoKind::Value:
+            {
+                assert(lhs_template_var->var_kind() == VarKind::Template_RetValue);
+                break;
+            }
+            case TemplateRelationExpectedMonoKind::Type:
+            {
+                assert(lhs_template_var->var_kind() == VarKind::Template_RetType);
+                break;
+            }
+            case TemplateRelationExpectedMonoKind::Class:
+            {
+                assert(lhs_template_var->var_kind() == VarKind::Template_RetClass);
+                break;
+            }
+            default:
+            {
+                assert(0);
+                break;
+            }
+        }
+    }
 
+    // formal tcall:
     class FormalTemplateRelation: public TemplateRelation {
       private:
         std::vector<ast::TPattern*> m_tpatterns;
 
       protected:
-        FormalTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedRhsKind expected_rhs_kind, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
+        FormalTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedMonoKind expected_rhs_kind, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
 
       public:
-        inline static FormalTemplateRelation* new_formal_value_template_relation(ast::Node* ast_node, ValueTemplateVar* lhs_value_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
-        inline static FormalTemplateRelation* new_formal_type_template_relation(ast::Node* ast_node, TypeTemplateVar* lhs_type_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
-        inline static FormalTemplateRelation* new_formal_class_template_relation(ast::Node* ast_node, ClassTemplateVar* lhs_class_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
+        inline static FormalTemplateRelation* new_formal_value_template_relation(ast::Node* ast_node, TemplateVar_RetValue* lhs_value_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
+        inline static FormalTemplateRelation* new_formal_type_template_relation(ast::Node* ast_node, TemplateVar_RetType* lhs_type_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
+        inline static FormalTemplateRelation* new_formal_class_template_relation(ast::Node* ast_node, TemplateVar_ClassType* lhs_class_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
     };
-    inline FormalTemplateRelation::FormalTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedRhsKind expected_rhs_kind, std::vector<ast::TPattern*> tpatterns, Var* rhs_var)
+    inline FormalTemplateRelation::FormalTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedMonoKind expected_rhs_kind, std::vector<ast::TPattern*> tpatterns, Var* rhs_var)
     :   TemplateRelation(ast_node, lhs_template_var, rhs_var, expected_rhs_kind, "Formal", TemplateRelationStrength::Formal),
         m_tpatterns(tpatterns)
     {}
-    inline FormalTemplateRelation* FormalTemplateRelation::new_formal_value_template_relation(ast::Node* ast_node, ValueTemplateVar* lhs_value_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var) {
-        return new FormalTemplateRelation{ast_node, lhs_value_template_var, TemplateRelationExpectedRhsKind::Value, tpatterns, rhs_var};
+    inline FormalTemplateRelation* FormalTemplateRelation::new_formal_value_template_relation(ast::Node* ast_node, TemplateVar_RetValue* lhs_value_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var) {
+        return new FormalTemplateRelation{ast_node, lhs_value_template_var, TemplateRelationExpectedMonoKind::Value, tpatterns, rhs_var};
     }
-    inline FormalTemplateRelation* FormalTemplateRelation::new_formal_type_template_relation(ast::Node* ast_node, TypeTemplateVar* lhs_type_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var) {
-        return new FormalTemplateRelation{ast_node, lhs_type_template_var, TemplateRelationExpectedRhsKind::Type, tpatterns, rhs_var};
+    inline FormalTemplateRelation* FormalTemplateRelation::new_formal_type_template_relation(ast::Node* ast_node, TemplateVar_RetType* lhs_type_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var) {
+        return new FormalTemplateRelation{ast_node, lhs_type_template_var, TemplateRelationExpectedMonoKind::Type, tpatterns, rhs_var};
     }
-    inline FormalTemplateRelation* FormalTemplateRelation::new_formal_class_template_relation(ast::Node* ast_node, ClassTemplateVar* lhs_class_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var) {
-        return new FormalTemplateRelation{ast_node, lhs_class_template_var, TemplateRelationExpectedRhsKind::Class, tpatterns, rhs_var};
+    inline FormalTemplateRelation* FormalTemplateRelation::new_formal_class_template_relation(ast::Node* ast_node, TemplateVar_ClassType* lhs_class_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var) {
+        return new FormalTemplateRelation{ast_node, lhs_class_template_var, TemplateRelationExpectedMonoKind::Class, tpatterns, rhs_var};
     }
 
+    // actual tcall:
     class ActualTemplateRelation: public TemplateRelation {
       private:
         std::vector<ast::TArg*> m_actual_targs;
 
       protected:
-        ActualTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedRhsKind expected_rhs_kind, std::vector<ast::TArg*> actual_targs, Var* rhs_var);
+        ActualTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedMonoKind expected_rhs_kind, std::vector<ast::TArg*> actual_targs, Var* rhs_var);
 
       public:
-        inline static ActualTemplateRelation* new_actual_value_template_relation(ast::Node* ast_node, ValueTemplateVar* lhs_value_template_var, std::vector<ast::TArg*> targs, Var* rhs_var);
-        inline static ActualTemplateRelation* new_actual_type_template_relation(ast::Node* ast_node, TypeTemplateVar* lhs_type_template_var, std::vector<ast::TArg*> targs, Var* rhs_var);
-        inline static ActualTemplateRelation* new_actual_class_template_relation(ast::Node* ast_node, ClassTemplateVar* lhs_class_template_var, std::vector<ast::TArg*> targs, Var* rhs_var);
+        inline static ActualTemplateRelation* new_actual_value_template_relation(ast::Node* ast_node, TemplateVar_RetValue* lhs_value_template_var, std::vector<ast::TArg*> targs, Var* rhs_var);
+        inline static ActualTemplateRelation* new_actual_type_template_relation(ast::Node* ast_node, TemplateVar_RetType* lhs_type_template_var, std::vector<ast::TArg*> targs, Var* rhs_var);
+        inline static ActualTemplateRelation* new_actual_class_template_relation(ast::Node* ast_node, TemplateVar_ClassType* lhs_class_template_var, std::vector<ast::TArg*> targs, Var* rhs_var);
     };
-    inline ActualTemplateRelation::ActualTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedRhsKind expected_rhs_kind, std::vector<ast::TArg*> actual_targs, Var* rhs_var)
+    inline ActualTemplateRelation::ActualTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedMonoKind expected_rhs_kind, std::vector<ast::TArg*> actual_targs, Var* rhs_var)
     :   TemplateRelation(ast_node, lhs_template_var, rhs_var, expected_rhs_kind, "Actual", TemplateRelationStrength::Actual)
     {}
-    inline ActualTemplateRelation* ActualTemplateRelation::new_actual_value_template_relation(ast::Node* ast_node, ValueTemplateVar* lhs_value_template_var, std::vector<ast::TArg*> targs, Var* rhs_var) {
-        return new ActualTemplateRelation(ast_node, lhs_value_template_var, TemplateRelationExpectedRhsKind::Value, targs, rhs_var);
+    inline ActualTemplateRelation* ActualTemplateRelation::new_actual_value_template_relation(ast::Node* ast_node, TemplateVar_RetValue* lhs_value_template_var, std::vector<ast::TArg*> targs, Var* rhs_var) {
+        return new ActualTemplateRelation(ast_node, lhs_value_template_var, TemplateRelationExpectedMonoKind::Value, targs, rhs_var);
     }
-    inline ActualTemplateRelation* ActualTemplateRelation::new_actual_type_template_relation(ast::Node* ast_node, TypeTemplateVar* lhs_type_template_var, std::vector<ast::TArg*> targs, Var* rhs_var) {
-        return new ActualTemplateRelation(ast_node, lhs_type_template_var, TemplateRelationExpectedRhsKind::Type, targs, rhs_var);
+    inline ActualTemplateRelation* ActualTemplateRelation::new_actual_type_template_relation(ast::Node* ast_node, TemplateVar_RetType* lhs_type_template_var, std::vector<ast::TArg*> targs, Var* rhs_var) {
+        return new ActualTemplateRelation(ast_node, lhs_type_template_var, TemplateRelationExpectedMonoKind::Type, targs, rhs_var);
     }
-    inline ActualTemplateRelation* ActualTemplateRelation::new_actual_class_template_relation(ast::Node* ast_node, ClassTemplateVar* lhs_class_template_var, std::vector<ast::TArg*> targs, Var* rhs_var) {
-        return new ActualTemplateRelation(ast_node, lhs_class_template_var, TemplateRelationExpectedRhsKind::Class, targs, rhs_var);
+    inline ActualTemplateRelation* ActualTemplateRelation::new_actual_class_template_relation(ast::Node* ast_node, TemplateVar_ClassType* lhs_class_template_var, std::vector<ast::TArg*> targs, Var* rhs_var) {
+        return new ActualTemplateRelation(ast_node, lhs_class_template_var, TemplateRelationExpectedMonoKind::Class, targs, rhs_var);
     }
 
 }

@@ -95,21 +95,21 @@
 %type <std::vector<pdm::ast::Stmt*>> scriptContent
 %type <pdm::ast::Stmt*> scriptContentStmt
 
-%type <pdm::ast::Stmt*> mod_stmt
-%type <std::vector<pdm::ast::Stmt*>> moduleContent
+%type <pdm::ast::Stmt*> top_mod_stmt 
+%type <pdm::ast::ModContentStmt*> mod_stmt
+%type <std::vector<pdm::ast::ModContentStmt*>> mod_content
 
 //
 // Stmt:
 //
 
-%type <pdm::ast::Stmt*> moduleContentStmt
+%type <pdm::ast::ModContentStmt*> mod_content_stmt
 %type <pdm::ast::Stmt*> chain_prefix_stmt const_stmt val_stmt var_stmt set_stmt discard_stmt
 %type <pdm::ast::Stmt*> import_stmt
 %type <pdm::ast::Stmt*> using_stmt
-%type <pdm::ast::Stmt*> fn_stmt
-%type <pdm::ast::Stmt*> type_stmt enum_stmt typeclass_stmt
-%type <pdm::ast::EnumStmt::Field*> enum_field
-%type <std::vector<pdm::ast::EnumStmt::Field*>> unprefixed_enum_field_pl enum_field_pl
+%type <pdm::ast::ModContentStmt*> mod_val_stmt mod_type_stmt mod_enum_stmt mod_typeclass_stmt
+%type <pdm::ast::ModEnumStmt::Field*> enum_field
+%type <std::vector<pdm::ast::ModEnumStmt::Field*>> unprefixed_enum_field_pl enum_field_pl
 
 %type <pdm::ast::Stmt*> extern_stmt;
 
@@ -292,21 +292,26 @@ scriptContent
     | scriptContent scriptContentStmt SEMICOLON     { $$ = std::move($1); $$.push_back($2); }
     ;
 scriptContentStmt
-    : mod_stmt
+    : top_mod_stmt
     | import_stmt
     | extern_stmt
+    | using_stmt
     ;
 
 /*
  * Modules:
  */
 
-mod_stmt
-    : KW_MOD TID LCYBRK moduleContent RCYBRK    { $$ = mgr->new_mod_stmt(@$, $2.ID_intstr, std::move($4)); }
+top_mod_stmt
+    : KW_MOD TID LCYBRK mod_content RCYBRK    { $$ = mgr->new_mod_stmt(@$, $2.ID_intstr, std::move(std::vector<ast::TPattern*>{}), std::move($4)); }
     ;
-moduleContent
-    : moduleContentStmt SEMICOLON                   { $$.push_back($1); }
-    | moduleContent moduleContentStmt SEMICOLON     { $$ = std::move($1); $$.push_back($2); }
+mod_stmt
+    : top_mod_stmt                                         { $$ = dynamic_cast<ast::ModContentStmt*>($1); }
+    | KW_MOD TID tpattern_seq LCYBRK mod_content RCYBRK    { $$ = mgr->new_mod_stmt(@$, $2.ID_intstr, std::move($3), std::move($5)); }
+    ;
+mod_content
+    : mod_content_stmt SEMICOLON                { $$.push_back($1); }
+    | mod_content mod_content_stmt SEMICOLON    { $$ = std::move($1); $$.push_back($2); }
     ;
 
 /*
@@ -336,29 +341,26 @@ discard_stmt
     : KW_DISCARD expr   { $$ = mgr->new_discard_stmt(@$, $2); }
     ;
 
-moduleContentStmt
-    : fn_stmt
-    | type_stmt
-    | enum_stmt
-    | typeclass_stmt
-    | import_stmt
+mod_content_stmt
+    : mod_val_stmt
+    | mod_type_stmt
+    | mod_enum_stmt
+    | mod_typeclass_stmt
     | mod_stmt
-    | using_stmt
-    | extern_stmt
     ;
-fn_stmt
-    : KW_FN vid              vpattern ARROW typespec BIND bracketed_exp   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move(std::vector<ast::TPattern*>{}), $3, $5, $7); }
-    | KW_FN vid tpattern_seq vpattern ARROW typespec BIND bracketed_exp   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move($3), $4, $6, $8); }
-    | KW_FN vid              vpattern                BIND bracketed_exp   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move(std::vector<ast::TPattern*>{}), $3, nullptr, $5); }
-    | KW_FN vid tpattern_seq vpattern                BIND bracketed_exp   { $$ = mgr->new_fn_stmt(@$, $2.ID_intstr, std::move($3), $4, nullptr, $6); }
+mod_val_stmt
+    : vid              BIND expr    { $$ = mgr->new_internal_mod_val_stmt(@$, $1.ID_intstr, std::move(std::vector<ast::TPattern*>{}), $3); }
+    | vid tpattern_seq BIND expr    { $$ = mgr->new_internal_mod_val_stmt(@$, $1.ID_intstr, std::move($2), $4); }
+    | vid typespec              KW_FROM tid stringl  { $$ = mgr->new_external_mod_val_stmt(@$, $1.ID_intstr, std::move(std::vector<ast::TPattern*>{}), $2, $4.ID_intstr, *$5.String_utf8string); }
+    | vid tpattern_seq typespec KW_FROM tid stringl  { $$ = mgr->new_external_mod_val_stmt(@$, $1.ID_intstr, std::move($2), $3, $5.ID_intstr, *$6.String_utf8string); }
     ;
-type_stmt
-    : KW_TYPE tid              BIND long_typespec   { $$ = mgr->new_type_stmt(@$, $2.ID_intstr, std::move(std::vector<ast::TPattern*>{}), $4); }
-    | KW_TYPE tid tpattern_seq BIND long_typespec   { $$ = mgr->new_type_stmt(@$, $2.ID_intstr, std::move($3), $5); }
+mod_type_stmt
+    : tid              BIND long_typespec   { $$ = mgr->new_mod_type_stmt(@$, $1.ID_intstr, std::move(std::vector<ast::TPattern*>{}), $3); }
+    | tid tpattern_seq BIND long_typespec   { $$ = mgr->new_mod_type_stmt(@$, $1.ID_intstr, std::move($2), $4); }
     ;
-enum_stmt
-    : KW_TYPE tid              enum_field_pl    { $$ = mgr->new_enum_stmt(@$, $2.ID_intstr, std::move(std::vector<ast::TPattern*>{}), std::move($3)); }
-    | KW_TYPE tid tpattern_seq enum_field_pl    { $$ = mgr->new_enum_stmt(@$, $2.ID_intstr, std::move($3), std::move($4)); }
+mod_enum_stmt
+    : tid              enum_field_pl    { $$ = mgr->new_mod_enum_stmt(@$, $1.ID_intstr, std::move(std::vector<ast::TPattern*>{}), std::move($2)); }
+    | tid tpattern_seq enum_field_pl    { $$ = mgr->new_mod_enum_stmt(@$, $1.ID_intstr, std::move($2), std::move($3)); }
     ;
 enum_field_pl
     : PIPE unprefixed_enum_field_pl { $$ = std::move($2); }
@@ -372,12 +374,12 @@ enum_field
     | tid LPAREN RPAREN              { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move(std::vector<ast::Typespec*>{}), true); }
     | tid LPAREN typespec_cl1 RPAREN { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move($3), true); }
     ;
-typeclass_stmt
-    : KW_TYPECLASS tid LTHAN tid typespec GTHAN              BIND LCYBRK type_query_exp_sl RCYBRK { 
-        $$ = mgr->new_typeclass_stmt(@$, $2.ID_intstr, $4.ID_intstr, $5, std::move(std::vector<ast::TPattern*>{}), std::move($9)); 
+mod_typeclass_stmt
+    : tid              LTHAN tid typespec GTHAN BIND LCYBRK type_query_exp_sl RCYBRK { 
+        $$ = mgr->new_mod_typeclass_stmt(@$, $1.ID_intstr, $3.ID_intstr, $4, std::move(std::vector<ast::TPattern*>{}), std::move($8)); 
       }
-    | KW_TYPECLASS tid LTHAN tid typespec GTHAN tpattern_seq BIND LCYBRK type_query_exp_sl RCYBRK { 
-        $$ = mgr->new_typeclass_stmt(@$, $2.ID_intstr, $4.ID_intstr, $5, std::move($7), std::move($10)); 
+    | tid tpattern_seq LTHAN tid typespec GTHAN BIND LCYBRK type_query_exp_sl RCYBRK { 
+        $$ = mgr->new_mod_typeclass_stmt(@$, $1.ID_intstr, $4.ID_intstr, $5, std::move($2), std::move($9)); 
       }
     ;
 using_stmt
@@ -388,7 +390,7 @@ import_stmt
     : KW_IMPORT tid KW_FROM stringl KW_TYPE stringl    { $$ = mgr->new_import_stmt(@$, $2.ID_intstr, *$4.String_utf8string, *$6.String_utf8string); }
     ;
 extern_stmt
-    : KW_EXTERN vid KW_FROM expr    { $$ = mgr->new_extern_stmt(@$, $2.ID_intstr, $4); }
+    : KW_EXTERN tid KW_FROM expr    { $$ = mgr->new_extern_stmt(@$, $2.ID_intstr, $4); }
     ;
 
 /*
@@ -486,7 +488,8 @@ chain_prefix
     | chain_prefix chain_prefix_stmt SEMICOLON  { $$ = std::move($1); $$.push_back($2); }
     ;
 lambda_exp
-    : KW_LAMBDA vpattern BIND bracketed_exp   { $$ = mgr->new_lambda_exp(@$, $2, $4); }
+    : KW_FN vpattern                bracketed_exp   { $$ = mgr->new_lambda_exp(@$, $2, nullptr, $3); }
+    | KW_FN vpattern ARROW typespec bracketed_exp   { $$ = mgr->new_lambda_exp(@$, $2, $4, $5); }
     ;
 
 postfix_exp

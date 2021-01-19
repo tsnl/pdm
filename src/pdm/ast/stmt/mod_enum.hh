@@ -7,6 +7,7 @@
 #include "pdm/source/loc.hh"
 #include "pdm/ast/stmt/stmt.hh"
 #include "pdm/ast/typespec/struct.hh"
+#include "mod_content.hh"
 
 namespace pdm::ast {
     class Manager;
@@ -18,7 +19,7 @@ namespace pdm::types {
 
 namespace pdm::ast {
 
-    class EnumStmt: public Stmt {
+    class ModEnumStmt: public ModContentStmt {
         friend Manager;
 
       // field:
@@ -34,16 +35,18 @@ namespace pdm::ast {
             
           protected:
             Field(source::Loc loc, intern::String name)
-            : m_loc(loc),
-              m_name(name),
-              m_typespecs(),
-              m_has_explicit_typespecs(false) {}
+            :   m_loc(loc),
+                m_name(name),
+                m_typespecs(),
+                m_has_explicit_typespecs(false)
+            {}
 
             Field(source::Loc loc, intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs)
-            : m_loc(loc),
-              m_name(name),
-              m_typespecs(std::move(typespecs)),
-              m_has_explicit_typespecs(has_explicit_typespecs) {}
+            :   m_loc(loc),
+                m_name(name),
+                m_typespecs(std::move(typespecs)),
+                m_has_explicit_typespecs(has_explicit_typespecs)
+            {}
 
           public:
             intern::String name() const {
@@ -59,18 +62,19 @@ namespace pdm::ast {
 
       // body:
       private:
-        intern::String                m_name;
-        std::vector<ast::TPattern*>   m_tpatterns;
-        std::vector<EnumStmt::Field*> m_fields;
-        types::Var*                   m_x_defn_var;
+        intern::String                   m_name;
+        std::vector<ast::TPattern*>      m_tpatterns;
+        std::vector<ModEnumStmt::Field*> m_fields;
+        types::Var*                      m_x_defn_var;
       
       protected:
-        EnumStmt(source::Loc loc, intern::String name, std::vector<ast::TPattern*>&& tpatterns, std::vector<EnumStmt::Field*>&& fields)
-        : Stmt(loc, Kind::EnumStmt),
-          m_name(name),
-          m_tpatterns(std::move(tpatterns)),
-          m_fields(std::move(fields)),
-          m_x_defn_var(nullptr) {}
+        ModEnumStmt(source::Loc loc, intern::String name, std::vector<ast::TPattern*>&& tpatterns, std::vector<ModEnumStmt::Field*>&& fields)
+        :   ModContentStmt(loc, Kind::ModEnumStmt),
+            m_name(name),
+            m_tpatterns(std::move(tpatterns)),
+            m_fields(std::move(fields)),
+            m_x_defn_var(nullptr) 
+        {}
       
       public:
         intern::String name() const {
@@ -79,7 +83,7 @@ namespace pdm::ast {
         std::vector<ast::TPattern*> const& tpatterns() const {
             return m_tpatterns;
         }
-        std::vector<EnumStmt::Field*> const& fields() const {
+        std::vector<ModEnumStmt::Field*> const& fields() const {
             return m_fields;
         }
 

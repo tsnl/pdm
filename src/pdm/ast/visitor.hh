@@ -29,14 +29,14 @@
 
 #include "pdm/ast/stmt/stmt.hh"
 #include "pdm/ast/stmt/const.hh"
-#include "pdm/ast/stmt/fn.hh"
-#include "pdm/ast/stmt/enum.hh"
+#include "pdm/ast/stmt/mod_val.hh"
+#include "pdm/ast/stmt/mod_enum.hh"
+#include "pdm/ast/stmt/mod.hh"
+#include "pdm/ast/stmt/mod_type.hh"
+#include "pdm/ast/stmt/mod_typeclass.hh"
 #include "pdm/ast/stmt/import.hh"
 #include "pdm/ast/stmt/extern.hh"
-#include "pdm/ast/stmt/mod.hh"
-#include "pdm/ast/stmt/type.hh"
-#include "pdm/ast/stmt/typeclass.hh"
-#include "pdm/ast/stmt/builtin_type.hh"
+#include "pdm/ast/stmt/builtin.hh"
 #include "pdm/ast/stmt/discard.hh"
 #include "pdm/ast/stmt/set.hh"
 #include "pdm/ast/stmt/using.hh"
@@ -92,10 +92,10 @@ namespace pdm::ast {
 
         // statements:
         virtual bool on_visit__mod_stmt(ModStmt* node, VisitOrder visit_order) = 0;
-        virtual bool on_visit__typeclass_stmt(TypeclassStmt* node, VisitOrder visit_order) = 0;
-        virtual bool on_visit__type_stmt(TypeStmt* node, VisitOrder visit_order) = 0;
-        virtual bool on_visit__enum_stmt(EnumStmt* node, VisitOrder visit_order) = 0;
-        virtual bool on_visit__fn_stmt(FnStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__mod_typeclass_stmt(ModTypeclassStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__mod_type_stmt(ModTypeStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__mod_enum_stmt(ModEnumStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__mod_val_stmt(ModValStmt* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__const_stmt(ConstStmt* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__val_stmt(ValStmt* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__var_stmt(VarStmt* node, VisitOrder visit_order) = 0;
@@ -147,7 +147,7 @@ namespace pdm::ast {
         virtual bool on_visit__varg(VArg* node, VisitOrder visit_order) = 0;
 
         // non-syntactic elements:
-        virtual bool on_visit__builtin_type_stmt(BuiltinTypeStmt* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__builtin_type_stmt(BuiltinStmt* node, VisitOrder visit_order) = 0;
     };
 
     class TinyVisitor: public Visitor {
@@ -161,16 +161,16 @@ namespace pdm::ast {
         virtual bool on_visit__mod_stmt(ModStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__typeclass_stmt(TypeclassStmt* node, VisitOrder visit_order) override {
+        virtual bool on_visit__mod_typeclass_stmt(ModTypeclassStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__type_stmt(TypeStmt* node, VisitOrder visit_order) override {
+        virtual bool on_visit__mod_type_stmt(ModTypeStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__enum_stmt(EnumStmt* node, VisitOrder visit_order) override {
+        virtual bool on_visit__mod_enum_stmt(ModEnumStmt* node, VisitOrder visit_order) override {
             return true;
         }
-        virtual bool on_visit__fn_stmt(FnStmt* node, VisitOrder visit_order) override {
+        virtual bool on_visit__mod_val_stmt(ModValStmt* node, VisitOrder visit_order) override {
             return true;
         }
         virtual bool on_visit__const_stmt(ConstStmt* node, VisitOrder visit_order) override {
@@ -306,7 +306,7 @@ namespace pdm::ast {
         }
 
         // non-syntactic elements:
-        virtual bool on_visit__builtin_type_stmt(BuiltinTypeStmt* node, VisitOrder visit_order) override {
+        virtual bool on_visit__builtin_type_stmt(BuiltinStmt* node, VisitOrder visit_order) override {
             return true;
         }
     };

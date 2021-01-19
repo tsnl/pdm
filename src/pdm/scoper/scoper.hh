@@ -110,10 +110,10 @@ namespace pdm::scoper {
 
         // statements:
         virtual bool on_visit__mod_stmt(ast::ModStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__typeclass_stmt(ast::TypeclassStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__type_stmt(ast::TypeStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__enum_stmt(ast::EnumStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__fn_stmt(ast::FnStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__mod_typeclass_stmt(ast::ModTypeclassStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__mod_type_stmt(ast::ModTypeStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__mod_enum_stmt(ast::ModEnumStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__const_stmt(ast::ConstStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__val_stmt(ast::ValStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__var_stmt(ast::VarStmt* node, VisitOrder visit_order) override;
@@ -165,7 +165,7 @@ namespace pdm::scoper {
         virtual bool on_visit__varg(ast::VArg* varg, VisitOrder visit_order) override;
 
         // non-syntax:
-        virtual bool on_visit__builtin_type_stmt(ast::BuiltinTypeStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__builtin_type_stmt(ast::BuiltinStmt* node, VisitOrder visit_order) override;
     };
 
 }

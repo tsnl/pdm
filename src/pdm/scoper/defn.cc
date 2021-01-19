@@ -7,7 +7,6 @@ namespace pdm::scoper {
             case DefnKind::BuiltinType: return "BuiltinType";
             case DefnKind::Module: return "Module";
             case DefnKind::ImportModule: return "ImportModule";
-            case DefnKind::Fn: return "Fn";
             case DefnKind::Const: return "Const";
             case DefnKind::Val: return "Val";
             case DefnKind::Var: return "Var";

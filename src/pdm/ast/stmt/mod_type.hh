@@ -8,6 +8,7 @@
 #include "pdm/ast/kind.hh"
 #include "pdm/ast/stmt/stmt.hh"
 #include "pdm/ast/typespec/typespec.hh"
+#include "mod_content.hh"
 
 namespace pdm::ast {
     class Manager;
@@ -19,7 +20,7 @@ namespace pdm::types {
 
 namespace pdm::ast {
 
-    class TypeStmt: public Stmt {
+    class ModTypeStmt: public ModContentStmt {
         friend Manager;
 
       private:
@@ -38,18 +39,20 @@ namespace pdm::ast {
         types::Var*                          m_x_defn_var;
 
       public:
-        TypeStmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& lhs_tpatterns, Typespec* typespec)
-        : Stmt(loc, Kind::TypeStmt),
-          m_lhs_name(lhs_name),
-          m_lhs_tpatterns(std::move(lhs_tpatterns)),
-          m_rhs(TypespecRhs{typespec}),
-          m_x_defn_var(nullptr) {}
+        ModTypeStmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& lhs_tpatterns, Typespec* typespec)
+        :   ModContentStmt(loc, Kind::ModTypeStmt),
+            m_lhs_name(lhs_name),
+            m_lhs_tpatterns(std::move(lhs_tpatterns)),
+            m_rhs(TypespecRhs{typespec}),
+            m_x_defn_var(nullptr)
+        {}
 
-        TypeStmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& lhs_tpatterns, intern::String ext_mod_name, utf8::String ext_type_name)
-        : Stmt(loc, Kind::TypeStmt),
-          m_lhs_name(lhs_name),
-          m_lhs_tpatterns(std::move(lhs_tpatterns)),
-          m_rhs(ExternRhs{ext_mod_name, ext_type_name}) {}
+        ModTypeStmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& lhs_tpatterns, intern::String ext_mod_name, utf8::String ext_type_name)
+        :   ModContentStmt(loc, Kind::ModTypeStmt),
+            m_lhs_name(lhs_name),
+            m_lhs_tpatterns(std::move(lhs_tpatterns)),
+            m_rhs(ExternRhs{ext_mod_name, ext_type_name})
+        {}
       
       public:
         intern::String lhs_name() const {

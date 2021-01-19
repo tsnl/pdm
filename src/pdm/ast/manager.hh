@@ -32,17 +32,17 @@
 #include "pattern/vpattern.hh"
 #include "pattern/tpattern.hh"
 
-#include "stmt/builtin_type.hh"
+#include "stmt/builtin.hh"
 #include "stmt/const.hh"
 #include "stmt/discard.hh"
-#include "stmt/enum.hh"
-#include "stmt/fn.hh"
+#include "stmt/mod_enum.hh"
+#include "stmt/mod_type.hh"
+#include "stmt/mod_typeclass.hh"
+#include "stmt/mod_val.hh"
 #include "stmt/import.hh"
 #include "stmt/extern.hh"
 #include "stmt/mod.hh"
 #include "stmt/set.hh"
-#include "stmt/type.hh"
-#include "stmt/typeclass.hh"
 #include "stmt/using.hh"
 #include "stmt/val.hh"
 #include "stmt/var.hh"
@@ -106,7 +106,7 @@ namespace pdm::ast {
         IdExp* new_id_exp(source::Loc loc, intern::String name);
         IfExp* new_if_exp(source::Loc loc, Exp* cond_exp, Exp* then_exp, Exp* else_exp);
         IntExp* new_int_exp(source::Loc loc, u64 value, IntExp::Base base);
-        LambdaExp* new_lambda_exp(source::Loc loc, VPattern* lhs_lpattern, Exp* body);
+        LambdaExp* new_lambda_exp(source::Loc loc, VPattern* lhs_lpattern, Typespec* opt_ret_typespec, Exp* body);
         ParenExp* new_paren_exp(source::Loc loc, Exp* nested);
         StringExp* new_string_exp(source::Loc loc, utf8::String content, StringExp::QuoteKind quote_kind);
         StringExp* new_string_exp(source::Loc loc, std::vector<StringExp::Piece>&& content);
@@ -126,7 +126,7 @@ namespace pdm::ast {
         TPattern::Field* new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, Typespec* rhs_typespec);
         VPattern::Field* new_vpattern_field(source::Loc loc, intern::String name, Typespec* rhs_typespec, VArgAccessSpec varg_kind);
 
-        BuiltinTypeStmt* new_builtin_type_stmt(std::string&& desc);
+        BuiltinStmt* new_builtin_stmt(std::string&& desc);
         ConstStmt* new_const_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
         DiscardStmt* new_discard_stmt(source::Loc loc, Exp* exp);
         ValStmt* new_val_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
@@ -136,19 +136,25 @@ namespace pdm::ast {
         ImportStmt* new_import_stmt(source::Loc loc, intern::String imported_name, utf8::String imported_from_exp, utf8::String imported_type_exp);
         UsingStmt* new_using_stmt(source::Loc loc, intern::String module_name, std::string suffix);
         ExternStmt* new_extern_stmt(source::Loc loc, intern::String ext_mod_name, Exp* link_arg);
-        ModStmt* new_mod_stmt(source::Loc loc, intern::String module_name, std::vector<Stmt*>&& defns);
-        FnStmt* new_fn_stmt(
+        ModStmt* new_mod_stmt(source::Loc loc, intern::String module_name, std::vector<TPattern*>&& tpatterns, std::vector<ModContentStmt*>&& defns);
+        ModValStmt* new_internal_mod_val_stmt(
             source::Loc loc,
             intern::String name,
             std::vector<TPattern*>&& tpatterns,
-            VPattern* vpattern,
-            Typespec* opt_return_ts,
             Exp* body
         );
-        TypeStmt* new_type_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, Typespec* rhs_typespec);
-        EnumStmt* new_enum_stmt(source::Loc loc, intern::String name, std::vector<TPattern*>&& tpatterns, std::vector<EnumStmt::Field*>&& fields);
-        TypeclassStmt* new_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, Typespec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions);
-        EnumStmt::Field* new_enum_stmt_field(source::Loc loc, intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs);
+        ModValStmt* new_external_mod_val_stmt(
+            source::Loc loc,
+            intern::String name,
+            std::vector<TPattern*>&& tpatterns,
+            Typespec* typespec,
+            intern::String ext_mod_name,
+            utf8::String ext_fn_name
+        );
+        ModTypeStmt* new_mod_type_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, Typespec* rhs_typespec);
+        ModEnumStmt* new_mod_enum_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, std::vector<ModEnumStmt::Field*>&& fields);
+        ModTypeclassStmt* new_mod_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, Typespec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions);
+        ModEnumStmt::Field* new_enum_stmt_field(source::Loc loc, intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs);
         
         DotNameTypespec_ModPrefix* new_dot_name_typespec_with_mod_prefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name);
         FnTypespec* new_fn_typespec(source::Loc loc, VPattern* lhs_vpattern, Typespec* rhs_typespec);

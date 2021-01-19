@@ -36,10 +36,10 @@ namespace pdm::types {
 
         // statements:
         virtual bool on_visit__mod_stmt(ast::ModStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__typeclass_stmt(ast::TypeclassStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__type_stmt(ast::TypeStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__enum_stmt(ast::EnumStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__fn_stmt(ast::FnStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__mod_typeclass_stmt(ast::ModTypeclassStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__mod_type_stmt(ast::ModTypeStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__mod_enum_stmt(ast::ModEnumStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__const_stmt(ast::ConstStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__val_stmt(ast::ValStmt* node, VisitOrder visit_order) override;
         virtual bool on_visit__var_stmt(ast::VarStmt* node, VisitOrder visit_order) override;
@@ -89,7 +89,7 @@ namespace pdm::types {
         virtual bool on_visit__varg(ast::VArg* node, VisitOrder visit_order) override;
         
         // non-syntactic:
-        virtual bool on_visit__builtin_type_stmt(ast::BuiltinTypeStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit__builtin_type_stmt(ast::BuiltinStmt* node, VisitOrder visit_order) override;
 
       // helpers:
       protected:
@@ -120,7 +120,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__typeclass_stmt(ast::TypeclassStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit__mod_typeclass_stmt(ast::ModTypeclassStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             
         }
@@ -132,7 +132,7 @@ namespace pdm::types {
         // leave typeclasses, templates for last.
         return true;
     }
-    bool TyperVisitor::on_visit__type_stmt(ast::TypeStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit__mod_type_stmt(ast::ModTypeStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             if (!node->lhs_tpatterns().empty()) {
                 
@@ -140,7 +140,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__enum_stmt(ast::EnumStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit__mod_enum_stmt(ast::ModEnumStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             
         } else {
@@ -148,40 +148,22 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__fn_stmt(ast::FnStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit__mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Post) {
             TypeVar* fn_tv = nullptr;
             if (node->tpatterns().empty()) {
                 fn_tv = dynamic_cast<TypeVar*>(node->x_defn_var());
             } else {
-                ValueTemplateVar* fn_template_var = dynamic_cast<ValueTemplateVar*>(node->x_defn_var());
-                // todo: set fn_tv based on formal args.
+                TemplateVar_RetValue* template_var = dynamic_cast<TemplateVar_RetValue*>(node->x_defn_var());
+                
                 assert(0 && "NotImplemented: fn statements with template args.");
             }
 
-            // set fn_tv type relationships based on vpattern, return.
-            TypeVar* ret_tv = m_types_mgr->new_unknown_tv("Return", node); {
-                // todo: need a type equality relation
-            }
-            std::vector<TypeVar*> args_tvs; {
-                size_t formal_arg_count = node->vpattern()->fields().size();
-                args_tvs.reserve(formal_arg_count);
-                for (size_t formal_arg_index = 0; formal_arg_index < formal_arg_count; formal_arg_index++) {
-                    ast::VPattern::Field* field = node->vpattern()->fields()[formal_arg_index];
-                    args_tvs.push_back(field->x_defn_tv());
-                }
-            }
-            types::SolvePhase2_Result res = m_types_mgr->assume_relation_holds(
-                new FormalFnRelation(
-                    node,
-                    fn_tv,
-                    std::move(args_tvs),
-                    ret_tv
-                )
-            );
-            if (types::sp2res_is_error(res)) {
-                // todo: post an appropriate error here.
-            }
+            // todo: bind to RHS if an exp
+            
+            // if (types::sp2res_is_error(res)) {
+            //     // todo: post an appropriate error here.
+            // }
         }
         return true;
     }
@@ -331,7 +313,7 @@ namespace pdm::types {
             TypeVar* lambda_exp_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
             node->x_typeof_tv(lambda_exp_tv);
         } else {
-
+            // todo: implement all the function/vcall typing stuff here!
         }
         return true;
     }
@@ -511,7 +493,7 @@ namespace pdm::types {
     }
     
     // non-syntactic:
-    bool TyperVisitor::on_visit__builtin_type_stmt(ast::BuiltinTypeStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit__builtin_type_stmt(ast::BuiltinStmt* node, VisitOrder visit_order) {
         // todo: implement this typer.
         return true;
     }

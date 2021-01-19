@@ -31,12 +31,12 @@ namespace pdm::types {
 
     SolvePhase2_Result SimplestKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
         if (required_type_kind() == TypeKind::Void) {
-            if (dynamic_cast<VoidInvariant*>(new_invariant) != nullptr) {
+            if (dynamic_cast<IsVoidInvariant*>(new_invariant) != nullptr) {
                 return SolvePhase2_Result::NoChange;
             }
         }
         else if (required_type_kind() == TypeKind::String) {
-            if (dynamic_cast<StringInvariant*>(new_invariant) != nullptr) {
+            if (dynamic_cast<IsStringInvariant*>(new_invariant) != nullptr) {
                 return SolvePhase2_Result::NoChange;
             }
         }
@@ -73,7 +73,7 @@ namespace pdm::types {
             case TypeKind::SignedInt:
             case TypeKind::UnsignedInt:
             {
-                auto int_invariant = dynamic_cast<IntInvariant*>(new_invariant);
+                auto int_invariant = dynamic_cast<IsIntInvariant*>(new_invariant);
                 
                 // checking 'uses_sign_extension' is valid:
                 bool needs_sign_extension = (required_type_kind() == TypeKind::SignedInt ? true : false);
@@ -99,7 +99,7 @@ namespace pdm::types {
             }
             case TypeKind::Float:
             {
-                auto float_invariant = dynamic_cast<FloatInvariant*>(new_invariant);
+                auto float_invariant = dynamic_cast<IsFloatInvariant*>(new_invariant);
 
                 // solving intersection of min and max width,
                 // updating result if applied:
@@ -143,7 +143,7 @@ namespace pdm::types {
     {}
 
     SolvePhase2_Result TupleKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
-        auto tuple_invariant = dynamic_cast<TupleInvariant*>(new_invariant);
+        auto tuple_invariant = dynamic_cast<IsTupleInvariant*>(new_invariant);
         if (tuple_invariant == nullptr) {
             return SolvePhase2_Result::TypingError;
         }
@@ -191,8 +191,8 @@ namespace pdm::types {
     {}
 
     SolvePhase2_Result FieldCollectionKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
-        // ensuring FieldCollectionInvariant:
-        auto new_field_collection_invariant = dynamic_cast<FieldCollectionInvariant*>(new_invariant);
+        // ensuring IsFieldCollectionInvariant:
+        auto new_field_collection_invariant = dynamic_cast<IsFieldCollectionInvariant*>(new_invariant);
         if (new_field_collection_invariant == nullptr) {
             return SolvePhase2_Result::TypingError;
         }
@@ -202,7 +202,7 @@ namespace pdm::types {
         {
             case TypeKind::Struct:
             {
-                auto new_struct_invariant = dynamic_cast<StructInvariant*>(new_invariant);
+                auto new_struct_invariant = dynamic_cast<IsStructInvariant*>(new_invariant);
                 if (new_struct_invariant == nullptr) {
                     return SolvePhase2_Result::TypingError;
                 }
@@ -210,7 +210,7 @@ namespace pdm::types {
             }
             case TypeKind::Enum:
             {
-                auto new_enum_invariant = dynamic_cast<EnumInvariant*>(new_invariant);
+                auto new_enum_invariant = dynamic_cast<IsEnumInvariant*>(new_invariant);
                 if (new_enum_invariant == nullptr) {
                     return SolvePhase2_Result::TypingError;
                 }
@@ -218,7 +218,7 @@ namespace pdm::types {
             }
             case TypeKind::Module:
             {
-                auto new_module_invariant = dynamic_cast<ModuleInvariant*>(new_invariant);
+                auto new_module_invariant = dynamic_cast<IsModuleInvariant*>(new_invariant);
                 if (new_module_invariant == nullptr) {
                     return SolvePhase2_Result::TypingError;
                 }
@@ -284,7 +284,7 @@ namespace pdm::types {
         m_typeof_ret_tv(nullptr)
     {}
     SolvePhase2_Result FnKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
-        auto new_fn_invariant = dynamic_cast<FnInvariant*>(new_invariant);
+        auto new_fn_invariant = dynamic_cast<IsVCallableInvariant*>(new_invariant);
         if (new_fn_invariant == nullptr) {
             return SolvePhase2_Result::TypingError;
         }
@@ -297,16 +297,16 @@ namespace pdm::types {
         // relating each arg:
         size_t args_count = m_args.size();
         for (size_t index = 0; index < args_count; index++) {
-            FnInvariant_FnArg const& fn_invariant_fn_arg = new_fn_invariant->formal_args()[index];
+            VCallArg const& fn_invariant_fn_arg = new_fn_invariant->formal_args()[index];
             FnKDVS::FnArg const& fn_kdvs_arg = m_args[index];
             
             // checking same arg access spec:
             if (fn_invariant_fn_arg.varg_access_spec != fn_kdvs_arg.varg_access_spec) {
                 return SolvePhase2_Result::TypingError;
             } else {
-                if (new_fn_invariant->strength() == FnInvariant_Strength::Formal) {
+                if (new_fn_invariant->strength() == VCallInvariantStrength::Formal) {
                     return fn_invariant_fn_arg.typeof_arg_tv->higher_order_assume_equals(fn_kdvs_arg.typeof_arg_tv);
-                } else if (new_fn_invariant->strength() == FnInvariant_Strength::Actual) {
+                } else if (new_fn_invariant->strength() == VCallInvariantStrength::Actual) {
                     return fn_invariant_fn_arg.typeof_arg_tv->higher_order_assume_subvar(fn_kdvs_arg.typeof_arg_tv);
                 } else {
                     return SolvePhase2_Result::CompilerError;
@@ -317,12 +317,54 @@ namespace pdm::types {
         // relating the return type:
         TypeVar* fn_invariant_typeof_ret_tv = new_fn_invariant->typeof_ret_tv();
         TypeVar* fn_kdvs_typeof_ret_tv = m_typeof_ret_tv;
-        if (new_fn_invariant->strength() == FnInvariant_Strength::Formal) {
+        if (new_fn_invariant->strength() == VCallInvariantStrength::Formal) {
             return fn_invariant_typeof_ret_tv->higher_order_assume_equals(fn_kdvs_typeof_ret_tv);
-        } else if (new_fn_invariant->strength() == FnInvariant_Strength::Actual) {
+        } else if (new_fn_invariant->strength() == VCallInvariantStrength::Actual) {
             return fn_invariant_typeof_ret_tv->higher_order_assume_subvar(fn_kdvs_typeof_ret_tv);
         } else {
             return SolvePhase2_Result::CompilerError;
+        }
+    }
+
+    // Array:
+    class ArrayKDVS: public KindDependentVarSolver {
+      private:
+        TypeVar* m_opt_typeof_element_tv;
+
+      public:
+        inline ArrayKDVS(VarKind var_kind);
+
+      public:
+        inline TypeVar* opt_typeof_element_tv() const;
+        inline void opt_typeof_element_tv(TypeVar* tv);
+        
+      public:
+        virtual SolvePhase2_Result lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) override;
+    };
+    
+    inline ArrayKDVS::ArrayKDVS(VarKind var_kind)
+    :   KindDependentVarSolver(var_kind, TypeKind::Array),
+        m_opt_typeof_element_tv(nullptr)
+    {}
+    inline TypeVar* ArrayKDVS::opt_typeof_element_tv() const {
+        return m_opt_typeof_element_tv;
+    }
+    inline void ArrayKDVS::opt_typeof_element_tv(TypeVar* tv) {
+        m_opt_typeof_element_tv = tv;
+    }
+
+    SolvePhase2_Result ArrayKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
+        auto new_array_invariant = dynamic_cast<IsArrayInvariant*>(new_invariant);
+        if (new_array_invariant == nullptr) {
+            return SolvePhase2_Result::TypingError;
+        }
+
+        TypeVar* typeof_array_invariant_item_tv = new_array_invariant->item_tv();
+        if (m_opt_typeof_element_tv == nullptr) {
+            m_opt_typeof_element_tv = typeof_array_invariant_item_tv;
+            return SolvePhase2_Result::UpdatedOrFresh;
+        } else {
+            return m_opt_typeof_element_tv->higher_order_assume_equals(typeof_array_invariant_item_tv);
         }
     }
 
@@ -407,6 +449,11 @@ namespace pdm::types {
                     case TypeKind::Fn:
                     {
                         rv.kdvs = new FnKDVS(var_kind);
+                        break;
+                    }
+                    case TypeKind::Array:
+                    {
+                        rv.kdvs = new ArrayKDVS(var_kind);
                         break;
                     }
                 }

@@ -156,8 +156,9 @@ namespace pdm::types {
 
       protected:
         FloatType(std::string&& name, int width_in_bits)
-        : Type("FloatType:" + std::move(name), TypeKind::Float),
-          m_width_in_bits(width_in_bits) {}
+        :   Type("FloatType:" + std::move(name), TypeKind::Float),
+            m_width_in_bits(width_in_bits) 
+        {}
     };
 
     //

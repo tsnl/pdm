@@ -13,9 +13,6 @@ namespace pdm::scoper {
     class RootFrame: public Frame {
       public:
         RootFrame(types::Manager* typer);
-
-      private:
-        void help_define_builtin_type(intern::String name, types::Var* typer_var);
     };
 
 }

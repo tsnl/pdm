@@ -8,6 +8,7 @@
 #include "pdm/ast/typespec/typespec.hh"
 #include "pdm/ast/pattern/vpattern.hh"
 #include "pdm/ast/pattern/tpattern.hh"
+#include "mod_content.hh"
 
 namespace pdm::ast {
     class Manager;
@@ -18,7 +19,7 @@ namespace pdm::ast {
 
 namespace pdm::ast {
 
-    class TypeclassStmt: public Stmt {
+    class ModTypeclassStmt: public ModContentStmt {
         friend Manager;
 
       private:
@@ -30,7 +31,7 @@ namespace pdm::ast {
         types::Var*                 m_x_defn_var;
 
       public:
-        TypeclassStmt(
+        ModTypeclassStmt(
             source::Loc loc, 
             intern::String typeclass_name,
             intern::String candidate_name,
@@ -38,13 +39,14 @@ namespace pdm::ast {
             std::vector<TPattern*>&& tpatterns,
             std::vector<TypeQueryExp*>&& conditions
         )
-        : Stmt(loc, Kind::TypeStmt),
-          m_typeclass_name(typeclass_name),
-          m_candidate_name(candidate_name),
-          m_candidate_typespec(candidate_typespec),
-          m_tpatterns(std::move(tpatterns)),
-          m_conditions(std::move(conditions)),
-          m_x_defn_var(nullptr) {}
+        :   ModContentStmt(loc, Kind::ModTypeclassStmt),
+            m_typeclass_name(typeclass_name),
+            m_candidate_name(candidate_name),
+            m_candidate_typespec(candidate_typespec),
+            m_tpatterns(std::move(tpatterns)),
+            m_conditions(std::move(conditions)),
+            m_x_defn_var(nullptr) 
+        {}
       
       public:
         intern::String typeclass_name() const {

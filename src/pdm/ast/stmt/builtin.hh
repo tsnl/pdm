@@ -13,7 +13,7 @@ namespace pdm::ast {
 
     class Manager;
 
-    class BuiltinTypeStmt: public Stmt {
+    class BuiltinStmt: public Stmt {
         friend Manager;
 
       private:
@@ -21,7 +21,7 @@ namespace pdm::ast {
         types::TypeVar* m_x_tv;
 
       public:
-        BuiltinTypeStmt(std::string&& desc);
+        BuiltinStmt(std::string&& desc);
 
       public:
         std::string const& desc() const {

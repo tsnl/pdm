@@ -384,7 +384,7 @@ namespace pdm::scoper {
         }
         return true;
     }
-    bool ScoperVisitor::on_visit__typeclass_stmt(ast::TypeclassStmt* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__mod_typeclass_stmt(ast::ModTypeclassStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // creating the typeclass var:
             types::Var* typeclass_var = nullptr;
@@ -428,7 +428,7 @@ namespace pdm::scoper {
     // function.
     // This function is implicitly defined within the system.
     // Thus, use TV, not CV, even if targs present.
-    bool ScoperVisitor::on_visit__type_stmt(ast::TypeStmt* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__mod_type_stmt(ast::ModTypeStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // creating the var:
             types::Var* type_var = nullptr;
@@ -467,7 +467,7 @@ namespace pdm::scoper {
         }
         return true;
     }
-    bool ScoperVisitor::on_visit__enum_stmt(ast::EnumStmt* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__mod_enum_stmt(ast::ModEnumStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // creating a var:
             types::Var* enum_var = nullptr;
@@ -506,28 +506,28 @@ namespace pdm::scoper {
         }
         return true;
     }
-    bool ScoperVisitor::on_visit__fn_stmt(ast::FnStmt* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // creating a 'var':
-            types::Var* fn_var = nullptr;
+            types::Var* mod_val_var = nullptr;
             if (node->tpatterns().empty()) {
                 // single value
-                std::string tv_prefix = "Single(Fn):";
+                std::string tv_prefix = "Const:";
                 std::string tv_name = tv_prefix + node->name().content();
-                fn_var = scoper()->types_mgr()->new_unknown_tv(std::move(tv_name), node);
+                mod_val_var = scoper()->types_mgr()->new_unknown_tv(std::move(tv_name), node);
             } else {
                 // template function
-                std::string template_prefix = "Template(Fn):";
+                std::string template_prefix = "TemplateConst:";
                 std::string template_name = template_prefix + node->name().content();
-                fn_var = scoper()->types_mgr()->new_value_template_var(std::move(template_name), node);
+                mod_val_var = scoper()->types_mgr()->new_value_template_var(std::move(template_name), node);
             }
 
             // adding the new defn:
             Defn new_defn {
-                DefnKind::Fn,
+                DefnKind::Const,
                 node->name(),
                 node,
-                fn_var
+                mod_val_var
             };
             bool defn_ok = top_frame()->define(new_defn);
             if (!defn_ok) {
@@ -536,7 +536,7 @@ namespace pdm::scoper {
             }
 
             // storing result on the node:
-            node->x_defn_var(fn_var);
+            node->x_defn_var(mod_val_var);
 
             // pushing attributes for nested:
             push_frame(FrameKind::FnRhs);
@@ -849,7 +849,7 @@ namespace pdm::scoper {
     }
 
     // non-syntax
-    bool ScoperVisitor::on_visit__builtin_type_stmt(ast::BuiltinTypeStmt* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__builtin_type_stmt(ast::BuiltinStmt* node, VisitOrder visit_order) {
         return true;
     }
 

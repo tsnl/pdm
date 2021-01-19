@@ -1,5 +1,5 @@
 mod Fibx {
-    fn register (x Int32, y Int32) = {
+    register = fn (x Int32, y Int32) {
         # print, or something?
     };
 };

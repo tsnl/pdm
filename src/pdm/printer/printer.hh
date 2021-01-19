@@ -50,10 +50,10 @@ namespace pdm::printer {
 
         // statements:
         void print_mod_stmt(ast::ModStmt* node);
-        void print_typeclass_stmt(ast::TypeclassStmt* node);
-        void print_type_stmt(ast::TypeStmt* node);
-        void print_enum_stmt(ast::EnumStmt* node);
-        void print_fn_stmt(ast::FnStmt* node);
+        void print_mod_typeclass_stmt(ast::ModTypeclassStmt* node);
+        void print_mod_type_stmt(ast::ModTypeStmt* node);
+        void print_mod_enum_stmt(ast::ModEnumStmt* node);
+        void print_mod_val_stmt(ast::ModValStmt* node);
         void print_const_stmt(ast::ConstStmt* node);
         void print_val_stmt(ast::ValStmt* node);
         void print_var_stmt(ast::VarStmt* node);
@@ -106,7 +106,7 @@ namespace pdm::printer {
         void print_varg(ast::VArg* varg);
 
         // non-syntactic elements:
-        void print_builtin_type_stmt(ast::BuiltinTypeStmt* node);
+        void print_builtin_type_stmt(ast::BuiltinStmt* node);
     };
 
 }

@@ -8,16 +8,9 @@ namespace pdm::ast {
         Script, 
         
         // statements:
-        BuiltinTypeStmt,    // non-syntactic
-        DiscardStmt,
-        ConstStmt,
-        ValStmt,
-        VarStmt,
-        SetStmt,
-        FnStmt,
-        TypeStmt,
-        EnumStmt,
-        TypeclassStmt,
+        BuiltinStmt,    // non-syntactic
+        DiscardStmt, ConstStmt, ValStmt, VarStmt, SetStmt,
+        ModValStmt, ModTypeStmt, ModEnumStmt, ModTypeclassStmt,
         ModStmt,
         ExternStmt,
         ImportStmt,

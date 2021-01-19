@@ -20,6 +20,7 @@ namespace pdm::types {
         Enum,
         Module,
         Fn,
+        Array,
         __Max = Fn,
     };
 
