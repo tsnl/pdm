@@ -9,8 +9,8 @@
 # - restore ':' for struct initializers
 # add mandatory return type for 'fn' stmt 
 
-mod demo {
-    fn showoff () -> F32 = {
+mod Demo {
+    fn showoff () -> Float32 = {
         let vec1 = vec.new_2f(0,0);
         let vec2 = vec.new_2f(1,2);
         let vec1_length = vec.length_sqr(vec1);
@@ -23,20 +23,20 @@ mod demo {
     };
 };
 
-mod vec {
+mod LinAlg {
     type Vec2f = {
-        x F32,
-        y F32
+        x Float32,
+        y Float32
     };
 
-    type Norm = Vec2f -> F32;
+    type Norm = Vec2f -> Float32;
 
-    fn new_2f (x F32, y F32) -> Vec2f = {
+    fn new_2f (x Float32, y Float32) -> Vec2f = {
         x: x, 
         y: y
     };
 
-    fn mul (s F32, v Vec2f) -> Vec2f = {
+    fn mul (s Float32, v Vec2f) -> Vec2f = {
         x: s * v.x,
         y: s * v.y
     };
@@ -46,16 +46,16 @@ mod vec {
         y: v.y + w.y
     };
 
-    fn dot (v Vec2f, w Vec2f) -> F32 = {
+    fn dot (v Vec2f, w Vec2f) -> Float32 = {
         v.x * w.x + 
         v.y * w.y
     };
 
-    fn length_sqr (v Vec2f) -> F32 = {
+    fn length_sqr (v Vec2f) -> Float32 = {
         dot(v,v)
     };
 
-    fn subtract (v Vec2f, w Vec2f) -> F32 = {
+    fn subtract (v Vec2f, w Vec2f) -> Float32 = {
         vec.add(mul(w,-1))
     };
 };
@@ -73,16 +73,19 @@ mod vec {
 #   - 'scalar' is best version yet, vector wip
 #   - 'test' verges into formal specification. Heady stuff.
 
-mod scalar {
+mod Scalar {
     # instances of types in scalar.Impl contain functions
     # satisfying 'scalar' properties.
-    typeclass Impl <I Any> [S Any] = {
-        I.on_add      :: (left S, right S) -> S;
-        I.on_multiply :: (left S, right S) -> S;
+    typeclass Impl [S Any] -> (I Any) = {
+        # don't need 'has_field'... just subtype a single-field struct.
+        I :< {on_add      Fn (left S, right S) -> S};
+        I :< {on_multiply Fn (left S, right S) -> S};
 
         I.zero        :: S;
         I.on_equals   :: (left S, right S) -> S;
         
+        # not supported, probably won't be...
+        # test functions for refinement typeclasses.
         add_0_0_equals_0 (i I, left S, right S) = {
             if (is_zero(left) and is_zero(right)) then {
                 # test if 0 + 0 = 0
@@ -120,7 +123,7 @@ mod scalar {
 # Consteval
 #
 
-mod const {
+mod Const {
     Texture = Array[U8, 64*64];
 
     # static funcs identified by 'aot' sgn.
@@ -221,6 +224,7 @@ mod const {
     # - defn <>     | cannot be called   | vid or tid      | y ( => )       | n (cached)  |
     # note <> args are always implicitly captured
     # can even add Typefunc signatures with '=>' arrow
+    * * * * * (update) <> now ![]
 
     # NOTE: cannot call () args as <>; instead, use 'const_eval'
     # - const_eval guarantees one block runs aot
@@ -323,14 +327,14 @@ mod nvec [T scalar.Scalar, n U32] = {
 
 mod test {
     type FScalar = scalar.Scalar[{
-        add: fun (x F32, y F32) F32 = {
+        add: fun (x Float32, y Float32) Float32 = {
             x + y
         },
-        multiply: fun (x F32, y F32) F32 = {
+        multiply: fun (x Float32, y Float32) Float32 = {
             x * y
         }
     }];
-    type FVector [n U32] = nvec[FScalar,F32].Vector;
+    type FVector [n U32] = nvec[FScalar,Float32].Vector;
 };
 
 

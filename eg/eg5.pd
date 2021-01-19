@@ -1,9 +1,56 @@
 # Enums: simple enough.
 
-module opt {
-    type Opt[T]
-    | Some T
+mod Optional {
+    type O [T AnyType]
+    | Some (T)
     | None
     ;
+}
+
+mod Rational {
+    type Q = opt.Opt[{
+        numerator Int32,
+        denominator Int32
+    }];
+
+    fn rational (numerator Int32, denominator Int32) -> Rational = {
+        if (denominator == 0) then {
+            Rational.Some({
+                numerator = numerator,
+                denominator = denominator
+            })
+        } else {
+            Rational.None
+        }
+    };
+
+    type RationalBinOp = Fn (Float32, Float32) -> F32;
+
+    fn apply (x Rational, y Rational, f RationalBinOp) -> Rational = {
+        match (x) with {
+            Some (vx) then {
+                match (y) with {
+                    Some (vy) then { Rational.Some(f(vx,vy)) },
+                    None      then { Rational.None }
+                }
+            },
+            None then {
+                Rational.None
+            }
+        }
+    }
+    
+    fn add_incorrectly (x Rational, y Rational) -> Rational = {
+        apply(x, y, lambda (x,y) {
+            numerator = (x.numerator + y.numerator),
+            denominator = (x.denominator + y.denominator)
+        })
+    };
+    
+    # TODO: explore monad unwrapping
+    # TODO: support 0-length enum values.
+    # - Enum fields reference a constructor function or default value (even though TIDs)
+    # - Each 'match' arm starts with a TID (for an enum branch), followed by an optional lpattern, followed by 'then', followed by paren_exp branch.
+    # TODO: revert 'lambda' to lpattern without return-- need a short function notation...
 };
 

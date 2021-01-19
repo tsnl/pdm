@@ -1,16 +1,16 @@
 # Values as template parameters:
 
-module array {
+mod Arrays {
 
-    type Array [T Any, n Int] = {
+    type Array [T Any, n Int32] = {
         # ...
     };
 
-    def map [T,U, n Int] (f U(T), a Array[T,n]) -> Array[U,n] = Array[U,n] {
+    def map [T,U, n Int32] (f U(T), a Array[T,n]) -> Array[U,n] = Array[U,n] {
         # ...
     };
 
-    def nmap [T,U, n Int] (f Fn[T,U], a Array[T,n]) = Array[U,n] {
+    def nmap [T,U, n Int32] (f Fn[T,U], a Array[T,n]) = Array[U,n] {
         # ...
     };
 

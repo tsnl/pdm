@@ -1,11 +1,12 @@
-mod type_query_exps {
-    fn hello (x F32) -> F32 = {
-
+mod TypeQueries {
+    fn hello (x Float32) -> Float32 = {
+        x
     };
 
-    const hello = F32 :< F64;
+    # disabled!
+    # const hello = Float32 :< Float64;
 
-    const world = lambda (x F32) = {
-
+    const world = lambda (x Float32) -> Float32 = {
+        hello(x)
     };
 };

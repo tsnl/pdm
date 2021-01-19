@@ -1,5 +1,24 @@
 # Roadmap
 
+## Jan 18 2021
+
+```
+I'm really dissatisfied with templates so far.
+- 'typeclass' defns are actually template type?
+- no way to factor out template args.
+```
+
+see eg11.pd
+
+- feature request: remove first keyword for module items
+- feature request: add template args for modules, also all items
+  - maximum flexibility
+- feature request: add ModuleName:mod (yes, 'mod' is a keyword) to
+    1. access module singleton value
+    2. preserve 'vid for values, tid for types' notion, where 'mod' by default is a singleton type.
+
+- working on typer to typecheck templates
+
 ## Jan 17 2021
 - Typer WIP! Phew!
 - The following language changes need to be made:

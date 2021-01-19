@@ -6,9 +6,9 @@
 # Circles:
 #
 
-import fib type "package/git" from "https://github.com/tsnl/fib.pdmpkg";
+import fib from "https://github.com/tsnl/fib.pdpkg" type "pdpkg/git";
 
-mod circle {
+mod Shapes {
     type Circle = {
         center Tuple[F32,F32],
         radius Tuple[F32]
@@ -26,7 +26,7 @@ mod circle {
 # Pixels (generics):
 #
 
-mod pixel {
+mod Pixel {
     type Pixel [T Any] = {
         r T,
         g T,
@@ -49,7 +49,8 @@ mod pixel {
         b: s * p.b
     };
 };
-mod image {
+
+mod Image {
     fn add ![T Any] (lt Image[T], rt Image[T]) -> Image[T] = {
         assert lt.size == rt.size;
         {
@@ -69,7 +70,7 @@ mod image {
 # Dicts (generics):
 #
 
-mod dict {
+mod Dict {
     type Dict [K,V Any] = {
         # ...
     };
@@ -82,10 +83,10 @@ mod dict {
 #
 # Enums
 # - untagged unions are not supported in the language by default
-# - for such operations, use `bitcast[]` like LLVM
+# - for such operations, use `bitcast[]()` like LLVM
 #
 
-mod events {
+mod Events {
     type Color
     | Rgba Tuple[U8,U8,U8,U8]
     | Hsva Tuple[U8,U8,U8,U8]
@@ -123,8 +124,7 @@ mod events {
 # Slices and Leas:
 #
 
-mod greeting {
-    
+mod Greeting {
     fn new_cstr () -> CString {
         let len = 12;
         let buf = heap.alloc(Char)[len];
@@ -144,7 +144,7 @@ mod greeting {
     };
 };
 
-mod heap {
+mod Heap {
     fn alloc [T Any] (len U64) -> ^&T = {
         let ptr = malloc(len * sizeof[T]);
         buffer.new(ptr,len)
@@ -155,7 +155,7 @@ mod heap {
 # Lambdas, iterators, and for:
 #
 
-mod closed {
+mod Closed {
     fn loops () -> () = {
         let prime_limit = console.read_int[I32]("Enter a number >2 until which to search for primes: ");
         let &prime_count = 1;

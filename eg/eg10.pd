@@ -1,18 +1,19 @@
 # proposed builtin typeclasses:
-# - Int     \__ Number__
-# - Float   /
+# - Int(S|U) \__ Number__
+# - Float    /
 # - Number
 # - Struct
 # - Tuple
 # ...etc
 # instead of vague 'Any'
 
-mod vector {
+mod Vector {
     type Vec [T Number, n UInt32] = {
         data Array[T,n]
     };
 
-    fn increment ![T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) = {
+    fn increment ![T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) = 
+    {
         help_increment[T,n](inout lt, rt);
     };
     fn help_increment [T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) = {
@@ -35,7 +36,7 @@ mod vector {
     };
 };
 
-mod fibonacci {
+mod Fibonacci {
     fn demo () -> Int32 = {
         0
     };
@@ -45,12 +46,17 @@ mod fibonacci {
 # _can_ pass 'inout' param to 'out' pattern without error, but using 'out' spec.
 # thus, out[T] :< inout[T] (and in[T] :< inout[T])
 # i.e.
-mod in_out_and_everybout {
+mod InOutAndEverybout {
     fn hello_out (out x F32) = {
         set x = 42.0;
     };
     fn hello_inout (inout x F32) = {
         # 'out' from 'hello_out' defn, not from vpattern decl.
         hello_out(out x);
+    };
+
+    # also supported: 'opaque' for a pointer without read or write access.
+    fn hello_opaque (opaque y Float32) = {
+        print(ptr(y));
     };
 };
