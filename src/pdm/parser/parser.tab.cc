@@ -270,7 +270,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field: // struct_typespec_field
-        value.copy< pdm::ast::StructTypespec::Field* > (YY_MOVE (that.value));
+        value.copy< pdm::ast::StructTypeSpec::Field* > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_targ: // targ
@@ -304,7 +304,7 @@ namespace pdm { namespace parser {
       case symbol_kind::S_unary_typespec: // unary_typespec
       case symbol_kind::S_long_typespec: // long_typespec
       case symbol_kind::S_struct_typespec: // struct_typespec
-        value.copy< pdm::ast::Typespec* > (YY_MOVE (that.value));
+        value.copy< pdm::ast::TypeSpec* > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_unary_op: // unary_op
@@ -355,7 +355,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field_cl: // struct_typespec_field_cl
-        value.copy< std::vector<pdm::ast::StructTypespec::Field*> > (YY_MOVE (that.value));
+        value.copy< std::vector<pdm::ast::StructTypeSpec::Field*> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_targ_cl: // targ_cl
@@ -376,7 +376,7 @@ namespace pdm { namespace parser {
 
       case symbol_kind::S_typespec_cl1: // typespec_cl1
       case symbol_kind::S_typespec_cl2: // typespec_cl2
-        value.copy< std::vector<pdm::ast::Typespec*> > (YY_MOVE (that.value));
+        value.copy< std::vector<pdm::ast::TypeSpec*> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_varg_cl: // varg_cl
@@ -516,7 +516,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field: // struct_typespec_field
-        value.move< pdm::ast::StructTypespec::Field* > (YY_MOVE (s.value));
+        value.move< pdm::ast::StructTypeSpec::Field* > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_targ: // targ
@@ -550,7 +550,7 @@ namespace pdm { namespace parser {
       case symbol_kind::S_unary_typespec: // unary_typespec
       case symbol_kind::S_long_typespec: // long_typespec
       case symbol_kind::S_struct_typespec: // struct_typespec
-        value.move< pdm::ast::Typespec* > (YY_MOVE (s.value));
+        value.move< pdm::ast::TypeSpec* > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_unary_op: // unary_op
@@ -601,7 +601,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field_cl: // struct_typespec_field_cl
-        value.move< std::vector<pdm::ast::StructTypespec::Field*> > (YY_MOVE (s.value));
+        value.move< std::vector<pdm::ast::StructTypeSpec::Field*> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_targ_cl: // targ_cl
@@ -622,7 +622,7 @@ namespace pdm { namespace parser {
 
       case symbol_kind::S_typespec_cl1: // typespec_cl1
       case symbol_kind::S_typespec_cl2: // typespec_cl2
-        value.move< std::vector<pdm::ast::Typespec*> > (YY_MOVE (s.value));
+        value.move< std::vector<pdm::ast::TypeSpec*> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_varg_cl: // varg_cl
@@ -830,7 +830,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field: // struct_typespec_field
-        value.YY_MOVE_OR_COPY< pdm::ast::StructTypespec::Field* > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< pdm::ast::StructTypeSpec::Field* > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_targ: // targ
@@ -864,7 +864,7 @@ namespace pdm { namespace parser {
       case symbol_kind::S_unary_typespec: // unary_typespec
       case symbol_kind::S_long_typespec: // long_typespec
       case symbol_kind::S_struct_typespec: // struct_typespec
-        value.YY_MOVE_OR_COPY< pdm::ast::Typespec* > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< pdm::ast::TypeSpec* > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_unary_op: // unary_op
@@ -915,7 +915,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field_cl: // struct_typespec_field_cl
-        value.YY_MOVE_OR_COPY< std::vector<pdm::ast::StructTypespec::Field*> > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< std::vector<pdm::ast::StructTypeSpec::Field*> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_targ_cl: // targ_cl
@@ -936,7 +936,7 @@ namespace pdm { namespace parser {
 
       case symbol_kind::S_typespec_cl1: // typespec_cl1
       case symbol_kind::S_typespec_cl2: // typespec_cl2
-        value.YY_MOVE_OR_COPY< std::vector<pdm::ast::Typespec*> > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< std::vector<pdm::ast::TypeSpec*> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_varg_cl: // varg_cl
@@ -1062,7 +1062,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field: // struct_typespec_field
-        value.move< pdm::ast::StructTypespec::Field* > (YY_MOVE (that.value));
+        value.move< pdm::ast::StructTypeSpec::Field* > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_targ: // targ
@@ -1096,7 +1096,7 @@ namespace pdm { namespace parser {
       case symbol_kind::S_unary_typespec: // unary_typespec
       case symbol_kind::S_long_typespec: // long_typespec
       case symbol_kind::S_struct_typespec: // struct_typespec
-        value.move< pdm::ast::Typespec* > (YY_MOVE (that.value));
+        value.move< pdm::ast::TypeSpec* > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_unary_op: // unary_op
@@ -1147,7 +1147,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field_cl: // struct_typespec_field_cl
-        value.move< std::vector<pdm::ast::StructTypespec::Field*> > (YY_MOVE (that.value));
+        value.move< std::vector<pdm::ast::StructTypeSpec::Field*> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_targ_cl: // targ_cl
@@ -1168,7 +1168,7 @@ namespace pdm { namespace parser {
 
       case symbol_kind::S_typespec_cl1: // typespec_cl1
       case symbol_kind::S_typespec_cl2: // typespec_cl2
-        value.move< std::vector<pdm::ast::Typespec*> > (YY_MOVE (that.value));
+        value.move< std::vector<pdm::ast::TypeSpec*> > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_varg_cl: // varg_cl
@@ -1294,7 +1294,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field: // struct_typespec_field
-        value.copy< pdm::ast::StructTypespec::Field* > (that.value);
+        value.copy< pdm::ast::StructTypeSpec::Field* > (that.value);
         break;
 
       case symbol_kind::S_targ: // targ
@@ -1328,7 +1328,7 @@ namespace pdm { namespace parser {
       case symbol_kind::S_unary_typespec: // unary_typespec
       case symbol_kind::S_long_typespec: // long_typespec
       case symbol_kind::S_struct_typespec: // struct_typespec
-        value.copy< pdm::ast::Typespec* > (that.value);
+        value.copy< pdm::ast::TypeSpec* > (that.value);
         break;
 
       case symbol_kind::S_unary_op: // unary_op
@@ -1379,7 +1379,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field_cl: // struct_typespec_field_cl
-        value.copy< std::vector<pdm::ast::StructTypespec::Field*> > (that.value);
+        value.copy< std::vector<pdm::ast::StructTypeSpec::Field*> > (that.value);
         break;
 
       case symbol_kind::S_targ_cl: // targ_cl
@@ -1400,7 +1400,7 @@ namespace pdm { namespace parser {
 
       case symbol_kind::S_typespec_cl1: // typespec_cl1
       case symbol_kind::S_typespec_cl2: // typespec_cl2
-        value.copy< std::vector<pdm::ast::Typespec*> > (that.value);
+        value.copy< std::vector<pdm::ast::TypeSpec*> > (that.value);
         break;
 
       case symbol_kind::S_varg_cl: // varg_cl
@@ -1525,7 +1525,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field: // struct_typespec_field
-        value.move< pdm::ast::StructTypespec::Field* > (that.value);
+        value.move< pdm::ast::StructTypeSpec::Field* > (that.value);
         break;
 
       case symbol_kind::S_targ: // targ
@@ -1559,7 +1559,7 @@ namespace pdm { namespace parser {
       case symbol_kind::S_unary_typespec: // unary_typespec
       case symbol_kind::S_long_typespec: // long_typespec
       case symbol_kind::S_struct_typespec: // struct_typespec
-        value.move< pdm::ast::Typespec* > (that.value);
+        value.move< pdm::ast::TypeSpec* > (that.value);
         break;
 
       case symbol_kind::S_unary_op: // unary_op
@@ -1610,7 +1610,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field_cl: // struct_typespec_field_cl
-        value.move< std::vector<pdm::ast::StructTypespec::Field*> > (that.value);
+        value.move< std::vector<pdm::ast::StructTypeSpec::Field*> > (that.value);
         break;
 
       case symbol_kind::S_targ_cl: // targ_cl
@@ -1631,7 +1631,7 @@ namespace pdm { namespace parser {
 
       case symbol_kind::S_typespec_cl1: // typespec_cl1
       case symbol_kind::S_typespec_cl2: // typespec_cl2
-        value.move< std::vector<pdm::ast::Typespec*> > (that.value);
+        value.move< std::vector<pdm::ast::TypeSpec*> > (that.value);
         break;
 
       case symbol_kind::S_varg_cl: // varg_cl
@@ -2000,7 +2000,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field: // struct_typespec_field
-        yylhs.value.emplace< pdm::ast::StructTypespec::Field* > ();
+        yylhs.value.emplace< pdm::ast::StructTypeSpec::Field* > ();
         break;
 
       case symbol_kind::S_targ: // targ
@@ -2034,7 +2034,7 @@ namespace pdm { namespace parser {
       case symbol_kind::S_unary_typespec: // unary_typespec
       case symbol_kind::S_long_typespec: // long_typespec
       case symbol_kind::S_struct_typespec: // struct_typespec
-        yylhs.value.emplace< pdm::ast::Typespec* > ();
+        yylhs.value.emplace< pdm::ast::TypeSpec* > ();
         break;
 
       case symbol_kind::S_unary_op: // unary_op
@@ -2085,7 +2085,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field_cl: // struct_typespec_field_cl
-        yylhs.value.emplace< std::vector<pdm::ast::StructTypespec::Field*> > ();
+        yylhs.value.emplace< std::vector<pdm::ast::StructTypeSpec::Field*> > ();
         break;
 
       case symbol_kind::S_targ_cl: // targ_cl
@@ -2106,7 +2106,7 @@ namespace pdm { namespace parser {
 
       case symbol_kind::S_typespec_cl1: // typespec_cl1
       case symbol_kind::S_typespec_cl2: // typespec_cl2
-        yylhs.value.emplace< std::vector<pdm::ast::Typespec*> > ();
+        yylhs.value.emplace< std::vector<pdm::ast::TypeSpec*> > ();
         break;
 
       case symbol_kind::S_varg_cl: // varg_cl
@@ -2317,25 +2317,25 @@ namespace pdm { namespace parser {
 
   case 31: // mod_val_stmt: vid typespec "from" tid stringl
 #line 354 "parser.yy"
-                                                     { yylhs.value.as < pdm::ast::ModContentStmt* > () = mgr->new_external_mod_val_stmt(yylhs.location, yystack_[4].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::TPattern*>{}), yystack_[3].value.as < pdm::ast::Typespec* > (), yystack_[1].value.as < TokenInfo > ().ID_intstr, *yystack_[0].value.as < TokenInfo > ().String_utf8string); }
+                                                     { yylhs.value.as < pdm::ast::ModContentStmt* > () = mgr->new_external_mod_val_stmt(yylhs.location, yystack_[4].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::TPattern*>{}), yystack_[3].value.as < pdm::ast::TypeSpec* > (), yystack_[1].value.as < TokenInfo > ().ID_intstr, *yystack_[0].value.as < TokenInfo > ().String_utf8string); }
 #line 2322 "parser.tab.cc"
     break;
 
   case 32: // mod_val_stmt: vid tpattern_seq typespec "from" tid stringl
 #line 355 "parser.yy"
-                                                     { yylhs.value.as < pdm::ast::ModContentStmt* > () = mgr->new_external_mod_val_stmt(yylhs.location, yystack_[5].value.as < TokenInfo > ().ID_intstr, std::move(yystack_[4].value.as < std::vector<pdm::ast::TPattern*> > ()), yystack_[3].value.as < pdm::ast::Typespec* > (), yystack_[1].value.as < TokenInfo > ().ID_intstr, *yystack_[0].value.as < TokenInfo > ().String_utf8string); }
+                                                     { yylhs.value.as < pdm::ast::ModContentStmt* > () = mgr->new_external_mod_val_stmt(yylhs.location, yystack_[5].value.as < TokenInfo > ().ID_intstr, std::move(yystack_[4].value.as < std::vector<pdm::ast::TPattern*> > ()), yystack_[3].value.as < pdm::ast::TypeSpec* > (), yystack_[1].value.as < TokenInfo > ().ID_intstr, *yystack_[0].value.as < TokenInfo > ().String_utf8string); }
 #line 2328 "parser.tab.cc"
     break;
 
   case 33: // mod_type_stmt: tid "=" long_typespec
 #line 358 "parser.yy"
-                                            { yylhs.value.as < pdm::ast::ModContentStmt* > () = mgr->new_mod_type_stmt(yylhs.location, yystack_[2].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::TPattern*>{}), yystack_[0].value.as < pdm::ast::Typespec* > ()); }
+                                            { yylhs.value.as < pdm::ast::ModContentStmt* > () = mgr->new_mod_type_stmt(yylhs.location, yystack_[2].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::TPattern*>{}), yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 2334 "parser.tab.cc"
     break;
 
   case 34: // mod_type_stmt: tid tpattern_seq "=" long_typespec
 #line 359 "parser.yy"
-                                            { yylhs.value.as < pdm::ast::ModContentStmt* > () = mgr->new_mod_type_stmt(yylhs.location, yystack_[3].value.as < TokenInfo > ().ID_intstr, std::move(yystack_[2].value.as < std::vector<pdm::ast::TPattern*> > ()), yystack_[0].value.as < pdm::ast::Typespec* > ()); }
+                                            { yylhs.value.as < pdm::ast::ModContentStmt* > () = mgr->new_mod_type_stmt(yylhs.location, yystack_[3].value.as < TokenInfo > ().ID_intstr, std::move(yystack_[2].value.as < std::vector<pdm::ast::TPattern*> > ()), yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 2340 "parser.tab.cc"
     break;
 
@@ -2371,26 +2371,26 @@ namespace pdm { namespace parser {
 
   case 40: // enum_field: tid
 #line 373 "parser.yy"
-                                     { yylhs.value.as < pdm::ast::ModEnumStmt::Field* > () = mgr->new_enum_stmt_field(yylhs.location, yystack_[0].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::Typespec*>{}), false); }
+                                     { yylhs.value.as < pdm::ast::ModEnumStmt::Field* > () = mgr->new_enum_stmt_field(yylhs.location, yystack_[0].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::TypeSpec*>{}), false); }
 #line 2376 "parser.tab.cc"
     break;
 
   case 41: // enum_field: tid "(" ")"
 #line 374 "parser.yy"
-                                     { yylhs.value.as < pdm::ast::ModEnumStmt::Field* > () = mgr->new_enum_stmt_field(yylhs.location, yystack_[2].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::Typespec*>{}), true); }
+                                     { yylhs.value.as < pdm::ast::ModEnumStmt::Field* > () = mgr->new_enum_stmt_field(yylhs.location, yystack_[2].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::TypeSpec*>{}), true); }
 #line 2382 "parser.tab.cc"
     break;
 
   case 42: // enum_field: tid "(" typespec_cl1 ")"
 #line 375 "parser.yy"
-                                     { yylhs.value.as < pdm::ast::ModEnumStmt::Field* > () = mgr->new_enum_stmt_field(yylhs.location, yystack_[3].value.as < TokenInfo > ().ID_intstr, std::move(yystack_[1].value.as < std::vector<pdm::ast::Typespec*> > ()), true); }
+                                     { yylhs.value.as < pdm::ast::ModEnumStmt::Field* > () = mgr->new_enum_stmt_field(yylhs.location, yystack_[3].value.as < TokenInfo > ().ID_intstr, std::move(yystack_[1].value.as < std::vector<pdm::ast::TypeSpec*> > ()), true); }
 #line 2388 "parser.tab.cc"
     break;
 
   case 43: // mod_typeclass_stmt: tid "<" tid typespec ">" "=" "{" type_query_exp_sl "}"
 #line 378 "parser.yy"
                                                                                      { 
-        yylhs.value.as < pdm::ast::ModContentStmt* > () = mgr->new_mod_typeclass_stmt(yylhs.location, yystack_[8].value.as < TokenInfo > ().ID_intstr, yystack_[6].value.as < TokenInfo > ().ID_intstr, yystack_[5].value.as < pdm::ast::Typespec* > (), std::move(std::vector<ast::TPattern*>{}), std::move(yystack_[1].value.as < std::vector<pdm::ast::TypeQueryExp*> > ())); 
+        yylhs.value.as < pdm::ast::ModContentStmt* > () = mgr->new_mod_typeclass_stmt(yylhs.location, yystack_[8].value.as < TokenInfo > ().ID_intstr, yystack_[6].value.as < TokenInfo > ().ID_intstr, yystack_[5].value.as < pdm::ast::TypeSpec* > (), std::move(std::vector<ast::TPattern*>{}), std::move(yystack_[1].value.as < std::vector<pdm::ast::TypeQueryExp*> > ())); 
       }
 #line 2396 "parser.tab.cc"
     break;
@@ -2398,7 +2398,7 @@ namespace pdm { namespace parser {
   case 44: // mod_typeclass_stmt: tid tpattern_seq "<" tid typespec ">" "=" "{" type_query_exp_sl "}"
 #line 381 "parser.yy"
                                                                                      { 
-        yylhs.value.as < pdm::ast::ModContentStmt* > () = mgr->new_mod_typeclass_stmt(yylhs.location, yystack_[9].value.as < TokenInfo > ().ID_intstr, yystack_[6].value.as < TokenInfo > ().ID_intstr, yystack_[5].value.as < pdm::ast::Typespec* > (), std::move(yystack_[8].value.as < std::vector<pdm::ast::TPattern*> > ()), std::move(yystack_[1].value.as < std::vector<pdm::ast::TypeQueryExp*> > ())); 
+        yylhs.value.as < pdm::ast::ModContentStmt* > () = mgr->new_mod_typeclass_stmt(yylhs.location, yystack_[9].value.as < TokenInfo > ().ID_intstr, yystack_[6].value.as < TokenInfo > ().ID_intstr, yystack_[5].value.as < pdm::ast::TypeSpec* > (), std::move(yystack_[8].value.as < std::vector<pdm::ast::TPattern*> > ()), std::move(yystack_[1].value.as < std::vector<pdm::ast::TypeQueryExp*> > ())); 
       }
 #line 2404 "parser.tab.cc"
     break;
@@ -2711,7 +2711,7 @@ namespace pdm { namespace parser {
 
   case 96: // lambda_exp: "fn" vpattern "->" typespec bracketed_exp
 #line 492 "parser.yy"
-                                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_lambda_exp(yylhs.location, yystack_[3].value.as < pdm::ast::VPattern* > (), yystack_[1].value.as < pdm::ast::Typespec* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+                                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_lambda_exp(yylhs.location, yystack_[3].value.as < pdm::ast::VPattern* > (), yystack_[1].value.as < pdm::ast::TypeSpec* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
 #line 2716 "parser.tab.cc"
     break;
 
@@ -2993,7 +2993,7 @@ namespace pdm { namespace parser {
 
   case 143: // type_query_exp: typespec type_query_op typespec
 #line 583 "parser.yy"
-                                        { yylhs.value.as < pdm::ast::TypeQueryExp* > () = mgr->new_type_query_exp(yylhs.location, yystack_[1].value.as < pdm::ast::TypeQueryKind > (), yystack_[2].value.as < pdm::ast::Typespec* > (), yystack_[0].value.as < pdm::ast::Typespec* > ()); }
+                                        { yylhs.value.as < pdm::ast::TypeQueryExp* > () = mgr->new_type_query_exp(yylhs.location, yystack_[1].value.as < pdm::ast::TypeQueryKind > (), yystack_[2].value.as < pdm::ast::TypeSpec* > (), yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 2998 "parser.tab.cc"
     break;
 
@@ -3017,157 +3017,157 @@ namespace pdm { namespace parser {
 
   case 147: // typespec: unary_typespec
 #line 596 "parser.yy"
-      { yylhs.value.as < pdm::ast::Typespec* > () = yystack_[0].value.as < pdm::ast::Typespec* > (); }
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
 #line 3022 "parser.tab.cc"
     break;
 
   case 148: // typespec_cl1: typespec
 #line 599 "parser.yy"
-                                  { yylhs.value.as < std::vector<pdm::ast::Typespec*> > ().push_back(yystack_[0].value.as < pdm::ast::Typespec* > ()); }
+                                  { yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > ().push_back(yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3028 "parser.tab.cc"
     break;
 
   case 149: // typespec_cl1: typespec_cl1 "," typespec
 #line 600 "parser.yy"
-                                  { yylhs.value.as < std::vector<pdm::ast::Typespec*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::Typespec*> > ()); yylhs.value.as < std::vector<pdm::ast::Typespec*> > ().push_back(yystack_[0].value.as < pdm::ast::Typespec* > ()); }
+                                  { yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::TypeSpec*> > ()); yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > ().push_back(yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3034 "parser.tab.cc"
     break;
 
   case 150: // typespec_cl2: typespec "," typespec
 #line 603 "parser.yy"
-                                  { yylhs.value.as < std::vector<pdm::ast::Typespec*> > ().reserve(2); yylhs.value.as < std::vector<pdm::ast::Typespec*> > ().push_back(yystack_[2].value.as < pdm::ast::Typespec* > ()); yylhs.value.as < std::vector<pdm::ast::Typespec*> > ().push_back(yystack_[0].value.as < pdm::ast::Typespec* > ()); }
+                                  { yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > ().reserve(2); yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > ().push_back(yystack_[2].value.as < pdm::ast::TypeSpec* > ()); yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > ().push_back(yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3040 "parser.tab.cc"
     break;
 
   case 151: // typespec_cl2: typespec_cl2 "," typespec
 #line 604 "parser.yy"
-                                  { yylhs.value.as < std::vector<pdm::ast::Typespec*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::Typespec*> > ()); yylhs.value.as < std::vector<pdm::ast::Typespec*> > ().push_back(yystack_[0].value.as < pdm::ast::Typespec* > ()); }
+                                  { yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::TypeSpec*> > ()); yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > ().push_back(yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3046 "parser.tab.cc"
     break;
 
   case 152: // struct_typespec_field: vid typespec
 #line 608 "parser.yy"
-                                  { yylhs.value.as < pdm::ast::StructTypespec::Field* > () = mgr->new_struct_typespec_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::Typespec* > ()); }
+                                  { yylhs.value.as < pdm::ast::StructTypeSpec::Field* > () = mgr->new_struct_typespec_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3052 "parser.tab.cc"
     break;
 
   case 153: // struct_typespec_field_cl: struct_typespec_field
 #line 611 "parser.yy"
-                                                          { yylhs.value.as < std::vector<pdm::ast::StructTypespec::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::StructTypespec::Field* > ()); }
+                                                          { yylhs.value.as < std::vector<pdm::ast::StructTypeSpec::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::StructTypeSpec::Field* > ()); }
 #line 3058 "parser.tab.cc"
     break;
 
   case 154: // struct_typespec_field_cl: struct_typespec_field_cl "," struct_typespec_field
 #line 612 "parser.yy"
-                                                            { yylhs.value.as < std::vector<pdm::ast::StructTypespec::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::StructTypespec::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::StructTypespec::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::StructTypespec::Field* > ()); }
+                                                            { yylhs.value.as < std::vector<pdm::ast::StructTypeSpec::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::StructTypeSpec::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::StructTypeSpec::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::StructTypeSpec::Field* > ()); }
 #line 3064 "parser.tab.cc"
     break;
 
   case 155: // primary_typespec: tid
 #line 616 "parser.yy"
-                        { yylhs.value.as < pdm::ast::Typespec* > () = mgr->new_id_typespec(yylhs.location, yystack_[0].value.as < TokenInfo > ().ID_intstr); }
+                        { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_id_typespec(yylhs.location, yystack_[0].value.as < TokenInfo > ().ID_intstr); }
 #line 3070 "parser.tab.cc"
     break;
 
   case 156: // primary_typespec: paren_typespec
 #line 617 "parser.yy"
-      { yylhs.value.as < pdm::ast::Typespec* > () = yystack_[0].value.as < pdm::ast::Typespec* > (); }
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
 #line 3076 "parser.tab.cc"
     break;
 
   case 157: // primary_typespec: tuple_typespec
 #line 618 "parser.yy"
-      { yylhs.value.as < pdm::ast::Typespec* > () = yystack_[0].value.as < pdm::ast::Typespec* > (); }
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
 #line 3082 "parser.tab.cc"
     break;
 
   case 158: // primary_typespec: mod_prefix_tid
 #line 619 "parser.yy"
-      { yylhs.value.as < pdm::ast::Typespec* > () = yystack_[0].value.as < pdm::ast::Typespec* > (); }
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
 #line 3088 "parser.tab.cc"
     break;
 
   case 159: // primary_typespec: fn_typespec
 #line 620 "parser.yy"
-      { yylhs.value.as < pdm::ast::Typespec* > () = yystack_[0].value.as < pdm::ast::Typespec* > (); }
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
 #line 3094 "parser.tab.cc"
     break;
 
   case 160: // paren_typespec: "(" typespec ")"
 #line 623 "parser.yy"
-                                { yylhs.value.as < pdm::ast::Typespec* > () = mgr->new_paren_typespec(yylhs.location, yystack_[1].value.as < pdm::ast::Typespec* > ()); }
+                                { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_paren_typespec(yylhs.location, yystack_[1].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3100 "parser.tab.cc"
     break;
 
   case 161: // tuple_typespec: "(" typespec "," ")"
 #line 626 "parser.yy"
-                                    { yylhs.value.as < pdm::ast::Typespec* > () = mgr->new_tuple_typespec(yylhs.location, std::move(std::vector(1,yystack_[2].value.as < pdm::ast::Typespec* > ()))); }
+                                    { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_tuple_typespec(yylhs.location, std::move(std::vector(1,yystack_[2].value.as < pdm::ast::TypeSpec* > ()))); }
 #line 3106 "parser.tab.cc"
     break;
 
   case 162: // tuple_typespec: "(" typespec_cl2 ")"
 #line 627 "parser.yy"
-                                    { yylhs.value.as < pdm::ast::Typespec* > () = mgr->new_tuple_typespec(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::Typespec*> > ())); }
+                                    { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_tuple_typespec(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::TypeSpec*> > ())); }
 #line 3112 "parser.tab.cc"
     break;
 
   case 163: // mod_prefix_tid: mod_prefix tid
 #line 630 "parser.yy"
-                            { yylhs.value.as < pdm::ast::Typespec* > () = mgr->new_dot_name_typespec_with_mod_prefix(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::intern::String> > ()), yystack_[0].value.as < TokenInfo > ().ID_intstr); }
+                            { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_dot_name_typespec_with_mod_prefix(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::intern::String> > ()), yystack_[0].value.as < TokenInfo > ().ID_intstr); }
 #line 3118 "parser.tab.cc"
     break;
 
   case 164: // fn_typespec: "Fn" vpattern primary_typespec
 #line 633 "parser.yy"
-                                       { yylhs.value.as < pdm::ast::Typespec* > () = mgr->new_fn_typespec(yylhs.location, std::move(yystack_[1].value.as < pdm::ast::VPattern* > ()), yystack_[0].value.as < pdm::ast::Typespec* > ()); }
+                                       { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_fn_typespec(yylhs.location, std::move(yystack_[1].value.as < pdm::ast::VPattern* > ()), yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3124 "parser.tab.cc"
     break;
 
   case 165: // postfix_typespec: primary_typespec
 #line 637 "parser.yy"
-      { yylhs.value.as < pdm::ast::Typespec* > () = yystack_[0].value.as < pdm::ast::Typespec* > (); }
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
 #line 3130 "parser.tab.cc"
     break;
 
   case 166: // postfix_typespec: tcall_typespec
 #line 638 "parser.yy"
-      { yylhs.value.as < pdm::ast::Typespec* > () = yystack_[0].value.as < pdm::ast::Typespec* > (); }
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
 #line 3136 "parser.tab.cc"
     break;
 
   case 167: // tcall_typespec: postfix_typespec "[" targ_cl "]"
 #line 641 "parser.yy"
-                                              { yylhs.value.as < pdm::ast::Typespec* > () = mgr->new_tcall_typespec(yylhs.location, yystack_[3].value.as < pdm::ast::Typespec* > (), std::move(yystack_[1].value.as < std::vector<pdm::ast::TArg*> > ())); }
+                                              { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_tcall_typespec(yylhs.location, yystack_[3].value.as < pdm::ast::TypeSpec* > (), std::move(yystack_[1].value.as < std::vector<pdm::ast::TArg*> > ())); }
 #line 3142 "parser.tab.cc"
     break;
 
   case 168: // unary_typespec: postfix_typespec
 #line 645 "parser.yy"
-      { yylhs.value.as < pdm::ast::Typespec* > () = yystack_[0].value.as < pdm::ast::Typespec* > (); }
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
 #line 3148 "parser.tab.cc"
     break;
 
   case 169: // long_typespec: unary_typespec
 #line 649 "parser.yy"
-      { yylhs.value.as < pdm::ast::Typespec* > () = yystack_[0].value.as < pdm::ast::Typespec* > (); }
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
 #line 3154 "parser.tab.cc"
     break;
 
   case 170: // long_typespec: struct_typespec
 #line 650 "parser.yy"
-      { yylhs.value.as < pdm::ast::Typespec* > () = yystack_[0].value.as < pdm::ast::Typespec* > (); }
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
 #line 3160 "parser.tab.cc"
     break;
 
   case 171: // struct_typespec: "{" struct_typespec_field_cl "}"
 #line 653 "parser.yy"
-                                              { yylhs.value.as < pdm::ast::Typespec* > () = mgr->new_struct_typespec(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::StructTypespec::Field*> > ())); }
+                                              { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_struct_typespec(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::StructTypeSpec::Field*> > ())); }
 #line 3166 "parser.tab.cc"
     break;
 
   case 172: // targ: typespec
 #line 656 "parser.yy"
-               { yylhs.value.as < pdm::ast::TArg* > () = mgr->new_targ_typespec(yylhs.location, yystack_[0].value.as < pdm::ast::Typespec* > ()); }
+               { yylhs.value.as < pdm::ast::TArg* > () = mgr->new_targ_typespec(yylhs.location, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3172 "parser.tab.cc"
     break;
 
@@ -3227,25 +3227,25 @@ namespace pdm { namespace parser {
 
   case 182: // vpattern_field: vid typespec
 #line 680 "parser.yy"
-                            { yylhs.value.as < pdm::ast::VPattern::Field* > () = mgr->new_vpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::Typespec* > (), ast::VArgAccessSpec::In); }
+                            { yylhs.value.as < pdm::ast::VPattern::Field* > () = mgr->new_vpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > (), ast::VArgAccessSpec::In); }
 #line 3232 "parser.tab.cc"
     break;
 
   case 183: // vpattern_field: "out" vid typespec
 #line 681 "parser.yy"
-                            { yylhs.value.as < pdm::ast::VPattern::Field* > () = mgr->new_vpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::Typespec* > (), ast::VArgAccessSpec::Out); }
+                            { yylhs.value.as < pdm::ast::VPattern::Field* > () = mgr->new_vpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > (), ast::VArgAccessSpec::Out); }
 #line 3238 "parser.tab.cc"
     break;
 
   case 184: // vpattern_field: "inout" vid typespec
 #line 682 "parser.yy"
-                            { yylhs.value.as < pdm::ast::VPattern::Field* > () = mgr->new_vpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::Typespec* > (), ast::VArgAccessSpec::InOut); }
+                            { yylhs.value.as < pdm::ast::VPattern::Field* > () = mgr->new_vpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > (), ast::VArgAccessSpec::InOut); }
 #line 3244 "parser.tab.cc"
     break;
 
   case 185: // lpattern_field: vid typespec
 #line 685 "parser.yy"
-                    { yylhs.value.as < pdm::ast::LPattern::Field* > () = mgr->new_lpattern_field(yylhs.location, ast::LPattern::FieldKind::IdTypespecPair, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::Typespec* > ()); }
+                    { yylhs.value.as < pdm::ast::LPattern::Field* > () = mgr->new_lpattern_field(yylhs.location, ast::LPattern::FieldKind::IdTypeSpecPair, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3250 "parser.tab.cc"
     break;
 
@@ -3257,13 +3257,13 @@ namespace pdm { namespace parser {
 
   case 187: // tpattern_field: vid typespec
 #line 689 "parser.yy"
-                    { yylhs.value.as < pdm::ast::TPattern::Field* > () = mgr->new_tpattern_field(yylhs.location, ast::TPattern::FieldKind::Value, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::Typespec* > ()); }
+                    { yylhs.value.as < pdm::ast::TPattern::Field* > () = mgr->new_tpattern_field(yylhs.location, ast::TPattern::FieldKind::Value, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3262 "parser.tab.cc"
     break;
 
   case 188: // tpattern_field: tid typespec
 #line 690 "parser.yy"
-                    { yylhs.value.as < pdm::ast::TPattern::Field* > () = mgr->new_tpattern_field(yylhs.location, ast::TPattern::FieldKind::Type, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::Typespec* > ()); }
+                    { yylhs.value.as < pdm::ast::TPattern::Field* > () = mgr->new_tpattern_field(yylhs.location, ast::TPattern::FieldKind::Type, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3268 "parser.tab.cc"
     break;
 

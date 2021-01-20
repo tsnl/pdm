@@ -29,9 +29,9 @@ namespace pdm::types {
     }
 
     SolvePhase2_Result Var::assume_invariant_holds_impl(Invariant* invariant, bool override_fixed) {
-        // if this invariant was not intended for a Var of this VarKind,
-        // typer's meta-type error:
+        // if this invariant was not intended for a Var of this VarKind, then meta-type error:
         if (var_kind() != invariant->domain_var_kind()) {
+            // todo: intercept templates here-- get their ret_tv and type that instead.
             return SolvePhase2_Result::TypingError;
         }
 
@@ -354,15 +354,15 @@ namespace pdm::types {
         p.print_cstr("assume TypeKinds");
         if (m_assumed_kind_bitset != 0) {
             p.print_newline();
-            if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::Void))        { p.print_cstr("| Void "); }
-            if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::String))      { p.print_cstr("| String "); }
-            if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::SignedInt))   { p.print_cstr("| SignedInt "); }
-            if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::UnsignedInt)) { p.print_cstr("| UnsignedInt "); }
-            if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::Float))       { p.print_cstr("| Float "); }
-            if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::Struct))      { p.print_cstr("| Struct "); }
-            if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::Enum))        { p.print_cstr("| Enum "); }
-            if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::Module))      { p.print_cstr("| Module "); }
-            if (m_assumed_kind_bitset & static_cast<u64>(TypeKind::Fn))          { p.print_cstr("| Fn "); }
+            if (m_assumed_kind_bitset & tk_bits(TypeKind::Void))        { p.print_cstr("| Void "); }
+            if (m_assumed_kind_bitset & tk_bits(TypeKind::String))      { p.print_cstr("| String "); }
+            if (m_assumed_kind_bitset & tk_bits(TypeKind::SignedInt))   { p.print_cstr("| SignedInt "); }
+            if (m_assumed_kind_bitset & tk_bits(TypeKind::UnsignedInt)) { p.print_cstr("| UnsignedInt "); }
+            if (m_assumed_kind_bitset & tk_bits(TypeKind::Float))       { p.print_cstr("| Float "); }
+            if (m_assumed_kind_bitset & tk_bits(TypeKind::Struct))      { p.print_cstr("| Struct "); }
+            if (m_assumed_kind_bitset & tk_bits(TypeKind::Enum))        { p.print_cstr("| Enum "); }
+            if (m_assumed_kind_bitset & tk_bits(TypeKind::Module))      { p.print_cstr("| Module "); }
+            if (m_assumed_kind_bitset & tk_bits(TypeKind::Fn))          { p.print_cstr("| Fn "); }
         } else {
             p.print_cstr(": None");
         }
@@ -530,22 +530,22 @@ namespace pdm::types {
     SignedIntFixedClassVar::SignedIntFixedClassVar()
     :   FixedClassVar(std::move(std::string("FixedClass:SignedInt")))
     {
-        assume_invariant_holds__override_fixed_to_init(new KindInvariant(nullptr, VarKind::Class, static_cast<u64>(TypeKind::SignedInt)));
+        assume_invariant_holds__override_fixed_to_init(new KindInvariant(nullptr, VarKind::Class, tk_bits(TypeKind::SignedInt)));
     }
     UnsignedIntFixedClassVar::UnsignedIntFixedClassVar()
     :   FixedClassVar(std::move(std::string("FixedClass:UnsignedInt")))
     {
-        assume_invariant_holds__override_fixed_to_init(new KindInvariant(nullptr, VarKind::Class, static_cast<u64>(TypeKind::UnsignedInt)));
+        assume_invariant_holds__override_fixed_to_init(new KindInvariant(nullptr, VarKind::Class, tk_bits(TypeKind::UnsignedInt)));
     }
     IntFixedClassVar::IntFixedClassVar()
     :   FixedClassVar(std::move(std::string("FixedClass:Int")))
     {
-        assume_invariant_holds__override_fixed_to_init(new KindInvariant(nullptr, VarKind::Class, static_cast<u64>(TypeKind::SignedInt) | static_cast<u64>(TypeKind::UnsignedInt)));
+        assume_invariant_holds__override_fixed_to_init(new KindInvariant(nullptr, VarKind::Class, tk_bits(TypeKind::SignedInt) | tk_bits(TypeKind::UnsignedInt)));
     }
     FloatFixedClassVar::FloatFixedClassVar()
     :   FixedClassVar(std::move(std::string("FixedClass:Float")))
     {
-        assume_invariant_holds__override_fixed_to_init(new KindInvariant(nullptr, VarKind::Class, static_cast<u64>(TypeKind::Float)));
+        assume_invariant_holds__override_fixed_to_init(new KindInvariant(nullptr, VarKind::Class, tk_bits(TypeKind::Float)));
     }
     NumberFixedClassVar::NumberFixedClassVar()
     :   FixedClassVar(std::move(std::string("FixedClass:Number")))
@@ -554,7 +554,7 @@ namespace pdm::types {
             new KindInvariant(
                 nullptr, 
                 VarKind::Class, 
-                static_cast<u64>(TypeKind::SignedInt) | static_cast<u64>(TypeKind::UnsignedInt) | static_cast<u64>(TypeKind::Float)
+                tk_bits(TypeKind::SignedInt) | tk_bits(TypeKind::UnsignedInt) | tk_bits(TypeKind::Float)
             )
         );
     }

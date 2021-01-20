@@ -5,7 +5,7 @@
 #include "pdm/source/loc.hh"
 #include "pdm/ast/kind.hh"
 #include "pdm/ast/stmt/stmt.hh"
-#include "pdm/ast/typespec/typespec.hh"
+#include "pdm/ast/setspec/typespec.hh"
 #include "pdm/ast/pattern/vpattern.hh"
 #include "pdm/ast/pattern/tpattern.hh"
 #include "mod_content.hh"
@@ -13,7 +13,7 @@
 namespace pdm::ast {
     class Manager;
     class TPattern;
-    class Typespec;
+    class TypeSpec;
     class TypeQueryExp;
 }
 
@@ -25,7 +25,7 @@ namespace pdm::ast {
       private:
         intern::String              m_typeclass_name;
         intern::String              m_candidate_name;
-        Typespec*                   m_candidate_typespec;
+        TypeSpec*                   m_candidate_typespec;
         std::vector<TPattern*>      m_tpatterns;
         std::vector<TypeQueryExp*>  m_conditions;
         types::Var*                 m_x_defn_var;
@@ -35,7 +35,7 @@ namespace pdm::ast {
             source::Loc loc, 
             intern::String typeclass_name,
             intern::String candidate_name,
-            Typespec* candidate_typespec,
+            TypeSpec* candidate_typespec,
             std::vector<TPattern*>&& tpatterns,
             std::vector<TypeQueryExp*>&& conditions
         )
@@ -55,7 +55,7 @@ namespace pdm::ast {
         intern::String candidate_name() const {
             return m_candidate_name;
         }
-        Typespec* candidate_typespec() const {
+        TypeSpec* candidate_typespec() const {
             return m_candidate_typespec;
         }
         std::vector<TPattern*> const& tpatterns() const {

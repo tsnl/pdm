@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 #include "pdm/source/source.hh"
 #include "pdm/ast/node.hh"
@@ -105,7 +106,7 @@ namespace pdm::types {
         virtual bool on_assume_impl(types::Manager* manager) override;
     };
     inline SubclassOfRelation::SubclassOfRelation(ast::Node* node, ClassVar* subclass_cv, ClassVar* superclass_cv)
-    :   Relation(node, "SubclassOf"),
+    :   Relation(node, std::move(std::string("SubclassOf"))),
         m_subclass_cv(subclass_cv),
         m_superclass_cv(superclass_cv)
     {}
@@ -115,10 +116,15 @@ namespace pdm::types {
         ClassVar* m_class_cv;
         TypeVar* m_member_tv;
       public:
-        ClassOfRelation(ast::Node* node, ClassVar* class_cv, TypeVar* member_tv);
+        inline ClassOfRelation(ast::Node* node, ClassVar* class_cv, TypeVar* member_tv);
       protected:
         virtual bool on_assume_impl(types::Manager* manager) override;
     };
+    inline ClassOfRelation::ClassOfRelation(ast::Node* node, ClassVar* class_cv, TypeVar* member_tv)
+    :   Relation(node, std::move(std::string("ClassOf"))),
+        m_class_cv(class_cv),
+        m_member_tv(member_tv)
+    {}
   
     // forced equality relations:
     class TypeEqualsRelation: public Relation {
@@ -276,43 +282,26 @@ namespace pdm::types {
     inline DotNameRelationKind DotNameRelation::dot_name_relation_kind() const {
         return m_dot_name_relation_kind;
     }
+    
     struct ModuleDotTypeRelation: public DotNameRelation {
         inline ModuleDotTypeRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name);
     };
-    struct ModuleDotValueRelation: public DotNameRelation {
-        inline ModuleDotValueRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name);
-    };
-    struct StructDotValueRelation: public DotNameRelation {
-        inline StructDotValueRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name);
-    };
-    class EnumDotNameRelation: public DotNameRelation {
-      private:
-        std::vector<TypeVar*> m_args;
-      public:
-        inline EnumDotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name, std::vector<TypeVar*>&& typeof_args_tvs);
-      public:
-        std::vector<TypeVar*> const& args() const {
-            return m_args;
-        }
-    };
-    struct StructTypeDotNameRelation: public DotNameRelation {
-        inline StructTypeDotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name);
-    };
-
     inline ModuleDotTypeRelation::ModuleDotTypeRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name)
     :   DotNameRelation(ast_node, lhs, eval_type, rhs_name, DotNameRelationKind::ModuleTypeField)
     {}
+    
+    struct ModuleDotValueRelation: public DotNameRelation {
+        inline ModuleDotValueRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name);
+    };
     inline ModuleDotValueRelation::ModuleDotValueRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name)
     :   DotNameRelation(ast_node, lhs, eval_type, rhs_name, DotNameRelationKind::ModuleValueField)
     {}
+
+    struct StructDotValueRelation: public DotNameRelation {
+        inline StructDotValueRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name);
+    };
     inline StructDotValueRelation::StructDotValueRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name)
     :   DotNameRelation(ast_node, lhs, eval_type, rhs_name, DotNameRelationKind::StructValueField)
-    {}
-    inline EnumDotNameRelation::EnumDotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name, std::vector<TypeVar*>&& typeof_args_tvs)
-    :   DotNameRelation(ast_node, lhs, eval_type, rhs_name, DotNameRelationKind::EnumValueField)
-    {}
-    inline StructTypeDotNameRelation::StructTypeDotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name)
-    :   DotNameRelation(ast_node, lhs, eval_type, rhs_name, DotNameRelationKind::StructTypeField)
     {}
 
     class DotIndexRelation: public Relation {
@@ -333,7 +322,8 @@ namespace pdm::types {
     inline DotIndexRelation::DotIndexRelation(ast::Node* ast_node, TypeVar* typeof_lhs_tv, TypeVar* typeof_rhs_index_tv)
     :   Relation(ast_node, "DotIndexRelation"),
         m_typeof_lhs_tv(typeof_lhs_tv),
-        m_typeof_rhs_index_tv(typeof_rhs_index_tv) {};
+        m_typeof_rhs_index_tv(typeof_rhs_index_tv) 
+    {}
     inline TypeVar* DotIndexRelation::typeof_lhs_tv() const {
         return m_typeof_lhs_tv;
     }
@@ -341,7 +331,124 @@ namespace pdm::types {
         return m_typeof_rhs_index_tv;
     }
 
+    class EnumDotNameRelation: public DotNameRelation {
+      private:
+        std::vector<TypeVar*> m_args;
+      public:
+        inline EnumDotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name, std::vector<TypeVar*>&& typeof_args_tvs);
+      public:
+        std::vector<TypeVar*> const& args() const {
+            return m_args;
+        }
+    };
+    inline EnumDotNameRelation::EnumDotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name, std::vector<TypeVar*>&& typeof_args_tvs)
+    :   DotNameRelation(ast_node, lhs, eval_type, rhs_name, DotNameRelationKind::EnumValueField)
+    {}
+
+    //
+    // Bulk tuple, struct, enum:
+    //
+
+    class TupleOfRelation: public Relation {
+      private:
+        TypeVar* m_tuple_tv;
+        std::vector<TypeVar*> m_fields_tvs;
+
+      public:
+        inline TupleOfRelation(std::string&& why, ast::Node* node, TypeVar* tuple_tv, std::vector<TypeVar*>&& fields_tvs);
+
+      public:
+        virtual bool on_assume_impl(types::Manager* types_mgr) override;
+    };
+    inline TupleOfRelation::TupleOfRelation(std::string&& why, ast::Node* node, TypeVar* tuple_tv, std::vector<TypeVar*>&& fields_tvs)
+    :   Relation(node, "TupleOf:" + std::move(why)),
+        m_tuple_tv(tuple_tv),
+        m_fields_tvs(std::move(fields_tvs))
+    {}
+
+    class FieldCollectionOfRelation: public Relation {
+      protected:
+        enum class FieldCollectionKind {
+            Struct,
+            Enum
+        };
+
+      private:
+        TypeVar* m_collection_tv;
+        std::map<intern::String, TypeVar*> m_fields;
+        FieldCollectionKind m_field_collection_kind;
+
+      protected:
+        inline FieldCollectionOfRelation(FieldCollectionKind field_collection_kind, std::string&& why, ast::Node* node, TypeVar* field_collection_of_tv, std::map<intern::String, TypeVar*>&& fields_tvs);
+
+      protected:
+        virtual bool on_assume_impl(types::Manager* manager) override;
+
+      protected:
+        inline TypeVar* collection_tv() const;
+        inline FieldCollectionKind field_collection_kind() const;
+    };
+    inline FieldCollectionOfRelation::FieldCollectionOfRelation(
+        FieldCollectionKind field_collection_kind,
+        std::string&& why,
+        ast::Node* node,
+        TypeVar* field_collection_of_tv,
+        std::map<intern::String, TypeVar*>&& fields_tvs
+    )
+    :   Relation(node, std::move(why)),
+        m_collection_tv(field_collection_of_tv),
+        m_fields(std::move(fields_tvs)),
+        m_field_collection_kind(field_collection_kind)
+    {}
+    inline TypeVar* 
+    FieldCollectionOfRelation::collection_tv() const {
+        return m_collection_tv;
+    }
+    inline FieldCollectionOfRelation::FieldCollectionKind 
+    FieldCollectionOfRelation::field_collection_kind() const {
+        return m_field_collection_kind;
+    }
+
+    class StructOfRelation: public FieldCollectionOfRelation {
+      public:
+        inline StructOfRelation(std::string&& why, ast::Node* node, TypeVar* struct_of_tv, std::map<intern::String, TypeVar*>&& fields_tvs);
+
+      public:
+        inline TypeVar* struct_tv() const;
+    };
+    inline StructOfRelation::StructOfRelation(std::string&& why, ast::Node* node, TypeVar* struct_tv, std::map<intern::String, TypeVar*>&& fields_tvs)
+    :   FieldCollectionOfRelation(
+            FieldCollectionOfRelation::FieldCollectionKind::Struct, 
+            std::move("StructOf:" + std::move(why)), 
+            node, struct_tv, std::move(fields_tvs)
+        )
+    {}
+    inline TypeVar* StructOfRelation::struct_tv() const {
+        return collection_tv();
+    }
+
+    class EnumOfRelation: public FieldCollectionOfRelation {
+      public:
+        inline EnumOfRelation(std::string&& why, ast::Node* node, TypeVar* struct_of_tv, std::map<intern::String, TypeVar*>&& fields_tvs);
+
+      public:
+        inline TypeVar* enum_tv() const;
+    };
+    inline EnumOfRelation::EnumOfRelation(std::string&& why, ast::Node* node, TypeVar* enum_tv, std::map<intern::String, TypeVar*>&& fields_tvs)
+    :   FieldCollectionOfRelation(
+            FieldCollectionOfRelation::FieldCollectionKind::Struct, 
+            std::move("EnumOf:" + std::move(why)), 
+            node, enum_tv, std::move(fields_tvs)
+        )
+    {}
+    inline TypeVar* EnumOfRelation::enum_tv() const {
+        return collection_tv();
+    }
+
+    //
     // vcall (func()): definition and use
+    //
+
     enum class VCallableRelationStrength {
         Formal,   // in this call, formal arguments are equal to actual arguments
         Actual    // in this call, formal arguments are supertypes of actual arguments

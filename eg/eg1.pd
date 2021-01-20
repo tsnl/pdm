@@ -9,13 +9,13 @@
 import fib from "https://github.com/tsnl/fib.pdpkg" type "pdpkg/git";
 
 mod Shapes {
-    type Circle = {
+    Circle = {
         center Tuple[F32,F32],
         radius Tuple[F32]
     };
-    fn circumference (circle Circle) -> F32 = {
-        let tau = {
-            let pi = 3.14159;
+    circumference = fn (circle Circle) -> F32 {
+        val tau = {
+            val pi = 3.14159;
             2*pi
         };
         tau * circle.radius
@@ -27,23 +27,23 @@ mod Shapes {
 #
 
 mod Pixel {
-    type Pixel [T Any] = {
+    Pixel [T Any] = {
         r T,
         g T,
         b T
     };
-    type Image [T Any] = {
+    Image [T Any] = {
         name String,
         size Tuple[U32,U32],
         data Buffer[Pixel[T]]
     };
 
-    fn add ![T Any] (p Pixel[T], q Pixel[T]) -> Pixel[T] = {
+    add [T Any] = fn (p Pixel[T], q Pixel[T]) -> Pixel[T] {
         r: p.r + q.r,
         g: p.g + q.g, 
         b: p.b + q.b
     };
-    fn multiply ![T Any] (p Pixel[T], s T) -> Pixel[T] = {
+    multiply [T Any] = fn (p Pixel[T], s T) -> Pixel[T] {
         r: s * p.r, 
         g: s * p.g, 
         b: s * p.b
@@ -51,7 +51,7 @@ mod Pixel {
 };
 
 mod Image {
-    fn add ![T Any] (lt Image[T], rt Image[T]) -> Image[T] = {
+    add [T Any] = fn (lt Image[T], rt Image[T]) -> Image[T] {
         assert lt.size == rt.size;
         {
             name: fmt("({lt.name}+{rt.name})"),
@@ -59,7 +59,7 @@ mod Image {
             data: map(addPixel, zip(lt.data,rt.data))
         }
     };
-    fn multiply ![T Any] (i Image[T], x U8) -> Image[T] = {
+    multiply [T Any] = fn (i Image[T], x U8) -> Image[T] {
         name: fmt("({x}*{i.name})"),
         size: i.size,
         data: map(i.data, lambda (p Pixel[T]) {multiply(pixel,x)})
@@ -71,11 +71,11 @@ mod Image {
 #
 
 mod Dict {
-    type Dict [K,V Any] = {
+    Dict [K,V Any] = {
         # ...
     };
 
-    fn new [K,V Any] () -> Dict[K,V] = {
+    new [K,V Any] = fn () -> Dict[K,V] {
         # ...
     };
 };
@@ -87,18 +87,18 @@ mod Dict {
 #
 
 mod Events {
-    type Color
+    Color
     | Rgba Tuple[U8,U8,U8,U8]
     | Hsva Tuple[U8,U8,U8,U8]
     | Name String
     | None
     ;
 
-    type Fruit 
+    Fruit 
     | Apple | Banana | Cherry | Durian | Fig | Grape
     ; 
 
-    type Key
+    Key
     | Escape | F1 | F2 | F3 | F4 | F5 | F6 | F7 | F8 | F9 | F10 | F11 | F12
     | Tilde  | N1 | N2 | N3 | N4 | N5 | N6 | N7 | N8 | N9 | N0 | Minus | Equals | Backspace
     | Tab       | Q | W | E | R | T | Y | U | I | O | P | LeftSquareBracket | RightSquareBracket | Backslash
@@ -108,13 +108,13 @@ mod Events {
     | Up | Down | Left | Right
     ;
 
-    type MouseButton
+    MouseButton
     | Left
     | Right
     | Middle
     ;
 
-    type ButtonMoveDirection
+    ButtonMoveDirection
     | Down
     | Up
     ;
@@ -125,9 +125,9 @@ mod Events {
 #
 
 mod Greeting {
-    fn new_cstr () -> CString {
-        let len = 12;
-        let buf = heap.alloc(Char)[len];
+    new_cstr = fn () -> CString {
+        val len = 12;
+        val buf = heap.alloc(Char)[len];
         set buf->(0) = 'h';
         set buf->(1) = 'e';
         set buf->(2) = 'l';
@@ -144,24 +144,17 @@ mod Greeting {
     };
 };
 
-mod Heap {
-    fn alloc [T Any] (len U64) -> ^&T = {
-        let ptr = malloc(len * sizeof[T]);
-        buffer.new(ptr,len)
-    };
-};
-
 #
 # Lambdas, iterators, and for:
 #
 
 mod Closed {
     fn loops () -> () = {
-        let prime_limit = console.read_int[I32]("Enter a number >2 until which to search for primes: ");
-        let &prime_count = 1;
+        val prime_limit = console.read_int[Int32]("Enter a number >2 until which to search for primes: ");
+        var prime_count = 1;
         
         foreach (i: 3 .. prime_limit step 2) {
-            let &i_is_prime = true;
+            val &i_is_prime = true;
             for (fac = 0; fac*fac < i; fac+2) {
                 if (i % fac == 0) then {
                     set ^i_is_prime = false;

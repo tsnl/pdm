@@ -16,8 +16,7 @@ namespace pdm::scoper {
         Root,
         Script,
         Module,
-        FnRhs, TypeRhs, EnumRhs,
-        TypeclassRhs,
+        ModValRhs, ModTypeRhs, ModEnumRhs, ModTypeclassRhs,
         LPattern, VPattern, TPattern,
         Chain
     };
@@ -91,10 +90,10 @@ namespace pdm::scoper {
                 case FrameKind::Root: return ContextKind::RootDefs;
                 case FrameKind::Script: return ContextKind::ScriptDefs;
                 case FrameKind::Module: return ContextKind::ModuleDefs;
-                case FrameKind::FnRhs: return ContextKind::FnRhsStart;
-                case FrameKind::TypeRhs: return ContextKind::TypeRhsStart;
-                case FrameKind::EnumRhs: return ContextKind::EnumRhsStart;
-                case FrameKind::TypeclassRhs: return ContextKind::TypeclassRhsStart;
+                case FrameKind::ModValRhs: return ContextKind::FnRhsStart;
+                case FrameKind::ModTypeRhs: return ContextKind::TypeRhsStart;
+                case FrameKind::ModEnumRhs: return ContextKind::EnumRhsStart;
+                case FrameKind::ModTypeclassRhs: return ContextKind::TypeclassRhsStart;
                 case FrameKind::Chain: return ContextKind::ChainStart;
                 case FrameKind::LPattern: return ContextKind::LPatternDefs;
                 case FrameKind::VPattern: return ContextKind::VPatternDefs;

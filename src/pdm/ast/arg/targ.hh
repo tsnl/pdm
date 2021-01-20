@@ -3,7 +3,7 @@
 
 #include "pdm/ast/node.hh"
 #include "pdm/ast/exp/exp.hh"
-#include "pdm/ast/typespec/typespec.hh"
+#include "pdm/ast/setspec/typespec.hh"
 
 namespace pdm::ast {
     class Manager;
@@ -13,7 +13,7 @@ namespace pdm::ast {
 
     enum class TArgKind {
         Value,
-        Typespec
+        TypeSpec
     };
     
     class TArg: public Node {
@@ -32,8 +32,8 @@ namespace pdm::ast {
         TArg(source::Loc loc, ast::Exp* exp)
         : TArg(loc, exp, TArgKind::Value) {}
 
-        TArg(source::Loc loc, ast::Typespec* typespec)
-        : TArg(loc, typespec, TArgKind::Typespec) {}
+        TArg(source::Loc loc, ast::TypeSpec* typespec)
+        : TArg(loc, typespec, TArgKind::TypeSpec) {}
 
       // getters:  
       public:
@@ -50,7 +50,7 @@ namespace pdm::ast {
             return m_arg_kind == TArgKind::Value;
         }
         bool is_typespec() const {
-            return m_arg_kind == TArgKind::Typespec; 
+            return m_arg_kind == TArgKind::TypeSpec; 
         }
     };
 

@@ -35,11 +35,11 @@ namespace pdm::ast {
         "TPattern",
         "LPattern",
 
-        "IdTypespec",
-        "PtrTypespec",
-        "FnTypespec", "TCallTypespec",
-        "DotNameTypespec_TypePrefix", "DotNameTypespec_ModPrefix",
-        "TupleTypespec", "StructTypespec"
+        "IdSetSpec",
+        "PtrTypeSpec",
+        "FnTypeSpec", "TCallTypeSpec",
+        "DotNameTypeSpec_TypePrefix", "DotNameTypeSpec_ModPrefix",
+        "TupleTypeSpec", "StructTypeSpec"
     };
 
     char const* kind_as_text(Kind kind) {

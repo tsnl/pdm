@@ -8,19 +8,19 @@ namespace pdm::ast {
 }
 
 namespace pdm::ast {
-    class ParenTypespec: public Typespec {
+    class ParenTypeSpec: public TypeSpec {
         friend Manager;
 
       private:
-        Typespec* m_nested_typespec;
+        TypeSpec* m_nested_typespec;
     
       protected:
-        ParenTypespec(source::Loc loc, Typespec* nested_typespec)
-        : Typespec(loc, Kind::ParenTypespec),
+        ParenTypeSpec(source::Loc loc, TypeSpec* nested_typespec)
+        : TypeSpec(loc, Kind::ParenTypeSpec),
           m_nested_typespec(nested_typespec) {}
 
       public:
-        Typespec* nested_typespec() const {
+        TypeSpec* nested_typespec() const {
             return m_nested_typespec;
         }
     };

@@ -40,11 +40,11 @@ namespace pdm {
     }
 
     u64 Compiler::PrintFlags_PrintEverything = (0
-        | static_cast<u64>(PrintFlag::SourceCode)
-        | static_cast<u64>(PrintFlag::Scopes)
-        | static_cast<u64>(PrintFlag::Types)
-        | static_cast<u64>(PrintFlag::Llvm)
-        | static_cast<u64>(PrintFlag::Wasm)
+        | static_cast<PrintFlagBitset>(PrintFlag::SourceCode)
+        | static_cast<PrintFlagBitset>(PrintFlag::Scopes)
+        | static_cast<PrintFlagBitset>(PrintFlag::Types)
+        | static_cast<PrintFlagBitset>(PrintFlag::Llvm)
+        | static_cast<PrintFlagBitset>(PrintFlag::Wasm)
     );
 
     ast::Script* Compiler::import(std::string const& from_path, std::string const& type, std::string const& reason) {
@@ -158,7 +158,11 @@ namespace pdm {
             bool script_ok = typer::type(&m_types_mgr, script);
             all_scripts_ok = all_scripts_ok && script_ok;
         }
-        return all_scripts_ok;
+        if (!all_scripts_ok) {
+            return false;
+        }
+
+        return m_types_mgr.typecheck();
     }
     bool Compiler::pass3_emit_all() {
         std::cout << "Not Implemented: pass3_emit_all" << std::endl;
@@ -203,10 +207,10 @@ namespace pdm {
             return false;
         }
 
-        if (m_print_flags & static_cast<u64>(PrintFlag::SourceCode)) {
+        if (m_print_flags & static_cast<PrintFlagBitset>(PrintFlag::SourceCode)) {
             postpass1_print1_code();
         }
-        if (m_print_flags & static_cast<u64>(PrintFlag::Scopes)) {
+        if (m_print_flags & static_cast<PrintFlagBitset>(PrintFlag::Scopes)) {
             postpass1_print2_scopes(scoper);
         }
         

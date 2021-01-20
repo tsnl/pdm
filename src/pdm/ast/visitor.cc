@@ -277,7 +277,7 @@ namespace pdm::ast {
             {
                 LPattern* lpattern = dynamic_cast<LPattern*>(node);
                 for (LPattern::Field* field: lpattern->fields()) {
-                    Typespec* opt_field_typespec = field->opt_rhs_typespec();
+                    TypeSpec* opt_field_typespec = field->opt_rhs_typespec();
                     if (opt_field_typespec) {
                         ok = visit(opt_field_typespec) && ok;
                     }
@@ -289,52 +289,52 @@ namespace pdm::ast {
             // typespecs:
             //
 
-            case Kind::IdTypespec:
-            case Kind::DotNameTypespec_ModPrefix:
+            case Kind::IdSetSpec:
+            case Kind::DotNameTypeSpec_ModPrefix:
             {
                 break;
             }
-            case Kind::FnTypespec:
+            case Kind::FnTypeSpec:
             {
-                FnTypespec* fn_typespec = dynamic_cast<FnTypespec*>(node);
+                FnTypeSpec* fn_typespec = dynamic_cast<FnTypeSpec*>(node);
                 ok = visit(fn_typespec->lhs_vpattern()) && ok;
-                ok = visit(fn_typespec->rhs_typespec()) && ok;
+                ok = visit(fn_typespec->opt_ret_typespec()) && ok;
                 break;
             }
-            case Kind::TCallTypespec:
+            case Kind::TCallTypeSpec:
             {
-                TCallTypespec* tcall_typespec = dynamic_cast<TCallTypespec*>(node);
+                TCallTypeSpec* tcall_typespec = dynamic_cast<TCallTypeSpec*>(node);
                 ok = visit(tcall_typespec->lhs_called()) && ok;
                 for (TArg* arg: tcall_typespec->args()) {
                     ok = visit(arg) && ok;
                 }
                 break;
             }
-            // case Kind::DotNameTypespec_TypePrefix:
+            // case Kind::DotNameTypeSpec_TypePrefix:
             // {
-            //     DotNameTypespec_TypePrefix* dot_name_typespec_w_type_prefix = dynamic_cast<DotNameTypespec_TypePrefix*>(node);
+            //     DotNameTypeSpec_TypePrefix* dot_name_typespec_w_type_prefix = dynamic_cast<DotNameTypeSpec_TypePrefix*>(node);
             //     ok = visit(dot_name_typespec_w_type_prefix->lhs_typespec());
             //     break;
             // }
-            case Kind::StructTypespec:
+            case Kind::StructTypeSpec:
             {
-                StructTypespec* struct_typespec = dynamic_cast<StructTypespec*>(node);
-                for (StructTypespec::Field* field: struct_typespec->fields()) {
+                StructTypeSpec* struct_typespec = dynamic_cast<StructTypeSpec*>(node);
+                for (StructTypeSpec::Field* field: struct_typespec->fields()) {
                     ok = visit(field->rhs_typespec()) && ok;
                 }
                 break;
             }
-            case Kind::TupleTypespec:
+            case Kind::TupleTypeSpec:
             {
-                TupleTypespec* tuple_typespec = dynamic_cast<TupleTypespec*>(node);
-                for (Typespec* item_typespec: tuple_typespec->items()) {
+                TupleTypeSpec* tuple_typespec = dynamic_cast<TupleTypeSpec*>(node);
+                for (TypeSpec* item_typespec: tuple_typespec->items()) {
                     ok = visit(item_typespec) && ok;
                 }
                 break;
             }
-            case Kind::ParenTypespec:
+            case Kind::ParenTypeSpec:
             {
-                ParenTypespec* paren_typespec = dynamic_cast<ParenTypespec*>(node);
+                ParenTypeSpec* paren_typespec = dynamic_cast<ParenTypeSpec*>(node);
                 ok = visit(paren_typespec->nested_typespec()) && ok;
                 break;
             }
@@ -549,37 +549,37 @@ namespace pdm::ast {
             }
 
             // typespecs:
-            case Kind::IdTypespec:
+            case Kind::IdSetSpec:
             {
-                return on_visit__id_typespec(dynamic_cast<IdTypespec*>(node), visit_order);
+                return on_visit__id_typespec(dynamic_cast<IdSetSpec*>(node), visit_order);
             }
-            case Kind::FnTypespec:
+            case Kind::FnTypeSpec:
             {
-                return on_visit__fn_typespec(dynamic_cast<FnTypespec*>(node), visit_order);
+                return on_visit__fn_typespec(dynamic_cast<FnTypeSpec*>(node), visit_order);
             }
-            case Kind::TCallTypespec:
+            case Kind::TCallTypeSpec:
             {
-                return on_visit__tcall_typespec(dynamic_cast<TCallTypespec*>(node), visit_order);
+                return on_visit__tcall_typespec(dynamic_cast<TCallTypeSpec*>(node), visit_order);
             }
-            case Kind::TupleTypespec:
+            case Kind::TupleTypeSpec:
             {
-                return on_visit__tuple_typespec(dynamic_cast<TupleTypespec*>(node), visit_order);
+                return on_visit__tuple_typespec(dynamic_cast<TupleTypeSpec*>(node), visit_order);
             }
-            // case Kind::DotNameTypespec_TypePrefix:
+            // case Kind::DotNameTypeSpec_TypePrefix:
             // {
-            //     return on_visit__dot_name_typespec_type_prefix(dynamic_cast<DotNameTypespec_TypePrefix*>(node), visit_order);
+            //     return on_visit__dot_name_typespec_type_prefix(dynamic_cast<DotNameTypeSpec_TypePrefix*>(node), visit_order);
             // }
-            case Kind::DotNameTypespec_ModPrefix:
+            case Kind::DotNameTypeSpec_ModPrefix:
             {
-                return on_visit__dot_name_typespec_mod_prefix(dynamic_cast<DotNameTypespec_ModPrefix*>(node), visit_order);
+                return on_visit__dot_name_typespec_mod_prefix(dynamic_cast<DotNameTypeSpec_ModPrefix*>(node), visit_order);
             }
-            case Kind::StructTypespec:
+            case Kind::StructTypeSpec:
             {
-                return on_visit__struct_typespec(dynamic_cast<StructTypespec*>(node), visit_order);
+                return on_visit__struct_typespec(dynamic_cast<StructTypeSpec*>(node), visit_order);
             }
-            case Kind::ParenTypespec:
+            case Kind::ParenTypeSpec:
             {
-                return on_visit__paren_typespec(dynamic_cast<ParenTypespec*>(node), visit_order);
+                return on_visit__paren_typespec(dynamic_cast<ParenTypeSpec*>(node), visit_order);
             }
 
             // templates/shared:

@@ -26,7 +26,7 @@ namespace pdm::scoper {
 
       private:
         struct IdExpLookupOrder      { ast::IdExp* id_exp; Context* lookup_context; };
-        struct IdTypespecLookupOrder { ast::IdTypespec* id_typespec; Context* lookup_context; };
+        struct IdTypeSpecLookupOrder { ast::IdSetSpec* id_typespec; Context* lookup_context; };
         struct ImportLookupOrder     { ast::ImportStmt* import_stmt; Context* lookup_context; };
         struct UsingLookupOrder      { ast::UsingStmt* using_stmt; Context* lookup_context; };
 
@@ -34,7 +34,7 @@ namespace pdm::scoper {
         Compiler*                m_compiler_ptr;
         Frame*                             m_root_frame;
         std::vector<IdExpLookupOrder>      m_id_exp_orders;
-        std::vector<IdTypespecLookupOrder> m_id_typespec_orders;
+        std::vector<IdTypeSpecLookupOrder> m_id_typespec_orders;
         std::vector<ImportLookupOrder>     m_import_orders;
         std::vector<UsingLookupOrder>      m_using_orders;
 
@@ -95,7 +95,7 @@ namespace pdm::scoper {
 
       private:
         void place_id_exp_lookup_order(ast::IdExp* id_exp);
-        void place_id_typespec_lookup_order(ast::IdTypespec* id_typespec);
+        void place_id_typespec_lookup_order(ast::IdSetSpec* id_typespec);
         void place_import_lookup_order(ast::ImportStmt* import_stmt);
         void place_using_lookup_order(ast::UsingStmt* using_stmt);
 
@@ -151,14 +151,14 @@ namespace pdm::scoper {
         virtual bool on_visit__lpattern(ast::LPattern* node, VisitOrder visit_order) override;
 
         // typespecs:
-        virtual bool on_visit__id_typespec(ast::IdTypespec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__fn_typespec(ast::FnTypespec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__tcall_typespec(ast::TCallTypespec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__paren_typespec(ast::ParenTypespec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__tuple_typespec(ast::TupleTypespec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__dot_name_typespec_mod_prefix(ast::DotNameTypespec_ModPrefix* node, VisitOrder visit_order) override;
-        virtual bool on_visit__struct_typespec(ast::StructTypespec* node, VisitOrder visit_order) override;
-        // virtual bool on_visit__dot_name_typespec_type_prefix(ast::DotNameTypespec_TypePrefix* node, VisitOrder visit_order) override;
+        virtual bool on_visit__id_typespec(ast::IdSetSpec* node, VisitOrder visit_order) override;
+        virtual bool on_visit__fn_typespec(ast::FnTypeSpec* node, VisitOrder visit_order) override;
+        virtual bool on_visit__tcall_typespec(ast::TCallTypeSpec* node, VisitOrder visit_order) override;
+        virtual bool on_visit__paren_typespec(ast::ParenTypeSpec* node, VisitOrder visit_order) override;
+        virtual bool on_visit__tuple_typespec(ast::TupleTypeSpec* node, VisitOrder visit_order) override;
+        virtual bool on_visit__dot_name_typespec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) override;
+        virtual bool on_visit__struct_typespec(ast::StructTypeSpec* node, VisitOrder visit_order) override;
+        // virtual bool on_visit__dot_name_typespec_type_prefix(ast::DotNameTypeSpec_TypePrefix* node, VisitOrder visit_order) override;
 
         // args:
         virtual bool on_visit__targ(ast::TArg* targ, VisitOrder visit_order) override;

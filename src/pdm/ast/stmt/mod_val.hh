@@ -12,7 +12,7 @@
 namespace pdm::ast {   
     class Manager;
     class Exp;
-    class Typespec;
+    class TypeSpec;
     class VPattern;
     class TPattern;
 }
@@ -37,7 +37,7 @@ namespace pdm::ast {
         struct ExternRhs {
             intern::String ext_mod_name;
             utf8::String   ext_fn_name;
-            Typespec*      ext_typespec;
+            TypeSpec*      ext_typespec;
         };
 
       private:
@@ -64,7 +64,7 @@ namespace pdm::ast {
             source::Loc loc,
             intern::String name,
             std::vector<TPattern*> tpatterns,
-            Typespec* ext_typespec,
+            TypeSpec* ext_typespec,
             intern::String ext_mod_name,
             utf8::String ext_fn_name
         )

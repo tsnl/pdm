@@ -6,7 +6,7 @@
 
 #include "pdm/core/intern.hh"
 #include "pdm/ast/node.hh"
-#include "pdm/ast/typespec/typespec.hh"
+#include "pdm/ast/setspec/typespec.hh"
 
 #include "base_field.hh"
 
@@ -28,25 +28,25 @@ namespace pdm::ast {
       public:
         enum class FieldKind {
             IdSingleton,
-            IdTypespecPair
+            IdTypeSpecPair
         };
         class Field: public BaseField {
             friend Manager;
           
           private:
             FieldKind       m_kind;
-            Typespec*       m_opt_rhs_typespec;
+            TypeSpec*       m_opt_rhs_typespec;
             types::TypeVar* m_x_defn_tv;
             
           protected:
-            Field(source::Loc loc, FieldKind kind, intern::String name, Typespec* opt_rhs_typespec = nullptr)
+            Field(source::Loc loc, FieldKind kind, intern::String name, TypeSpec* opt_rhs_typespec = nullptr)
             :   BaseField(loc, Kind::Aux_LPatternField, name),
                 m_kind(kind),
                 m_opt_rhs_typespec(opt_rhs_typespec)
             {
                 if (opt_rhs_typespec) {
                     assert(
-                        (kind == LPattern::FieldKind::IdTypespecPair) && 
+                        (kind == LPattern::FieldKind::IdTypeSpecPair) && 
                         ("LPattern: cannot pass rhs_typespec for singleton field.")
                     );
                 }
@@ -56,7 +56,7 @@ namespace pdm::ast {
             FieldKind kind() const { 
                 return m_kind; 
             }
-            Typespec* opt_rhs_typespec() const { 
+            TypeSpec* opt_rhs_typespec() const { 
                 return m_opt_rhs_typespec; 
             }
 

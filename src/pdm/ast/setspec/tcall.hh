@@ -3,7 +3,7 @@
 
 #include "pdm/source/loc.hh"
 #include "pdm/ast/kind.hh"
-#include "pdm/ast/typespec/typespec.hh"
+#include "pdm/ast/setspec/typespec.hh"
 
 namespace pdm::ast {
     class Manager;
@@ -12,21 +12,21 @@ namespace pdm::ast {
 
 namespace pdm::ast {
 
-    class TCallTypespec: public Typespec {
+    class TCallTypeSpec: public TypeSpec {
         friend Manager;
 
       private:
-        Typespec*          m_lhs_called;
+        TypeSpec*          m_lhs_called;
         std::vector<TArg*> m_args;
 
       protected:
-        TCallTypespec(source::Loc loc, Typespec* lhs_called, std::vector<TArg*>&& args)
-        : Typespec(loc, Kind::TCallTypespec),
+        TCallTypeSpec(source::Loc loc, TypeSpec* lhs_called, std::vector<TArg*>&& args)
+        : TypeSpec(loc, Kind::TCallTypeSpec),
           m_lhs_called(lhs_called),
           m_args(std::move(args)) {}
       
       public:
-        Typespec* lhs_called() const {
+        TypeSpec* lhs_called() const {
             return m_lhs_called;
         }
         std::vector<TArg*> const& args() const {

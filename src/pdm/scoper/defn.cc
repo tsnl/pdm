@@ -18,6 +18,7 @@ namespace pdm::scoper {
             case DefnKind::ExternObject: return "ExternObject";
             case DefnKind::FormalVArg: return "FormalVArg";
             case DefnKind::FormalTArg: return "FormalTArg";
+            case DefnKind::IGNORE_FnTypeSpecFormalVArg: return "IGNORE_FnTypeSpecFormalVArg";
         }
         return nullptr;
     }

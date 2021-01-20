@@ -3,32 +3,32 @@
 
 #include "pdm/source/loc.hh"
 #include "pdm/ast/kind.hh"
-#include "pdm/ast/typespec/typespec.hh"
+#include "pdm/ast/setspec/typespec.hh"
 #include "pdm/ast/pattern/vpattern.hh"
 
 namespace pdm::ast {
 
     class Manager;
 
-    class FnTypespec: public Typespec {
+    class FnTypeSpec: public TypeSpec {
         friend Manager;
 
       private:
         VPattern* m_lhs_vpattern;
-        Typespec* m_rhs_typespec;
+        TypeSpec* m_opt_ret_typespec;
 
       protected:
-        FnTypespec(source::Loc loc, VPattern* lhs_vpattern, Typespec* rhs_typespec)
-        : Typespec(loc, Kind::FnTypespec),
+        FnTypeSpec(source::Loc loc, VPattern* lhs_vpattern, TypeSpec* opt_rhs_typespec)
+        : TypeSpec(loc, Kind::FnTypeSpec),
           m_lhs_vpattern(lhs_vpattern),
-          m_rhs_typespec(rhs_typespec) {}
-      
+          m_opt_ret_typespec(opt_rhs_typespec) {}
+
       public:
         VPattern* lhs_vpattern() const {
             return m_lhs_vpattern;
         }
-        Typespec* rhs_typespec() const {
-            return m_rhs_typespec;
+        TypeSpec* opt_ret_typespec() const {
+            return m_opt_ret_typespec;
         }
     };
 

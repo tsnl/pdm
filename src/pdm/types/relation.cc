@@ -99,6 +99,15 @@ namespace pdm::types {
         }
         return !sp2res_is_error(m_lhs->assume_invariant_holds(the_invariant));
     }
+    bool FieldCollectionOfRelation::on_assume_impl(types::Manager* manager) {
+        // todo: implement me!
+        return true;
+    }
+    bool TupleOfRelation::on_assume_impl(types::Manager* types_mgr) {
+        // todo: implement me!
+        return true;
+    }
+
     bool DotIndexRelation::on_assume_impl(types::Manager* manager) {
         Invariant* the_invariant = nullptr;
         // todo: require LHS is an array or a tuple.

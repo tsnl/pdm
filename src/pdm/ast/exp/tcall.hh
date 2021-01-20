@@ -8,7 +8,7 @@
 namespace pdm::ast {
     class Manager;
     class Exp;
-    class Typespec;
+    class TypeSpec;
     class TArg;
 }
 

@@ -15,7 +15,7 @@ namespace pdm::scoper {
 
 namespace pdm::ast {
 
-    class IdTypespec: public Typespec {
+    class IdSetSpec: public TypeSpec {
         friend Manager;
 
       private:
@@ -23,8 +23,8 @@ namespace pdm::ast {
         scoper::Defn const* m_x_defn;
 
       protected:
-        IdTypespec(source::Loc loc, intern::String name)
-        : Typespec(loc, Kind::IdTypespec),
+        IdSetSpec(source::Loc loc, intern::String name)
+        : TypeSpec(loc, Kind::IdSetSpec),
           m_name(name) {}
       
       public:

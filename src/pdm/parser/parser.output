@@ -591,49 +591,49 @@ Nonterminals, with rules where they appear
     type_query_op <pdm::ast::TypeQueryKind> (135)
         on left: 143 144 145
         on right: 142
-    typespec <pdm::ast::Typespec*> (136)
+    typespec <pdm::ast::TypeSpec*> (136)
         on left: 146
         on right: 30 31 42 43 95 142 147 148 149 150 151 159 160 171 181 182 183 184 186 187
-    typespec_cl1 <std::vector<pdm::ast::Typespec*>> (137)
+    typespec_cl1 <std::vector<pdm::ast::TypeSpec*>> (137)
         on left: 147 148
         on right: 41 148
-    typespec_cl2 <std::vector<pdm::ast::Typespec*>> (138)
+    typespec_cl2 <std::vector<pdm::ast::TypeSpec*>> (138)
         on left: 149 150
         on right: 150 161
-    struct_typespec_field <pdm::ast::StructTypespec::Field*> (139)
+    struct_typespec_field <pdm::ast::StructTypeSpec::Field*> (139)
         on left: 151
         on right: 152 153
-    struct_typespec_field_cl <std::vector<pdm::ast::StructTypespec::Field*>> (140)
+    struct_typespec_field_cl <std::vector<pdm::ast::StructTypeSpec::Field*>> (140)
         on left: 152 153
         on right: 153 170
-    primary_typespec <pdm::ast::Typespec*> (141)
+    primary_typespec <pdm::ast::TypeSpec*> (141)
         on left: 154 155 156 157 158
         on right: 163 164
-    paren_typespec <pdm::ast::Typespec*> (142)
+    paren_typespec <pdm::ast::TypeSpec*> (142)
         on left: 159
         on right: 155
-    tuple_typespec <pdm::ast::Typespec*> (143)
+    tuple_typespec <pdm::ast::TypeSpec*> (143)
         on left: 160 161
         on right: 156
-    mod_prefix_tid <pdm::ast::Typespec*> (144)
+    mod_prefix_tid <pdm::ast::TypeSpec*> (144)
         on left: 162
         on right: 157
-    fn_typespec <pdm::ast::Typespec*> (145)
+    fn_typespec <pdm::ast::TypeSpec*> (145)
         on left: 163
         on right: 158
-    postfix_typespec <pdm::ast::Typespec*> (146)
+    postfix_typespec <pdm::ast::TypeSpec*> (146)
         on left: 164 165
         on right: 166 167
-    tcall_typespec <pdm::ast::Typespec*> (147)
+    tcall_typespec <pdm::ast::TypeSpec*> (147)
         on left: 166
         on right: 165
-    unary_typespec <pdm::ast::Typespec*> (148)
+    unary_typespec <pdm::ast::TypeSpec*> (148)
         on left: 167
         on right: 146 168
-    long_typespec <pdm::ast::Typespec*> (149)
+    long_typespec <pdm::ast::TypeSpec*> (149)
         on left: 168 169
         on right: 32 33
-    struct_typespec <pdm::ast::Typespec*> (150)
+    struct_typespec <pdm::ast::TypeSpec*> (150)
         on left: 170
         on right: 169
     targ <pdm::ast::TArg*> (151)

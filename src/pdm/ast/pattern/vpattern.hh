@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "pdm/ast/node.hh"
-#include "pdm/ast/typespec/typespec.hh"
+#include "pdm/ast/setspec/typespec.hh"
 #include "pdm/core/intern.hh"
 #include "pdm/ast/arg/varg.hh"
 
@@ -29,12 +29,12 @@ namespace pdm::ast {
           private:
             source::Loc     m_loc;
             intern::String  m_lhs_name;
-            Typespec*       m_typespec;
+            TypeSpec*       m_typespec;
             VArgAccessSpec  m_accepted_varg_kind;
             types::TypeVar* m_x_defn_tv;
 
           protected:
-            Field(source::Loc loc, intern::String lhs_name, Typespec* rhs_typespec, VArgAccessSpec accepted_varg_kind)
+            Field(source::Loc loc, intern::String lhs_name, TypeSpec* rhs_typespec, VArgAccessSpec accepted_varg_kind)
             :   BaseField(loc, Kind::Aux_VPatternField, lhs_name),
                 m_typespec(rhs_typespec),
                 m_accepted_varg_kind(accepted_varg_kind),
@@ -42,7 +42,7 @@ namespace pdm::ast {
             {}
 
           public:
-            Typespec* rhs_typespec() const {
+            TypeSpec* rhs_typespec() const {
                 return m_typespec;
             }
             VArgAccessSpec accepted_varg_kind() const {

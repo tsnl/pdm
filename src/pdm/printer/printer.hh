@@ -92,14 +92,14 @@ namespace pdm::printer {
         void print_lpattern(ast::LPattern* node);
 
         // typespecs:
-        void print_id_typespec(ast::IdTypespec* node);
-        void print_fn_typespec(ast::FnTypespec* node);
-        void print_tcall_typespec(ast::TCallTypespec* node);
-        void print_tuple_typespec(ast::TupleTypespec* node);
-        void print_dot_name_typespec_mod_prefix(ast::DotNameTypespec_ModPrefix* node);
-        void print_struct_typespec(ast::StructTypespec* node);
-        void print_paren_typespec(ast::ParenTypespec* node);
-        // void print_dot_name_typespec_type_prefix(ast::DotNameTypespec_TypePrefix* node);
+        void print_id_typespec(ast::IdSetSpec* node);
+        void print_fn_typespec(ast::FnTypeSpec* node);
+        void print_tcall_typespec(ast::TCallTypeSpec* node);
+        void print_tuple_typespec(ast::TupleTypeSpec* node);
+        void print_dot_name_typespec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node);
+        void print_struct_typespec(ast::StructTypeSpec* node);
+        void print_paren_typespec(ast::ParenTypeSpec* node);
+        // void print_dot_name_typespec_type_prefix(ast::DotNameTypeSpec_TypePrefix* node);
         
         // args:
         void print_targ(ast::TArg* targ);

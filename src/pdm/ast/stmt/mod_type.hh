@@ -7,7 +7,7 @@
 #include "pdm/source/loc.hh"
 #include "pdm/ast/kind.hh"
 #include "pdm/ast/stmt/stmt.hh"
-#include "pdm/ast/typespec/typespec.hh"
+#include "pdm/ast/setspec/typespec.hh"
 #include "mod_content.hh"
 
 namespace pdm::ast {
@@ -24,8 +24,8 @@ namespace pdm::ast {
         friend Manager;
 
       private:
-        struct TypespecRhs {
-            Typespec* typespec;
+        struct TypeSpecRhs {
+            TypeSpec* typespec;
         };
         struct ExternRhs {
             intern::String ext_mod_name;
@@ -35,15 +35,15 @@ namespace pdm::ast {
       private:
         intern::String                       m_lhs_name;
         std::vector<TPattern*>               m_lhs_tpatterns;
-        std::variant<TypespecRhs, ExternRhs> m_rhs;
+        std::variant<TypeSpecRhs, ExternRhs> m_rhs;
         types::Var*                          m_x_defn_var;
 
       public:
-        ModTypeStmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& lhs_tpatterns, Typespec* typespec)
+        ModTypeStmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& lhs_tpatterns, TypeSpec* typespec)
         :   ModContentStmt(loc, Kind::ModTypeStmt),
             m_lhs_name(lhs_name),
             m_lhs_tpatterns(std::move(lhs_tpatterns)),
-            m_rhs(TypespecRhs{typespec}),
+            m_rhs(TypeSpecRhs{typespec}),
             m_x_defn_var(nullptr)
         {}
 
@@ -64,19 +64,19 @@ namespace pdm::ast {
 
       public:
         enum class RhsKind {
-            Typespec,
+            TypeSpec,
             Extern
         };
         RhsKind rhs_kind() const {
-            if (std::holds_alternative<TypespecRhs>(m_rhs)) {
-                return RhsKind::Typespec;
+            if (std::holds_alternative<TypeSpecRhs>(m_rhs)) {
+                return RhsKind::TypeSpec;
             } else {
                 return RhsKind::Extern;
             }
         }
-        Typespec* opt_rhs_typespec() const {
-            if (std::holds_alternative<TypespecRhs>(m_rhs)) {
-                return std::get<TypespecRhs>(m_rhs).typespec;
+        TypeSpec* opt_rhs_typespec() const {
+            if (std::holds_alternative<TypeSpecRhs>(m_rhs)) {
+                return std::get<TypeSpecRhs>(m_rhs).typespec;
             } else {
                 return nullptr;
             }

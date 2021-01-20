@@ -27,6 +27,7 @@ namespace pdm::scoper {
         Import,
         ExternObject,
         FormalVArg, FormalTArg,
+        IGNORE_FnTypeSpecFormalVArg
     };
 
     char const* defn_kind_as_text(DefnKind defn_kind);

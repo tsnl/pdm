@@ -61,9 +61,9 @@
     #include "pdm/ast/pattern/vpattern.hh"
     #include "pdm/ast/pattern/lpattern.hh"
     #include "pdm/ast/pattern/tpattern.hh"
-    #include "pdm/ast/typespec/typespec.hh"
-    #include "pdm/ast/typespec/struct.hh"
-    #include "pdm/ast/typespec/tcall.hh"
+    #include "pdm/ast/setspec/typespec.hh"
+    #include "pdm/ast/setspec/struct.hh"
+    #include "pdm/ast/setspec/tcall.hh"
 
     #include "pdm/parser/reader.hh"
     #include "pdm/parser/lexer.hh"
@@ -490,7 +490,7 @@ namespace pdm { namespace parser {
       char dummy10[sizeof (pdm::ast::StructExp::Field*)];
 
       // struct_typespec_field
-      char dummy11[sizeof (pdm::ast::StructTypespec::Field*)];
+      char dummy11[sizeof (pdm::ast::StructTypeSpec::Field*)];
 
       // targ
       char dummy12[sizeof (pdm::ast::TArg*)];
@@ -518,7 +518,7 @@ namespace pdm { namespace parser {
       // unary_typespec
       // long_typespec
       // struct_typespec
-      char dummy17[sizeof (pdm::ast::Typespec*)];
+      char dummy17[sizeof (pdm::ast::TypeSpec*)];
 
       // unary_op
       char dummy18[sizeof (pdm::ast::UnaryOperator)];
@@ -557,7 +557,7 @@ namespace pdm { namespace parser {
       char dummy28[sizeof (std::vector<pdm::ast::StructExp::Field*>)];
 
       // struct_typespec_field_cl
-      char dummy29[sizeof (std::vector<pdm::ast::StructTypespec::Field*>)];
+      char dummy29[sizeof (std::vector<pdm::ast::StructTypeSpec::Field*>)];
 
       // targ_cl
       char dummy30[sizeof (std::vector<pdm::ast::TArg*>)];
@@ -573,7 +573,7 @@ namespace pdm { namespace parser {
 
       // typespec_cl1
       // typespec_cl2
-      char dummy34[sizeof (std::vector<pdm::ast::Typespec*>)];
+      char dummy34[sizeof (std::vector<pdm::ast::TypeSpec*>)];
 
       // varg_cl
       char dummy35[sizeof (std::vector<pdm::ast::VArg*>)];
@@ -1015,7 +1015,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field: // struct_typespec_field
-        value.move< pdm::ast::StructTypespec::Field* > (std::move (that.value));
+        value.move< pdm::ast::StructTypeSpec::Field* > (std::move (that.value));
         break;
 
       case symbol_kind::S_targ: // targ
@@ -1049,7 +1049,7 @@ namespace pdm { namespace parser {
       case symbol_kind::S_unary_typespec: // unary_typespec
       case symbol_kind::S_long_typespec: // long_typespec
       case symbol_kind::S_struct_typespec: // struct_typespec
-        value.move< pdm::ast::Typespec* > (std::move (that.value));
+        value.move< pdm::ast::TypeSpec* > (std::move (that.value));
         break;
 
       case symbol_kind::S_unary_op: // unary_op
@@ -1100,7 +1100,7 @@ namespace pdm { namespace parser {
         break;
 
       case symbol_kind::S_struct_typespec_field_cl: // struct_typespec_field_cl
-        value.move< std::vector<pdm::ast::StructTypespec::Field*> > (std::move (that.value));
+        value.move< std::vector<pdm::ast::StructTypeSpec::Field*> > (std::move (that.value));
         break;
 
       case symbol_kind::S_targ_cl: // targ_cl
@@ -1121,7 +1121,7 @@ namespace pdm { namespace parser {
 
       case symbol_kind::S_typespec_cl1: // typespec_cl1
       case symbol_kind::S_typespec_cl2: // typespec_cl2
-        value.move< std::vector<pdm::ast::Typespec*> > (std::move (that.value));
+        value.move< std::vector<pdm::ast::TypeSpec*> > (std::move (that.value));
         break;
 
       case symbol_kind::S_varg_cl: // varg_cl
@@ -1289,13 +1289,13 @@ namespace pdm { namespace parser {
       {}
 #endif
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, pdm::ast::StructTypespec::Field*&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, pdm::ast::StructTypeSpec::Field*&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const pdm::ast::StructTypespec::Field*& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const pdm::ast::StructTypeSpec::Field*& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -1367,13 +1367,13 @@ namespace pdm { namespace parser {
       {}
 #endif
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, pdm::ast::Typespec*&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, pdm::ast::TypeSpec*&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const pdm::ast::Typespec*& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const pdm::ast::TypeSpec*& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -1523,13 +1523,13 @@ namespace pdm { namespace parser {
       {}
 #endif
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::StructTypespec::Field*>&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::StructTypeSpec::Field*>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::StructTypespec::Field*>& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::StructTypeSpec::Field*>& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -1588,13 +1588,13 @@ namespace pdm { namespace parser {
       {}
 #endif
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::Typespec*>&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::TypeSpec*>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::Typespec*>& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const std::vector<pdm::ast::TypeSpec*>& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -1758,7 +1758,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_struct_typespec_field: // struct_typespec_field
-        value.template destroy< pdm::ast::StructTypespec::Field* > ();
+        value.template destroy< pdm::ast::StructTypeSpec::Field* > ();
         break;
 
       case symbol_kind::S_targ: // targ
@@ -1792,7 +1792,7 @@ switch (yykind)
       case symbol_kind::S_unary_typespec: // unary_typespec
       case symbol_kind::S_long_typespec: // long_typespec
       case symbol_kind::S_struct_typespec: // struct_typespec
-        value.template destroy< pdm::ast::Typespec* > ();
+        value.template destroy< pdm::ast::TypeSpec* > ();
         break;
 
       case symbol_kind::S_unary_op: // unary_op
@@ -1843,7 +1843,7 @@ switch (yykind)
         break;
 
       case symbol_kind::S_struct_typespec_field_cl: // struct_typespec_field_cl
-        value.template destroy< std::vector<pdm::ast::StructTypespec::Field*> > ();
+        value.template destroy< std::vector<pdm::ast::StructTypeSpec::Field*> > ();
         break;
 
       case symbol_kind::S_targ_cl: // targ_cl
@@ -1864,7 +1864,7 @@ switch (yykind)
 
       case symbol_kind::S_typespec_cl1: // typespec_cl1
       case symbol_kind::S_typespec_cl2: // typespec_cl2
-        value.template destroy< std::vector<pdm::ast::Typespec*> > ();
+        value.template destroy< std::vector<pdm::ast::TypeSpec*> > ();
         break;
 
       case symbol_kind::S_varg_cl: // varg_cl

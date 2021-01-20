@@ -3,8 +3,8 @@ parser.yy: warning: 5 rules useless in grammar [-Wother]
 parser.yy:474.1-11: warning: nonterminal useless in grammar: typespec_cl [-Wother]
   474 | typespec_cl
       | ^~~~~~~~~~~
-parser.yy:494.1-13: warning: nonterminal useless in grammar: unaryTypespec [-Wother]
-  494 | unaryTypespec
+parser.yy:494.1-13: warning: nonterminal useless in grammar: unaryTypeSpec [-Wother]
+  494 | unaryTypeSpec
       | ^~~~~~~~~~~~~
 parser.yy: warning: 3 shift/reduce conflicts [-Wconflicts-sr]
 parser.yy: warning: shift/reduce conflict on token "'<'" [-Wcounterexamples]
@@ -60,10 +60,10 @@ Productions leading up to the conflict state found.  Still finding a possible un
     ttcall
     ↳ cmpBinaryExpr cmpBinaryOp ttarg_cl "'>'"
                     ↳ • "'>'"   ↳ ε
-  Second example: postfixTypespec cmpBinaryExpr • "'>'"
+  Second example: postfixTypeSpec cmpBinaryExpr • "'>'"
   Reduce derivation
     ttcall
-    ↳ postfixTypespec ttarg_cl                        "'>'"
+    ↳ postfixTypeSpec ttarg_cl                        "'>'"
                       ↳ ttarg
                         ↳ expr
                           ↳ binaryExpr
@@ -81,10 +81,10 @@ Productions leading up to the conflict state found.  Still finding a possible un
                     ↳ • "'>'"   ↳ ttarg
                                   ↳ expr
                                     ↳ ε
-  Second example: postfixTypespec eqBinaryExpr eqBinaryOp cmpBinaryExpr • "'>'"
+  Second example: postfixTypeSpec eqBinaryExpr eqBinaryOp cmpBinaryExpr • "'>'"
   Reduce derivation
     ttcall
-    ↳ postfixTypespec ttarg_cl                                                "'>'"
+    ↳ postfixTypeSpec ttarg_cl                                                "'>'"
                       ↳ ttarg
                         ↳ expr
                           ↳ binaryExpr

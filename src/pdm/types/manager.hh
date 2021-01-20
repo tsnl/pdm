@@ -87,9 +87,7 @@ namespace pdm::types {
         TemplateVar_RetType*  new_type_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
         TemplateVar_ClassType* new_class_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
 
-      //
-      // TVs:
-      //
+      // get core TVs:
       public:
         TypeVar* get_void_tv() { return &m_void_tv; }
         TypeVar* get_string_tv() { return &m_string_tv; }
@@ -123,7 +121,9 @@ namespace pdm::types {
         SolvePhase2_Result assume_relation_holds(Relation* relation);
         TestOpResult test(Relation* relation);
 
-      // Dump:
+        bool typecheck();
+
+      // dump:
       public:
         void print(printer::Printer& p, std::string const& title) const;
     };

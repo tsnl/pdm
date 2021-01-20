@@ -87,9 +87,9 @@ namespace pdm::scoper {
             }
         }
 
-        // IdTypespec
-        for (IdTypespecLookupOrder id_typespec_order: m_id_typespec_orders) {
-            ast::IdTypespec* id_typespec = id_typespec_order.id_typespec;
+        // IdSetSpec
+        for (IdTypeSpecLookupOrder id_typespec_order: m_id_typespec_orders) {
+            ast::IdSetSpec* id_typespec = id_typespec_order.id_typespec;
             intern::String id_name = id_typespec_order.id_typespec->name();
             Defn const* defn = id_typespec_order.lookup_context->lookup(id_name);
             if (defn != nullptr) {
@@ -274,8 +274,8 @@ namespace pdm::scoper {
         Scoper::IdExpLookupOrder order {exp, top_frame()->last_context()};
         scoper()->m_id_exp_orders.push_back(order);
     }
-    void ScoperVisitor::place_id_typespec_lookup_order(ast::IdTypespec* typespec) {
-        Scoper::IdTypespecLookupOrder order {typespec, top_frame()->last_context()};
+    void ScoperVisitor::place_id_typespec_lookup_order(ast::IdSetSpec* typespec) {
+        Scoper::IdTypeSpecLookupOrder order {typespec, top_frame()->last_context()};
         scoper()->m_id_typespec_orders.push_back(order);
     }
     void ScoperVisitor::place_import_lookup_order(ast::ImportStmt* import_stmt) {
@@ -417,7 +417,7 @@ namespace pdm::scoper {
             node->x_defn_var(typeclass_var);
 
             // pushing attribs/frames for nested defns:
-            push_frame(FrameKind::TypeclassRhs);
+            push_frame(FrameKind::ModTypeclassRhs);
         } else {
             pop_frame();
         }
@@ -461,7 +461,7 @@ namespace pdm::scoper {
             node->x_defn_var(type_var);
 
             // pushing attribs/frames for nested defns:
-            push_frame(FrameKind::TypeRhs);
+            push_frame(FrameKind::ModTypeRhs);
         } else {
             pop_frame();
         }
@@ -500,7 +500,7 @@ namespace pdm::scoper {
             node->x_defn_var(enum_var);
 
             // pushing frames/attribs for nested defns:
-            push_frame(FrameKind::EnumRhs);
+            push_frame(FrameKind::ModEnumRhs);
         } else {
             pop_frame();
         }
@@ -538,11 +538,8 @@ namespace pdm::scoper {
             // storing result on the node:
             node->x_defn_var(mod_val_var);
 
-            // pushing attributes for nested:
-            push_frame(FrameKind::FnRhs);
-            m_vpattern_defn_kind_stack.push(DefnKind::FormalVArg);
+            push_frame(FrameKind::ModValRhs);
         } else {
-            m_vpattern_defn_kind_stack.pop();
             pop_frame();
         }
         return true;
@@ -695,6 +692,7 @@ namespace pdm::scoper {
     }
     bool ScoperVisitor::on_visit__lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
+            // all below vpatterns must be defined
             m_vpattern_defn_kind_stack.push(DefnKind::FormalVArg);
         } else {
             m_vpattern_defn_kind_stack.pop();
@@ -740,12 +738,17 @@ namespace pdm::scoper {
                     field,
                     field_tv
                 };
-                bool defn_ok = top_frame()->define(new_defn);
-                if (!defn_ok) {
-                    post_overlapping_defn_error(field_prefix, new_defn);
-                    return false;
+
+                // when vpatterns are used in Fn typespecs, we do not define the symbols in the top frame.
+                // in all other cases, we do.
+                if (m_vpattern_defn_kind_stack.top() != DefnKind::IGNORE_FnTypeSpecFormalVArg) {
+                    bool defn_ok = top_frame()->define(new_defn);
+                    if (!defn_ok) {
+                        post_overlapping_defn_error(field_prefix, new_defn);
+                        return false;
+                    }
+                    field->x_defn_tv(field_tv);
                 }
-                field->x_defn_tv(field_tv);
             }
         }
         return true;
@@ -811,32 +814,38 @@ namespace pdm::scoper {
     }
 
     // typespecs:
-    bool ScoperVisitor::on_visit__id_typespec(ast::IdTypespec* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__id_typespec(ast::IdSetSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // placing an order:
             place_id_typespec_lookup_order(node);
         }
         return true;
     }
-    bool ScoperVisitor::on_visit__fn_typespec(ast::FnTypespec* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__fn_typespec(ast::FnTypeSpec* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            m_vpattern_defn_kind_stack.push(DefnKind::IGNORE_FnTypeSpecFormalVArg);
+        } else {
+            assert(visit_order == VisitOrder::Post);
+            m_vpattern_defn_kind_stack.pop();
+        }
         return true;
     }
-    bool ScoperVisitor::on_visit__tcall_typespec(ast::TCallTypespec* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__tcall_typespec(ast::TCallTypeSpec* node, VisitOrder visit_order) {
         return true;
     }
-    bool ScoperVisitor::on_visit__tuple_typespec(ast::TupleTypespec* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__tuple_typespec(ast::TupleTypeSpec* node, VisitOrder visit_order) {
         return true;
     }
-    // bool ScoperVisitor::on_visit__dot_name_typespec_type_prefix(ast::DotNameTypespec_TypePrefix* node, VisitOrder visit_order) {
+    // bool ScoperVisitor::on_visit__dot_name_typespec_type_prefix(ast::DotNameTypeSpec_TypePrefix* node, VisitOrder visit_order) {
     //     return true;
     // }
-    bool ScoperVisitor::on_visit__dot_name_typespec_mod_prefix(ast::DotNameTypespec_ModPrefix* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__dot_name_typespec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) {
         return true;
     }
-    bool ScoperVisitor::on_visit__struct_typespec(ast::StructTypespec* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__struct_typespec(ast::StructTypeSpec* node, VisitOrder visit_order) {
         return true;
     }
-    bool ScoperVisitor::on_visit__paren_typespec(ast::ParenTypespec* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__paren_typespec(ast::ParenTypeSpec* node, VisitOrder visit_order) {
         return true;
     }
 

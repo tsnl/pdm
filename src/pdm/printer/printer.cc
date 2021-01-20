@@ -290,39 +290,39 @@ namespace pdm::printer {
                 break;
             }
 
-            case ast::Kind::IdTypespec:
+            case ast::Kind::IdSetSpec:
             {
-                print_id_typespec(dynamic_cast<ast::IdTypespec*>(node));
+                print_id_typespec(dynamic_cast<ast::IdSetSpec*>(node));
                 break;
             }
-            case ast::Kind::FnTypespec:
+            case ast::Kind::FnTypeSpec:
             {
-                print_fn_typespec(dynamic_cast<ast::FnTypespec*>(node));
+                print_fn_typespec(dynamic_cast<ast::FnTypeSpec*>(node));
                 break;
             }
-            case ast::Kind::TCallTypespec:
+            case ast::Kind::TCallTypeSpec:
             {
-                print_tcall_typespec(dynamic_cast<ast::TCallTypespec*>(node));
+                print_tcall_typespec(dynamic_cast<ast::TCallTypeSpec*>(node));
                 break;
             }
-            case ast::Kind::TupleTypespec:
+            case ast::Kind::TupleTypeSpec:
             {
-                print_tuple_typespec(dynamic_cast<ast::TupleTypespec*>(node));
+                print_tuple_typespec(dynamic_cast<ast::TupleTypeSpec*>(node));
                 break;
             }
-            case ast::Kind::DotNameTypespec_ModPrefix:
+            case ast::Kind::DotNameTypeSpec_ModPrefix:
             {
-                print_dot_name_typespec_mod_prefix(dynamic_cast<ast::DotNameTypespec_ModPrefix*>(node));
+                print_dot_name_typespec_mod_prefix(dynamic_cast<ast::DotNameTypeSpec_ModPrefix*>(node));
                 break;
             }
-            case ast::Kind::StructTypespec:
+            case ast::Kind::StructTypeSpec:
             {
-                print_struct_typespec(dynamic_cast<ast::StructTypespec*>(node));
+                print_struct_typespec(dynamic_cast<ast::StructTypeSpec*>(node));
                 break;
             }
-            case ast::Kind::ParenTypespec:
+            case ast::Kind::ParenTypeSpec:
             {
-                print_paren_typespec(dynamic_cast<ast::ParenTypespec*>(node));
+                print_paren_typespec(dynamic_cast<ast::ParenTypeSpec*>(node));
                 break;
             }
 
@@ -400,7 +400,7 @@ namespace pdm::printer {
 
         switch (ts->rhs_kind())
         {
-            case ast::ModTypeStmt::RhsKind::Typespec:
+            case ast::ModTypeStmt::RhsKind::TypeSpec:
             {
                 print_str(" = ");
                 print_node(ts->opt_rhs_typespec());
@@ -433,7 +433,7 @@ namespace pdm::printer {
                 if (field->has_explicit_typespecs()) {
                     print_u32_char('(');
                     for (int typespec_index = 0; typespec_index < field->typespecs().size(); typespec_index++) {
-                        ast::Typespec* typespec = field->typespecs()[typespec_index];
+                        ast::TypeSpec* typespec = field->typespecs()[typespec_index];
                         print_node(typespec);
                         if (typespec_index+1 != field->typespecs().size()) {
                             print_u32_char(',');
@@ -966,16 +966,16 @@ namespace pdm::printer {
     }
 
     // typespecs:
-    void Printer::print_id_typespec(ast::IdTypespec* node) {
+    void Printer::print_id_typespec(ast::IdSetSpec* node) {
         print_intstr(node->name());
     }
-    void Printer::print_fn_typespec(ast::FnTypespec* node) {
+    void Printer::print_fn_typespec(ast::FnTypeSpec* node) {
         print_cstr("Fn ");
         print_node(node->lhs_vpattern());
         print_u32_char(' ');
-        print_node(node->rhs_typespec());
+        print_node(node->opt_ret_typespec());
     }
-    void Printer::print_tcall_typespec(ast::TCallTypespec* node) {
+    void Printer::print_tcall_typespec(ast::TCallTypeSpec* node) {
         print_node(node->lhs_called());
         print_u32_char('[');
         int arg_count = node->args().size();
@@ -989,16 +989,16 @@ namespace pdm::printer {
         }
         print_u32_char(']');
     }
-    void Printer::print_tuple_typespec(ast::TupleTypespec* node) {
+    void Printer::print_tuple_typespec(ast::TupleTypeSpec* node) {
         print_u32_char('(');
         int field_count = node->items().size();
         if (field_count == 1) {
-            ast::Typespec* typespec = node->items()[0];
+            ast::TypeSpec* typespec = node->items()[0];
             print_node(typespec);
             print_u32_char(',');
         } else if (field_count > 1) {
             for (int index = 0; index < field_count; index++) {
-                ast::Typespec* typespec = node->items()[index];
+                ast::TypeSpec* typespec = node->items()[index];
                 if (index+1 != field_count) {
                     print_u32_char(',');
                     print_u32_char(' ');
@@ -1007,20 +1007,20 @@ namespace pdm::printer {
         }
         print_u32_char(')');
     }
-    void Printer::print_dot_name_typespec_mod_prefix(ast::DotNameTypespec_ModPrefix* node) {
+    void Printer::print_dot_name_typespec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node) {
         for (intern::String mod_name: node->lhs_prefixes()) {
             print_intstr(mod_name);
             print_u32_char('.');
         }
         print_intstr(node->rhs_name());
     }
-    void Printer::print_struct_typespec(ast::StructTypespec* node) {
+    void Printer::print_struct_typespec(ast::StructTypeSpec* node) {
         print_u32_char('{');
         print_newline_indent();
         {
             int field_count = node->fields().size();
             for (int index = 0; index < field_count; index++) {
-                ast::StructTypespec::Field* field = node->fields()[index];
+                ast::StructTypeSpec::Field* field = node->fields()[index];
                 print_intstr(field->lhs_name());
                 print_u32_char(' ');
                 print_node(field->rhs_typespec());
@@ -1033,7 +1033,7 @@ namespace pdm::printer {
         print_newline_deindent();
         print_u32_char('}');
     }
-    void Printer::print_paren_typespec(ast::ParenTypespec* node) {
+    void Printer::print_paren_typespec(ast::ParenTypeSpec* node) {
         print_u32_char('(');
         print_node(node->nested_typespec());
         print_u32_char(')');

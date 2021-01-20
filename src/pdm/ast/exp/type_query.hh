@@ -3,7 +3,7 @@
 
 #include "pdm/source/loc.hh"
 #include "pdm/ast/exp/exp.hh"
-#include "pdm/ast/typespec/typespec.hh"
+#include "pdm/ast/setspec/typespec.hh"
 
 namespace pdm::ast {
 
@@ -20,11 +20,11 @@ namespace pdm::ast {
 
       private:
         TypeQueryKind m_query_kind;
-        Typespec*     m_lhs_typespec;
-        Typespec*     m_rhs_typespec;
+        TypeSpec*     m_lhs_typespec;
+        TypeSpec*     m_rhs_typespec;
       
       protected:
-        TypeQueryExp(source::Loc loc, TypeQueryKind kind, Typespec* lhs_typespec, Typespec* rhs_typespec)
+        TypeQueryExp(source::Loc loc, TypeQueryKind kind, TypeSpec* lhs_typespec, TypeSpec* rhs_typespec)
         : Exp(loc, Kind::TypeQueryExp),
           m_query_kind(kind),
           m_lhs_typespec(lhs_typespec),
@@ -34,10 +34,10 @@ namespace pdm::ast {
         TypeQueryKind query_kind() const {
             return m_query_kind;
         }
-        Typespec* lhs_typespec() const {
+        TypeSpec* lhs_typespec() const {
             return m_lhs_typespec;
         }
-        Typespec* rhs_typespec() const {
+        TypeSpec* rhs_typespec() const {
             return m_rhs_typespec;
         }
     };

@@ -41,9 +41,9 @@
     #include "pdm/ast/pattern/vpattern.hh"
     #include "pdm/ast/pattern/lpattern.hh"
     #include "pdm/ast/pattern/tpattern.hh"
-    #include "pdm/ast/typespec/typespec.hh"
-    #include "pdm/ast/typespec/struct.hh"
-    #include "pdm/ast/typespec/tcall.hh"
+    #include "pdm/ast/setspec/typespec.hh"
+    #include "pdm/ast/setspec/struct.hh"
+    #include "pdm/ast/setspec/tcall.hh"
 
     #include "pdm/parser/reader.hh"
     #include "pdm/parser/lexer.hh"
@@ -155,16 +155,16 @@
 %type <std::vector<pdm::ast::StructExp::Field*>> struct_exp_field_cl
 
 //
-// Typespec Nonterminals:
+// TypeSpec Nonterminals:
 //
 
-%type <pdm::ast::Typespec*> typespec long_typespec
-%type <pdm::ast::Typespec*> primary_typespec paren_typespec tuple_typespec struct_typespec mod_prefix_tid fn_typespec
-%type <pdm::ast::Typespec*> postfix_typespec tcall_typespec
-%type <pdm::ast::Typespec*> unary_typespec
-%type <std::vector<pdm::ast::Typespec*>> typespec_cl1 typespec_cl2
-%type <pdm::ast::StructTypespec::Field*> struct_typespec_field
-%type <std::vector<pdm::ast::StructTypespec::Field*>> struct_typespec_field_cl
+%type <pdm::ast::TypeSpec*> typespec long_typespec
+%type <pdm::ast::TypeSpec*> primary_typespec paren_typespec tuple_typespec struct_typespec mod_prefix_tid fn_typespec
+%type <pdm::ast::TypeSpec*> postfix_typespec tcall_typespec
+%type <pdm::ast::TypeSpec*> unary_typespec
+%type <std::vector<pdm::ast::TypeSpec*>> typespec_cl1 typespec_cl2
+%type <pdm::ast::StructTypeSpec::Field*> struct_typespec_field
+%type <std::vector<pdm::ast::StructTypeSpec::Field*>> struct_typespec_field_cl
 
 //
 // Pattern Nonterminals:
@@ -370,8 +370,8 @@ unprefixed_enum_field_pl
     | unprefixed_enum_field_pl PIPE enum_field  { $$ = std::move($1); $$.push_back($3); }
     ;
 enum_field
-    : tid                            { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move(std::vector<ast::Typespec*>{}), false); }
-    | tid LPAREN RPAREN              { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move(std::vector<ast::Typespec*>{}), true); }
+    : tid                            { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move(std::vector<ast::TypeSpec*>{}), false); }
+    | tid LPAREN RPAREN              { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move(std::vector<ast::TypeSpec*>{}), true); }
     | tid LPAREN typespec_cl1 RPAREN { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move($3), true); }
     ;
 mod_typeclass_stmt
@@ -589,7 +589,7 @@ type_query_op
     ;
 
 /*
- * Typespecs:
+ * TypeSpecs:
  */
 
 typespec
@@ -682,7 +682,7 @@ vpattern_field
     | KW_INOUT vid typespec { $$ = mgr->new_vpattern_field(@$, $2.ID_intstr, $3, ast::VArgAccessSpec::InOut); }
     ;
 lpattern_field
-    : vid typespec  { $$ = mgr->new_lpattern_field(@$, ast::LPattern::FieldKind::IdTypespecPair, $1.ID_intstr, $2); }
+    : vid typespec  { $$ = mgr->new_lpattern_field(@$, ast::LPattern::FieldKind::IdTypeSpecPair, $1.ID_intstr, $2); }
     | vid           { $$ = mgr->new_lpattern_field(@$, ast::LPattern::FieldKind::IdSingleton, $1.ID_intstr); }
     ;
 tpattern_field

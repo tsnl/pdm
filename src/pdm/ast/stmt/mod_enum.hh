@@ -6,7 +6,7 @@
 #include "pdm/core/intern.hh"
 #include "pdm/source/loc.hh"
 #include "pdm/ast/stmt/stmt.hh"
-#include "pdm/ast/typespec/struct.hh"
+#include "pdm/ast/setspec/struct.hh"
 #include "mod_content.hh"
 
 namespace pdm::ast {
@@ -30,7 +30,7 @@ namespace pdm::ast {
           private:
             source::Loc                 m_loc;
             intern::String              m_name;
-            std::vector<ast::Typespec*> m_typespecs;
+            std::vector<ast::TypeSpec*> m_typespecs;
             bool                        m_has_explicit_typespecs;
             
           protected:
@@ -41,7 +41,7 @@ namespace pdm::ast {
                 m_has_explicit_typespecs(false)
             {}
 
-            Field(source::Loc loc, intern::String name, std::vector<ast::Typespec*>&& typespecs, bool has_explicit_typespecs)
+            Field(source::Loc loc, intern::String name, std::vector<ast::TypeSpec*>&& typespecs, bool has_explicit_typespecs)
             :   m_loc(loc),
                 m_name(name),
                 m_typespecs(std::move(typespecs)),
@@ -52,7 +52,7 @@ namespace pdm::ast {
             intern::String name() const {
                 return m_name;
             }
-            std::vector<ast::Typespec*> const& typespecs() const {
+            std::vector<ast::TypeSpec*> const& typespecs() const {
                 return m_typespecs;
             }
             bool has_explicit_typespecs() const {

@@ -125,13 +125,13 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/arg/targ.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/arg/varg.hh
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/typespec/typespec.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/typespec/typespec.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/typespec/dot.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/typespec/fn.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/typespec/id.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/typespec/struct.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/typespec/tcall.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/setspec.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/typespec.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/dot.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/fn.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/id.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/struct.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/tcall.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.hh

@@ -17,19 +17,19 @@ import Vector from "basic.pd" type "script/fs";
 import Eg3 from "eg3.pd"   type "script/fs";
 
 mod Vehicle {
-    type Car = {
+    Car = {
         name Text,
         price Int32
     };
-    fn new (name Text, price Int32) -> Car = {
+    new = fn (name Text, price Int32) -> Car {
         (name, price)
     };
 };
 
 mod Level1 {
     mod damage {
-        fn wearAndTear (inout car eg3.Car, dsec Float32) = {
-            let fancyScoreDamagePerSec = 1.2;
+        wearAndTear = fn (inout car eg3.Car, dsec Float32) {
+            val fancyScoreDamagePerSec = 1.2;
             set car.fancyScore = car.fancyScore - convert[UInt32](fancyScoreDamagePerSec * dsec);
         };
     };
@@ -52,12 +52,12 @@ mod Demo {
     using Eg3:newCarList;
     using Eg3:newCarDict;
 
-    fn test () = {
-        let carList List[Vehicle] = newCarList();
-        let v1 = (1.0,2.0,3.0,4.0);
-        let v2 = (2.0,3.0,4.0,5.0);
+    test = fn () {
+        val carList List[Vehicle] = newCarList();
+        val v1 = (1.0,2.0,3.0,4.0);
+        val v2 = (2.0,3.0,4.0,5.0);
         
-        let result1 = AVX:mul(v1,v2);
-        let result2 = AVX:add(v1,v2);
+        val result1 = AVX:mul(v1,v2);
+        val result2 = AVX:add(v1,v2);
     };
 };

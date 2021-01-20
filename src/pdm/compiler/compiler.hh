@@ -45,15 +45,15 @@ namespace pdm {
     // 'Compiler' instances transform input files into output files.
     class Compiler {
       public:
-        enum class PrintFlag: u64 {
+        using PrintFlagBitset = u64;
+        enum class PrintFlag: PrintFlagBitset {
             SourceCode  = 0x1,
             Scopes      = 0x2,
             Types       = 0x4,
             Llvm        = 0x8,
             Wasm        = 0x10
         };
-
-        static u64 PrintFlags_PrintEverything;
+        static PrintFlagBitset PrintFlags_PrintEverything;
 
       private:
         std::filesystem::path m_cwd;

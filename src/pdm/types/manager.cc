@@ -101,4 +101,58 @@ namespace pdm::types {
         // todo: test if the relation is true given argument variables using 'test_invariant'
         return TestOpResult::ErrorOccurred;
     }
+
+    bool Manager::typecheck() {
+        // starting with a root set of nodes:
+        std::vector<Var*> all_vars;
+        all_set.reserve(64); {
+            all_vars.push_back(get_void_tv());
+            all_vars.push_back(get_string_tv());
+            all_vars.push_back(get_i8_tv());
+            all_vars.push_back(get_i16_tv());
+            all_vars.push_back(get_i32_tv());
+            all_vars.push_back(get_i64_tv());
+            all_vars.push_back(get_i128_tv());
+            all_vars.push_back(get_u1_tv());
+            all_vars.push_back(get_u8_tv());
+            all_vars.push_back(get_u16_tv());
+            all_vars.push_back(get_u32_tv());
+            all_vars.push_back(get_u64_tv());
+            all_vars.push_back(get_u128_tv());
+            all_vars.push_back(get_f16_tv());
+            all_vars.push_back(get_f32_tv());
+            all_vars.push_back(get_f64_tv());
+            all_vars.push_back(get_signed_int_cv());
+            all_vars.push_back(get_unsigned_int_cv());
+            all_vars.push_back(get_int_cv());
+            all_vars.push_back(get_float_cv());
+            all_vars.push_back(get_number_cv());
+        }
+
+        auto const var_in_slice = [&all_vars] (Var* var, size_t min_index, size_t end_index) {
+            // bounds checks:
+            assert(
+                (min_index < all_vars.size()) &&
+                (end_index <= all_vars.size()) &&
+                (min_index <= end_index)
+            );
+
+            // scanning:
+            for (size_t index = min_index; index < end_index; index++) {
+                if (all_vars[index] == var) {
+                    return true;
+                }
+            }
+
+            // not found:
+            return false;
+        }
+
+        // until fixed...
+        bool fixed = false;
+        while (!fixed) {
+            // todo: iteratively call var solvers...
+        }
+    }
+
 }

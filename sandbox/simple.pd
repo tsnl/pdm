@@ -1,0 +1,7 @@
+mod Greetings {
+
+    hello = fn () -> String {
+        "Hello!"
+    };
+
+};

@@ -5,7 +5,7 @@
 
 #include "pdm/core/intern.hh"
 #include "pdm/ast/node.hh"
-#include "pdm/ast/typespec/typespec.hh"
+#include "pdm/ast/setspec/typespec.hh"
 
 #include "base_field.hh"
 
@@ -31,11 +31,11 @@ namespace pdm::ast {
 
           private:
             FieldKind m_kind;
-            Typespec* m_typespec;
+            TypeSpec* m_typespec;
             types::Var* m_x_defn_var;
 
           protected:
-            Field(source::Loc loc, FieldKind kind, intern::String name, Typespec* rhs_typespec)
+            Field(source::Loc loc, FieldKind kind, intern::String name, TypeSpec* rhs_typespec)
             :   BaseField(loc, Kind::Aux_TPatternField, name),
                 m_kind(kind),
                 m_typespec(rhs_typespec),
@@ -46,7 +46,7 @@ namespace pdm::ast {
             FieldKind kind() const { 
                 return m_kind; 
             }
-            Typespec* rhs_typespec() const {
+            TypeSpec* rhs_typespec() const {
                 return m_typespec; 
             }
           

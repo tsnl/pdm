@@ -2,7 +2,7 @@
 #define INCLUDED_PDM_AST_TYPESPEC_TUPLE_HH
 
 #include "pdm/source/loc.hh"
-#include "pdm/ast/typespec/typespec.hh"
+#include "pdm/ast/setspec/typespec.hh"
 
 namespace pdm::ast {
     class Manager;
@@ -10,19 +10,19 @@ namespace pdm::ast {
 
 namespace pdm::ast {
 
-    class TupleTypespec: public Typespec {
+    class TupleTypeSpec: public TypeSpec {
         friend Manager;
 
       private:
-        std::vector<Typespec*> m_items;
+        std::vector<TypeSpec*> m_items;
 
       protected:
-        TupleTypespec(source::Loc loc, std::vector<Typespec*>&& items)
-        : Typespec(loc, Kind::TupleTypespec),
+        TupleTypeSpec(source::Loc loc, std::vector<TypeSpec*>&& items)
+        : TypeSpec(loc, Kind::TupleTypeSpec),
           m_items(std::move(items)) {}
 
       public:
-        std::vector<Typespec*> const& items() const {
+        std::vector<TypeSpec*> const& items() const {
             return m_items;
         }
     };
