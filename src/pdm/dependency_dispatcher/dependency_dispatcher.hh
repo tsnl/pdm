@@ -1,6 +1,8 @@
 #ifndef INCLUDED_PDM_DEPENDENCY_DISPATCHER_DEPENDENCY_DISPATCHER_HH
 #define INCLUDED_PDM_DEPENDENCY_DISPATCHER_DEPENDENCY_DISPATCHER_HH
 
+#include <string>
+
 #include "pdm/ast/visitor.hh"
 
 namespace pdm {
@@ -11,6 +13,8 @@ namespace pdm::ast {
 }
 
 namespace pdm::dependency_dispatcher {
+
+    extern std::string const PD_SCRIPT_IMPORT_TYPE_STRING;
 
     class DDVisitor: public ast::TinyVisitor {
       private:

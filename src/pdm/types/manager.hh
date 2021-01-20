@@ -16,6 +16,7 @@ namespace pdm {
     class Compiler;
 }
 namespace pdm::typer {
+    class Var;
     class Relation;
 }
 
@@ -40,13 +41,14 @@ namespace pdm::types {
       private:
         Compiler* m_opt_compiler_ptr;
 
-        std::deque<MonotypeTypeVar>   m_all_monotype_tvs;
-        std::deque<ProxyTypeVar>      m_all_proxy_tvs;
+        std::deque<MonotypeTypeVar>   m_all_unknown_monotype_tvs;
+        std::deque<ProxyTypeVar>      m_all_unknown_proxy_tvs;
         std::deque<UnknownClassVar>   m_all_unknown_cvs;
-        std::deque<TemplateVar_RetValue>  m_all_value_template_vars;
-        std::deque<TemplateVar_RetType>   m_all_type_template_vars;
-        std::deque<TemplateVar_ClassType>  m_all_class_template_vars;
-        std::vector<Relation*>        m_all_relations;
+        std::deque<TemplateVar_RetValue>    m_all_value_template_vars;
+        std::deque<TemplateVar_RetType>     m_all_type_template_vars;
+        std::deque<TemplateVar_ClassType>   m_all_class_template_vars;
+        std::vector<Var*>                   m_all_var_refs;     // stored in creation order for data locality
+        std::vector<Relation*>              m_all_relations;
 
         VoidFixedTypeVar m_void_tv;
         StringFixedTypeVar m_string_tv;
@@ -79,8 +81,8 @@ namespace pdm::types {
 
       // create tv (TypeVar), cv (ClassVar), and 3 kinds of TemplateVars:
       public:
-        TypeVar* new_unknown_tv(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
-        TypeVar* new_proxy_tv(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        TypeVar* new_unknown_monotype_tv(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        TypeVar* new_unknown_proxy_tv(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
         ClassVar* new_unknown_cv(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
 
         TemplateVar_RetValue* new_value_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);

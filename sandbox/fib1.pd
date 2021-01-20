@@ -1,4 +1,4 @@
-import Fibx from "fibx.pdm" type "pdm/script";
+import Fibx from "fibx.pd" type "pd/script";
 
 mod Fibonacci {
     fib = fn (x Int32) -> Int32 {

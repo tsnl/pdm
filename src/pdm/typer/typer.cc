@@ -320,7 +320,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__paren_exp(ast::ParenExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "ParenExp";
-            TypeVar* paren_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* paren_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(paren_tv);
         } else {
             TypeVar* paren_tv = node->x_typeof_tv();
@@ -335,7 +335,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__tuple_exp(ast::TupleExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "TupleExp(" + std::to_string(node->items().size()) + ")";
-            TypeVar* tuple_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* tuple_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(tuple_tv);
         } else {
             // todo: set tuple field requirements here by equating to a TupleTV
@@ -345,7 +345,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__array_exp(ast::ArrayExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "ArrayExp(" + std::to_string(node->items().size()) + ")";
-            TypeVar* array_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* array_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(array_tv);
         } else {
             // todo: set array exp requirements here by equating to an ArrayTV
@@ -355,7 +355,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__struct_exp(ast::StructExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "StructExp(" + std::to_string(node->fields().size()) + ")";
-            TypeVar* struct_exp_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* struct_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(struct_exp_tv);
         } else {
             // todo: set struct exp requirements here by equating to a StructTV
@@ -365,7 +365,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__type_query_exp(ast::TypeQueryExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "TypeQueryExp";
-            TypeVar* type_query_exp_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* type_query_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(type_query_exp_tv);
         } else {
             // todo: implement this typer.
@@ -375,7 +375,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__chain_exp(ast::ChainExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "ChainExp";
-            TypeVar* chain_exp_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* chain_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(chain_exp_tv);
         } else {
 
@@ -385,7 +385,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "LambdaExp";
-            TypeVar* lambda_exp_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* lambda_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(lambda_exp_tv);
         } else {
             // todo: implement all the function/vcall typing stuff here!
@@ -395,7 +395,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__if_exp(ast::IfExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "IfExp";
-            TypeVar* if_exp_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* if_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(if_exp_tv);
         } else {
 
@@ -405,7 +405,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__dot_index_exp(ast::DotIndexExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "DotIndexExp";
-            TypeVar* dot_index_exp_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* dot_index_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(dot_index_exp_tv);
         } else {
 
@@ -415,7 +415,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__dot_name_exp(ast::DotNameExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "DotNameExp";
-            TypeVar* dot_name_exp_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* dot_name_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(dot_name_exp_tv);
         } else {
 
@@ -435,7 +435,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__unary_exp(ast::UnaryExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "UnaryExp";
-            TypeVar* unary_exp_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* unary_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(unary_exp_tv);
         } else {
 
@@ -445,7 +445,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__binary_exp(ast::BinaryExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "BinaryExp";
-            TypeVar* binary_exp_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* binary_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(binary_exp_tv);
         } else {
 
@@ -455,7 +455,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__vcall_exp(ast::VCallExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "VCallExp";
-            TypeVar* vcall_exp_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* vcall_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(vcall_exp_tv);
         } else {
 
@@ -465,7 +465,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__tcall_exp(ast::TCallExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "TCallExp";
-            TypeVar* tcall_exp_tv = m_types_mgr->new_unknown_tv(std::move(tv_name), node);
+            TypeVar* tcall_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(tcall_exp_tv);
         } else {
 
@@ -603,7 +603,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__fn_typespec(ast::FnTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string name = "FnTypeSpec";
-            node->x_spectype_var(m_types_mgr->new_unknown_tv(std::move(name), node));
+            node->x_spectype_var(m_types_mgr->new_unknown_monotype_tv(std::move(name), node));
         } else {
             assert(visit_order == VisitOrder::Post);
             // node->x_spectype_var(m_types_mgr->new_func_tv()) ...
@@ -667,7 +667,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__tuple_typespec(ast::TupleTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string name = "Tuple";
-            TypeVar* tuple_tv = m_types_mgr->new_unknown_tv(std::move(name), node);
+            TypeVar* tuple_tv = m_types_mgr->new_unknown_monotype_tv(std::move(name), node);
             node->x_spectype_var(tuple_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
@@ -731,7 +731,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__struct_typespec(ast::StructTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string name = "StructTypeSpec";
-            TypeVar* struct_tv = m_types_mgr->new_unknown_tv(std::move(name), node);
+            TypeVar* struct_tv = m_types_mgr->new_unknown_monotype_tv(std::move(name), node);
             node->x_spectype_var(struct_tv);
         } else {
             assert(visit_order == VisitOrder::Post);

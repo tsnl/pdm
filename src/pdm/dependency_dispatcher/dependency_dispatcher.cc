@@ -21,8 +21,10 @@
 
 namespace pdm::dependency_dispatcher {
 
+    std::string const PD_SCRIPT_IMPORT_TYPE_STRING = "pd/script";
+
     inline bool is_relfile_import_type(std::string const& import_type) {
-        return import_type == "pdm/script";
+        return import_type == PD_SCRIPT_IMPORT_TYPE_STRING;
     }
 
     bool DDVisitor::on_visit(ast::Node* node, VisitOrder visit_order) {

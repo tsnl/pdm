@@ -76,8 +76,8 @@ namespace pdm {
         if (script_it != m_cached_imports.end()) {
             return script_it->second;
         }
-
-        if (type == "pdm/script") {
+ 
+        if (type == dependency_dispatcher::PD_SCRIPT_IMPORT_TYPE_STRING) {
             std::string abs_from_path = key.import_from_path.native();
             source::Source* source = new source::Source(std::move(abs_from_path));
             ast::Script* script = parser::parse_script(&m_ast_mgr, source);
@@ -112,7 +112,7 @@ namespace pdm {
 
     bool Compiler::pass1_import_all(scoper::Scoper& scoper) {
         // importing the entry point, and all dependencies recursively via DependencyDispatcher:
-        ast::Script* entry_point_script = import(m_entry_point_path, "pdm/script", "entry point");
+        ast::Script* entry_point_script = import(m_entry_point_path, dependency_dispatcher::PD_SCRIPT_IMPORT_TYPE_STRING, "entry point");
         if (entry_point_script == nullptr) {
             return false;            
         }
@@ -193,6 +193,10 @@ namespace pdm {
     bool Compiler::finish() {
         scoper::Scoper scoper{this};
 
+        //
+        // Pass 1: Loading (frontend)
+        //
+
         if (!pass1_import_all(scoper)) {
             std::string desc = "Loading Error-- Compilation Terminated";
             std::string headline = (
@@ -213,8 +217,13 @@ namespace pdm {
         if (m_print_flags & static_cast<PrintFlagBitset>(PrintFlag::Scopes)) {
             postpass1_print2_scopes(scoper);
         }
+
+        //
+        // Pass 2: typechecking
+        //
         
-        if (!pass2_typecheck_all()) {
+        bool pass2_ok = pass2_typecheck_all();
+        if (!pass2_ok) {
             std::string headline = "Typechecking Error-- Compilation Terminated";
             std::string desc = (
                 "All loaded assets are syntactically valid, but other errors "
@@ -225,14 +234,22 @@ namespace pdm {
                 std::move(headline),
                 std::move(desc)
             ));
-            return false;
         }
 
         if (m_print_flags & static_cast<u64>(PrintFlag::Types)) {
             postpass2_print1_types();
         }
 
-        if (!pass3_emit_all()) {
+        if (!pass2_ok) {
+            return false;
+        }
+
+        //
+        // Pass 3: emitting (backend)
+        //
+
+        bool pass3_ok = pass3_emit_all();
+        if (!pass3_ok) {
             std::string headline = "Emitting code failed.";
             std::string desc = (
                 "This is a compiler error. "

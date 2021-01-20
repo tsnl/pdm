@@ -93,7 +93,7 @@ namespace pdm::printer {
         m_ostream_ref << std::dec << u;
     }
     void Printer::print_uint_hex(u64 u) {
-        m_ostream_ref << "0x" << std::hex << u;
+        m_ostream_ref << "0x" << std::hex << u << std::dec;
     }
 
     void Printer::print_float(long double float_val) {
