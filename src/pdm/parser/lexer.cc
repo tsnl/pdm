@@ -64,6 +64,7 @@ namespace pdm::parser::aux {
         intern::String set_intstr;
         intern::String type_intstr;
         intern::String mod_intstr;
+        intern::String sub_intstr;
         intern::String from_intstr;
         intern::String typeclass_intstr;
         intern::String out_intstr;
@@ -95,6 +96,7 @@ namespace pdm::parser::aux {
             set_intstr = "set";
             type_intstr = "type";
             mod_intstr = "mod";
+            sub_intstr = "sub";
             from_intstr = "from";
             typeclass_intstr = "typeclass";
             out_intstr = "out";
@@ -359,6 +361,12 @@ namespace pdm::parser::aux {
                     if (source->read_head() == ':' && source->advance_head()) {
                         return Tk::DBL_COLON;
                     }
+                    else if (source->read_head() == '-' && source->advance_head()) {
+                        return Tk::COLON_DASH;
+                    }
+                    else if (source->read_head() == '<' && source->advance_head()) {
+                        return Tk::COLON_LTHAN;
+                    }
                     return Tk::COLON;
                 }
                 break;
@@ -375,6 +383,15 @@ namespace pdm::parser::aux {
                 if (source->advance_head()) {
                     if (source->read_head() == '>' && source->advance_head()) {
                         return Tk::ARROW;
+                    }
+                    if (source->read_head() == '-' && source->advance_head()) {
+                        if (source->read_head() == '-' && source->advance_head()) {
+                            // triple-dash
+                            return Tk::TRIPLE_DASH;
+                        } else {
+                            assert(0 && "NotImplemented: Incomplete triple-dash error.");
+                            // error!
+                        }
                     }
                     return Tk::MINUS;
                 }
@@ -397,6 +414,9 @@ namespace pdm::parser::aux {
                 if (source->advance_head()) {
                     if (source->read_head() == '=' && source->advance_head()) {
                         return Tk::GETHAN;
+                    }
+                    else if (source->read_head() == ':' && source->advance_head()) {
+                        return Tk::GTHAN_COLON;
                     }
                     return Tk::GTHAN;
                 }
@@ -553,6 +573,7 @@ namespace pdm::parser::aux {
         if (intstr == keywords.type_intstr) { return Tk::KW_TYPE; }
         if (intstr == keywords.typeclass_intstr) { return Tk::KW_TYPECLASS; }
         if (intstr == keywords.mod_intstr) { return Tk::KW_MOD; }
+        if (intstr == keywords.sub_intstr) { return Tk::KW_SUB; }
         if (intstr == keywords.from_intstr) { return Tk::KW_FROM; }
         if (intstr == keywords.out_intstr) { return Tk::KW_OUT; }
         if (intstr == keywords.inout_intstr) { return Tk::KW_INOUT; }
@@ -848,6 +869,11 @@ namespace pdm::parser::aux {
             case Tk::KW_MOD:
             {
                 name = "mod";
+                break;
+            }
+            case Tk::KW_SUB:
+            {
+                name = "sub";
                 break;
             }
             case Tk::KW_FN:

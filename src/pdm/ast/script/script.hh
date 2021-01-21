@@ -9,6 +9,7 @@
 namespace pdm::ast {
     class Manager;
     class Stmt;
+    class ModStmt;
 }
 namespace pdm::scoper {
     class Frame;
@@ -20,24 +21,29 @@ namespace pdm::ast {
         friend Manager;
 
       private:
-        source::Source*    m_source;
-        std::vector<Stmt*> m_stmts;
+        source::Source*       m_source;
+        std::vector<Stmt*>    m_head_stmts;
+        std::vector<ModStmt*> m_body_mod_stmts;
         
         scoper::Frame* m_x_script_frame;
 
       protected:
-        Script(source::Source* source, source::Loc loc, std::vector<Stmt*> stmts)
+        Script(source::Source* source, source::Loc loc, std::vector<Stmt*>&& head_stmts, std::vector<ModStmt*>&& body_mod_stmts)
         : Node(loc, Kind::Script),
           m_source(source),
-          m_stmts(stmts),
+          m_head_stmts(std::move(head_stmts)),
+          m_body_mod_stmts(std::move(body_mod_stmts)),
           m_x_script_frame(nullptr) {}
 
       public:
         source::Source* source() const {
             return m_source;
         }
-        std::vector<Stmt*> const& stmts() const {
-            return m_stmts;
+        std::vector<Stmt*> const& head_stmts() const {
+            return m_head_stmts;
+        }
+        std::vector<ModStmt*> const& body_stmts() const {
+            return m_body_mod_stmts;
         }
 
       public:

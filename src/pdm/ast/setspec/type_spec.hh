@@ -7,21 +7,20 @@
 
 #include "setspec.hh"
 
-namespace pdm::types {
-    class Var;
-}
-
 namespace pdm::ast {
 
     class TypeSpec: public SetSpec {
       public:
         inline TypeSpec(source::Loc loc, Kind node_kind);
+    
+      protected:
+        virtual bool check_x_spectype_var(types::Var* var) const override;
     };
 
     inline TypeSpec::TypeSpec(source::Loc loc, Kind node_kind)
     :   SetSpec(loc, node_kind)
     {}
-
+    
 }
 
 #endif  // INCLUDED_PDM_AST_TYPESPEC_TYPESPEC_HH

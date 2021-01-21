@@ -87,9 +87,9 @@ namespace pdm::scoper {
             }
         }
 
-        // IdSetSpec
+        // IdTypeSpec
         for (IdTypeSpecLookupOrder id_typespec_order: m_id_typespec_orders) {
-            ast::IdSetSpec* id_typespec = id_typespec_order.id_typespec;
+            ast::IdTypeSpec* id_typespec = id_typespec_order.id_typespec;
             intern::String id_name = id_typespec_order.id_typespec->name();
             Defn const* defn = id_typespec_order.lookup_context->lookup(id_name);
             if (defn != nullptr) {
@@ -274,7 +274,7 @@ namespace pdm::scoper {
         Scoper::IdExpLookupOrder order {exp, top_frame()->last_context()};
         scoper()->m_id_exp_orders.push_back(order);
     }
-    void ScoperVisitor::place_id_typespec_lookup_order(ast::IdSetSpec* typespec) {
+    void ScoperVisitor::place_id_typespec_lookup_order(ast::IdTypeSpec* typespec) {
         Scoper::IdTypeSpecLookupOrder order {typespec, top_frame()->last_context()};
         scoper()->m_id_typespec_orders.push_back(order);
     }
@@ -418,6 +418,26 @@ namespace pdm::scoper {
 
             // pushing attribs/frames for nested defns:
             push_frame(FrameKind::ModTypeclassRhs);
+            {
+                // defining the candidate explicitly:
+                std::string candidate_var_name = "TypeclassCandidate:" + std::string(node->candidate_name().content());
+                types::TypeVar* candidate_var = scoper()->types_mgr()->new_unknown_proxy_tv(std::move(candidate_var_name), node);
+                assert(candidate_var != nullptr);
+
+                Defn candidate_defn {
+                    DefnKind::TypeclassCandidate,
+                    node->candidate_name(),
+                    node,
+                    candidate_var
+                };
+                bool candidate_defn_ok = top_frame()->define(candidate_defn);
+                if (!defn_ok) {
+                    post_overlapping_defn_error("typeclass candidate", new_defn);
+                    return false;
+                }
+
+                // todo: store the candidate var somewhere accessible...
+            }
         } else {
             pop_frame();
         }
@@ -814,10 +834,16 @@ namespace pdm::scoper {
     }
 
     // typespecs:
-    bool ScoperVisitor::on_visit__id_typespec(ast::IdSetSpec* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__id_typespec(ast::IdTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // placing an order:
             place_id_typespec_lookup_order(node);
+        }
+        return true;
+    }
+    bool ScoperVisitor::on_visit__id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            // todo
         }
         return true;
     }
@@ -831,6 +857,9 @@ namespace pdm::scoper {
         return true;
     }
     bool ScoperVisitor::on_visit__tcall_typespec(ast::TCallTypeSpec* node, VisitOrder visit_order) {
+        return true;
+    }
+    bool ScoperVisitor::on_visit__tcall_class_spec(ast::TCallClassSpec* node, VisitOrder visit_order) {
         return true;
     }
     bool ScoperVisitor::on_visit__tuple_typespec(ast::TupleTypeSpec* node, VisitOrder visit_order) {

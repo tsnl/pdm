@@ -5,12 +5,13 @@
 
 #include "pdm/core/intern.hh"
 #include "pdm/ast/node.hh"
-#include "pdm/ast/setspec/typespec.hh"
+#include "pdm/ast/setspec/type_spec.hh"
 
 #include "base_field.hh"
 
 namespace pdm::ast {
     class Manager;
+    class SetSpec;
 }
 namespace pdm::types {
     class Var;
@@ -31,14 +32,14 @@ namespace pdm::ast {
 
           private:
             FieldKind m_kind;
-            TypeSpec* m_typespec;
+            SetSpec* m_set_spec;
             types::Var* m_x_defn_var;
 
           protected:
-            Field(source::Loc loc, FieldKind kind, intern::String name, TypeSpec* rhs_typespec)
+            Field(source::Loc loc, FieldKind kind, intern::String name, SetSpec* rhs_set_spec)
             :   BaseField(loc, Kind::Aux_TPatternField, name),
                 m_kind(kind),
-                m_typespec(rhs_typespec),
+                m_set_spec(rhs_set_spec),
                 m_x_defn_var(nullptr)
             {}
           
@@ -46,8 +47,8 @@ namespace pdm::ast {
             FieldKind kind() const { 
                 return m_kind; 
             }
-            TypeSpec* rhs_typespec() const {
-                return m_typespec; 
+            SetSpec* rhs_set_spec() const {
+                return m_set_spec; 
             }
           
           public:

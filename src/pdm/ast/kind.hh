@@ -35,9 +35,10 @@ namespace pdm::ast {
         LPattern,       // used in let, lambda, match
 
         // typespecs:
-        IdSetSpec,
+        IdTypeSpec, IdClassSpec,
         ParenTypeSpec,
-        FnTypeSpec, TCallTypeSpec,
+        FnTypeSpec, 
+        TCallTypeSpec, TCallClassSpec,
         DotNameTypeSpec_ModPrefix,
         TupleTypeSpec, StructTypeSpec,
         // DotNameTypeSpec_TypePrefix,

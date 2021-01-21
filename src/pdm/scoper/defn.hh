@@ -22,7 +22,7 @@ namespace pdm::scoper {
         Const,
         Val, Var,
         Type, Enum,
-        Typeclass,
+        Typeclass, TypeclassCandidate,
         Using,
         Import,
         ExternObject,

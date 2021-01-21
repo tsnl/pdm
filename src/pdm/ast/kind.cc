@@ -35,7 +35,7 @@ namespace pdm::ast {
         "TPattern",
         "LPattern",
 
-        "IdSetSpec",
+        "IdTypeSpec",
         "PtrTypeSpec",
         "FnTypeSpec", "TCallTypeSpec",
         "DotNameTypeSpec_TypePrefix", "DotNameTypeSpec_ModPrefix",

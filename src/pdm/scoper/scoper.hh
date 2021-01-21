@@ -26,7 +26,7 @@ namespace pdm::scoper {
 
       private:
         struct IdExpLookupOrder      { ast::IdExp* id_exp; Context* lookup_context; };
-        struct IdTypeSpecLookupOrder { ast::IdSetSpec* id_typespec; Context* lookup_context; };
+        struct IdTypeSpecLookupOrder { ast::IdTypeSpec* id_typespec; Context* lookup_context; };
         struct ImportLookupOrder     { ast::ImportStmt* import_stmt; Context* lookup_context; };
         struct UsingLookupOrder      { ast::UsingStmt* using_stmt; Context* lookup_context; };
 
@@ -95,7 +95,7 @@ namespace pdm::scoper {
 
       private:
         void place_id_exp_lookup_order(ast::IdExp* id_exp);
-        void place_id_typespec_lookup_order(ast::IdSetSpec* id_typespec);
+        void place_id_typespec_lookup_order(ast::IdTypeSpec* id_typespec);
         void place_import_lookup_order(ast::ImportStmt* import_stmt);
         void place_using_lookup_order(ast::UsingStmt* using_stmt);
 
@@ -151,9 +151,11 @@ namespace pdm::scoper {
         virtual bool on_visit__lpattern(ast::LPattern* node, VisitOrder visit_order) override;
 
         // typespecs:
-        virtual bool on_visit__id_typespec(ast::IdSetSpec* node, VisitOrder visit_order) override;
+        virtual bool on_visit__id_typespec(ast::IdTypeSpec* node, VisitOrder visit_order) override;
+        virtual bool on_visit__id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) override;
         virtual bool on_visit__fn_typespec(ast::FnTypeSpec* node, VisitOrder visit_order) override;
         virtual bool on_visit__tcall_typespec(ast::TCallTypeSpec* node, VisitOrder visit_order) override;
+        virtual bool on_visit__tcall_class_spec(ast::TCallClassSpec* node, VisitOrder visit_order) override;
         virtual bool on_visit__paren_typespec(ast::ParenTypeSpec* node, VisitOrder visit_order) override;
         virtual bool on_visit__tuple_typespec(ast::TupleTypeSpec* node, VisitOrder visit_order) override;
         virtual bool on_visit__dot_name_typespec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) override;

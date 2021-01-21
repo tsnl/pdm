@@ -1,70 +1,68 @@
-mod Anything {
+--- Anything ---
     
-    # Every VID is a function or a value
-    fibonacci_0 = 0;
-    fibonacci_1 = 1;
+# Every VID is a function or a value
+fibonacci_0 = 0;
+fibonacci_1 = 1;
 
-    fibonacci = fn (x Int32) -> Int32 {
-        if (x == 0) then {
-            fibonacci_0
-        } else if (x == 1) then {
-            fibonacci_1
-        } else {
-            fibonacci(x-1) + fibonacci(x-2)
-        }
+fibonacci = fn (x Int32) -> Int32 {
+    if (x == 0) then {
+        fibonacci_0
+    } else if (x == 1) then {
+        fibonacci_1
+    } else {
+        fibonacci(x-1) + fibonacci(x-2)
+    }
+};
+
+# Every TID is a type or typeclass:
+IntLinkedList = {
+    x Int32,
+    next_index UInt32,
+    prev_index UInt32
+};
+
+# Any definition can also accept tpaterns:
+LinkedList [T AnyType] = {
+    x T,
+    next_index UInt32,
+    prev_index UInt32
+};
+
+# Here's a Rust-like trait using typeclasses:
+# - the distinctive <...> arg indicates a typeclass
+# - typeclass bodies are special too: chain of type-queries.
+# implementing Elm's init/update/view MVC pattern
+InteractiveAppInterface 
+    [Message Enum, Model All, RenderBill All] 
+    <V Struct> = 
+{
+    V :< {
+        init    Fn () -> Model,
+        update  Fn (Model) -> Model,
+        view    Fn (Model) -> RenderBill
+    };
+};
+
+# And here's a C++-like example of subclassing with optional methods:
+# Adding template args for modules would allow this sort of factorization:
+sub SkeletonApp [Message Enum, Model All, RenderBill All] {
+    Interface :- (V Struct) {
+        opt_custom_init     Opt[Fn () -> Model],
+        opt_custom_update   Opt[Fn (Model) -> Model],
+        opt_custom_view     Opt[Fn (Model) -> RenderBill]
+    };
+    SkeletonApp = {
+        name String,
+        model Model,
+        epoch_frame_time_msec UInt32
     };
 
-    # Every TID is a type or typeclass:
-    IntLinkedList  = {
-        x Int32,
-        next_index UInt32,
-        prev_index UInt32
+    new [IfcType Interface] = fn (name String, interface IfcType) -> SkeletonApp {
+        name = name,
+        model = match (interface.opt_custom_init) with {
+            Some (init_fn) then { init_fn() },
+            None ()        then { default[Model] }
+        },
+        epoch_frame_time_msec = 0
     };
-
-    # Any definition can also accept tpaterns:
-    LinkedList [T AnyType] = {
-        x T,
-        next_index UInt32,
-        prev_index UInt32
-    };
-
-    # Here's a Rust-like trait using typeclasses:
-    # - the distinctive <...> arg indicates a typeclass
-    # - typeclass bodies are special too: chain of type-queries.
-    # implementing Elm's init/update/view MVC pattern
-    InteractiveAppInterface 
-        [Message Enum, Model All, RenderBill All] 
-        <V Struct> = 
-    {
-        V :< {
-            init    Fn () -> Model,
-            update  Fn (Model) -> Model,
-            view    Fn (Model) -> RenderBill
-        };
-    };
-    
-    # And here's a C++-like example of subclassing with optional methods:
-    # Adding template args for modules would allow this sort of factorization:
-    mod SkeletonApp [Message Enum, Model All, RenderBill All] {
-        Interface <V Struct> = {
-            opt_custom_init     Opt[Fn () -> Model],
-            opt_custom_update   Opt[Fn (Model) -> Model],
-            opt_custom_view     Opt[Fn (Model) -> RenderBill]
-        };
-        SkeletonApp = {
-            name String,
-            model Model,
-            epoch_frame_time_msec UInt32
-        };
-
-        new [IfcType Interface] = fn (name String, interface IfcType) -> SkeletonApp {
-            name = name,
-            model = match (interface.opt_custom_init) with {
-                Some (init_fn) then { init_fn() },
-                None ()        then { default[Model] }
-            },
-            epoch_frame_time_msec = 0
-        };
-    };
-
 };

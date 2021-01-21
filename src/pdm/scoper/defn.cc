@@ -13,6 +13,7 @@ namespace pdm::scoper {
             case DefnKind::Type: return "Type";
             case DefnKind::Enum: return "Enum";
             case DefnKind::Typeclass: return "Typeclass";
+            case DefnKind::TypeclassCandidate: return "TypeclassCandidate";
             case DefnKind::Using: return "Using";
             case DefnKind::Import: return "Import";
             case DefnKind::ExternObject: return "ExternObject";

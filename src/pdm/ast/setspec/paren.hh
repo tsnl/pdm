@@ -1,7 +1,7 @@
 #ifndef INCLUDED_PDM_AST_TYPESPEC_PAREN_HH
 #define INCLUDED_PDM_AST_TYPESPEC_PAREN_HH
 
-#include "typespec.hh"
+#include "type_spec.hh"
 
 namespace pdm::ast {
     class Manager;

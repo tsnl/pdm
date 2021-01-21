@@ -290,9 +290,14 @@ namespace pdm::printer {
                 break;
             }
 
-            case ast::Kind::IdSetSpec:
+            case ast::Kind::IdClassSpec:
             {
-                print_id_typespec(dynamic_cast<ast::IdSetSpec*>(node));
+                print_id_class_spec(dynamic_cast<ast::IdClassSpec*>(node));
+                break;
+            }
+            case ast::Kind::IdTypeSpec:
+            {
+                print_id_typespec(dynamic_cast<ast::IdTypeSpec*>(node));
                 break;
             }
             case ast::Kind::FnTypeSpec:
@@ -303,6 +308,11 @@ namespace pdm::printer {
             case ast::Kind::TCallTypeSpec:
             {
                 print_tcall_typespec(dynamic_cast<ast::TCallTypeSpec*>(node));
+                break;
+            }
+            case ast::Kind::TCallClassSpec:
+            {
+                print_tcall_class_spec(dynamic_cast<ast::TCallClassSpec*>(node));
                 break;
             }
             case ast::Kind::TupleTypeSpec:
@@ -361,8 +371,21 @@ namespace pdm::printer {
         print_u32_char('"');
         print_str(script->source()->abs_path());
         print_u32_char('"');
-        print_cstr(" ");
-        help_print_chain(this, script->stmts(), nullptr);
+        print_cstr(" {");
+        print_newline_indent();
+        {
+            for (ast::Stmt* stmt: script->head_stmts()) {
+                print_node(stmt);
+                print_cstr(";");
+                print_newline();
+            }
+            // print_newline();
+            for (ast::Stmt* stmt: script->body_stmts()) {
+                print_node(stmt);
+            }
+        }
+        print_newline_deindent();
+        print_cstr("}");
 
         // scripts are the only nodes followed by a newline.
         print_newline();
@@ -370,22 +393,42 @@ namespace pdm::printer {
 
     // statements:
     void Printer::print_mod_stmt(ast::ModStmt* mod) {
-        print_cstr("mod ");
-        print_intstr(mod->module_name());
-        // todo: print targs
-        print_u32_char(' ');
-        help_print_chain(this, mod->defns(), nullptr);
+        if (mod->mod_stmt_kind() == ast::ModStmtKind::TopModule) {
+            print_cstr("--- mod ");
+            print_intstr(mod->module_name());
+            print_cstr(" ---");
+            print_newline();
+            for (size_t index = 0; index < mod->defns().size(); index++) {
+                ast::Node* node = mod->defns()[index];
+                print_node(node);
+                if (index+1 != mod->defns().size()) {
+                    print_newline();
+                }
+            }
+        } else {
+            print_cstr("sub ");
+            print_intstr(mod->module_name());
+            for (ast::TPattern* tpattern: mod->tpatterns()) {
+                print_node(tpattern);
+                print_cstr(" ");
+            }
+            help_print_chain(this, mod->defns(), nullptr);
+        }
     }
     void Printer::print_mod_typeclass_stmt(ast::ModTypeclassStmt* tcs) {
         // print_cstr("typeclass ");
         print_intstr(tcs->typeclass_name());
+        print_cstr(" ");
+        for (ast::TPattern* tpattern: tcs->tpatterns()) {
+            print_node(tpattern);
+            print_cstr(" ");
+        }
+        print_cstr(":- ");
         
-        // todo: print targs
-        
-        print_cstr(" <");
+        print_cstr("<");
         print_intstr(tcs->candidate_name());
         print_cstr(" ");
-        print_node(tcs->candidate_typespec());
+        print_node(tcs->candidate_class_spec());
         print_cstr("> ");
         
         help_print_chain(this, tcs->conditions(), nullptr);
@@ -927,7 +970,7 @@ namespace pdm::printer {
             ast::TPattern::Field* field = node->fields()[index];
             print_intstr(field->lhs_name());
             print_u32_char(' ');
-            print_node(field->rhs_typespec());
+            print_node(field->rhs_set_spec());
             if (index+1 != field_count) {
                 print_u32_char(',');
                 print_u32_char(' ');
@@ -966,7 +1009,10 @@ namespace pdm::printer {
     }
 
     // typespecs:
-    void Printer::print_id_typespec(ast::IdSetSpec* node) {
+    void Printer::print_id_class_spec(ast::IdClassSpec* node) {
+        print_intstr(node->name());
+    }
+    void Printer::print_id_typespec(ast::IdTypeSpec* node) {
         print_intstr(node->name());
     }
     void Printer::print_fn_typespec(ast::FnTypeSpec* node) {
@@ -976,6 +1022,20 @@ namespace pdm::printer {
         print_node(node->opt_ret_typespec());
     }
     void Printer::print_tcall_typespec(ast::TCallTypeSpec* node) {
+        print_node(node->lhs_called());
+        print_u32_char('[');
+        int arg_count = node->args().size();
+        for (int index = 0; index < arg_count; index++) {
+            ast::TArg* targ = node->args()[index];
+            print_node(targ);
+            if (index+1 != arg_count) {
+                print_u32_char(',');
+                print_u32_char(' ');
+            }
+        }
+        print_u32_char(']');
+    }
+    void Printer::print_tcall_class_spec(ast::TCallClassSpec* node) {
         print_node(node->lhs_called());
         print_u32_char('[');
         int arg_count = node->args().size();

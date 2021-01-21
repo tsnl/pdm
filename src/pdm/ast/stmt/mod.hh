@@ -22,6 +22,11 @@ namespace pdm::ast {
 
 namespace pdm::ast {
 
+    enum class ModStmtKind {
+        TopModule,
+        SubModule
+    };
+
     class ModStmt: public ModContentStmt {
         friend Manager;
 
@@ -29,13 +34,14 @@ namespace pdm::ast {
         intern::String               m_module_name;
         std::vector<TPattern*>       m_module_tpatterns;
         std::vector<ModContentStmt*> m_defns;
+        ModStmtKind m_mod_stmt_kind;
 
       private:
         scoper::Frame*  m_x_module_frame;
         types::TypeVar* m_x_module_tv;
 
       public:
-        ModStmt(source::Loc loc, intern::String module_name, std::vector<TPattern*> module_tpatterns, std::vector<ModContentStmt*>&& defns);
+        ModStmt(source::Loc loc, intern::String module_name, std::vector<TPattern*> module_tpatterns, std::vector<ModContentStmt*>&& defns, ModStmtKind mod_stmt_kind);
       
       public:
         intern::String module_name() const {
@@ -43,6 +49,12 @@ namespace pdm::ast {
         }
         std::vector<ModContentStmt*> const& defns() const {
             return m_defns;
+        }
+        std::vector<TPattern*> const& tpatterns() const {
+            return m_module_tpatterns;
+        }
+        ModStmtKind mod_stmt_kind() const {
+            return m_mod_stmt_kind;
         }
 
       public:
@@ -62,15 +74,22 @@ namespace pdm::ast {
         }
     };
 
-    inline ModStmt::ModStmt(source::Loc loc, intern::String module_name, std::vector<TPattern*> module_tpatterns, std::vector<ModContentStmt*>&& defns)
+    inline ModStmt::ModStmt(source::Loc loc, intern::String module_name, std::vector<TPattern*> module_tpatterns, std::vector<ModContentStmt*>&& defns, ModStmtKind mod_stmt_kind)
     :   ModContentStmt(loc, Kind::ModStmt),
         m_module_name(module_name),
         m_defns(defns),
         m_x_module_frame(nullptr),
-        m_x_module_tv(nullptr) 
+        m_x_module_tv(nullptr) ,
+        m_mod_stmt_kind(mod_stmt_kind)
     {
+        // setting this module as each node's parent:
         for (ModContentStmt* child_stmt: defns) {
             child_stmt->opt_parent_mod_stmt(this);
+        }
+
+        // ensuring top modules are not created with targs (syntactically impossible)
+        if (m_mod_stmt_kind == ModStmtKind::TopModule) {
+            assert(m_module_tpatterns.empty() && "Cannot pass tpatterns to TopModule.");
         }
     }
 

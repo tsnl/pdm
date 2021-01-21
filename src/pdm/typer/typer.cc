@@ -87,9 +87,11 @@ namespace pdm::types {
         virtual bool on_visit__lpattern(ast::LPattern* node, VisitOrder visit_order) override;
         
         // typespecs:
-        virtual bool on_visit__id_typespec(ast::IdSetSpec* node, VisitOrder visit_order) override;
+        virtual bool on_visit__id_typespec(ast::IdTypeSpec* node, VisitOrder visit_order) override;
+        virtual bool on_visit__id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) override;
         virtual bool on_visit__fn_typespec(ast::FnTypeSpec* node, VisitOrder visit_order) override;
         virtual bool on_visit__tcall_typespec(ast::TCallTypeSpec* node, VisitOrder visit_order) override;
+        virtual bool on_visit__tcall_class_spec(ast::TCallClassSpec* node, VisitOrder visit_order) override;
         virtual bool on_visit__tuple_typespec(ast::TupleTypeSpec* node, VisitOrder visit_order) override;
         virtual bool on_visit__dot_name_typespec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) override;
         virtual bool on_visit__struct_typespec(ast::StructTypeSpec* node, VisitOrder visit_order) override;
@@ -511,7 +513,7 @@ namespace pdm::types {
                 auto field_tv = dynamic_cast<TypeVar*>(field_var);
                 assert(field_tv != nullptr);
 
-                Var* field_spec_var = field->rhs_typespec()->x_spectype_var();
+                Var* field_spec_var = field->rhs_set_spec()->x_spectype_var();
                 assert(field_spec_var != nullptr);
 
                 if (field->kind() == ast::TPattern::FieldKind::Value) {
@@ -594,7 +596,13 @@ namespace pdm::types {
     }
     
     // typespecs:
-    bool TyperVisitor::on_visit__id_typespec(ast::IdSetSpec* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit__id_typespec(ast::IdTypeSpec* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            node->x_spectype_var(node->x_defn()->var());
+        }
+        return true;
+    }
+    bool TyperVisitor::on_visit__id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             node->x_spectype_var(node->x_defn()->var());
         }
@@ -647,14 +655,31 @@ namespace pdm::types {
     }
     bool TyperVisitor::on_visit__tcall_typespec(ast::TCallTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            std::string name = "TCallSetSpec";
+            std::string name = "TCallTypeSpec";
             
             // todo: we do not know if a class tcall or type tcall.
             //       should be able to tell from grammar, by implementing a separate 'ClassSpec'
             //       branch of rules.
             assert(0 && 
-                "NotImplemented: TCallTypeSpec: need to implement separate ClassSpec branch in grammar "
-                "to determine if TemplateVar_RetType or TemplateVar_RetClass is required."
+                "NotImplemented: TCallTypeSpec."
+            );
+
+            Var* new_var = m_types_mgr->new_class_template_var(std::move(name), node);
+            node->x_spectype_var();
+        } else {
+            assert(visit_order == VisitOrder::Post);
+        }
+        return true;
+    }
+    bool TyperVisitor::on_visit__tcall_class_spec(ast::TCallClassSpec* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            std::string name = "TCallClassSpec";
+            
+            // todo: we do not know if a class tcall or type tcall.
+            //       should be able to tell from grammar, by implementing a separate 'ClassSpec'
+            //       branch of rules.
+            assert(0 && 
+                "NotImplemented: TCallClassSpec"
             );
 
             Var* new_var = m_types_mgr->new_class_template_var(std::move(name), node);

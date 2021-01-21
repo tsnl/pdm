@@ -3,7 +3,7 @@
 
 #include "pdm/ast/node.hh"
 #include "pdm/ast/exp/exp.hh"
-#include "pdm/ast/setspec/typespec.hh"
+#include "pdm/ast/setspec/type_spec.hh"
 
 namespace pdm::ast {
     class Manager;

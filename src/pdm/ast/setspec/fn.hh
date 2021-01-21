@@ -3,7 +3,7 @@
 
 #include "pdm/source/loc.hh"
 #include "pdm/ast/kind.hh"
-#include "pdm/ast/setspec/typespec.hh"
+#include "pdm/ast/setspec/type_spec.hh"
 #include "pdm/ast/pattern/vpattern.hh"
 
 namespace pdm::ast {

@@ -1,0 +1,6 @@
+--- mod Classy ---
+
+Shape :- <S Struct> {
+    # must have Int32 fields 'area' and 'perimeter'
+    S :< {area Int32, perimeter Int32};
+};

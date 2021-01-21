@@ -1,83 +1,72 @@
-# Each source file is composed of (0 or more) 'typedef' or 'def' statements
-# - typedefs: struct,enum,type statements
-# - def: fn
+# Changes:
+# - change top module syntax: --- <Name> ---
+# - use 'sub -< ... >-' for submodules.
 
-#
-# Circles:
-#
+# imports link one module at a time. No fuzzy matching.
+import SDL2 from "https://github.com/tsnl/Fib.pd-package";
 
-import fib from "https://github.com/tsnl/fib.pdpkg" type "pdpkg/git";
+--- Shapes ---
 
-mod Shapes {
-    Circle = {
-        center Tuple[F32,F32],
-        radius Tuple[F32]
+Circle = {
+    center Tuple[F32,F32],
+    radius Tuple[F32]
+};
+circumference = fn (circle Circle) -> F32 {
+    val tau = {
+        val pi = 3.14159;
+        2*pi
     };
-    circumference = fn (circle Circle) -> F32 {
-        val tau = {
-            val pi = 3.14159;
-            2*pi
-        };
-        tau * circle.radius
-    };
+    tau * circle.radius
 };
 
-#
-# Pixels (generics):
-#
+--- Pixels ---
 
-mod Pixel {
-    Pixel [T Any] = {
-        r T,
-        g T,
-        b T
-    };
-    Image [T Any] = {
-        name String,
-        size Tuple[U32,U32],
-        data Buffer[Pixel[T]]
-    };
-
-    add [T Any] = fn (p Pixel[T], q Pixel[T]) -> Pixel[T] {
-        r: p.r + q.r,
-        g: p.g + q.g, 
-        b: p.b + q.b
-    };
-    multiply [T Any] = fn (p Pixel[T], s T) -> Pixel[T] {
-        r: s * p.r, 
-        g: s * p.g, 
-        b: s * p.b
-    };
+Pixel [T Any] = {
+    r T,
+    g T,
+    b T
+};
+Image [T Any] = {
+    name String,
+    size Tuple[U32,U32],
+    data Buffer[Pixel[T]]
 };
 
-mod Image {
-    add [T Any] = fn (lt Image[T], rt Image[T]) -> Image[T] {
-        assert lt.size == rt.size;
-        {
-            name: fmt("({lt.name}+{rt.name})"),
-            size: lt.size,
-            data: map(addPixel, zip(lt.data,rt.data))
-        }
-    };
-    multiply [T Any] = fn (i Image[T], x U8) -> Image[T] {
-        name: fmt("({x}*{i.name})"),
-        size: i.size,
-        data: map(i.data, lambda (p Pixel[T]) {multiply(pixel,x)})
-    };
+add [T Any] = fn (p Pixel[T], q Pixel[T]) -> Pixel[T] {
+    r: p.r + q.r,
+    g: p.g + q.g, 
+    b: p.b + q.b
+};
+multiply [T Any] = fn (p Pixel[T], s T) -> Pixel[T] {
+    r: s * p.r, 
+    g: s * p.g, 
+    b: s * p.b
 };
 
-#
-# Dicts (generics):
-#
+--- Image ---
 
-mod Dict {
-    Dict [K,V Any] = {
-        # ...
-    };
+add [T Any] = fn (lt Image[T], rt Image[T]) -> Image[T] {
+    assert lt.size == rt.size;
+    {
+        name: fmt("({lt.name}+{rt.name})"),
+        size: lt.size,
+        data: map(addPixel, zip(lt.data,rt.data))
+    }
+};
+multiply [T Any] = fn (i Image[T], x U8) -> Image[T] {
+    name: fmt("({x}*{i.name})"),
+    size: i.size,
+    data: map(i.data, lambda (p Pixel[T]) {multiply(pixel,x)})
+};
 
-    new [K,V Any] = fn () -> Dict[K,V] {
-        # ...
-    };
+--- Dict ---
+
+Dict [K,V Any] = {
+    # ...
+};
+
+new [K,V Any] = fn () -> Dict[K,V] {
+    # ...
 };
 
 #
@@ -86,83 +75,96 @@ mod Dict {
 # - for such operations, use `bitcast[]()` like LLVM
 #
 
-mod Events {
-    Color
-    | Rgba Tuple[U8,U8,U8,U8]
-    | Hsva Tuple[U8,U8,U8,U8]
-    | Name String
-    | None
-    ;
+--- Events ---
 
-    Fruit 
-    | Apple | Banana | Cherry | Durian | Fig | Grape
-    ; 
+Color
+| Rgba Tuple[U8,U8,U8,U8]
+| Hsva Tuple[U8,U8,U8,U8]
+| Name String
+| None
+;
 
-    Key
-    | Escape | F1 | F2 | F3 | F4 | F5 | F6 | F7 | F8 | F9 | F10 | F11 | F12
-    | Tilde  | N1 | N2 | N3 | N4 | N5 | N6 | N7 | N8 | N9 | N0 | Minus | Equals | Backspace
-    | Tab       | Q | W | E | R | T | Y | U | I | O | P | LeftSquareBracket | RightSquareBracket | Backslash
-    | CapsLock  | A | S | D | F | G | H | J | K | L | Semicolon | SingleQuote | Return
-    | LeftShift | Z | X | C | V | B | N | M | Comma | Period | ForwardSlash | RightShift
-    | LeftCtrl  | LeftMeta | LeftAlt | RightAlt | RightMeta | RightCtrl |
-    | Up | Down | Left | Right
-    ;
+Fruit 
+| Apple | Banana | Cherry | Durian | Fig | Grape
+; 
 
-    MouseButton
-    | Left
-    | Right
-    | Middle
-    ;
+Key
+| Escape | F1 | F2 | F3 | F4 | F5 | F6 | F7 | F8 | F9 | F10 | F11 | F12
+| Tilde  | N1 | N2 | N3 | N4 | N5 | N6 | N7 | N8 | N9 | N0 | Minus | Equals | Backspace
+| Tab       | Q | W | E | R | T | Y | U | I | O | P | LeftSquareBracket | RightSquareBracket | Backslash
+| CapsLock  | A | S | D | F | G | H | J | K | L | Semicolon | SingleQuote | Return
+| LeftShift | Z | X | C | V | B | N | M | Comma | Period | ForwardSlash | RightShift
+| LeftCtrl  | LeftMeta | LeftAlt | RightAlt | RightMeta | RightCtrl |
+| Up | Down | Left | Right
+;
 
-    ButtonMoveDirection
-    | Down
-    | Up
-    ;
+MouseButton
+| Left
+| Right
+| Middle
+;
+
+ButtonMoveDirection
+| Down
+| Up
+;
+
+--- Greeting ---
+
+new_cstr = fn () -> CString {
+    val len = 12;
+    val buf = heap.alloc(Char)[len];
+    set buf->(0) = 'h';
+    set buf->(1) = 'e';
+    set buf->(2) = 'l';
+    set buf->(3) = 'l';
+    set buf->(4) = 'o';
+    set buf->(5) = ' ';
+    set buf->(6) = 'w';
+    set buf->(7) = 'o';
+    set buf->(8) = 'r';
+    set buf->(9) = 'l';
+    set buf->(10) = 'd';
+    set buf->(11) = '\0';
+    {ptr=memory, len=len}
 };
 
-#
-# Slices and Leas:
-#
+--- Primes ---
 
-mod Greeting {
-    new_cstr = fn () -> CString {
-        val len = 12;
-        val buf = heap.alloc(Char)[len];
-        set buf->(0) = 'h';
-        set buf->(1) = 'e';
-        set buf->(2) = 'l';
-        set buf->(3) = 'l';
-        set buf->(4) = 'o';
-        set buf->(5) = ' ';
-        set buf->(6) = 'w';
-        set buf->(7) = 'o';
-        set buf->(8) = 'r';
-        set buf->(9) = 'l';
-        set buf->(10) = 'd';
-        set buf->(11) = '\0';
-        {ptr=memory, len=len}
-    };
-};
+driver = fn () {
+    # val prime_limit = console.read_int[Int32]("Enter a number >2 until which to search for primes: ");
+    val primes_until = count_primes_until(prime_limit);
+    
+}
 
-#
-# Lambdas, iterators, and for:
-#
-
-mod Closed {
-    fn loops () -> () = {
-        val prime_limit = console.read_int[Int32]("Enter a number >2 until which to search for primes: ");
-        var prime_count = 1;
-        
-        foreach (i: 3 .. prime_limit step 2) {
-            val &i_is_prime = true;
-            for (fac = 0; fac*fac < i; fac+2) {
-                if (i % fac == 0) then {
-                    set ^i_is_prime = false;
-                };
-            };
-            if (i_is_prime) then {
-                set ^prime_count = prime_count + 1;
+count_primes_until = fn (primes_limit Int32) -> Int32 {
+    var prime_count = 1;
+    
+    foreach (i: 3 .. prime_limit step 2) {
+        var i_is_prime = true;
+        for (fac = 0; fac*fac < i; fac+2) {
+            if (i % fac == 0) then {
+                set i_is_prime = false;
             };
         };
+        if (i_is_prime) then {
+            set prime_count = 1 + prime_count;
+        };
+    }
+};
+
+--- Submodules ---
+
+sub S1 {
+    hello = 0;
+};
+
+sub S2 [UInt UInts] {
+    filter = fn (image Image[UInt]) -> Image {
+        # ...
+    };
+
+    sub DoubleNested {
+        hi = 0;
     };
 };

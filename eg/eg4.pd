@@ -16,48 +16,21 @@ import Deque from "basic.pd" type "script/fs";
 import Vector from "basic.pd" type "script/fs";
 import Eg3 from "eg3.pd"   type "script/fs";
 
-mod Vehicle {
-    Car = {
-        name Text,
-        price Int32
-    };
-    new = fn (name Text, price Int32) -> Car {
-        (name, price)
-    };
+--- Vehicle ---
+
+Car = {
+    name Text,
+    price Int32
+};
+new = fn (name Text, price Int32) -> Car {
+    (name, price)
 };
 
-mod Level1 {
-    mod damage {
-        wearAndTear = fn (inout car eg3.Car, dsec Float32) {
-            val fancyScoreDamagePerSec = 1.2;
-            set car.fancyScore = car.fancyScore - convert[UInt32](fancyScoreDamagePerSec * dsec);
-        };
-    };
-};
+--- Level1 ---
 
-#
-# 'using' explicitly brings another module's symbols into this module's namespace.
-# - optional '*' suffix => match this and everything with this suffix
-# thus, the 2 options to import symbols, from coarsest to finest:
-# - globbed name imports
-# - whole name imports
-#
-
-mod Demo {
-    using Std:pi;
-    using Std:List;
-    using Std:Dict;
-
-    using Eg3:Vehicle;
-    using Eg3:newCarList;
-    using Eg3:newCarDict;
-
-    test = fn () {
-        val carList List[Vehicle] = newCarList();
-        val v1 = (1.0,2.0,3.0,4.0);
-        val v2 = (2.0,3.0,4.0,5.0);
-        
-        val result1 = AVX:mul(v1,v2);
-        val result2 = AVX:add(v1,v2);
+sub damage {
+    wearAndTear = fn (inout car eg3.Car, dsec Float32) {
+        val fancyScoreDamagePerSec = 1.2;
+        set car.fancyScore = car.fancyScore - convert[UInt32](fancyScoreDamagePerSec * dsec);
     };
 };

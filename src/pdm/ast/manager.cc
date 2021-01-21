@@ -25,8 +25,8 @@ namespace pdm::ast {
         return m_compiler_ptr->types_mgr();
     }
 
-    Script* Manager::new_script(source::Source* source, source::Loc loc, std::vector<Stmt*>&& stmts) {
-        return emplace<Script>(source, loc, std::move(stmts));
+    Script* Manager::new_script(source::Source* source, source::Loc loc, std::vector<Stmt*>&& head_stmts, std::vector<ModStmt*>&& body_mod_stmts) {
+        return emplace<Script>(source, loc, std::move(head_stmts), std::move(body_mod_stmts));
     }
 
     ArrayExp* Manager::new_array_exp(source::Loc loc, std::vector<Exp*>&& items) {
@@ -111,8 +111,8 @@ namespace pdm::ast {
     LPattern::Field* Manager::new_lpattern_field(source::Loc loc, LPattern::FieldKind kind, intern::String name, TypeSpec* opt_rhs_typespec) {
         return emplace<LPattern::Field>(loc, kind, name, opt_rhs_typespec);
     }
-    TPattern::Field* Manager::new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, TypeSpec* rhs_typespec) {
-        return emplace<TPattern::Field>(loc, kind, name, rhs_typespec);
+    TPattern::Field* Manager::new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, SetSpec* rhs_set_spec) {
+        return emplace<TPattern::Field>(loc, kind, name, rhs_set_spec);
     }
     VPattern::Field* Manager::new_vpattern_field(source::Loc loc, intern::String name, TypeSpec* rhs_typespec, VArgAccessSpec varg_kind) {
         return emplace<VPattern::Field>(loc, name, rhs_typespec, varg_kind);
@@ -147,7 +147,7 @@ namespace pdm::ast {
         return emplace<ExternStmt>(loc, ext_mod_name, link_arg);
     }
     ModStmt* Manager::new_mod_stmt(source::Loc loc, intern::String module_name, std::vector<TPattern*>&& args, std::vector<ModContentStmt*>&& defns) {
-        return emplace<ModStmt>(loc, module_name, std::move(args), std::move(defns));
+        return emplace<ModStmt>(loc, module_name, std::move(args), std::move(defns), ModStmtKind::TopModule);
     }
     ModValStmt* Manager::new_internal_mod_val_stmt(
         source::Loc loc,
@@ -173,42 +173,48 @@ namespace pdm::ast {
     ModEnumStmt* Manager::new_mod_enum_stmt(source::Loc loc, intern::String name, std::vector<TPattern*>&& tpatterns, std::vector<ModEnumStmt::Field*>&& fields) {
         return emplace<ModEnumStmt>(loc, name, std::move(tpatterns), std::move(fields));
     }
-    ModTypeclassStmt* Manager::new_mod_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, TypeSpec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions) {
+    ModTypeclassStmt* Manager::new_mod_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, ClassSpec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions) {
         return emplace<ModTypeclassStmt>(loc, lhs_name, candidate_name, candidate_typespec, std::move(tpatterns), std::move(conditions));
     }
     ModEnumStmt::Field* Manager::new_enum_stmt_field(source::Loc loc, intern::String name, std::vector<ast::TypeSpec*>&& typespecs, bool has_explicit_typespecs) {
         return emplace<ModEnumStmt::Field>(loc, name, std::move(typespecs), has_explicit_typespecs);
     }
     
-    DotNameTypeSpec_ModPrefix* Manager::new_dot_name_typespec_with_mod_prefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name) {
+    DotNameTypeSpec_ModPrefix* Manager::new_dot_name_type_spec_with_mod_prefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name) {
         return emplace<DotNameTypeSpec_ModPrefix>(loc, std::move(lhs_prefixes), rhs_name);
     }
-    FnTypeSpec* Manager::new_fn_typespec(source::Loc loc, VPattern* lhs_vpattern, TypeSpec* rhs_typespec) {
+    FnTypeSpec* Manager::new_fn_type_spec(source::Loc loc, VPattern* lhs_vpattern, TypeSpec* rhs_typespec) {
         return emplace<FnTypeSpec>(loc, lhs_vpattern, rhs_typespec);
     }
-    IdSetSpec* Manager::new_id_typespec(source::Loc loc, intern::String name) {
-        return emplace<IdSetSpec>(loc, name);
+    IdTypeSpec* Manager::new_id_type_spec(source::Loc loc, intern::String name) {
+        return emplace<IdTypeSpec>(loc, name);
     }
-    ParenTypeSpec* Manager::new_paren_typespec(source::Loc loc, TypeSpec* nested_typespec) {
+    IdClassSpec* Manager::new_id_class_spec(source::Loc loc, intern::String name) {
+        return emplace<IdClassSpec>(loc, name);
+    }
+    TCallClassSpec* Manager::new_tcall_class_spec(source::Loc loc, ClassSpec* lhs_called, std::vector<TArg*>&& args) {
+        return emplace<TCallClassSpec>(loc, lhs_called, std::move(args));
+    }
+    ParenTypeSpec* Manager::new_paren_type_spec(source::Loc loc, TypeSpec* nested_typespec) {
         return emplace<ParenTypeSpec>(loc, nested_typespec);
     }
-    StructTypeSpec* Manager::new_struct_typespec(source::Loc loc, std::vector<StructTypeSpec::Field*>&& fields) {
+    StructTypeSpec* Manager::new_struct_type_spec(source::Loc loc, std::vector<StructTypeSpec::Field*>&& fields) {
         return emplace<StructTypeSpec>(loc, std::move(fields));
     }
-    TCallTypeSpec* Manager::new_tcall_typespec(source::Loc loc, TypeSpec* lhs_called, std::vector<TArg*>&& args) {
+    TCallTypeSpec* Manager::new_tcall_type_spec(source::Loc loc, TypeSpec* lhs_called, std::vector<TArg*>&& args) {
         return emplace<TCallTypeSpec>(loc, lhs_called, std::move(args));
     }
-    TupleTypeSpec* Manager::new_tuple_typespec(source::Loc loc, std::vector<TypeSpec*>&& items) {
+    TupleTypeSpec* Manager::new_tuple_type_spec(source::Loc loc, std::vector<TypeSpec*>&& items) {
         return emplace<TupleTypeSpec>(loc, std::move(items));
     }
-    StructTypeSpec::Field* Manager::new_struct_typespec_field(source::Loc loc, intern::String name, TypeSpec* typespec) {
+    StructTypeSpec::Field* Manager::new_struct_type_spec_field(source::Loc loc, intern::String name, TypeSpec* typespec) {
         return emplace<StructTypeSpec::Field>(loc, name, typespec);
     }
 
     TArg* Manager::new_targ_exp(source::Loc loc, Exp* exp) {
         return emplace<TArg>(loc, exp);
     }
-    TArg* Manager::new_targ_typespec(source::Loc loc, TypeSpec* typespec) {
+    TArg* Manager::new_targ_type_spec(source::Loc loc, TypeSpec* typespec) {
         return emplace<TArg>(loc, typespec);
     }
     VArg* Manager::new_varg(source::Loc loc, Exp* exp, VArgAccessSpec varg_kind) {

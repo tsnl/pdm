@@ -9,335 +9,53 @@
 # - restore ':' for struct initializers
 # add mandatory return type for 'fn' stmt 
 
-mod Demo {
-    fn showoff () -> Float32 = {
-        let vec1 = vec.new_2f(0,0);
-        let vec2 = vec.new_2f(1,2);
-        let vec1_length = vec.length_sqr(vec1);
-        let vec2_length = vec.length_sqr(vec2);
-        let dot = vec.dot(vec1,vec2);
-        let sum = vec.add(vec1,vec2);
+--- Demo ---
 
-        let p = printer.new_with(gc.alloc);
-        print.str(p, "{dot: \(dot), sum: \(sum)}");
-    };
+showoff = fn () -> Float32 = {
+    let vec1 = vec.new_2f(0,0);
+    let vec2 = vec.new_2f(1,2);
+    let vec1_length = vec.length_sqr(vec1);
+    let vec2_length = vec.length_sqr(vec2);
+    let dot = vec.dot(vec1,vec2);
+    let sum = vec.add(vec1,vec2);
+
+    let p = printer.new_with(gc.alloc);
+    print.str(p, "{dot: \(dot), sum: \(sum)}");
 };
 
-mod LinAlg {
-    type Vec2f = {
-        x Float32,
-        y Float32
-    };
+--- LinAlg ---
 
-    type Norm = Vec2f -> Float32;
-
-    fn new_2f (x Float32, y Float32) -> Vec2f = {
-        x: x, 
-        y: y
-    };
-
-    fn mul (s Float32, v Vec2f) -> Vec2f = {
-        x: s * v.x,
-        y: s * v.y
-    };
-
-    fn add (v Vec2f, w Vec2f) -> Vec2f = {
-        x: v.x + w.x, 
-        y: v.y + w.y
-    };
-
-    fn dot (v Vec2f, w Vec2f) -> Float32 = {
-        v.x * w.x + 
-        v.y * w.y
-    };
-
-    fn length_sqr (v Vec2f) -> Float32 = {
-        dot(v,v)
-    };
-
-    fn subtract (v Vec2f, w Vec2f) -> Float32 = {
-        vec.add(mul(w,-1))
-    };
+type Vec2f = {
+    x Float32,
+    y Float32
 };
 
-#
-# Templates:
-#
+type Norm = Vec2f -> Float32;
 
-# mod are just constant struct instances
-# pointers can be passed as static arguments
-# more homogeneity between types and values would help.
-# - in particular, [...] args always static, (...) args always dynamic.
-# - separate IDs very powerful; <vid> <clsid> => a value from a type from a class.
-# * incomplete, 
-#   - 'scalar' is best version yet, vector wip
-#   - 'test' verges into formal specification. Heady stuff.
-
-mod Scalar {
-    # instances of types in scalar.Impl contain functions
-    # satisfying 'scalar' properties.
-    typeclass Impl [S Any] -> (I Any) = {
-        # don't need 'has_field'... just subtype a single-field struct.
-        I :< {on_add      Fn (left S, right S) -> S};
-        I :< {on_multiply Fn (left S, right S) -> S};
-
-        I.zero        :: S;
-        I.on_equals   :: (left S, right S) -> S;
-        
-        # not supported, probably won't be...
-        # test functions for refinement typeclasses.
-        add_0_0_equals_0 (i I, left S, right S) = {
-            if (is_zero(left) and is_zero(right)) then {
-                # test if 0 + 0 = 0
-                let sum = i.on_add(left, right);
-                is_zero(sum)
-            } else {
-                # pass this test since input is irrelevant
-                1
-            }
-        };
-        mul_0_0_equals_0 (i I, left S, right S) = {
-            if (is_zero(left) and is_zero(right)) then {
-                # test if 0 * 0 = 0
-                let product = i.on_multiply(left, right);
-                is_zero(sum)
-            } else {
-                # pass this test since input is irrelevant
-                1
-            }
-        };
-    };
-
-    fn Scalar of S Any [i Impl[S]] = {};
-
-    fn add [S Any, i Impl[S]] (left S, right Scalar[i]) -> Scalar = {
-        i.on_add(left, right)
-    };
-    fn multiply [S Any, i Impl[S]] (left Scalar[i], right Scalar[i]) -> Scalar = {
-        i.on_multiply(left, right)
-    };
+fn new_2f (x Float32, y Float32) -> Vec2f = {
+    x: x, 
+    y: y
 };
 
-
-#
-# Consteval
-#
-
-mod Const {
-    Texture = Array[U8, 64*64];
-
-    # static funcs identified by 'aot' sgn.
-    # execution time is determined by signature/definition and cannot be changed.
-    # can 'bake out' a function by calling in a static function
-    # - executes as though at run-time (same semantics)
-    # - but no 'set' statement allowed, can only call 'fun'
-    #   * so 'def' allows 'set' statement, 'fun' does not!
-    #   * so 'aot' can call 'fun' which can call 'fun'
-    #   * but 'def' are exclusively consumers
-    # * consider using '!' suffix to denote mutators
-    # * consider using '<...>' for 'compile-time/run-time', '[...]' for compile-time only, '(...)' for run-time only.
-    # what if we call an rt arg at compile-time?
-    # * may call sprintf with a static string
-    #   ... that has been allocated if control-flow is correct
-    #   ... since arg must be known at compile-time
-    #   ... motivates deeper 'mut' and 'aot' monads
-    #       ... mut aot T != aot T != mut T != T
-    #       ... though mut aot T :< mut T
-    #       ... and        aot T :<     T
-    # * may getptr to and mutate a compile-time constant (like fn)
-    #   ... caveat emptor?
-    #   ... rethink what it means to be constant: types are constant, defs are not...
-    #   ... DLL-injection at compile-time...?
-    # * closure on dynamic value evaluated statically
-    #   ... compile-time error! if closed args dynamic-dependent, cannot statically 
-    #       eval
-    #   ... track 'closure's as a special case, unlike 'fun' exprs which must be pure!
-    #   ... allow closures to be cast to functions
-    #   ... note 'def' does not suffer this issue, e/i closed, global.
-    #   e/i evaluate...
-    #   ... how did value get closed? by calling a function with CT-args
-    #   ... LEMMA: all closed vars must be 'closed over' at compile-time <=> evaluable
-    #   (*) can eval closures at CT!
-    #
-    # WHAT IS A 'CONST'?
-    # - all values in 'aot' scopes (fn without value args)
-    # - literals
-    # - values bound to 'let' statements
-    # - types, tcalls
-    # WHAT IS NOT 'CONST'?
-    # - values bound to 'var' statements
-    # - all value calls
-    # WHAT DEPENDS?
-    # - arithmetic results
-    # - 'map', 'for', and some builtins
-
-    #
-    #
-    # Might be simpler to separate value and type calls.
-    # Then, add constant evaluation layer on top for specs and 'aot' blocks.
-    # * failed: need way to spec const value, no non-const type
-    # * not fully orthogonal, but here's what we got:
-    #
-    #
-
-    fn loaded_images (im_path String) -> Vec[Texture] = {
-        let images_in_dir = vfs.static.ls(im_path, "*.png");
-        let images = map(load_image,images_in_dir);
-        images
-    };
-
-    # at compile time, `aot` values ('const_eval') are evaluated and stored in the exe.
-    # at runtime, these values are just loaded from data segment.
-    # * any closed values must be passed as constant args.
-    fn display_images [config Config] () -> Unit = {
-        # loading tableau at compile-time...
-        let tableau = const_eval {
-            let images_1 = loaded_images(vfs.join(config.res_path, "demo1"));
-            let images_2 = loaded_images(vfs.join(config.res_path, "demo2"));
-            prepare_tableau(images_1, images_2, 2, 64)
-        };
-        # rendering constant image:
-        display_image(tableau)
-    };
-
-    # here, '[...]' means hidden const; i.e., CANNOT be explicitly specified at 
-    # call-time, i.e. must be compiler-inferred from use in pattern, i.e.
-    # must have dependency on pattern following, i.e. const
-
-    # to pass static arg, use '(...)'
-    
-    fn Vector <T Any, n U32> = Array<T,n>;
-
-    fn add [T Any, n U32] [V Vector<T,n>] (v1, v2 V) -> Vector<T,n> = {
-        for (i = 0; i < n; i+1) do {
-            let sum = v1.(i) + v2.(i);
-        };
-    };
-
-    # PATTERN RULES:
-    # 3 kinds of defn brackets: (), <>, and []
-    # 2 kinds of call brackets: (), <>
-    # in defn and call contexts,
-    # o     DEFN ?? |               CALL |         VID/TID |      IN CONST? | IN RUNTIME? |
-    # - defn ()     | call ()       only | vid        only | n (exc. aot)   | y           |
-    # - defn []     | call       [] only | vid or tid      | y ( => )       | n (cached)  |
-    # - defn <>     | cannot be called   | vid or tid      | y ( => )       | n (cached)  |
-    # note <> args are always implicitly captured
-    # can even add Typefunc signatures with '=>' arrow
-    * * * * * (update) <> now ![]
-
-    # NOTE: cannot call () args as <>; instead, use 'const_eval'
-    # - const_eval guarantees one block runs aot
-    # - individual calls req. stronger 'const' guarantee between statements
-    # * so more noise in code to track intertwined constants without const_eval
-    # - const_eval also guarantees side-effect cleanup between execution
-
-    # NOTE: const vs. let
-    # EXP1: suppose we...
-    # - make 'let' only work for 'in const' (and thus in dyn), 'var' for 'in dyn'
-    # * note each (x) arg is actually 'var', not 'let'
-    # - make const_eval only capture 'let', not 'var'
-    #   - not too hard to understand since lookup constrained to chain-scope + globals
-    #   - force user to pass '[...]' args rather than '(...)' explicitly OR exec in const_eval
-    #     either way guarantee upstream is known
-    # * (to user) can 'let' accept expr E? if constant in FUNCTION SCOPE.
-    # * DESIGN WART
-    #   - x, an integer, could be marked constant at runtime to allow stack elision
-    #   - but the only way to make 'x' constant is to pass 'x' as a CT-param
-    #   - though 'x' may not be known at compile-time
-    #   * this is a gap in our language's capabilities
-    #   - (likely since we don't track 'mut')
-
-    # so...
-
-    # EXP2: add 'const' and 'dim' statements, '&' mut type spec
-    # - 'let' is default immutable, 'const' makes a stronger guarantee of in-static,
-    #   but neither allows pointer access to guarantee elidability
-    # - all formal args are 'let' defined.
-    # - typespecs can have '&' unary operator to indicate mutable
-    # - lpattern items (only) can have '&' prefix to declare mutable arg
-    # - thus, '&' is not an expr prefix, so we can use it as a typespec prefix like TID for cast.
-    # * 'const' is stronger than 'let', only way to define a 'const T' (apart from [] formal arg)
-    # * Succinctly,
-    #       const -> let -> var :: const T -> T -> &T
+fn mul (s Float32, v Vec2f) -> Vec2f = {
+    x: s * v.x,
+    y: s * v.y
 };
 
-
-#
-# Broken, fix as above
-#
-
-mod vector {
-    class Impl (I Any) <V scalar.Scalar> {
-        req I has dimension (item V) U32;
-        req I has increment (base ^V, by V);
-        req I has scale     (base ^V, by S);
-    };
-    class Template (V Any) <i Impl[V]> = {};
-
-    fun dimension [i Impl<V>] (vec Template<i>) U32 = {
-        i.dimension(vec)
-    };
-    fun increment [i Impl<V>] (vec ^Template<i>, by Template<i>) = {
-        i.increment(vec, by)
-    };
-    fun scale [V Scalar] [i Impl<V>] (vec ^Template<i>, by Scalar) = {
-        i.scale(vec, by)
-    };
+fn add (v Vec2f, w Vec2f) -> Vec2f = {
+    x: v.x + w.x, 
+    y: v.y + w.y
 };
 
-mod nvec [T scalar.Scalar, n U32] = {
-    # Vector is a class of Vs satisfying vector.Template with module ule 'impl' below.
-    # it is a singleton class in this context since V = Vector_Data
-    # Phew!
-    class Vector <V vector.Template[impl]> = {
-        req V = Vector_Data;
-    };
-    type Vector_Data = {
-        data: Array[T,n]
-    };
-    module impl {
-        fn dimension (item Vector_Data) U32 = {
-            n
-        };
-        fn increment (vec ^Vector_Data, by Vector_Data) = {
-            for (i = 0; i < n; i+1) do {
-                let lt_ptr = i @ vec.data;
-                let rt_ptr = i @ by.data;
-                
-                let lt = *lt_ptr;
-                let rt = *rt_ptr;
-                
-                set lt_ptr = scalar.add(lt + rt);
-            }
-        };
-        fn scale (vec ^Vector_Data, by T) = {
-            for (i = 0; i < n; i+1) do {
-                let lt_ptr = i @ vec.data;
-                let rt_ptr = i @ by.data;
-                
-                let lt = *lt_ptr;
-                let rt = *rt_ptr;
-                
-                set lt_ptr = scalar.add(lt + rt);
-            }
-        };
-    };
+fn dot (v Vec2f, w Vec2f) -> Float32 = {
+    v.x * w.x + 
+    v.y * w.y
 };
 
-mod test {
-    type FScalar = scalar.Scalar[{
-        add: fun (x Float32, y Float32) Float32 = {
-            x + y
-        },
-        multiply: fun (x Float32, y Float32) Float32 = {
-            x * y
-        }
-    }];
-    type FVector [n U32] = nvec[FScalar,Float32].Vector;
+fn length_sqr (v Vec2f) -> Float32 = {
+    dot(v,v)
 };
 
-
-# - separate 'var' and 'let' for || const and dyn eval
-# - use '.(i)' for array access instead of '@'
-# - consider 'mod ' as 'template' statement in 'D'
+fn subtract (v Vec2f, w Vec2f) -> Float32 = {
+    vec.add(mul(w,-1))
+};

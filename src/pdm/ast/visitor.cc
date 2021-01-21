@@ -24,8 +24,11 @@ namespace pdm::ast {
             case Kind::Script:
             {
                 Script* script = dynamic_cast<Script*>(node);
-                for (ast::Stmt* stmt: script->stmts()) {
-                    ok = visit(stmt) && ok;
+                for (ast::Stmt* head_stmt: script->head_stmts()) {
+                    ok = visit(head_stmt) && ok;
+                }
+                for (ast::ModStmt* body_stmt: script->body_stmts()) {
+                    ok = visit(body_stmt) && ok;
                 }
                 break;
             }
@@ -94,7 +97,7 @@ namespace pdm::ast {
             {
                 ModTypeclassStmt* typeclass_stmt = dynamic_cast<ModTypeclassStmt*>(node);
                 
-                ok = visit(typeclass_stmt->candidate_typespec()) && ok;
+                ok = visit(typeclass_stmt->candidate_class_spec()) && ok;
                 for (TPattern* tpattern: typeclass_stmt->tpatterns()) {
                     ok = visit(tpattern) && ok;
                 }
@@ -269,7 +272,7 @@ namespace pdm::ast {
             {
                 TPattern* tpattern = dynamic_cast<TPattern*>(node);
                 for (TPattern::Field* field: tpattern->fields()) {
-                    ok = visit(field->rhs_typespec()) && ok;
+                    ok = visit(field->rhs_set_spec()) && ok;
                 }
                 break;
             }
@@ -289,23 +292,33 @@ namespace pdm::ast {
             // typespecs:
             //
 
-            case Kind::IdSetSpec:
+            case Kind::IdTypeSpec:
+            case Kind::IdClassSpec:
             case Kind::DotNameTypeSpec_ModPrefix:
             {
                 break;
             }
             case Kind::FnTypeSpec:
             {
-                FnTypeSpec* fn_typespec = dynamic_cast<FnTypeSpec*>(node);
+                auto fn_typespec = dynamic_cast<FnTypeSpec*>(node);
                 ok = visit(fn_typespec->lhs_vpattern()) && ok;
                 ok = visit(fn_typespec->opt_ret_typespec()) && ok;
                 break;
             }
             case Kind::TCallTypeSpec:
             {
-                TCallTypeSpec* tcall_typespec = dynamic_cast<TCallTypeSpec*>(node);
+                auto tcall_typespec = dynamic_cast<TCallTypeSpec*>(node);
                 ok = visit(tcall_typespec->lhs_called()) && ok;
                 for (TArg* arg: tcall_typespec->args()) {
+                    ok = visit(arg) && ok;
+                }
+                break;
+            }
+            case Kind::TCallClassSpec:
+            {
+                auto tcall_class_spec = dynamic_cast<TCallClassSpec*>(node);
+                ok = visit(tcall_class_spec->lhs_called()) && ok;
+                for (TArg* arg: tcall_class_spec->args()) {
                     ok = visit(arg) && ok;
                 }
                 break;
@@ -549,9 +562,13 @@ namespace pdm::ast {
             }
 
             // typespecs:
-            case Kind::IdSetSpec:
+            case Kind::IdClassSpec:
             {
-                return on_visit__id_typespec(dynamic_cast<IdSetSpec*>(node), visit_order);
+                return on_visit__id_class_spec(dynamic_cast<IdClassSpec*>(node), visit_order);
+            }
+            case Kind::IdTypeSpec:
+            {
+                return on_visit__id_typespec(dynamic_cast<IdTypeSpec*>(node), visit_order);
             }
             case Kind::FnTypeSpec:
             {
@@ -560,6 +577,10 @@ namespace pdm::ast {
             case Kind::TCallTypeSpec:
             {
                 return on_visit__tcall_typespec(dynamic_cast<TCallTypeSpec*>(node), visit_order);
+            }
+            case Kind::TCallClassSpec:
+            {
+                return on_visit__tcall_class_spec(dynamic_cast<TCallClassSpec*>(node), visit_order);
             }
             case Kind::TupleTypeSpec:
             {

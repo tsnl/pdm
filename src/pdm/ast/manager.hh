@@ -50,10 +50,11 @@
 #include "arg/targ.hh"
 #include "arg/varg.hh"
 
-#include "setspec/typespec.hh"
+#include "setspec/type_spec.hh"
 #include "setspec/dot.hh"
 #include "setspec/fn.hh"
-#include "setspec/id.hh"
+#include "setspec/id_type_spec.hh"
+#include "setspec/id_class_spec.hh"
 #include "setspec/paren.hh"
 #include "setspec/struct.hh"
 #include "setspec/tcall.hh"
@@ -93,7 +94,7 @@ namespace pdm::ast {
         }
 
       public:
-        Script* new_script(source::Source* source, source::Loc loc, std::vector<Stmt*>&& stmts);
+        Script* new_script(source::Source* source, source::Loc loc, std::vector<Stmt*>&& head_stmts, std::vector<ModStmt*>&& body_mod_stmts);
 
         ArrayExp* new_array_exp(source::Loc loc, std::vector<Exp*>&& items);
         BinaryExp* new_binary_exp(source::Loc loc, BinaryOperator binary_operator, Exp* lhs_operand, Exp* rhs_operand);
@@ -123,7 +124,7 @@ namespace pdm::ast {
         TPattern* new_tpattern(source::Loc loc, std::vector<TPattern::Field*>&& fields, bool is_only_captured);
         VPattern* new_vpattern(source::Loc loc, std::vector<VPattern::Field*>&& fields);
         LPattern::Field* new_lpattern_field(source::Loc loc, LPattern::FieldKind kind, intern::String name, TypeSpec* opt_rhs_typespec = nullptr);
-        TPattern::Field* new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, TypeSpec* rhs_typespec);
+        TPattern::Field* new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, SetSpec* rhs_set_spec);
         VPattern::Field* new_vpattern_field(source::Loc loc, intern::String name, TypeSpec* rhs_typespec, VArgAccessSpec varg_kind);
 
         BuiltinStmt* new_builtin_stmt(std::string&& desc);
@@ -153,20 +154,22 @@ namespace pdm::ast {
         );
         ModTypeStmt* new_mod_type_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, TypeSpec* rhs_typespec);
         ModEnumStmt* new_mod_enum_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, std::vector<ModEnumStmt::Field*>&& fields);
-        ModTypeclassStmt* new_mod_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, TypeSpec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions);
+        ModTypeclassStmt* new_mod_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, ClassSpec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions);
         ModEnumStmt::Field* new_enum_stmt_field(source::Loc loc, intern::String name, std::vector<ast::TypeSpec*>&& typespecs, bool has_explicit_typespecs);
         
-        DotNameTypeSpec_ModPrefix* new_dot_name_typespec_with_mod_prefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name);
-        FnTypeSpec* new_fn_typespec(source::Loc loc, VPattern* lhs_vpattern, TypeSpec* rhs_typespec);
-        IdSetSpec* new_id_typespec(source::Loc loc, intern::String name);
-        ParenTypeSpec* new_paren_typespec(source::Loc loc, TypeSpec* nested_typespec);
-        StructTypeSpec* new_struct_typespec(source::Loc loc, std::vector<StructTypeSpec::Field*>&& fields);
-        TCallTypeSpec* new_tcall_typespec(source::Loc loc, TypeSpec* lhs_called, std::vector<TArg*>&& args);
-        TupleTypeSpec* new_tuple_typespec(source::Loc loc, std::vector<TypeSpec*>&& items);
-        StructTypeSpec::Field* new_struct_typespec_field(source::Loc loc, intern::String name, TypeSpec* typespec);
+        DotNameTypeSpec_ModPrefix* new_dot_name_type_spec_with_mod_prefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name);
+        FnTypeSpec* new_fn_type_spec(source::Loc loc, VPattern* lhs_vpattern, TypeSpec* rhs_typespec);
+        IdTypeSpec* new_id_type_spec(source::Loc loc, intern::String name);
+        IdClassSpec* new_id_class_spec(source::Loc loc, intern::String name);
+        ParenTypeSpec* new_paren_type_spec(source::Loc loc, TypeSpec* nested_typespec);
+        StructTypeSpec* new_struct_type_spec(source::Loc loc, std::vector<StructTypeSpec::Field*>&& fields);
+        TCallTypeSpec* new_tcall_type_spec(source::Loc loc, TypeSpec* lhs_called, std::vector<TArg*>&& args);
+        TCallClassSpec* new_tcall_class_spec(source::Loc loc, ClassSpec* lhs_called, std::vector<TArg*>&& args);
+        TupleTypeSpec* new_tuple_type_spec(source::Loc loc, std::vector<TypeSpec*>&& items);
+        StructTypeSpec::Field* new_struct_type_spec_field(source::Loc loc, intern::String name, TypeSpec* typespec);
 
         TArg* new_targ_exp(source::Loc loc, Exp* exp);
-        TArg* new_targ_typespec(source::Loc loc, TypeSpec* typespec);
+        TArg* new_targ_type_spec(source::Loc loc, TypeSpec* typespec);
         VArg* new_varg(source::Loc, Exp* exp, VArgAccessSpec varg_kind);
 
       public:

@@ -2,7 +2,7 @@
 #define INCLUDED_PDM_AST_TYPESPEC_TUPLE_HH
 
 #include "pdm/source/loc.hh"
-#include "pdm/ast/setspec/typespec.hh"
+#include "pdm/ast/setspec/type_spec.hh"
 
 namespace pdm::ast {
     class Manager;

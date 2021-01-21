@@ -51,7 +51,7 @@ find_package(LLVM CONFIG REQUIRED)
 # find_package(Clang CONFIG REQUIRED)
 message(STATUS "Found LLVM version (${LLVM_PACKAGE_VERSION})")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
 
 # including directories:
 include_directories(
@@ -126,10 +126,14 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/arg/varg.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/setspec.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/typespec.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/type_spec.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/type_spec.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/class_spec.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/class_spec.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/dot.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/fn.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/id.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/id_type_spec.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/id_class_spec.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/struct.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/tcall.hh
 

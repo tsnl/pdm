@@ -6,7 +6,7 @@
 #include "pdm/core/intern.hh"
 #include "pdm/source/loc.hh"
 #include "pdm/ast/kind.hh"
-#include "typespec.hh"
+#include "type_spec.hh"
 
 namespace pdm::scoper {
     class Manager;
@@ -15,16 +15,16 @@ namespace pdm::scoper {
 
 namespace pdm::ast {
 
-    class IdSetSpec: public TypeSpec {
+    class IdTypeSpec: public TypeSpec {
         friend Manager;
 
       private:
         intern::String m_name;
         scoper::Defn const* m_x_defn;
 
-      protected:
-        IdSetSpec(source::Loc loc, intern::String name)
-        : TypeSpec(loc, Kind::IdSetSpec),
+      public:
+        IdTypeSpec(source::Loc loc, intern::String name)
+        : TypeSpec(loc, Kind::IdTypeSpec),
           m_name(name) {}
       
       public:

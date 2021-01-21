@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "pdm/ast/node.hh"
-#include "pdm/ast/setspec/typespec.hh"
+#include "pdm/ast/setspec/type_spec.hh"
 #include "pdm/core/intern.hh"
 #include "pdm/ast/arg/varg.hh"
 

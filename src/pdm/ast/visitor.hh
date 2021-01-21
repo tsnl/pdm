@@ -43,14 +43,16 @@
 #include "pdm/ast/stmt/var.hh"
 #include "pdm/ast/stmt/val.hh"
 
-#include "pdm/ast/setspec/typespec.hh"
+#include "pdm/ast/setspec/type_spec.hh"
+#include "pdm/ast/setspec/class_spec.hh"
 #include "pdm/ast/setspec/dot.hh"
-#include "pdm/ast/setspec/id.hh"
+#include "pdm/ast/setspec/id_type_spec.hh"
+#include "pdm/ast/setspec/id_class_spec.hh"
 #include "pdm/ast/setspec/struct.hh"
 #include "pdm/ast/setspec/tcall.hh"
 #include "pdm/ast/setspec/tuple.hh"
 #include "pdm/ast/setspec/fn.hh"
-#include "pdm/ast/setspec/typespec.hh"
+#include "pdm/ast/setspec/type_spec.hh"
 #include "pdm/ast/setspec/paren.hh"
 
 #include "pdm/ast/arg/targ.hh"
@@ -133,9 +135,11 @@ namespace pdm::ast {
         virtual bool on_visit__lpattern(LPattern* node, VisitOrder visit_order) = 0;
 
         // typespecs:
-        virtual bool on_visit__id_typespec(IdSetSpec* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__id_typespec(IdTypeSpec* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__id_class_spec(IdClassSpec* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__fn_typespec(FnTypeSpec* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__tcall_typespec(TCallTypeSpec* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit__tcall_class_spec(TCallClassSpec* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__tuple_typespec(TupleTypeSpec* node, VisitOrder visit_order) = 0;
         // virtual bool on_visit__dot_name_typespec_type_prefix(DotNameTypeSpec_TypePrefix* node, VisitOrder visit_order) = 0;
         virtual bool on_visit__dot_name_typespec_mod_prefix(DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) = 0;
@@ -272,13 +276,19 @@ namespace pdm::ast {
         }
 
         // typespecs:
-        virtual bool on_visit__id_typespec(IdSetSpec* node, VisitOrder visit_order) override {
+        virtual bool on_visit__id_typespec(IdTypeSpec* node, VisitOrder visit_order) override {
+            return true;
+        }
+        virtual bool on_visit__id_class_spec(IdClassSpec* node, VisitOrder visit_order) override {
             return true;
         }
         virtual bool on_visit__fn_typespec(FnTypeSpec* node, VisitOrder visit_order) override {
             return true;
         }
         virtual bool on_visit__tcall_typespec(TCallTypeSpec* node, VisitOrder visit_order) override {
+            return true;
+        }
+        virtual bool on_visit__tcall_class_spec(TCallClassSpec* node, VisitOrder visit_order) override {
             return true;
         }
         virtual bool on_visit__tuple_typespec(TupleTypeSpec* node, VisitOrder visit_order) override {
