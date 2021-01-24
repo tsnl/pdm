@@ -53,10 +53,13 @@ namespace pdm::types {
                     (*it)->print(printer);
                 }
                 printer.print_newline_deindent();
+            } else {
+                printer.print_newline();
             }
         }
 
         // note that the caller must call 'deindent'
+        // note this block always ends with a trailing newline.
     }
 
     //
@@ -193,7 +196,6 @@ namespace pdm::types {
     void NumberKDVS::print(printer::Printer &printer) const {
         help_print_common_and_start_indented_block(printer, "Number");
         {
-            printer.print_newline();
             printer.print_cstr("- Min-WidthInBits: ");
             if (m_opt_min_width_in_bits >= 0) {
                 printer.print_uint_dec(m_opt_min_width_in_bits);

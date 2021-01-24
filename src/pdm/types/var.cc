@@ -53,7 +53,7 @@ namespace pdm::types {
             // Kind invariants update the assumed_kind_bitset
             // - ignore kind bitset-modifying invariants for 'fixed' (still adding subvar, supervar)
             // - in 'assume', every invariant is 'unified'
-            KindInvariant* kind_invariant = dynamic_cast<KindInvariant*>(invariant);
+            auto kind_invariant = dynamic_cast<KindInvariant*>(invariant);
             if (kind_invariant != nullptr) {
                 if (!change_forbidden) {
                     TypeKindBitset supervar_kind_bitset = m_assumed_kind_bitset | kind_invariant->allowed_type_kinds_bitset();
@@ -67,19 +67,19 @@ namespace pdm::types {
             } 
 
             // subtype:
-            SubtypeOfInvariant* subtype_of_invariant = dynamic_cast<SubtypeOfInvariant*>(invariant);
+            auto subtype_of_invariant = dynamic_cast<SubtypeOfInvariant*>(invariant);
             if (subtype_of_invariant != nullptr) {
                 return help_assume_subvar(this, subtype_of_invariant->supertype_tv(), false);
             }
 
             // subclass:
-            SubclassOfInvariant* subclass_of_invariant = dynamic_cast<SubclassOfInvariant*>(invariant);
+            auto subclass_of_invariant = dynamic_cast<SubclassOfInvariant*>(invariant);
             if (subclass_of_invariant != nullptr) {
                 return help_assume_subvar(this, subclass_of_invariant->superclass_cv(), false);
             }
         
             // class instanceship:
-            ClassOfInvariant* classof_invariant = dynamic_cast<ClassOfInvariant*>(invariant);
+            auto classof_invariant = dynamic_cast<ClassOfInvariant*>(invariant);
             if (classof_invariant != nullptr) {
                 return help_assume_subvar(classof_invariant->member_tv(), this, false);
             }
@@ -127,7 +127,7 @@ namespace pdm::types {
         {
             case VarKind::Type:
             {
-                TypeVar* self = dynamic_cast<TypeVar*>(this);
+                auto self = dynamic_cast<TypeVar*>(this);
                 switch (self->soln_bill())
                 {
                     case TypeVarSolnBill::Fixed:
@@ -179,9 +179,6 @@ namespace pdm::types {
         return iter_sir;
     }
     KdResult Var::update_kd_invariants_impl() {
-        if (m_prev_solve_iter_result == KdResult::NoChange) {
-            return KdResult::NoChange;
-        }
         if (m_prev_solve_iter_result == KdResult::TypingError) {
             return KdResult::TypingError;
         }
@@ -189,7 +186,10 @@ namespace pdm::types {
             return KdResult::CompilerError;
         }
         
-        assert(m_prev_solve_iter_result == KdResult::UpdatedOrFresh);
+        assert(
+            (m_prev_solve_iter_result == KdResult::UpdatedOrFresh) ||
+            (m_prev_solve_iter_result == KdResult::NoChange)
+        );
 
         // since the last update, there have been (1) new supervars, (2) new subvars, and (3) new invariants.
 
@@ -199,17 +199,17 @@ namespace pdm::types {
 
         // unify kind bitsets based on super-vars and subvars:
         {
-            auto const unify_kind_bitset_from = [this] (std::vector<Var*> const& related_vars) {
+            auto const unify_kind_bitset_from = [] (std::vector<Var*> const& related_vars) {
                 // must update from all related vars since any could have gained new kind bits since the
                 // last iteration.
                 TypeKindBitset related_kind_bitset = 0;
-                size_t supervar_count = related_vars.size();
-                for (size_t index = 0; index < supervar_count; index++) {
+                size_t related_var_count = related_vars.size();
+                for (size_t index = 0; index < related_var_count; index++) {
                     related_kind_bitset |= related_vars[index]->m_assumed_kind_bitset;
                 }
                 return related_kind_bitset;
             };
-            // applying all supervar bitsets to own, calculating an SP2_Result accordingly:
+            // applying all super-var bitsets to own, calculating an SP2_Result accordingly:
             TypeKindBitset new_kind_bitset = m_assumed_kind_bitset;
             new_kind_bitset |= unify_kind_bitset_from(m_assumed_supervars);
             new_kind_bitset |= unify_kind_bitset_from(m_assumed_subvars);
@@ -238,7 +238,7 @@ namespace pdm::types {
                     }
                 }
             } else {
-                // kd_res remains at NoChange.
+                // kd_res remains at NoChange since new_kind_bitset == old_kind_bitset
             }
         }
         if (kdr_is_error(kd_res)) {
@@ -446,6 +446,31 @@ namespace pdm::types {
 
         // printing the var name:
         p.print_str(name());
+
+        // printing last kdr changed:
+        switch (m_prev_solve_iter_result)
+        {
+            case KdResult::UpdatedOrFresh:
+            {
+                p.print_cstr(" (UpdatedOrFresh)");
+                break;
+            }
+            case KdResult::NoChange:
+            {
+                p.print_cstr(" (NoChange)");
+                break;
+            }
+            case KdResult::TypingError:
+            {
+                p.print_cstr(" (TypingError)");
+                break;
+            }
+            case KdResult::CompilerError:
+            {
+                p.print_cstr(" (CompilerError)");
+                break;
+            }
+        }
 
         // printing the var addr:
         p.print_cstr(" @ ");

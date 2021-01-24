@@ -124,155 +124,159 @@ namespace pdm::types {
 
     bool Manager::typecheck() {
 
-        // First Solve Phase 1: runs only once, either passes or fails:
-        // iteratively call var solvers...
-        bool sp1_pass = true;
+        // Checking initial kinds:
+        {
+            bool sp1_pass = true;
 
-        // todo: use a deferred error reporting system, compare failed vars against Relations
-        //       and report failed Relations.
-        // for now, just printing errors per-var-- easier to debug.
+            // todo: use a deferred error reporting system, compare failed vars against Relations
+            //       and report failed Relations.
+            // for now, just printing errors per-var-- easier to debug.
 
-        for (Var* var: m_all_var_refs) {
-            KcResult kind_check_result = var->kind_check();
+            for (Var* var: m_all_var_refs) {
+                KcResult kind_check_result = var->kind_check();
 
-            // Parsing status:
-            switch (kind_check_result) {
-                case KcResult::InsufficientInfo:
-                {
-                    // insufficient info is ok! wait for SP2
-                    sp1_pass = true;
-                    break;
-                }
-                case KcResult::Error_MixedKind:
-                {
-                    sp1_pass = false;
-                    std::string headline = (
-                        "Mixed type-kinds in type/class variable."
-                    );
-                    std::string more = "";
-                    std::vector<feedback::Note*> notes;
-                    if (var->opt_client_ast_node() != nullptr) {
-                        std::string desc0 = "see syntax element here...";
-                        notes.push_back(new feedback::AstNodeNote(
-                            std::move(desc0), var->opt_client_ast_node()
-                        ));
+                // Parsing status:
+                switch (kind_check_result) {
+                    case KcResult::InsufficientInfo:
+                    {
+                        // insufficient info is ok! wait for SP2
+                        sp1_pass = true;
+                        break;
                     }
-                    feedback::post(new feedback::Letter(
-                        feedback::Severity::Error,
-                        std::move(headline),
-                        std::move(more),
-                        std::move(notes)
-                    ));
-                    break;
-                }
-                case KcResult::Ok:
-                {
-                    break;
+                    case KcResult::Error_MixedKind:
+                    {
+                        sp1_pass = false;
+                        std::string headline = (
+                            "Mixed type-kinds in type/class variable."
+                        );
+                        std::string more = "";
+                        std::vector<feedback::Note*> notes;
+                        if (var->opt_client_ast_node() != nullptr) {
+                            std::string desc0 = "see syntax element here...";
+                            notes.push_back(new feedback::AstNodeNote(
+                                std::move(desc0), var->opt_client_ast_node()
+                            ));
+                        }
+                        feedback::post(new feedback::Letter(
+                            feedback::Severity::Error,
+                            std::move(headline),
+                            std::move(more),
+                            std::move(notes)
+                        ));
+                        break;
+                    }
+                    case KcResult::Ok:
+                    {
+                        break;
+                    }
                 }
             }
-        }
-        if (!sp1_pass) {
-            std::string headline = "Errors detected in typing setup: terminating.";
-            std::string desc = "";
-            std::vector<feedback::Note*> notes;
-            feedback::post(new feedback::Letter(
-                feedback::Severity::FatalError,
-                std::move(headline),
-                std::move(desc),
-                std::move(notes)
-            ));
+            if (!sp1_pass) {
+                std::string headline = "Errors detected in typing setup: terminating.";
+                std::string desc = "";
+                std::vector<feedback::Note*> notes;
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::FatalError,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
 
-            return false;
+                return false;
+            }
         }
 
         // Running SP2:
         // until fixed or a max iteration count is exceeded...
-        bool fixed = false;
-        auto last_iter_sp2res = KdResult::CompilerError;
-        size_t const max_iter_count = 8 * 1024;
-        size_t iter_count = 0;
-        while (!fixed && iter_count < max_iter_count) {
-            size_t system_size = m_all_var_refs.size();
-            
-            // ... run an sp2 iter for each and every var...
-            auto all_vars_sp2res = KdResult::NoChange;
-            for (size_t index = 0; index < system_size; index++) {
-                Var* var = m_all_var_refs[index];
-                KdResult var_sp2res = var->update_kd_invariants();
-                all_vars_sp2res = kdr_and(all_vars_sp2res, var_sp2res);
-            }
+        {
+            bool debug_print_on_each_iter = false;
+            printer::Printer debug_printer{std::cerr};
+            bool fixed = false;
+            auto last_iter_sp2res = KdResult::CompilerError;
+            size_t const max_iter_count = 8 * 1024;
+            size_t iter_count = 0;
+            while (!fixed && iter_count < max_iter_count) {
+                // dumping typer for debug:
+                {
+                    if (debug_print_on_each_iter) {
+                        print(debug_printer, "Iter " + std::to_string(iter_count));
+                    }
+                }
 
-            // ... and thereby determine fixed-ness
-            fixed = (
+                // fixing the size of all vars considered:
+                size_t system_size = m_all_var_refs.size();
+
+                // ... run an sp2 iter for each and every var...
+                auto all_vars_sp2res = KdResult::NoChange;
+                for (size_t index = 0; index < system_size; index++) {
+                    Var* var = m_all_var_refs[index];
+                    KdResult var_sp2res = var->update_kd_invariants();
+                    all_vars_sp2res = kdr_and(all_vars_sp2res, var_sp2res);
+                }
+
+                // ... and thereby determine fixed-ness
+                fixed = (
                     (all_vars_sp2res == KdResult::CompilerError) ||
                     (all_vars_sp2res == KdResult::TypingError) ||
                     (all_vars_sp2res == KdResult::NoChange)
-            );
-            last_iter_sp2res = all_vars_sp2res;
-            iter_count++;
-        }
-        if (iter_count >= max_iter_count) {
-            // Compiler error
-            feedback::post(new feedback::Letter(
-                feedback::Severity::CompilerError,
-                "Type solver iterations exceeded safety limit",
-                "Your type queries are either too complex, or (more likely) "
-                "there is a bug in the type solver."
-            ));
-            return false;
-        }
+                );
+                last_iter_sp2res = all_vars_sp2res;
+                iter_count++;
+            }
+            if (iter_count >= max_iter_count) {
+                // Compiler error
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::CompilerError,
+                    "Type solver iterations exceeded safety limit",
+                    "Your type queries are either too complex, or (more likely) "
+                    "there is a bug in the type solver."
+                ));
+                return false;
+            }
 
-        if (kdr_is_error(last_iter_sp2res)) {
-            feedback::Severity common_severity = feedback::Severity::Error;
-            std::string common_headline;
-            switch (last_iter_sp2res)
-            {
-                case KdResult::TypingError:
-                {
+            if (kdr_is_error(last_iter_sp2res)) {
+                feedback::Severity common_severity = feedback::Severity::Error;
+                std::string common_headline;
+                if (last_iter_sp2res == KdResult::TypingError) {
                     common_severity = common_severity;
                     common_headline = "Inconsistent type relations detected";
-                    break;
-                }
-                default:
-                {
+                } else {
                     common_severity = feedback::Severity::CompilerError;
                     common_headline = "Bug-induced typer error";
-                    break;
                 }
-            }
-            
-            for (Var* var: m_all_var_refs) {
-                KdResult var_sp2res = var->update_kd_invariants();
-                
-                // only filtering the most severe errors:
-                if (var_sp2res == last_iter_sp2res) {
-                    std::string headline = common_headline;
-                    std::string desc;
-                    std::vector<feedback::Note*> notes; 
-                    if (var->opt_client_ast_node() != nullptr) {
-                        std::string desc0 = "see typing variable '" + var->name() + "' here...";
-                        notes.push_back(new feedback::AstNodeNote(
-                            std::move(desc0),
-                            var->opt_client_ast_node()
+
+                for (Var* var: m_all_var_refs) {
+                    KdResult var_sp2res = var->update_kd_invariants();
+
+                    // only filtering the most severe errors:
+                    if (var_sp2res == last_iter_sp2res) {
+                        std::string headline = common_headline;
+                        std::string desc;
+                        std::vector<feedback::Note*> notes;
+                        if (var->opt_client_ast_node() != nullptr) {
+                            std::string desc0 = "see typing variable '" + var->name() + "' here...";
+                            notes.push_back(new feedback::AstNodeNote(
+                                std::move(desc0),
+                                var->opt_client_ast_node()
+                            ));
+                        }
+                        feedback::post(new feedback::Letter(
+                            common_severity,
+                            std::move(headline),
+                            std::move(desc),
+                            std::move(notes)
                         ));
                     }
-                    feedback::post(new feedback::Letter(
-                        common_severity,
-                        std::move(headline),
-                        std::move(desc),
-                        std::move(notes)
-                    ));
                 }
+                return false;
             }
-            return false;
         }
 
         // even if stable, could still be errors.
         // todo: extract a solution, return false if fails
-        assert(last_iter_sp2res == KdResult::NoChange);
-        {
-
-        }
+        // assert(last_iter_sp2res == KdResult::NoChange);
+        // {
+        // }
 
         return true;
     }
