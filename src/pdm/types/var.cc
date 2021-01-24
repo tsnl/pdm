@@ -199,10 +199,10 @@ namespace pdm::types {
 
         // unify kind bitsets based on super-vars and subvars:
         {
-            auto const unify_kind_bitset_from = [this, &kd_res] (std::vector<Var*> const& related_vars) {
+            auto const unify_kind_bitset_from = [this] (std::vector<Var*> const& related_vars) {
                 // must update from all related vars since any could have gained new kind bits since the
                 // last iteration.
-                TypeKindBitset related_kind_bitset = this->m_assumed_kind_bitset;
+                TypeKindBitset related_kind_bitset = 0;
                 size_t supervar_count = related_vars.size();
                 for (size_t index = 0; index < supervar_count; index++) {
                     related_kind_bitset |= related_vars[index]->m_assumed_kind_bitset;
@@ -245,7 +245,7 @@ namespace pdm::types {
             // early return if error already detected
             return kd_res;
         } else {
-            // todo: update/create KDVS
+            // creating the KDVS:
             if (m_kdvs == nullptr) {
                 NewKDVS kdvs_create_info = try_new_kdvs_for(m_var_kind, m_assumed_kind_bitset);
                 switch (kdvs_create_info.result)
@@ -270,7 +270,20 @@ namespace pdm::types {
                         break;
                     }
                 }
+            } else {
+                // KDVS already exists; still valid.
             }
+        }
+
+        // flushing invariants to the KDVS:
+        if (m_kdvs != nullptr && !m_assumed_kind_dependent_invariants.empty()) {
+            size_t a = m_kdvs_consumed_kd_invariant_count;
+            size_t b = m_assumed_kind_dependent_invariants.size() - 1;
+            for (size_t i = a; i <= b; i++) {
+                KindDependentInvariant* kd_invariant = m_assumed_kind_dependent_invariants[i];
+                m_kdvs->try_add_invariant(kd_invariant);
+            }
+            m_kdvs_consumed_kd_invariant_count = b;
         }
 
         // - fresh subvars need all invariants, old and new.
@@ -278,6 +291,7 @@ namespace pdm::types {
         // - after propagating updates, need to update bounds for next iter.
         {
             size_t old_invariant_count = m_sp2_propagated_sofar_kd_invariant_count;
+            // size_t old_invariant_count = m_sp2_propagated_sofar_kd_invariant_count;
             size_t old_subvar_count = m_sp2_propagated_sofar_subvar_count;
 
             // adding only new invariants to old subvars:
@@ -496,13 +510,10 @@ namespace pdm::types {
         if (assumed_supervars().empty()) {
             p.print_cstr(" None");
         } else {
-            for (size_t index = 0; index < m_assumed_supervars.size(); index++) {
-                Var* assumed_supervar = m_assumed_supervars[index];
+            for (auto assumed_supervar : m_assumed_supervars) {
+                p.print_newline();
                 p.print_cstr("- ");
                 assumed_supervar->print_title(p);
-                if (index+1 != m_assumed_supervars.size()) {
-                    p.print_newline();
-                }
             }
         }
     }

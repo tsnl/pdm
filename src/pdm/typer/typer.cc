@@ -40,7 +40,7 @@ namespace pdm::types {
         TyperVisitor(Manager* types_mgr, ast::Script* script);
 
       private:
-        bool post_feedback_from_first_sp2res(KdResult sp2res, std::string&& source_desc, source::Loc loc);
+        bool post_feedback_from_first_kd_res(KdResult kd_res, std::string&& source_desc, source::Loc loc);
       
       protected:
         // script:
@@ -119,11 +119,11 @@ namespace pdm::types {
         m_script(script)
     {}
 
-    bool TyperVisitor::post_feedback_from_first_sp2res(KdResult sp2res, std::string&& source_desc, source::Loc loc) {
-        if (kdr_is_error(sp2res)) {
+    bool TyperVisitor::post_feedback_from_first_kd_res(KdResult kd_res, std::string&& source_desc, source::Loc loc) {
+        if (kdr_is_error(kd_res)) {
             std::string headline = "A typing relation could not be applied";
             std::string more = (
-                (sp2res == KdResult::CompilerError) ?
+                (kd_res == KdResult::CompilerError) ?
                 "This was caused by a compiler bug, and is not your fault." : ""
             );
 
@@ -187,8 +187,6 @@ namespace pdm::types {
     }
     bool TyperVisitor::on_visit__mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Post) {
-            printf("\n\n\n\n\n!!- Typing mod_val_stmt\n\n\n\n\n");
-
             TypeVar* mod_val_tv = nullptr;
             if (node->tpatterns().empty()) {
                 mod_val_tv = dynamic_cast<TypeVar*>(node->x_defn_var());
@@ -214,7 +212,7 @@ namespace pdm::types {
             KdResult res = m_types_mgr->assume_relation_holds(relation);
 
             std::string source_desc = "see value field of module here...";
-            return post_feedback_from_first_sp2res(res, std::move(source_desc), node->loc());
+            return post_feedback_from_first_kd_res(res, std::move(source_desc), node->loc());
         }
         return true;
     }
@@ -276,7 +274,7 @@ namespace pdm::types {
             ));
             
             std::string source_desc = "see integer expression here...";
-            return post_feedback_from_first_sp2res(sp2_result, std::move(source_desc), node->loc());
+            return post_feedback_from_first_kd_res(sp2_result, std::move(source_desc), node->loc());
         }
         return true;
     }
@@ -294,7 +292,7 @@ namespace pdm::types {
             ));
 
             std::string source_desc = "see float expression here...";
-            return post_feedback_from_first_sp2res(sp2_result, std::move(source_desc), node->loc());
+            return post_feedback_from_first_kd_res(sp2_result, std::move(source_desc), node->loc());
         }
         return true;
     }
@@ -310,13 +308,13 @@ namespace pdm::types {
             ));
 
             std::string source_desc = "see string expression here...";
-            return post_feedback_from_first_sp2res(sp2_result, std::move(source_desc), node->loc());
+            return post_feedback_from_first_kd_res(sp2_result, std::move(source_desc), node->loc());
         }
         return true;
     }
     bool TyperVisitor::on_visit__id_exp(ast::IdExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            TypeVar* id_tv = dynamic_cast<TypeVar*>(node->x_defn()->var());
+            auto id_tv = dynamic_cast<TypeVar*>(node->x_defn()->var());
             assert(id_tv != nullptr && "Scoper failed!");
             node->x_typeof_tv(id_tv);
         }
@@ -330,10 +328,10 @@ namespace pdm::types {
         } else {
             TypeVar* paren_tv = node->x_typeof_tv();
             TypeVar* nested_tv = node->nested_exp()->x_typeof_tv();
-            KdResult sp2res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, paren_tv, nested_tv));
+            KdResult kd_res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, paren_tv, nested_tv));
             
             std::string source_desc = "see paren expression here...";
-            return post_feedback_from_first_sp2res(sp2res, std::move(source_desc), node->loc());
+            return post_feedback_from_first_kd_res(kd_res, std::move(source_desc), node->loc());
         }
         return true;
     }
@@ -383,19 +381,74 @@ namespace pdm::types {
             TypeVar* chain_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(chain_exp_tv);
         } else {
+            TypeVar* chain_tv = node->x_typeof_tv();
+            TypeVar* nested_tv = node->suffix()->x_typeof_tv();
+            auto relation = new TypeEqualsRelation(node, chain_tv, nested_tv);
+            KdResult kd_res = m_types_mgr->assume_relation_holds(relation);
 
+            std::string source_desc = "see chain expression here...";
+            return post_feedback_from_first_kd_res(kd_res, std::move(source_desc), node->loc());
         }
         return true;
     }
     bool TyperVisitor::on_visit__lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) {
+        bool ok = true;
+
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "LambdaExp";
             TypeVar* lambda_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(lambda_exp_tv);
         } else {
+            assert(visit_order == VisitOrder::Post);
             // todo: implement all the function/vcall typing stuff here!
+            TypeVar* lambda_exp_tv = node->x_typeof_tv();
+            size_t args_count = node->lhs_vpattern()->fields().size();
+            std::vector<VCallArg> args{args_count}; {
+                for (size_t index = 0; index < args_count; index++) {
+                    ast::VPattern::Field* field = node->lhs_vpattern()->fields()[index];
+                    args[index].name = field->lhs_name();
+                    args[index].varg_access_spec = field->accepted_varg_kind();
+                    args[index].typeof_arg_tv = field->x_defn_tv();
+                }
+            }
+            TypeVar* ret_tv = m_types_mgr->get_void_tv();
+            if (node->opt_ret_typespec()) {
+                Var* ret_var = node->opt_ret_typespec()->x_spectype_var();
+                if (ret_var == nullptr) {
+                    // an error occurred while typing the return type. ignore, but still fail.
+                    ok = false;
+                } else {
+                    ret_tv = dynamic_cast<TypeVar*>(ret_var);
+                    if (ret_tv == nullptr) {
+                        std::string headline = "Incorrect set specifier in lambda expression return.";
+                        std::string desc = "Expected type specifier, instead received class or incomplete template.";
+                        std::vector<feedback::Note*> notes{1}; {
+                            std::string note_desc = "incorrect set specifier here...";
+                            notes[0] = new feedback::SourceLocNote(std::move(note_desc), node->loc());
+                        }
+                        feedback::post(new feedback::Letter(
+                                feedback::Severity::Error,
+                                std::move(headline),
+                                std::move(desc),
+                                std::move(notes)
+                        ));
+
+                        // setting fail bit:
+                        ok = false;
+                    }
+                }
+
+            }
+            auto relation = new FormalVCallableRelation(node, lambda_exp_tv, std::move(args), ret_tv);
+            KdResult kd_res = m_types_mgr->assume_relation_holds(relation);
+
+            if (kdr_is_error(kd_res)) {
+                post_feedback_from_first_kd_res(kd_res, "if expression here...", node->loc());
+                return false;
+            }
         }
-        return true;
+
+        return ok;
     }
     bool TyperVisitor::on_visit__if_exp(ast::IfExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
@@ -403,7 +456,29 @@ namespace pdm::types {
             TypeVar* if_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(if_exp_tv);
         } else {
+            Relation* relation = nullptr;
+            if (node->else_exp() == nullptr) {
+                relation = new IfThenRelation(
+                    node,
+                    node->x_typeof_tv(),
+                    node->cond_exp()->x_typeof_tv(),
+                    node->then_exp()->x_typeof_tv()
+                );
+            } else {
+                relation = new IfThenElseRelation(
+                    node,
+                    node->x_typeof_tv(),
+                    node->cond_exp()->x_typeof_tv(),
+                    node->then_exp()->x_typeof_tv(),
+                    node->else_exp()->x_typeof_tv()
+                );
+            }
+            KdResult kd_res = m_types_mgr->assume_relation_holds(relation);
 
+            if (kdr_is_error(kd_res)) {
+                post_feedback_from_first_kd_res(kd_res, "if expression here...", node->loc());
+                return false;
+            }
         }
         return true;
     }
@@ -487,10 +562,10 @@ namespace pdm::types {
                 Var* spectype_var = field->rhs_typespec()->x_spectype_var();
                 TypeVar* spectype_tv = dynamic_cast<TypeVar*>(spectype_var);
                 if (spectype_tv != nullptr) {
-                    KdResult sp2res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(field, tv, spectype_tv));
+                    KdResult kd_res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(field, tv, spectype_tv));
                     
                     std::string source_desc = "see V-Pattern here...";
-                    return post_feedback_from_first_sp2res(sp2res, std::move(source_desc), node->loc());
+                    return post_feedback_from_first_kd_res(kd_res, std::move(source_desc), node->loc());
                 } else {
                     std::string headline = "Incorrect set specifier in V-Pattern";
                     std::string desc = "Expected type specifier, instead received class or incomplete template.";
@@ -523,9 +598,9 @@ namespace pdm::types {
                     // [value Type]
                     auto field_spec_tv = dynamic_cast<TypeVar*>(field_spec_var);
                     if (field_spec_tv != nullptr && field_tv != nullptr) {
-                        KdResult sp2res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, field_spec_tv, field_tv));
+                        KdResult kd_res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, field_spec_tv, field_tv));
                         std::string source_desc = "In Value T-Pattern Arg here..";
-                        return post_feedback_from_first_sp2res(sp2res, std::move(source_desc), node->loc());
+                        return post_feedback_from_first_kd_res(kd_res, std::move(source_desc), node->loc());
                     } else {
                         std::string headline = "Incorrect set specifier";
                         std::string desc = "Expected type specifier, instead received class or incomplete template.";
@@ -545,9 +620,9 @@ namespace pdm::types {
                     auto field_spec_cv = dynamic_cast<ClassVar*>(field_spec_var);
                     auto proxy_field_tv = field_tv;
                     if (field_spec_cv != nullptr) {
-                        KdResult sp2res = m_types_mgr->assume_relation_holds(new ClassOfRelation(node, field_spec_cv, field_tv));
+                        KdResult kd_res = m_types_mgr->assume_relation_holds(new ClassOfRelation(node, field_spec_cv, field_tv));
                         std::string source_desc = "In Type T-Pattern Arg here..";
-                        return post_feedback_from_first_sp2res(sp2res, std::move(source_desc), node->loc());
+                        return post_feedback_from_first_kd_res(kd_res, std::move(source_desc), node->loc());
                     } else {
                         std::string headline = "Incorrect set specifier";
                         std::string desc = "Expected typeclass specifier, instead received type or incomplete template.";
@@ -574,10 +649,10 @@ namespace pdm::types {
                 if (field->opt_rhs_typespec()) {
                     TypeVar* rhs_tv = dynamic_cast<TypeVar*>(field->opt_rhs_typespec()->x_spectype_var());
                     if (rhs_tv != nullptr) {
-                        KdResult sp2res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, tv, rhs_tv));
+                        KdResult kd_res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, tv, rhs_tv));
                         
                         std::string source_desc = "see L-Pattern here...";
-                        return post_feedback_from_first_sp2res(sp2res, std::move(source_desc), node->loc());
+                        return post_feedback_from_first_kd_res(kd_res, std::move(source_desc), node->loc());
                     } else {
                         std::string headline = "Incorrect set specifier";
                         std::string desc = "Expected type specifier, instead received class or incomplete template.";
@@ -618,18 +693,21 @@ namespace pdm::types {
         } else {
             assert(visit_order == VisitOrder::Post);
             // node->x_spectype_var(m_types_mgr->new_func_tv()) ...
-            TypeVar* spectype_tv = dynamic_cast<TypeVar*>(node->x_spectype_var());
-            
-            std::vector<TypeVar*> args_tvs{node->lhs_vpattern()->fields().size()};
-            for (size_t index = 0; index < args_tvs.size(); index++) {
+            auto spectype_tv = dynamic_cast<TypeVar*>(node->x_spectype_var());
+
+            size_t args_count = node->lhs_vpattern()->fields().size();
+            std::vector<VCallArg> args{args_count};
+            for (size_t index = 0; index < args.size(); index++) {
                 ast::VPattern::Field* vpattern_field = node->lhs_vpattern()->fields()[index];
-                args_tvs[index] = vpattern_field->x_defn_tv();
+                args[index].name = vpattern_field->lhs_name();
+                args[index].varg_access_spec = vpattern_field->accepted_varg_kind();
+                args[index].typeof_arg_tv = vpattern_field->x_defn_tv();
             }
 
             TypeVar* ret_tv = m_types_mgr->get_void_tv();
             if (node->opt_ret_typespec() != nullptr) {
                 Var* ret_spectype_var = node->opt_ret_typespec()->x_spectype_var();
-                TypeVar* ret_spectype_tv = dynamic_cast<TypeVar*>(ret_spectype_var);
+                auto ret_spectype_tv = dynamic_cast<TypeVar*>(ret_spectype_var);
                 if (ret_spectype_tv != nullptr) {
                     ret_tv = ret_spectype_tv;
                 } else {
@@ -648,8 +726,8 @@ namespace pdm::types {
                 }
             }
             
-            KdResult sp2res = m_types_mgr->assume_relation_holds(new FormalVCallableRelation(
-                node, spectype_tv, std::move(args_tvs), ret_tv
+            KdResult kd_res = m_types_mgr->assume_relation_holds(new FormalVCallableRelation(
+                node, spectype_tv, std::move(args), ret_tv
             ));
             
             // todo: post
@@ -733,7 +811,7 @@ namespace pdm::types {
 
             // relating:
             std::string why = "TupleTypeSpec";
-            KdResult sp2res = m_types_mgr->assume_relation_holds(new TupleOfRelation(
+            KdResult kd_res = m_types_mgr->assume_relation_holds(new TupleOfRelation(
                 std::move(why),
                 node,
                 tuple_tv,
@@ -741,7 +819,7 @@ namespace pdm::types {
             ));
 
             std::string source_desc = "See Tuple type specifier here...";
-            return post_feedback_from_first_sp2res(sp2res, std::move(source_desc), node->loc());
+            return post_feedback_from_first_kd_res(kd_res, std::move(source_desc), node->loc());
         }
         return true;
     }
@@ -821,7 +899,7 @@ namespace pdm::types {
 
             // assuming a StructOf relation to bind struct_tv to fields:
             std::string name = "StructTypeSpec";
-            KdResult sp2res = m_types_mgr->assume_relation_holds(new StructOfRelation(
+            KdResult kd_res = m_types_mgr->assume_relation_holds(new StructOfRelation(
                 std::move(name), node,
                 struct_tv, std::move(fields_tvs)
             ));
@@ -894,7 +972,8 @@ namespace pdm::types {
             }
 
             std::string source_desc = "see const/val/var statement here...";
-            post_feedback_from_first_sp2res(kdr_and(assume_op_result1, assume_op_result2), std::move(source_desc), node->loc());
+            post_feedback_from_first_kd_res(kdr_and(assume_op_result1, assume_op_result2), std::move(source_desc),
+                                            node->loc());
         }
         return true;
     }

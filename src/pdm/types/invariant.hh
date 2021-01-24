@@ -10,7 +10,6 @@
 #include "pdm/core/integer.hh"
 #include "pdm/core/intern.hh"
 #include "pdm/printer/printer.hh"
-
 #include "pdm/ast/arg/varg.hh"
 
 #include "var_kind.hh"
@@ -388,7 +387,8 @@ namespace pdm::types {
     
     // func/vcall:
     struct VCallArg {
-        ast::VArgAccessSpec varg_access_spec; 
+        intern::String      name;
+        ast::VArgAccessSpec varg_access_spec;
         TypeVar*            typeof_arg_tv;
 
       public:
@@ -401,7 +401,7 @@ namespace pdm::types {
     class IsVCallableInvariant: public KindDependentInvariant {
       private:
         VCallInvariantStrength m_strength;
-        std::vector<VCallArg>&& m_formal_args;
+        std::vector<VCallArg> m_formal_args;
         TypeVar* m_typeof_ret_tv;
 
       public:
@@ -417,6 +417,9 @@ namespace pdm::types {
         VCallInvariantStrength strength() const;
         std::vector<VCallArg> const& formal_args() const;
         TypeVar* typeof_ret_tv() const;
+
+      public:
+        void print(printer::Printer &printer) const override;
     };
     inline IsVCallableInvariant::IsVCallableInvariant(VCallInvariantStrength strength, Relation* parent_relation, VarKind domain_var_kind, std::vector<VCallArg>&& formal_args, TypeVar* typeof_ret_tv)
     :   KindDependentInvariant(parent_relation, domain_var_kind, TypeKind::Fn, "Fn"),

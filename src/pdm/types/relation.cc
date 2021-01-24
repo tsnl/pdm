@@ -122,15 +122,15 @@ namespace pdm::types {
         return false;
     }
 
-    bool VCallableRelation::on_assume_impl(types::Manager* manager) {
-        // todo: implement me!
-        std::cout << "NotImplemented: VCallableRelation::on_assume_impl" << std::endl;
-        return true;
-    }
     bool FormalVCallableRelation::on_assume_impl(types::Manager* manager) {
-        // todo: implement me!
-        std::cout << "NotImplemented: FormalVCallableRelation::on_assume_impl" << std::endl;
-        return true;
+        std::vector<VCallArg> formal_args = args();
+        auto invariant = new IsVCallableInvariant(
+            VCallInvariantStrength::Formal,
+            this, VarKind::Type,
+            std::move(formal_args), ret_tv()
+        );
+        KdResult kd_res = fn_tv()->assume_invariant_holds(invariant);
+        return !kdr_is_error(kd_res);
     }
     bool ActualVCallableRelation::on_assume_impl(types::Manager* manager) {
         // todo: implement me!
@@ -139,14 +139,44 @@ namespace pdm::types {
     }
 
     bool IfThenRelation::on_assume_impl(types::Manager* manager) {
-        // todo: implement me!
-        std::cout << "NotImplemented: IfThenRelation::on_assume_impl" << std::endl;
-        return true;
+        KdResult kd_res = KdResult::NoChange;
+
+        // cond :< bool
+        {
+            auto cond_branch_invariant = new SubtypeOfInvariant(this, manager->get_u1_tv());
+            kd_res = kdr_and(kd_res, m_cond->assume_invariant_holds(cond_branch_invariant));
+        }
+
+        // then :< output
+        {
+            auto then_branch_invariant = new SubtypeOfInvariant(this, m_then);
+            kd_res = m_output_tv->assume_invariant_holds(then_branch_invariant);
+        }
+
+        return !kdr_is_error(kd_res);
     }
     bool IfThenElseRelation::on_assume_impl(types::Manager* manager) {
-        // todo: implement me!
-        std::cout << "NotImplemented: IfThenElseRelation::on_assume_impl" << std::endl;
-        return true;
+        KdResult kd_res = KdResult::NoChange;
+
+        // cond :< bool
+        {
+            auto cond_branch_invariant = new SubtypeOfInvariant(this, manager->get_u1_tv());
+            kd_res = kdr_and(kd_res, m_cond->assume_invariant_holds(cond_branch_invariant));
+        }
+
+        // then :< output
+        {
+            auto then_branch_invariant = new SubtypeOfInvariant(this, m_then);
+            kd_res = kdr_and(kd_res, m_output->assume_invariant_holds(then_branch_invariant));
+        }
+
+        // else :< output
+        {
+            auto else_branch_invariant = new SubtypeOfInvariant(this, m_else);
+            kd_res = kdr_and(kd_res, m_output->assume_invariant_holds(else_branch_invariant));
+        }
+
+        return !kdr_is_error(kd_res);
     }
 
     bool BitcastableRelation::on_assume_impl(types::Manager* manager) {

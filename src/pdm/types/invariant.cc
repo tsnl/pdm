@@ -114,6 +114,21 @@ namespace pdm::types {
         m_item_tv->print(printer);
     }
 
+    void IsVCallableInvariant::print(printer::Printer &printer) const {
+        printer.print_cstr("(KD) ");
+        if (m_strength == VCallInvariantStrength::Formal) {
+            printer.print_cstr("Formal:");
+        } else if (m_strength == VCallInvariantStrength::Actual) {
+            printer.print_cstr("Actual:");
+        } else {
+            printer.print_cstr("Misc:");
+        }
+        printer.print_cstr("IsVCallable (");
+        printer.print_uint_dec(m_formal_args.size());
+        printer.print_cstr(") -> ");
+        m_typeof_ret_tv->print(printer);
+    }
+
 //    void ?::print(printer::Printer& printer) {
 //
 //    };

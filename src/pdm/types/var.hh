@@ -48,7 +48,6 @@ namespace pdm::types {
         // all applied invariants stored as common or kind-dependent.
         std::vector<CommonInvariant*> m_assumed_common_invariants;
         std::vector<KindDependentInvariant*> m_assumed_kind_dependent_invariants;
-        size_t m_applied_kd_invariant_count;
 
         // (common attributes)
         // common invariants broken into a bitset, subvars, and supervars:
@@ -62,6 +61,7 @@ namespace pdm::types {
         // (kind-dependent attributes)
         // based on common attributes, create a kind-dependent var solver subclass:
         KindDependentVarSolver* m_kdvs;
+        size_t m_kdvs_consumed_kd_invariant_count;
 
         // for each solution iter, we cache the previous iter's result:
         Type* m_opt_type_soln;
@@ -133,7 +133,6 @@ namespace pdm::types {
         m_var_kind(var_kind),
         m_assumed_common_invariants(),
         m_assumed_kind_dependent_invariants(),
-        m_applied_kd_invariant_count(0),
         m_assumed_kind_bitset(0),
         m_assumed_subvars(),
         m_assumed_supervars(),
@@ -142,7 +141,8 @@ namespace pdm::types {
         m_sp2_propagated_sofar_supervar_count(0),
         m_initial_solve_iter_result(initial_solve_iter_result),
         m_prev_solve_iter_result(initial_solve_iter_result),
-        m_kdvs(nullptr)
+        m_kdvs(nullptr),
+        m_kdvs_consumed_kd_invariant_count(0)
     {}
     inline std::string const& Var::name() const {
         return m_name;

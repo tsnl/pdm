@@ -45,12 +45,13 @@ namespace pdm::types {
             if (!m_added_invariants.empty()) {
                 printer.print_newline_indent();
 
-                for (auto kdi: m_added_invariants) {
-                    printer.print_newline();
+                for (auto it = m_added_invariants.begin(); it != m_added_invariants.end(); it++) {
+                    if (it != m_added_invariants.begin()) {
+                        printer.print_newline();
+                    }
                     printer.print_cstr("- ");
-                    kdi->print(printer);
+                    (*it)->print(printer);
                 }
-
                 printer.print_newline_deindent();
             }
         }
@@ -85,17 +86,20 @@ namespace pdm::types {
         if (required_type_kind() == TypeKind::Void) {
             if (dynamic_cast<IsVoidInvariant*>(new_invariant) != nullptr) {
                 return KdResult::NoChange;
+            } else {
+                return KdResult::TypingError;
             }
         }
         else if (required_type_kind() == TypeKind::String) {
             if (dynamic_cast<IsStringInvariant*>(new_invariant) != nullptr) {
                 return KdResult::NoChange;
+            } else {
+                return KdResult::TypingError;
             }
         }
         else {
             return KdResult::CompilerError;
         }
-        return KdResult::TypingError;
     }
 
     void SimplestKDVS::print(printer::Printer& printer) const {
@@ -214,6 +218,7 @@ namespace pdm::types {
     class TupleKDVS: public KindDependentVarSolver {
       private:
         std::vector<TypeVar*> m_typeof_items_tvs;
+        bool m_newborn;
 
       public:
         explicit TupleKDVS(VarKind var_kind);
@@ -227,7 +232,8 @@ namespace pdm::types {
 
     TupleKDVS::TupleKDVS(VarKind var_kind)
     :   KindDependentVarSolver(var_kind, TypeKind::Tuple),
-        m_typeof_items_tvs()
+        m_typeof_items_tvs(),
+        m_newborn(true)
     {}
 
     KdResult TupleKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
@@ -235,24 +241,33 @@ namespace pdm::types {
         if (tuple_invariant == nullptr) {
             return KdResult::TypingError;
         }
+
+        // if 'newborn', i.e. no invariants processed yet, then no existing properties to compare.
+        if (m_newborn) {
+            m_newborn = true;
+            m_typeof_items_tvs = tuple_invariant->typeof_items_tvs();
+            return KdResult::UpdatedOrFresh;
+        }
         
         if (m_typeof_items_tvs.size() != tuple_invariant->typeof_items_tvs().size()) {
             return KdResult::TypingError;
         }
 
-        KdResult result = KdResult::NoChange;
-        
         // equating fields:
-        assert(m_typeof_items_tvs.size() == tuple_invariant->typeof_items_tvs().size());
-        for (size_t index = 0; index < m_typeof_items_tvs.size(); index++) {
-            Var* old_field_var = m_typeof_items_tvs[index];
-            Var* new_field_var = tuple_invariant->typeof_items_tvs()[index];
-            
-            KdResult ao_res = old_field_var->higher_order_assume_equals(new_field_var);
-            result = kdr_and(result, ao_res);
+        {
+            KdResult result = KdResult::NoChange;
+
+            assert(m_typeof_items_tvs.size() == tuple_invariant->typeof_items_tvs().size());
+            for (size_t index = 0; index < m_typeof_items_tvs.size(); index++) {
+                Var* old_field_var = m_typeof_items_tvs[index];
+                Var* new_field_var = tuple_invariant->typeof_items_tvs()[index];
+
+                KdResult ao_res = old_field_var->higher_order_assume_equals(new_field_var);
+                result = kdr_and(result, ao_res);
+            }
+
+            return result;
         }
-        
-        return result;
     }
 
     void TupleKDVS::print(printer::Printer& printer) const {
@@ -349,13 +364,9 @@ namespace pdm::types {
 
         // updating fields:
         KdResult result = KdResult::NoChange;
-        for (
-            auto struct_invariant_field_iterator = new_field_collection_invariant->fields().begin(); 
-            struct_invariant_field_iterator != new_field_collection_invariant->fields().end(); 
-            struct_invariant_field_iterator++
-        ) {
-            intern::String field_name = struct_invariant_field_iterator->first;
-            Var* struct_invariant_field_var = struct_invariant_field_iterator->second;
+        for (auto pair: new_field_collection_invariant->fields()) {
+            intern::String field_name = pair.first;
+            Var* struct_invariant_field_var = pair.second;
             
             auto kdvs_field_iterator = m_fields.find(field_name);
             if (kdvs_field_iterator != m_fields.end()) {
@@ -399,22 +410,22 @@ namespace pdm::types {
 
     // FnKDVS is used to typecheck TypeVars that contain functions.
     class FnKDVS: public KindDependentVarSolver {
-      public:
-        struct FnArg {
-            ast::VArgAccessSpec varg_access_spec;
-            intern::String name;
-            TypeVar* typeof_arg_tv;
-        };
-
       private:
-        std::vector<FnArg> m_args;
+        std::vector<VCallArg> m_args;
         TypeVar* m_typeof_ret_tv;
+        IsVCallableInvariant* m_primary_formal_invariant;
+        std::vector<IsVCallableInvariant*> m_found_formal_invariants;
+        size_t m_fulfilled_formal_invariant_count;
+        std::vector<IsVCallableInvariant*> m_deferred_actual_invariants;
+        size_t m_fulfilled_actual_invariant_count;
 
       public:
         explicit FnKDVS(VarKind var_kind);
 
       public:
         KdResult lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) override;
+      private:
+        KdResult help_eat_invariant(IsVCallableInvariant* new_fn_invariant);
 
       public:
         void print(printer::Printer& printer) const override;
@@ -423,13 +434,80 @@ namespace pdm::types {
     FnKDVS::FnKDVS(VarKind var_kind) 
     :   KindDependentVarSolver(var_kind, TypeKind::Fn) ,
         m_args(),
-        m_typeof_ret_tv(nullptr)
+        m_typeof_ret_tv(nullptr),
+        m_primary_formal_invariant(nullptr),
+        m_fulfilled_formal_invariant_count(0),
+        m_fulfilled_actual_invariant_count(0)
     {}
     KdResult FnKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
+        KdResult result = KdResult::NoChange;
+
         auto new_fn_invariant = dynamic_cast<IsVCallableInvariant*>(new_invariant);
         if (new_fn_invariant == nullptr) {
             return KdResult::TypingError;
         }
+
+        // We cannot handle any 'actual'-strength invariants before a 'formal'-strength invariant.
+        // We store all invariants in sorted arrays and then complete remaining elements once ready.
+
+        // sorting invariants by strength:
+        {
+            switch (new_fn_invariant->strength()) {
+                case VCallInvariantStrength::Formal:
+                {
+                    result = kdr_and(KdResult::UpdatedOrFresh, result);
+                    m_found_formal_invariants.push_back(new_fn_invariant);
+                    break;
+                }
+                case VCallInvariantStrength::Actual:
+                {
+                    result = kdr_and(KdResult::UpdatedOrFresh, result);
+                    m_deferred_actual_invariants.push_back(new_fn_invariant);
+                    break;
+                }
+            }
+        }
+
+        // if we found any formal invariants, we must use the first as the primary formal invariant:
+        if (m_primary_formal_invariant == nullptr) {
+            if (!m_found_formal_invariants.empty()) {
+                m_primary_formal_invariant = m_found_formal_invariants[0];
+                m_args = m_primary_formal_invariant->formal_args();
+                m_typeof_ret_tv = m_primary_formal_invariant->typeof_ret_tv();
+                result = kdr_and(result, KdResult::UpdatedOrFresh);
+            }
+        }
+
+        // if we have a [potentially brand new] primary formal invariant, we can check other formal and actual
+        // invariants now that properties are initialized.
+        if (m_primary_formal_invariant) {
+            // eating formal-strength invariants:
+            assert(!m_found_formal_invariants.empty());
+            {
+                size_t beg_ix = 1 + m_fulfilled_formal_invariant_count;
+                size_t end_ix = m_found_formal_invariants.size() - 1;
+                for (size_t i = beg_ix; i <= end_ix; i++) {
+                    IsVCallableInvariant *fn_invariant = m_found_formal_invariants[i];
+                    help_eat_invariant(fn_invariant);
+                }
+            }
+
+            // eating actual-strength invariants:
+            if (!m_deferred_actual_invariants.empty()) {
+                size_t beg_ix = m_fulfilled_actual_invariant_count;
+                size_t end_ix = m_deferred_actual_invariants.size() - 1;
+                for (size_t i = beg_ix; i <= end_ix; i++) {
+                    IsVCallableInvariant* fn_invariant = m_found_formal_invariants[i];
+                    help_eat_invariant(fn_invariant);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    KdResult FnKDVS::help_eat_invariant(IsVCallableInvariant* new_fn_invariant) {
+        KdResult res = KdResult::NoChange;
 
         // checking same arg count
         if (m_args.size() != new_fn_invariant->formal_args().size()) {
@@ -438,24 +516,21 @@ namespace pdm::types {
 
         // relating each arg:
         size_t args_count = m_args.size();
-        KdResult args_sp2res = KdResult::NoChange;
         for (size_t index = 0; index < args_count; index++) {
             VCallArg const& fn_invariant_fn_arg = new_fn_invariant->formal_args()[index];
-            FnKDVS::FnArg const& fn_kdvs_arg = m_args[index];
+            VCallArg const& fn_kdvs_arg = m_args[index];
 
             // checking same arg access spec:
             if (fn_invariant_fn_arg.varg_access_spec != fn_kdvs_arg.varg_access_spec) {
                 return KdResult::TypingError;
             } else {
                 if (new_fn_invariant->strength() == VCallInvariantStrength::Formal) {
-                    args_sp2res = kdr_and(
-                            args_sp2res,
-                            fn_invariant_fn_arg.typeof_arg_tv->higher_order_assume_equals(fn_kdvs_arg.typeof_arg_tv)
+                    res = kdr_and(res,
+                        fn_invariant_fn_arg.typeof_arg_tv->higher_order_assume_equals(fn_kdvs_arg.typeof_arg_tv)
                     );
                 } else if (new_fn_invariant->strength() == VCallInvariantStrength::Actual) {
-                    args_sp2res = kdr_and(
-                            args_sp2res,
-                            fn_invariant_fn_arg.typeof_arg_tv->higher_order_assume_subvar(fn_kdvs_arg.typeof_arg_tv)
+                    res = kdr_and(res,
+                        fn_invariant_fn_arg.typeof_arg_tv->higher_order_assume_subvar(fn_kdvs_arg.typeof_arg_tv)
                     );
                 } else {
                     return KdResult::CompilerError;
@@ -467,24 +542,31 @@ namespace pdm::types {
         TypeVar* fn_invariant_typeof_ret_tv = new_fn_invariant->typeof_ret_tv();
         TypeVar* fn_kdvs_typeof_ret_tv = m_typeof_ret_tv;
         if (new_fn_invariant->strength() == VCallInvariantStrength::Formal) {
-            return fn_invariant_typeof_ret_tv->higher_order_assume_equals(fn_kdvs_typeof_ret_tv);
+            res = kdr_and(res,
+                fn_invariant_typeof_ret_tv->higher_order_assume_equals(fn_kdvs_typeof_ret_tv)
+            );
         } else if (new_fn_invariant->strength() == VCallInvariantStrength::Actual) {
-            return fn_invariant_typeof_ret_tv->higher_order_assume_subvar(fn_kdvs_typeof_ret_tv);
+            res = kdr_and(res,
+                fn_invariant_typeof_ret_tv->higher_order_assume_subvar(fn_kdvs_typeof_ret_tv)
+            );
         } else {
             return KdResult::CompilerError;
         }
+
+        return res;
     }
 
     void FnKDVS::print(printer::Printer& printer) const {
-        help_print_common_and_start_indented_block(printer, "FieldCollection");
+        help_print_common_and_start_indented_block(printer, "Fn");
         {
+            // printer.print_newline();
             printer.print_cstr("- Args (");
             printer.print_uint_dec(m_args.size());
             printer.print_cstr(")");
             if (!m_args.empty()) {
                 printer.print_newline_indent();
                 for (size_t arg_index = 0; arg_index < m_args.size(); arg_index++) {
-                    FnArg const& arg = m_args[arg_index];
+                    VCallArg const& arg = m_args[arg_index];
 
                     // printing a list item prefix:
                     printer.print_cstr("- ");
@@ -521,10 +603,16 @@ namespace pdm::types {
                     }
                 }
                 printer.print_newline_deindent();
+            } else {
+                printer.print_newline();
             }
 
             printer.print_cstr("- Returns: ");
-            m_typeof_ret_tv->print_title(printer);
+            if (m_typeof_ret_tv) {
+                m_typeof_ret_tv->print_title(printer);
+            } else {
+                printer.print_cstr("<Unknown>");
+            }
         }
         printer.print_newline_deindent();
         printer.print_cstr("}");

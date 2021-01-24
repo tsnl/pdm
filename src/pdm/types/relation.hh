@@ -13,6 +13,7 @@
 
 #include "var.hh"
 #include "typeop_result.hh"
+#include "invariant.hh"
 
 //
 // forward declarations:
@@ -464,17 +465,17 @@ namespace pdm::types {
     };
     class VCallableRelation: public Relation {
       private:
-        VCallableRelationStrength    m_strength;
-        TypeVar*              m_fn_tv;
-        std::vector<TypeVar*> m_args_tvs;
-        TypeVar*              m_ret_tv;
+        VCallableRelationStrength m_strength;
+        TypeVar*                  m_fn_tv;
+        std::vector<VCallArg>     m_args;
+        TypeVar*                  m_ret_tv;
 
       protected:
-        VCallableRelation(VCallableRelationStrength strength, ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
+        VCallableRelation(VCallableRelationStrength strength, ast::Node* ast_node, TypeVar* fn_tv, std::vector<VCallArg>&& args, TypeVar* ret_tv)
         :   Relation(ast_node, "VCallableRelation"),
             m_strength(strength),
             m_fn_tv(fn_tv),
-            m_args_tvs(std::move(args_tvs)),
+            m_args(std::move(args)),
             m_ret_tv(ret_tv)
         {}
 
@@ -485,46 +486,45 @@ namespace pdm::types {
         TypeVar* fn_tv() const {
             return m_fn_tv;
         }
-        std::vector<TypeVar*> const& args_tvs() const {
-            return m_args_tvs;
+        std::vector<VCallArg> const& args() const {
+            return m_args;
         }
         TypeVar* ret_tv() const {
             return m_ret_tv;
         }
-
-      public:
-        bool on_assume_impl(types::Manager* manager) override;
     };
     class FormalVCallableRelation: public VCallableRelation {
       public:
-        FormalVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv);
+        FormalVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<VCallArg>&& args_tvs, TypeVar* ret_tv);
 
       public:
         bool on_assume_impl(types::Manager* manager) override;
     };
     class ActualVCallableRelation: public VCallableRelation {
       public:
-        ActualVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv);
+        ActualVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<VCallArg>&& args_tvs, TypeVar* ret_tv);
 
       public:
         bool on_assume_impl(types::Manager* manager) override;
     };
-    inline FormalVCallableRelation::FormalVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
+    inline FormalVCallableRelation::FormalVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<VCallArg>&& args_tvs, TypeVar* ret_tv)
     :   VCallableRelation(VCallableRelationStrength::Formal, ast_node, fn_tv, std::move(args_tvs), ret_tv)
     {}
-    inline ActualVCallableRelation::ActualVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
+    inline ActualVCallableRelation::ActualVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<VCallArg>&& args_tvs, TypeVar* ret_tv)
     :   VCallableRelation(VCallableRelationStrength::Actual, ast_node, fn_tv, std::move(args_tvs), ret_tv)
     {}
 
     // if-then, if-then-else:
     class IfThenRelation: public Relation {
       private:
+        TypeVar* m_output_tv;
         TypeVar* m_cond;
         TypeVar* m_then;
 
       public:
-        IfThenRelation(ast::Node* ast_node, TypeVar* cond, TypeVar* then)
+        IfThenRelation(ast::Node* ast_node, TypeVar* output_tv, TypeVar* cond, TypeVar* then)
         : Relation(ast_node, "IfThenRelation"),
+          m_output_tv(output_tv),
           m_cond(cond),
           m_then(then) {}
 
@@ -533,13 +533,15 @@ namespace pdm::types {
     };
     class IfThenElseRelation: public Relation {
       private:
+        TypeVar* m_output;
         TypeVar* m_cond;
         TypeVar* m_then;
         TypeVar* m_else;
 
       public:
-        IfThenElseRelation(ast::Node* ast_node, TypeVar* cond_tv, TypeVar* then_tv, TypeVar* else_tv)
+        IfThenElseRelation(ast::Node* ast_node, TypeVar* output_tv, TypeVar* cond_tv, TypeVar* then_tv, TypeVar* else_tv)
         : Relation(ast_node, "IfThenElseRelation"),
+          m_output(output_tv),
           m_cond(cond_tv),
           m_then(then_tv),
           m_else(else_tv) {}

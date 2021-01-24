@@ -186,8 +186,11 @@ namespace pdm::ast {
             }
             case Kind::LambdaExp:
             {
-                LambdaExp* lambda_exp = dynamic_cast<LambdaExp*>(node);
+                auto lambda_exp = dynamic_cast<LambdaExp*>(node);
                 ok = visit(lambda_exp->lhs_vpattern()) && ok;
+                if (lambda_exp->opt_ret_typespec()) {
+                    ok = visit(lambda_exp->opt_ret_typespec()) && ok;
+                }
                 ok = visit(lambda_exp->rhs_body()) && ok;
                 break;
             }

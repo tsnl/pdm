@@ -19,16 +19,16 @@ namespace pdm::types {
         std::set<KindDependentInvariant*> m_added_invariants;
         VarKind m_var_kind;
         TypeKind m_required_type_kind;
-        
-      protected:
-        bool check_if_new_then_add_invariant(KindDependentInvariant* invariant);
 
       protected:
         inline KindDependentVarSolver(VarKind var_kind, TypeKind type_kind);
         virtual ~KindDependentVarSolver() = default;
 
-      private:
+      // use 'try_add_invariant' to transfer invariants from Vars (plural, incl. sub- and sup-)
+      // to solution set.
+      public:
         KdResult try_add_invariant(KindDependentInvariant* invariant);
+      private:
         virtual KdResult lazy_try_add_invariant_impl(KindDependentInvariant* invariant) = 0;
 
       public:
