@@ -11,28 +11,30 @@
 #include "invariant.hh"
 #include "typeop_result.hh"
 
+// TODO: insert KDVS creation between SP1 and SP2... ;-;
+
 namespace pdm::types {
 
-    SolvePhase2_Result Var::assume_invariant_holds(Invariant* invariant) {
+    KdResult Var::assume_invariant_holds(Invariant* invariant) {
         return assume_invariant_holds_impl(invariant, false);
     }
-    SolvePhase2_Result Var::assume_invariant_holds__override_fixed_to_init(Invariant* invariant) {
+    KdResult Var::assume_invariant_holds__override_fixed_to_init(Invariant* invariant) {
         return assume_invariant_holds_impl(invariant, true);
     }
-    SolvePhase2_Result Var::higher_order_assume_equals(Var* var) {
-        SolvePhase2_Result res1 = help_assume_subvar(this, var, true);
-        SolvePhase2_Result res2 = help_assume_subvar(var, this, true);
-        return sp2res_and(res1, res2);
+    KdResult Var::higher_order_assume_equals(Var* var) {
+        KdResult res1 = help_assume_subvar(this, var, true);
+        KdResult res2 = help_assume_subvar(var, this, true);
+        return kdr_and(res1, res2);
     }
-    SolvePhase2_Result Var::higher_order_assume_subvar(Var* var) {
+    KdResult Var::higher_order_assume_subvar(Var* var) {
         return help_assume_subvar(this, var, true);
     }
 
-    SolvePhase2_Result Var::assume_invariant_holds_impl(Invariant* invariant, bool override_fixed) {
+    KdResult Var::assume_invariant_holds_impl(Invariant* invariant, bool override_fixed) {
         // if this invariant was not intended for a Var of this VarKind, then meta-type error:
         if (var_kind() != invariant->domain_var_kind()) {
             // todo: intercept templates here-- get their ret_tv and type that instead.
-            return SolvePhase2_Result::TypingError;
+            return KdResult::TypingError;
         }
 
         // unless NotImplemented, AssumeOp will return 'Applied' from here.
@@ -54,12 +56,12 @@ namespace pdm::types {
             KindInvariant* kind_invariant = dynamic_cast<KindInvariant*>(invariant);
             if (kind_invariant != nullptr) {
                 if (!change_forbidden) {
-                    TypeKindBitset new_kind_bitset = m_assumed_kind_bitset | kind_invariant->allowed_type_kinds_bitset();
-                    if (new_kind_bitset == m_assumed_kind_bitset) {
-                        return SolvePhase2_Result::NoChange;
+                    TypeKindBitset supervar_kind_bitset = m_assumed_kind_bitset | kind_invariant->allowed_type_kinds_bitset();
+                    if (supervar_kind_bitset == m_assumed_kind_bitset) {
+                        return KdResult::NoChange;
                     } else {
-                        m_assumed_kind_bitset = new_kind_bitset;
-                        return SolvePhase2_Result::UpdatedOrFresh;
+                        m_assumed_kind_bitset = supervar_kind_bitset;
+                        return KdResult::UpdatedOrFresh;
                     }
                 }
             } 
@@ -92,12 +94,12 @@ namespace pdm::types {
         // also adding a kind-invariant corresponding to the assumed kind.
         // - NOTE: if change forbidden => ignore ALL kind-dependent invariants.
         if (change_forbidden) {
-            return SolvePhase2_Result::NoChange;
+            return KdResult::NoChange;
         } else {
             KindDependentInvariant* kind_dependent_invariant = nullptr;
             if ((kind_dependent_invariant = dynamic_cast<KindDependentInvariant*>(invariant)) != nullptr) {
                 // *sweats in bad memory management*
-                SolvePhase2_Result result = assume_invariant_holds_impl(new KindInvariant(
+                KdResult result = assume_invariant_holds_impl(new KindInvariant(
                     invariant->parent_relation(), 
                     invariant->domain_var_kind(), 
                     tk_bits(kind_dependent_invariant->required_type_kind())
@@ -111,7 +113,7 @@ namespace pdm::types {
             }
         }
         
-        return SolvePhase2_Result::TypingError;
+        return KdResult::TypingError;
     }
 
     //
@@ -120,7 +122,7 @@ namespace pdm::types {
 
     // phase 1:
     // - check VarKind against TypeKind bitset
-    SolvePhase1_Result Var::solve_phase1() {
+    KcResult Var::kind_check() {
         switch (var_kind())
         {
             case VarKind::Type:
@@ -131,70 +133,150 @@ namespace pdm::types {
                     case TypeVarSolnBill::Fixed:
                     case TypeVarSolnBill::Monotype:
                     {
-                        return help_check_phase1_type_bitset_for_mixed_kinds();
+                        return help_kind_check_for_mixed_types();
                     }
                     case TypeVarSolnBill::ProxyForMany:
                     {
                         // ignore any mixed-kind errors
-                        return SolvePhase1_Result::Ok;
+                        return KcResult::Ok;
                     }
                 }
             }
             case VarKind::Template_RetValue:
             case VarKind::Template_RetType:
             {
-                return help_check_phase1_type_bitset_for_mixed_kinds();
+                return help_kind_check_for_mixed_types();
             }
             case VarKind::Class:
             case VarKind::Template_RetClass:
             {
                 // mixed-kind ok, since disjoint sets ok
-                return SolvePhase1_Result::Ok;
+                return KcResult::Ok;
             }
         }
     }
 
-    SolvePhase1_Result Var::help_check_phase1_type_bitset_for_mixed_kinds() {
+    KcResult Var::help_kind_check_for_mixed_types() {
         // verifying only a single 'kind' bit is set.
         // https://stackoverflow.com/questions/51094594/how-to-check-if-exactly-one-bit-is-set-in-an-int/51094793
         // - all po2 -1 has 1s in every lower position. po2 has 0s in every lower position. 
         // - '&' them. if (0), then po2.
         TypeKindBitset bitset = m_assumed_kind_bitset;
         if (bitset == 0) {
-            return SolvePhase1_Result::InsufficientInfo;
+            return KcResult::InsufficientInfo;
         } else {
             if (exactly_1_bit_is_1_in_bitset(bitset)) {
-                return SolvePhase1_Result::Ok;
+                return KcResult::Ok;
             } else {
-                return SolvePhase1_Result::Error_MixedKind;
+                return KcResult::Error_MixedKind;
             }
         }
     }
 
-    SolvePhase2_Result Var::solve_phase2_iter() {
-        SolvePhase2_Result iter_sir = solve_phase2_iter_impl();
+    KdResult Var::update_kd_invariants() {
+        KdResult iter_sir = update_kd_invariants_impl();
         m_prev_solve_iter_result = iter_sir;
         return iter_sir;
     }
-    SolvePhase2_Result Var::solve_phase2_iter_impl() {
-        if (m_prev_solve_iter_result == SolvePhase2_Result::NoChange) {
-            return SolvePhase2_Result::NoChange;
+    KdResult Var::update_kd_invariants_impl() {
+        if (m_prev_solve_iter_result == KdResult::NoChange) {
+            return KdResult::NoChange;
         }
-        if (m_prev_solve_iter_result == SolvePhase2_Result::TypingError) {
-            return SolvePhase2_Result::TypingError;
+        if (m_prev_solve_iter_result == KdResult::TypingError) {
+            return KdResult::TypingError;
         }
-        if (m_prev_solve_iter_result == SolvePhase2_Result::CompilerError) {
-            return SolvePhase2_Result::CompilerError;
+        if (m_prev_solve_iter_result == KdResult::CompilerError) {
+            return KdResult::CompilerError;
         }
         
-        assert(m_prev_solve_iter_result == SolvePhase2_Result::UpdatedOrFresh);
+        assert(m_prev_solve_iter_result == KdResult::UpdatedOrFresh);
 
-        // since the last update, there have been (1) new subvars, and (2) new invariants.
+        // since the last update, there have been (1) new supervars, (2) new subvars, and (3) new invariants.
+
+        // start by assuming no change has occurred. If any changes are applied,
+        // they set 'kd_res'.
+        KdResult kd_res = KdResult::NoChange;
+
+        // unify kind bitsets based on super-vars and subvars:
+        {
+            auto const unify_kind_bitset_from = [this, &kd_res] (std::vector<Var*> const& related_vars) {
+                // must update from all related vars since any could have gained new kind bits since the
+                // last iteration.
+                TypeKindBitset related_kind_bitset = this->m_assumed_kind_bitset;
+                size_t supervar_count = related_vars.size();
+                for (size_t index = 0; index < supervar_count; index++) {
+                    related_kind_bitset |= related_vars[index]->m_assumed_kind_bitset;
+                }
+                return related_kind_bitset;
+            };
+            // applying all supervar bitsets to own, calculating an SP2_Result accordingly:
+            TypeKindBitset new_kind_bitset = m_assumed_kind_bitset;
+            new_kind_bitset |= unify_kind_bitset_from(m_assumed_supervars);
+            new_kind_bitset |= unify_kind_bitset_from(m_assumed_subvars);
+            if (new_kind_bitset != m_assumed_kind_bitset) {
+                // supervar_kind_bitset has expanded.
+                m_assumed_kind_bitset = new_kind_bitset;
+
+                // running an SP1 pass to check validity.
+                KcResult kc_res = kind_check();
+                switch (kc_res)
+                {
+                    // if still insufficient info or OK,
+                    //   we've updated successfully.
+                    case KcResult::InsufficientInfo:
+                    case KcResult::Ok:
+                    {
+                        kd_res = KdResult::UpdatedOrFresh;
+                        break;
+                    }
+
+                    // if mixed kinds, then typing error.
+                    case KcResult::Error_MixedKind:
+                    {
+                        kd_res = KdResult::TypingError;
+                        break;
+                    }
+                }
+            } else {
+                // kd_res remains at NoChange.
+            }
+        }
+        if (kdr_is_error(kd_res)) {
+            // early return if error already detected
+            return kd_res;
+        } else {
+            // todo: update/create KDVS
+            if (m_kdvs == nullptr) {
+                NewKDVS kdvs_create_info = try_new_kdvs_for(m_var_kind, m_assumed_kind_bitset);
+                switch (kdvs_create_info.result)
+                {
+                    case KcResult::InsufficientInfo:
+                    {
+                        // do nothing; kdvs stays at nullptr.
+                        break;
+                    }
+                    case KcResult::Ok:
+                    {
+                        // create a KDVS!
+                        m_kdvs = kdvs_create_info.kdvs;
+                        kd_res = kdr_and(kd_res, KdResult::UpdatedOrFresh);
+                        break;
+                    }
+                    case KcResult::Error_MixedKind:
+                    {
+                        // error in kind-check above!
+                        std::cout << "!!- Faulty kind-check detected in Var::update_kd_invariants_impl" << std::endl;
+                        kd_res = kdr_and(kd_res, KdResult::CompilerError);
+                        break;
+                    }
+                }
+            }
+        }
+
         // - fresh subvars need all invariants, old and new.
         // - old subvars only need new invariants.
         // - after propagating updates, need to update bounds for next iter.
         {
-            SolvePhase2_Result result = SolvePhase2_Result::NoChange;
             size_t old_invariant_count = m_sp2_propagated_sofar_kd_invariant_count;
             size_t old_subvar_count = m_sp2_propagated_sofar_subvar_count;
 
@@ -207,7 +289,7 @@ namespace pdm::types {
                     new_invariant_index++
                 ) {
                     Invariant* new_invariant = m_assumed_kind_dependent_invariants[new_invariant_index];
-                    result = sp2res_and(result, old_subvar->assume_invariant_holds(new_invariant));
+                    kd_res = kdr_and(kd_res, old_subvar->assume_invariant_holds(new_invariant));
                 }
             }
             
@@ -215,7 +297,7 @@ namespace pdm::types {
             for (size_t new_subvar_index = old_subvar_count; new_subvar_index < m_assumed_subvars.size(); new_subvar_index++) {
                 Var* new_subvar = m_assumed_subvars[new_subvar_index];
                 for (Invariant* invariant: m_assumed_kind_dependent_invariants) {
-                    result = sp2res_and(new_subvar->assume_invariant_holds(invariant), result);
+                    kd_res = kdr_and(new_subvar->assume_invariant_holds(invariant), kd_res);
                 }
             }
 
@@ -224,9 +306,8 @@ namespace pdm::types {
             m_sp2_propagated_sofar_kd_invariant_count = m_assumed_kind_dependent_invariants.size();
             m_sp2_propagated_sofar_subvar_count = m_assumed_subvars.size();
         }
-
-        std::cout << "NotImplemented: solve_phase2_iter_impl" << std::endl;
-        return SolvePhase2_Result::TypingError;
+        
+        return kd_res;
     }
 
     TestOpResult Var::test(Invariant* invariant) {
@@ -234,8 +315,8 @@ namespace pdm::types {
         return TestOpResult::ErrorOccurred;
     }
     
-    SolvePhase2_Result Var::help_assume_subvar(Var* subvar, Var* supervar, bool is_second_order_invariant) {
-        SolvePhase2_Result assume_op_result = SolvePhase2_Result::NoChange;
+    KdResult Var::help_assume_subvar(Var* subvar, Var* supervar, bool is_second_order_invariant) {
+        KdResult assume_op_result = KdResult::NoChange;
 
         {   // inserting super-var into sub-var:
             bool existing_supervar_matches_supervar = false;
@@ -245,39 +326,39 @@ namespace pdm::types {
                     break;
                 }
             }
-            if (existing_supervar_matches_supervar) {
+            if (!existing_supervar_matches_supervar) {
                 subvar->m_assumed_supervars.push_back(supervar);
-                assume_op_result = SolvePhase2_Result::UpdatedOrFresh;
+                assume_op_result = KdResult::UpdatedOrFresh;
             }
         }
 
         {   // inserting sub-var into super-var:
-            bool existing_subvar_matches_subvar = false;
+            bool existing_subvar_matches_supervar = false;
             for (Var* existing_subvar: supervar->m_assumed_subvars) {
                 if (existing_subvar == supervar) {
-                    existing_subvar_matches_subvar = true;
+                    existing_subvar_matches_supervar = true;
                     break;
                 }
             }
-            if (existing_subvar_matches_subvar) {
-                subvar->m_assumed_supervars.push_back(supervar);
-                assume_op_result = SolvePhase2_Result::UpdatedOrFresh;
+            if (!existing_subvar_matches_supervar) {
+                supervar->m_assumed_subvars.push_back(subvar);
+                assume_op_result = KdResult::UpdatedOrFresh;
             }
         }
         
         return assume_op_result;
     }
 
-    SolvePhase2_Result TypeVar::initial_sp2_result_for_soln_bill(TypeVarSolnBill soln_bill) {
+    KdResult TypeVar::initial_sp2_result_for_soln_bill(TypeVarSolnBill soln_bill) {
         switch (soln_bill) {
             case TypeVarSolnBill::Fixed: 
             {
-                return SolvePhase2_Result::NoChange;
+                return KdResult::NoChange;
             }
             case TypeVarSolnBill::Monotype:
             case TypeVarSolnBill::ProxyForMany:
             {
-                return SolvePhase2_Result::UpdatedOrFresh;
+                return KdResult::UpdatedOrFresh;
             }
         }
     }
@@ -287,7 +368,7 @@ namespace pdm::types {
     //
 
     void Var::print(printer::Printer& p) const {
-        help_print_title(p);
+        print_title(p);
         p.print_cstr(" {");
         p.print_newline_indent();
         {
@@ -300,13 +381,19 @@ namespace pdm::types {
             help_print_assumed_subvars(p);
             p.print_newline();
             help_print_assumed_supervars(p);
+            p.print_newline();
+            if (m_opt_client_ast_node != nullptr) {
+                help_print_opt_client_ast_node(p);
+                p.print_newline();
+            }
+            help_print_kdvs(p);
         }
         p.print_newline_deindent();
         p.print_cstr("}");
         p.print_newline();
     }
 
-    void Var::help_print_title(printer::Printer& p) const {
+    void Var::print_title(printer::Printer& p) const {
         // printing a prefix denoting var_kind():
         switch (var_kind())
         {
@@ -354,15 +441,15 @@ namespace pdm::types {
         p.print_cstr("assume TypeKinds");
         if (m_assumed_kind_bitset != 0) {
             p.print_newline();
-            if (m_assumed_kind_bitset & tk_bits(TypeKind::Void))        { p.print_cstr("| Void "); }
-            if (m_assumed_kind_bitset & tk_bits(TypeKind::String))      { p.print_cstr("| String "); }
-            if (m_assumed_kind_bitset & tk_bits(TypeKind::SignedInt))   { p.print_cstr("| SignedInt "); }
-            if (m_assumed_kind_bitset & tk_bits(TypeKind::UnsignedInt)) { p.print_cstr("| UnsignedInt "); }
-            if (m_assumed_kind_bitset & tk_bits(TypeKind::Float))       { p.print_cstr("| Float "); }
-            if (m_assumed_kind_bitset & tk_bits(TypeKind::Struct))      { p.print_cstr("| Struct "); }
-            if (m_assumed_kind_bitset & tk_bits(TypeKind::Enum))        { p.print_cstr("| Enum "); }
-            if (m_assumed_kind_bitset & tk_bits(TypeKind::Module))      { p.print_cstr("| Module "); }
-            if (m_assumed_kind_bitset & tk_bits(TypeKind::Fn))          { p.print_cstr("| Fn "); }
+            auto tk_index_first = static_cast<TypeKindBitset>(TypeKind::META_Min);
+            auto tk_index_last = static_cast<TypeKindBitset>(TypeKind::META_Max);
+            for (auto tk_index = tk_index_first; tk_index <= tk_index_last; tk_index++) {
+                auto tk = static_cast<TypeKind>(tk_index);
+                if (m_assumed_kind_bitset & tk_bits(tk)) {
+                    p.print_cstr("| ");
+                    p.print_cstr(type_kind_as_str(tk));
+                }
+            }
         } else {
             p.print_cstr(": None");
         }
@@ -400,7 +487,7 @@ namespace pdm::types {
                 Var* assumed_subvar = m_assumed_subvars[index];
                 p.print_newline();
                 p.print_cstr("- ");
-                assumed_subvar->help_print_title(p);
+                assumed_subvar->print_title(p);
             }
         }
     }
@@ -412,11 +499,19 @@ namespace pdm::types {
             for (size_t index = 0; index < m_assumed_supervars.size(); index++) {
                 Var* assumed_supervar = m_assumed_supervars[index];
                 p.print_cstr("- ");
-                assumed_supervar->help_print_title(p);
+                assumed_supervar->print_title(p);
                 if (index+1 != m_assumed_supervars.size()) {
                     p.print_newline();
                 }
             }
+        }
+    }
+    void Var::help_print_kdvs(printer::Printer& p) const {
+        p.print_cstr("kdvs: ");
+        if (m_kdvs != nullptr) {
+            m_kdvs->print(p);
+        } else {
+            p.print_cstr("None");
         }
     }
     void Var::help_print_opt_client_ast_node(printer::Printer& p) const {
@@ -425,7 +520,6 @@ namespace pdm::types {
             p.print_cstr(ast::kind_as_text(m_opt_client_ast_node->kind()));
             p.print_cstr(" @ ");
             p.print_uint_hex(reinterpret_cast<u64>(m_opt_client_ast_node));
-            p.print_newline();
         }
     }
 
@@ -537,25 +631,9 @@ namespace pdm::types {
     {
         assume_invariant_holds__override_fixed_to_init(new KindInvariant(nullptr, VarKind::Class, tk_bits(TypeKind::UnsignedInt)));
     }
-    IntFixedClassVar::IntFixedClassVar()
-    :   FixedClassVar(std::move(std::string("FixedClass:Int")))
-    {
-        assume_invariant_holds__override_fixed_to_init(new KindInvariant(nullptr, VarKind::Class, tk_bits(TypeKind::SignedInt) | tk_bits(TypeKind::UnsignedInt)));
-    }
     FloatFixedClassVar::FloatFixedClassVar()
     :   FixedClassVar(std::move(std::string("FixedClass:Float")))
     {
         assume_invariant_holds__override_fixed_to_init(new KindInvariant(nullptr, VarKind::Class, tk_bits(TypeKind::Float)));
-    }
-    NumberFixedClassVar::NumberFixedClassVar()
-    :   FixedClassVar(std::move(std::string("FixedClass:Number")))
-    {
-        assume_invariant_holds__override_fixed_to_init(
-            new KindInvariant(
-                nullptr, 
-                VarKind::Class, 
-                tk_bits(TypeKind::SignedInt) | tk_bits(TypeKind::UnsignedInt) | tk_bits(TypeKind::Float)
-            )
-        );
     }
 }

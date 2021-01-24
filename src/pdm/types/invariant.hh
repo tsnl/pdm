@@ -9,6 +9,7 @@
 #include "pdm/core/config.hh"
 #include "pdm/core/integer.hh"
 #include "pdm/core/intern.hh"
+#include "pdm/printer/printer.hh"
 
 #include "pdm/ast/arg/varg.hh"
 
@@ -52,6 +53,9 @@ namespace pdm::types {
         std::string const& name() const;
         Var* opt_supermost_arg_var() const;
         void supermost_arg(Var* supermost_arg);
+
+      public:
+        virtual void print(printer::Printer& printer) const = 0;
     };
     inline Invariant::Invariant(Relation* parent_relation, VarKind domain_var_kind, std::string name)
     :   m_parent_relation(parent_relation),
@@ -100,6 +104,9 @@ namespace pdm::types {
       public:
         pdm::u64 allowed_type_kinds_bitset() const;
         bool type_kind_allowed(TypeKind type_kind) const;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
 
     inline KindInvariant::KindInvariant(Relation* parent_relation, VarKind domain_var_kind, pdm::u64 allowed_kinds_bitset)
@@ -122,6 +129,9 @@ namespace pdm::types {
 
       public:
         TypeVar* supertype_tv() const;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
 
     inline SubtypeOfInvariant::SubtypeOfInvariant(Relation* parent_relation, TypeVar* supertype_tv)
@@ -141,6 +151,9 @@ namespace pdm::types {
 
       public:
         ClassVar* superclass_cv() const;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
 
     inline SubclassOfInvariant::SubclassOfInvariant(Relation* parent_relation, ClassVar* superclass_cv)
@@ -160,6 +173,9 @@ namespace pdm::types {
 
       public:
         TypeVar* member_tv() const;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
     inline ClassOfInvariant::ClassOfInvariant(Relation* parent_relation, TypeVar* member_tv)
     :   CommonInvariant(parent_relation, VarKind::Class, "ClassOfInvariant"),
@@ -195,6 +211,9 @@ namespace pdm::types {
     class IsVoidInvariant: public KindDependentInvariant {
       public:
         IsVoidInvariant(Relation* parent_relation, VarKind domain_var_kind);
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
     inline IsVoidInvariant::IsVoidInvariant(Relation* parent_relation, VarKind domain_var_kind)
     :   KindDependentInvariant(parent_relation, domain_var_kind, TypeKind::Void, "IsVoid")
@@ -204,6 +223,9 @@ namespace pdm::types {
     class IsStringInvariant: public KindDependentInvariant {
       public:
         IsStringInvariant(Relation* parent_relation, VarKind domain_var_kind);
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
     inline IsStringInvariant::IsStringInvariant(Relation* parent_relation, VarKind domain_var_kind)
     :   KindDependentInvariant(parent_relation, domain_var_kind, TypeKind::String, "IsString")
@@ -223,6 +245,9 @@ namespace pdm::types {
         inline bool uses_sign_extension() const;
         inline int min_width_in_bits() const;
         inline int max_width_in_bits() const;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
     inline IsIntInvariant::IsIntInvariant(Relation* parent_relation, VarKind domain_var_kind, int min_width_in_bits, int max_width_in_bits, bool uses_sign_extension)
     :   KindDependentInvariant(
@@ -260,6 +285,9 @@ namespace pdm::types {
       public:
         inline int min_width_in_bits() const;
         inline int max_width_in_bits() const;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
     inline IsFloatInvariant::IsFloatInvariant(Relation* parent_relation, VarKind domain_var_kind, int opt_min_width_in_bits, int opt_max_width_in_bits)
     :   KindDependentInvariant(
@@ -288,6 +316,9 @@ namespace pdm::types {
 
       public:
         inline std::vector<TypeVar*> const& typeof_items_tvs() const;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
     inline IsTupleInvariant::IsTupleInvariant(Relation* parent_relation, VarKind domain_var_kind, std::vector<TypeVar*>&& typeof_items_tvs)
     :   KindDependentInvariant(parent_relation, domain_var_kind, TypeKind::Tuple, "IsTuple"),
@@ -315,14 +346,23 @@ namespace pdm::types {
     class IsStructInvariant: public IsFieldCollectionInvariant {
       public:
         IsStructInvariant(Relation* parent_relation, VarKind domain_var_kind, std::string opt_name_suffix = "");
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
     class IsEnumInvariant: public IsFieldCollectionInvariant {
       public:
         IsEnumInvariant(Relation* parent_relation, VarKind domain_var_kind, std::string opt_name_suffix = "");
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
     class IsModuleInvariant: public IsFieldCollectionInvariant {
       public:
         IsModuleInvariant(Relation* parent_relation, VarKind domain_var_kind);
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
     
     // array
@@ -335,6 +375,9 @@ namespace pdm::types {
 
       public:
         inline TypeVar* item_tv() const;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
     inline IsArrayInvariant::IsArrayInvariant(Relation* parent_relation, VarKind domain_var_kind, TypeVar* field_tv)
     :   KindDependentInvariant(parent_relation, domain_var_kind, TypeKind::Tuple, "Array")

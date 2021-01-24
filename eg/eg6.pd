@@ -1,15 +1,17 @@
 # Values as template parameters:
 
---- Arrays ---
+mod Arrays {
 
-Array [T Any, n Int32] = {
-    # ...
-};
+    Array [T Any, n Int32] = {
+        # ...
+    };
 
-map [T Any, U Any, n Int32] = fn (f, a Array[T,n]) -> Array[U,n] {
-    # ...
-};
+    map [T Any, U Any, n Int32] = fn (f, a Array[T,n]) -> Array[U,n] {
+        # ...
+    };
 
-nmap [T Any, U Any, n Int32] = fn (f Fn[T,U], a Array[T,n]) -> Array[U,n] {
-    # ...
+    nmap [T Any, U Any, n Int32] = fn (f Fn[T,U], a Array[T,n]) -> Array[U,n] {
+        # ...
+    };
+
 };

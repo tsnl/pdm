@@ -16,21 +16,25 @@ import Deque from "basic.pd" type "script/fs";
 import Vector from "basic.pd" type "script/fs";
 import Eg3 from "eg3.pd"   type "script/fs";
 
---- Vehicle ---
+mod Vehicle {
 
-Car = {
-    name Text,
-    price Int32
-};
-new = fn (name Text, price Int32) -> Car {
-    (name, price)
-};
-
---- Level1 ---
-
-sub damage {
-    wearAndTear = fn (inout car eg3.Car, dsec Float32) {
-        val fancyScoreDamagePerSec = 1.2;
-        set car.fancyScore = car.fancyScore - convert[UInt32](fancyScoreDamagePerSec * dsec);
+    Car = {
+        name Text,
+        price Int32
     };
-};
+    new = fn (name Text, price Int32) -> Car {
+        (name, price)
+    };
+
+}
+
+mod Level1 {
+
+    sub damage {
+        wearAndTear = fn (inout car eg3.Car, dsec Float32) {
+            val fancyScoreDamagePerSec = 1.2;
+            set car.fancyScore = car.fancyScore - convert[UInt32](fancyScoreDamagePerSec * dsec);
+        };
+    };
+
+}

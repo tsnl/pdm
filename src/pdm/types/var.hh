@@ -48,6 +48,7 @@ namespace pdm::types {
         // all applied invariants stored as common or kind-dependent.
         std::vector<CommonInvariant*> m_assumed_common_invariants;
         std::vector<KindDependentInvariant*> m_assumed_kind_dependent_invariants;
+        size_t m_applied_kd_invariant_count;
 
         // (common attributes)
         // common invariants broken into a bitset, subvars, and supervars:
@@ -56,18 +57,20 @@ namespace pdm::types {
         std::vector<Var*> m_assumed_supervars;
         size_t m_sp2_propagated_sofar_subvar_count;
         size_t m_sp2_propagated_sofar_kd_invariant_count;
+        size_t m_sp2_propagated_sofar_supervar_count;
 
         // (kind-dependent attributes)
         // based on common attributes, create a kind-dependent var solver subclass:
-        KindDependentVarSolver* m_kd_var_solver;
+        KindDependentVarSolver* m_kdvs;
 
         // for each solution iter, we cache the previous iter's result:
         Type* m_opt_type_soln;
-        SolvePhase2_Result m_initial_solve_iter_result;
-        SolvePhase2_Result m_prev_solve_iter_result;
+        KdResult m_initial_solve_iter_result;
+        KdResult m_prev_solve_iter_result;
 
+      // constructor/dtor:
       protected:
-        Var(std::string&& name, ast::Node* opt_client_ast_node, VarKind var_kind, SolvePhase2_Result default_solve_iter_result);
+        Var(std::string&& name, ast::Node* opt_client_ast_node, VarKind var_kind, KdResult default_solve_iter_result);
 
         virtual ~Var() {}
 
@@ -86,56 +89,60 @@ namespace pdm::types {
       // - assume updates the IntervalSet representation
       // - solve (called after all 'assume')
       public:
-        SolvePhase2_Result assume_invariant_holds(Invariant* invariant);
-        SolvePhase2_Result assume_invariant_holds__override_fixed_to_init(Invariant* invariant);
-        SolvePhase2_Result higher_order_assume_equals(Var* var);
-        SolvePhase2_Result higher_order_assume_subvar(Var* var);
+        KdResult assume_invariant_holds(Invariant* invariant);
+        KdResult assume_invariant_holds__override_fixed_to_init(Invariant* invariant);
+        KdResult higher_order_assume_equals(Var* var);
+        KdResult higher_order_assume_subvar(Var* var);
       private:
-        SolvePhase2_Result assume_invariant_holds_impl(Invariant* invariant, bool override_fixed);
+        KdResult assume_invariant_holds_impl(Invariant* invariant, bool override_fixed);
 
       // Solving: Phase 1 (SP1)
       public:
-        SolvePhase1_Result solve_phase1();
+        KcResult kind_check();
       private:
-        SolvePhase1_Result help_check_phase1_type_bitset_for_mixed_kinds();
+        KcResult help_kind_check_for_mixed_types();
 
       // Solving: Phase 2 (SP2)
       public:
-        SolvePhase2_Result solve_phase2_iter();
+        KdResult update_kd_invariants();
       private:
-        SolvePhase2_Result solve_phase2_iter_impl();
+        KdResult update_kd_invariants_impl();
 
       public:
         TestOpResult test(Invariant* invariant);
 
       private:
-        static SolvePhase2_Result help_assume_subvar(Var* subvar, Var* supervar, bool is_second_order_invariant);
+        static KdResult help_assume_subvar(Var* subvar, Var* supervar, bool is_second_order_invariant);
 
       // debug printing:
       public:
         void print(printer::Printer& p) const;
+        void print_title(printer::Printer& p) const;
       private:
-        void help_print_title(printer::Printer& p) const;
         void help_print_assumed_kind_bitset(printer::Printer& p) const;
         void help_print_assumed_common_invariants(printer::Printer& p) const;
         void help_print_assumed_kind_dependent_invariants(printer::Printer& p) const;
         void help_print_assumed_subvars(printer::Printer& p) const;
         void help_print_assumed_supervars(printer::Printer& p) const;
+        void help_print_kdvs(printer::Printer& p) const;
         void help_print_opt_client_ast_node(printer::Printer& p) const;
     };
-    inline Var::Var(std::string&& name, ast::Node* opt_client_ast_node, VarKind var_kind, SolvePhase2_Result initial_solve_iter_result)
+    inline Var::Var(std::string&& name, ast::Node* opt_client_ast_node, VarKind var_kind, KdResult initial_solve_iter_result)
     :   m_name(std::move(name)),
         m_opt_client_ast_node(opt_client_ast_node),
         m_var_kind(var_kind),
         m_assumed_common_invariants(),
         m_assumed_kind_dependent_invariants(),
+        m_applied_kd_invariant_count(0),
         m_assumed_kind_bitset(0),
         m_assumed_subvars(),
         m_assumed_supervars(),
         m_sp2_propagated_sofar_subvar_count(0),
         m_sp2_propagated_sofar_kd_invariant_count(0),
+        m_sp2_propagated_sofar_supervar_count(0),
         m_initial_solve_iter_result(initial_solve_iter_result),
-        m_prev_solve_iter_result(initial_solve_iter_result)
+        m_prev_solve_iter_result(initial_solve_iter_result),
+        m_kdvs(nullptr)
     {}
     inline std::string const& Var::name() const {
         return m_name;
@@ -159,7 +166,7 @@ namespace pdm::types {
         return m_assumed_supervars;
     }
     inline bool Var::is_constant() const {
-        return m_initial_solve_iter_result == SolvePhase2_Result::NoChange;
+        return m_initial_solve_iter_result == KdResult::NoChange;
     }
 
     // typevar:
@@ -177,7 +184,7 @@ namespace pdm::types {
         inline TypeVar(std::string&& name, Type* opt_fixed_soln, ast::Node* opt_client_ast_node, TypeVarSolnBill soln_bill);
 
       private:
-        static SolvePhase2_Result initial_sp2_result_for_soln_bill(TypeVarSolnBill soln_bill);
+        static KdResult initial_sp2_result_for_soln_bill(TypeVarSolnBill soln_bill);
 
       // public getters:
       public:
@@ -251,9 +258,9 @@ namespace pdm::types {
     };
     class ClassVar: public Var {
       protected:
-        inline ClassVar(std::string&& name, ast::Node* client_ast_node, SolvePhase2_Result sp2_result);
+        inline ClassVar(std::string&& name, ast::Node* client_ast_node, KdResult sp2_result);
     };
-    inline ClassVar::ClassVar(std::string&& name, ast::Node* client_ast_node, SolvePhase2_Result sp2_result)
+    inline ClassVar::ClassVar(std::string&& name, ast::Node* client_ast_node, KdResult sp2_result)
     :   Var(std::move(name), client_ast_node, VarKind::Class, sp2_result)
     {}
 
@@ -262,7 +269,7 @@ namespace pdm::types {
         inline UnknownClassVar(std::string&& name, ast::Node* client_ast_node);
     };
     inline UnknownClassVar::UnknownClassVar(std::string&& name, ast::Node* client_ast_node)
-    :   ClassVar(std::move(name), client_ast_node, SolvePhase2_Result::UpdatedOrFresh)
+    :   ClassVar(std::move(name), client_ast_node, KdResult::UpdatedOrFresh)
     {}
 
     class FixedClassVar: public ClassVar {
@@ -270,14 +277,12 @@ namespace pdm::types {
         inline FixedClassVar(std::string&& name);
     };
     inline FixedClassVar::FixedClassVar(std::string&& name)
-    :   ClassVar(std::move(name), nullptr, SolvePhase2_Result::NoChange)
+    :   ClassVar(std::move(name), nullptr, KdResult::NoChange)
     {}
     struct SignedIntFixedClassVar: public FixedClassVar { SignedIntFixedClassVar(); };
     struct UnsignedIntFixedClassVar: public FixedClassVar { UnsignedIntFixedClassVar(); };
-    struct IntFixedClassVar: public FixedClassVar { IntFixedClassVar(); };
     struct FloatFixedClassVar: public FixedClassVar { FloatFixedClassVar(); };
-    struct NumberFixedClassVar: public FixedClassVar { NumberFixedClassVar(); };
-    
+
     // templates helpers:
     class TemplateFormalArg {
       private:
@@ -346,7 +351,7 @@ namespace pdm::types {
         std::vector<TemplateFormalArg> const& formal_args() const;
     };
     inline TemplateVar::TemplateVar(std::string&& name, ast::Node* client_ast_node, VarKind var_kind)
-    :   Var(std::move(name), client_ast_node, var_kind, SolvePhase2_Result::UpdatedOrFresh),
+    :   Var(std::move(name), client_ast_node, var_kind, KdResult::UpdatedOrFresh),
         m_formal_args()
     {}
     inline std::vector<TemplateFormalArg> const& TemplateVar::formal_args() const {

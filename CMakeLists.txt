@@ -181,8 +181,8 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/relation.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/relation.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/solving.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/kd_var_solver.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/kd_var_solver.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/kd_var_solver.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/typer/typer.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/typer/typer.hh

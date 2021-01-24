@@ -13,6 +13,8 @@ namespace pdm::types {
 
     inline bool is_type_var_kind(VarKind var_kind);
     inline bool is_template_var_kind(VarKind var_kind);
+
+    inline char const* var_kind_as_str(VarKind vk);
 }
 
 
@@ -29,6 +31,16 @@ namespace pdm::types {
             var_kind == VarKind::Template_RetType ||
             var_kind == VarKind::Template_RetClass
         );
+    }
+    inline char const* var_kind_as_str(VarKind vk) {
+        switch (vk)
+        {
+            case VarKind::Type: return "Type";
+            case VarKind::Class: return "Class";
+            case VarKind::Template_RetValue: return "Template_RetValue";
+            case VarKind::Template_RetType: return "Template_RetType";
+            case VarKind::Template_RetClass: return "Template_RetClass";
+        }
     }
 }
 

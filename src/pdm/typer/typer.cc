@@ -40,7 +40,7 @@ namespace pdm::types {
         TyperVisitor(Manager* types_mgr, ast::Script* script);
 
       private:
-        bool post_feedback_from_first_sp2res(SolvePhase2_Result sp2res, std::string&& source_desc, source::Loc loc);
+        bool post_feedback_from_first_sp2res(KdResult sp2res, std::string&& source_desc, source::Loc loc);
       
       protected:
         // script:
@@ -119,11 +119,11 @@ namespace pdm::types {
         m_script(script)
     {}
 
-    bool TyperVisitor::post_feedback_from_first_sp2res(SolvePhase2_Result sp2res, std::string&& source_desc, source::Loc loc) {
-        if (sp2res_is_error(sp2res)) {
+    bool TyperVisitor::post_feedback_from_first_sp2res(KdResult sp2res, std::string&& source_desc, source::Loc loc) {
+        if (kdr_is_error(sp2res)) {
             std::string headline = "A typing relation could not be applied";
             std::string more = (
-                (sp2res == SolvePhase2_Result::CompilerError) ?
+                (sp2res == KdResult::CompilerError) ?
                 "This was caused by a compiler bug, and is not your fault." : ""
             );
 
@@ -187,6 +187,8 @@ namespace pdm::types {
     }
     bool TyperVisitor::on_visit__mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Post) {
+            printf("\n\n\n\n\n!!- Typing mod_val_stmt\n\n\n\n\n");
+
             TypeVar* mod_val_tv = nullptr;
             if (node->tpatterns().empty()) {
                 mod_val_tv = dynamic_cast<TypeVar*>(node->x_defn_var());
@@ -204,11 +206,12 @@ namespace pdm::types {
             assert(rhs_tv != nullptr);
             
             // rhs_tv :< mod_val_tv
-            SolvePhase2_Result res = m_types_mgr->assume_relation_holds(new SubtypeOfRelation(
+            auto relation = new SubtypeOfRelation(
                 node,
                 rhs_tv,
                 mod_val_tv
-            ));
+            );
+            KdResult res = m_types_mgr->assume_relation_holds(relation);
 
             std::string source_desc = "see value field of module here...";
             return post_feedback_from_first_sp2res(res, std::move(source_desc), node->loc());
@@ -267,7 +270,7 @@ namespace pdm::types {
         } else {
             assert(visit_order == VisitOrder::Post);
             TypeVar* int_tv = node->x_typeof_tv();
-            SolvePhase2_Result sp2_result = m_types_mgr->assume_relation_holds(new ClassOfRelation(
+            KdResult sp2_result = m_types_mgr->assume_relation_holds(new ClassOfRelation(
                 node,
                 m_types_mgr->get_unsigned_int_cv(), int_tv
             ));
@@ -285,7 +288,7 @@ namespace pdm::types {
         } else {
             assert(visit_order == VisitOrder::Post);
             TypeVar* float_tv = node->x_typeof_tv();
-            SolvePhase2_Result sp2_result = m_types_mgr->assume_relation_holds(new ClassOfRelation(
+            KdResult sp2_result = m_types_mgr->assume_relation_holds(new ClassOfRelation(
                 node,
                 m_types_mgr->get_float_cv(), float_tv
             ));
@@ -301,7 +304,7 @@ namespace pdm::types {
             node->x_typeof_tv(string_tv);
         } else {
             TypeVar* typeof_string_tv = node->x_typeof_tv();
-            SolvePhase2_Result sp2_result = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(
+            KdResult sp2_result = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(
                 node,
                 m_types_mgr->get_string_tv(), typeof_string_tv
             ));
@@ -327,7 +330,7 @@ namespace pdm::types {
         } else {
             TypeVar* paren_tv = node->x_typeof_tv();
             TypeVar* nested_tv = node->nested_exp()->x_typeof_tv();
-            SolvePhase2_Result sp2res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, paren_tv, nested_tv));
+            KdResult sp2res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, paren_tv, nested_tv));
             
             std::string source_desc = "see paren expression here...";
             return post_feedback_from_first_sp2res(sp2res, std::move(source_desc), node->loc());
@@ -484,7 +487,7 @@ namespace pdm::types {
                 Var* spectype_var = field->rhs_typespec()->x_spectype_var();
                 TypeVar* spectype_tv = dynamic_cast<TypeVar*>(spectype_var);
                 if (spectype_tv != nullptr) {
-                    SolvePhase2_Result sp2res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(field, tv, spectype_tv));
+                    KdResult sp2res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(field, tv, spectype_tv));
                     
                     std::string source_desc = "see V-Pattern here...";
                     return post_feedback_from_first_sp2res(sp2res, std::move(source_desc), node->loc());
@@ -520,7 +523,7 @@ namespace pdm::types {
                     // [value Type]
                     auto field_spec_tv = dynamic_cast<TypeVar*>(field_spec_var);
                     if (field_spec_tv != nullptr && field_tv != nullptr) {
-                        SolvePhase2_Result sp2res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, field_spec_tv, field_tv));
+                        KdResult sp2res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, field_spec_tv, field_tv));
                         std::string source_desc = "In Value T-Pattern Arg here..";
                         return post_feedback_from_first_sp2res(sp2res, std::move(source_desc), node->loc());
                     } else {
@@ -542,7 +545,7 @@ namespace pdm::types {
                     auto field_spec_cv = dynamic_cast<ClassVar*>(field_spec_var);
                     auto proxy_field_tv = field_tv;
                     if (field_spec_cv != nullptr) {
-                        SolvePhase2_Result sp2res = m_types_mgr->assume_relation_holds(new ClassOfRelation(node, field_spec_cv, field_tv));
+                        KdResult sp2res = m_types_mgr->assume_relation_holds(new ClassOfRelation(node, field_spec_cv, field_tv));
                         std::string source_desc = "In Type T-Pattern Arg here..";
                         return post_feedback_from_first_sp2res(sp2res, std::move(source_desc), node->loc());
                     } else {
@@ -571,7 +574,7 @@ namespace pdm::types {
                 if (field->opt_rhs_typespec()) {
                     TypeVar* rhs_tv = dynamic_cast<TypeVar*>(field->opt_rhs_typespec()->x_spectype_var());
                     if (rhs_tv != nullptr) {
-                        SolvePhase2_Result sp2res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, tv, rhs_tv));
+                        KdResult sp2res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, tv, rhs_tv));
                         
                         std::string source_desc = "see L-Pattern here...";
                         return post_feedback_from_first_sp2res(sp2res, std::move(source_desc), node->loc());
@@ -645,7 +648,7 @@ namespace pdm::types {
                 }
             }
             
-            SolvePhase2_Result sp2res = m_types_mgr->assume_relation_holds(new FormalVCallableRelation(
+            KdResult sp2res = m_types_mgr->assume_relation_holds(new FormalVCallableRelation(
                 node, spectype_tv, std::move(args_tvs), ret_tv
             ));
             
@@ -730,7 +733,7 @@ namespace pdm::types {
 
             // relating:
             std::string why = "TupleTypeSpec";
-            SolvePhase2_Result sp2res = m_types_mgr->assume_relation_holds(new TupleOfRelation(
+            KdResult sp2res = m_types_mgr->assume_relation_holds(new TupleOfRelation(
                 std::move(why),
                 node,
                 tuple_tv,
@@ -818,7 +821,7 @@ namespace pdm::types {
 
             // assuming a StructOf relation to bind struct_tv to fields:
             std::string name = "StructTypeSpec";
-            SolvePhase2_Result sp2res = m_types_mgr->assume_relation_holds(new StructOfRelation(
+            KdResult sp2res = m_types_mgr->assume_relation_holds(new StructOfRelation(
                 std::move(name), node,
                 struct_tv, std::move(fields_tvs)
             ));
@@ -870,10 +873,10 @@ namespace pdm::types {
             TypeVar* typeof_lhs_tv = field->x_defn_tv();
             
             // "let lhs = rhs" <=> rhs :< lhs
-            SolvePhase2_Result assume_op_result1 = m_types_mgr->assume_relation_holds(new SubtypeOfRelation(node, typeof_rhs_tv, typeof_lhs_tv));
+            KdResult assume_op_result1 = m_types_mgr->assume_relation_holds(new SubtypeOfRelation(node, typeof_rhs_tv, typeof_lhs_tv));
             
             // if typespec, tie!
-            SolvePhase2_Result assume_op_result2 = SolvePhase2_Result::NoChange; {
+            KdResult assume_op_result2 = KdResult::NoChange; {
                 if (field->opt_rhs_typespec()) {
                     Var* typespec_var = field->opt_rhs_typespec()->x_spectype_var();
                     if (is_type_var_kind(typespec_var->var_kind())) {
@@ -885,13 +888,13 @@ namespace pdm::types {
                         ));
                     } else {
                         // todo: post 'expected class, received type' error feedback
-                        assume_op_result2 = SolvePhase2_Result::TypingError;
+                        assume_op_result2 = KdResult::TypingError;
                     }
                 }
             }
 
             std::string source_desc = "see const/val/var statement here...";
-            post_feedback_from_first_sp2res(sp2res_and(assume_op_result1, assume_op_result2), std::move(source_desc), node->loc());
+            post_feedback_from_first_sp2res(kdr_and(assume_op_result1, assume_op_result2), std::move(source_desc), node->loc());
         }
         return true;
     }

@@ -1,38 +1,37 @@
-mod Vec {
-    Vec2 = {
-        x Float32,
-        y Float32
-    };
+--- mod Vec ---
 
-    mul = fn (v Vec2, s Float32) -> Vec2 {
-        x = v.x * s,
-        y = v.y * s
-    };
+Vec2 = {
+    x Float32,
+    y Float32
+};
 
-    dot = fn (v Vec2, w Vec2) -> Float32 {
-        v.x * w.x + v.y * w.y
-    };
-    length_sqr = fn (v Vec2) -> Float32 {
-        dot(v, v)
-    };
-    length = fn (v Vec2) -> Float32 {
-        # TODO: math, sqrt ;-;
-        # math.sqrt(length_sqr(v))
-    };
+mul = fn (v Vec2, s Float32) -> Vec2 {
+    x = v.x * s,
+    y = v.y * s
+};
 
-    # returns a vector pointing in the same direction of unit length
-    # * ensure the output is of unit length
-    # * check a failure case! when |v| = 0
-    #   - raise this error if user forgets the 'if'
-    #   - disable this error when 'if' is present
-    #   * the compiler helps check your code
-    normalize = fn (v Vec2) -> Vec2 {
-        val v_length = length(v);
-        if (v_length == 0) then {
-            v
-        } else {
-            mul(v, 1/v_length)
-        }
-    };
-    
+dot = fn (v Vec2, w Vec2) -> Float32 {
+    v.x * w.x + v.y * w.y
+};
+length_sqr = fn (v Vec2) -> Float32 {
+    dot(v, v)
+};
+length = fn (v Vec2) -> Float32 {
+    # TODO: math, sqrt ;-;
+    # math.sqrt(length_sqr(v))
+};
+
+# returns a vector pointing in the same direction of unit length
+# * ensure the output is of unit length
+# * check a failure case! when |v| = 0
+#   - raise this error if user forgets the 'if'
+#   - disable this error when 'if' is present
+#   * the compiler helps check your code
+normalize = fn (v Vec2) -> Vec2 {
+    val v_length = length(v);
+    if (v_length == 0) then {
+        v
+    } else {
+        mul(v, 1/v_length)
+    }
 };

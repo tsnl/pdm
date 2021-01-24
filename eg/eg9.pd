@@ -1,4 +1,5 @@
---- TypeQueries ---
+mod TypeQueries {
+
     hello = fn (x Float32) -> Float32 {
         x
     };
@@ -11,4 +12,5 @@
     world = fn (x Float32) -> Float32 {
         hello(x)
     };
+
 };

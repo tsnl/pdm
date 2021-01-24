@@ -7,56 +7,63 @@
 # ...etc
 # instead of vague 'Any'
 
---- Vector ---
+mod Vector {
 
-Vec [T Number, n UInt32] = {
-    data Array[T,n]
-};
-
-increment ![T Number, n UInt32] = fn (inout lt Vec[T,n], rt Vec[T,n]) {
-    help_increment[T,n](inout lt, rt);
-};
-help_increment = fn [T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) {
-    # for this to work, need Array subtyping to work correctly
-    # s.t. Array[T,n] :< Array[T,m] <=> n < m
-    if (n > 0) then {
-        set lt.data.(n-1) = lt.data.(n-1) + rt.data.(n-1);
-        help_increment[T,n-1](inout lt, rt)
+    Vec [T Number, n UInt32] = {
+        data Array[T,n]
     };
+
+    increment ![T Number, n UInt32] = fn (inout lt Vec[T,n], rt Vec[T,n]) {
+        help_increment[T,n](inout lt, rt);
+    };
+    help_increment = fn [T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) {
+        # for this to work, need Array subtyping to work correctly
+        # s.t. Array[T,n] :< Array[T,m] <=> n < m
+        if (n > 0) then {
+            set lt.data.(n-1) = lt.data.(n-1) + rt.data.(n-1);
+            help_increment[T,n-1](inout lt, rt)
+        };
+    };
+
+    add ![T Number, n UInt32] = fn (lt Vec[T,n], rt Vec[T,n]) -> Vec[T,n] {
+        var sum_vec = lt;
+        increment(inout sum_vec, rt);
+        sum_vec
+    };
+
+    hello = fn () {
+        val x = 0;
+    };
+
 };
 
-add ![T Number, n UInt32] = fn (lt Vec[T,n], rt Vec[T,n]) -> Vec[T,n] {
-    var sum_vec = lt;
-    increment(inout sum_vec, rt);
-    sum_vec
+mod Fibonacci {
+
+    demo = fn () -> Int32 {
+        0
+    };
+
+
+    # Note: 
+    # _can_ pass 'inout' param to 'out' pattern without error, but using 'out' spec.
+    # thus, out[T] :< inout[T] (and in[T] :< inout[T])
+    # i.e.
+
 };
 
-hello = fn () {
-    val x = 0;
-};
+mod InOutAndEverybout {
 
---- Fibonacci ---
+    hello_out = fn (out x F32) = {
+        set x = 42.0;
+    };
+    hello_inout = fn (inout x F32) = {
+        # 'out' from 'hello_out' defn, not from vpattern decl.
+        hello_out(out x);
+    };
 
-demo = fn () -> Int32 {
-    0
-};
+    # also supported: 'opaque' for a pointer without read or write access.
+    hello_opaque = fn (opaque y Float32) {
+        print(ptr(y));
+    };
 
-
-# Note: 
-# _can_ pass 'inout' param to 'out' pattern without error, but using 'out' spec.
-# thus, out[T] :< inout[T] (and in[T] :< inout[T])
-# i.e.
---- InOutAndEverybout ---
-
-hello_out = fn (out x F32) = {
-    set x = 42.0;
-};
-hello_inout = fn (inout x F32) = {
-    # 'out' from 'hello_out' defn, not from vpattern decl.
-    hello_out(out x);
-};
-
-# also supported: 'opaque' for a pointer without read or write access.
-hello_opaque = fn (opaque y Float32) {
-    print(ptr(y));
 };

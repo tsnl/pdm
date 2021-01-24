@@ -1,4 +1,5 @@
-mod Fibonacci {
+mod Fibonacci ---
+
     fibonacci [N Int32] = fn (x N) -> N {
         if (x == 0 or x == 1) then {
             x
@@ -6,4 +7,3 @@ mod Fibonacci {
             fibonacci[N](x-1) + fibonacci[N](x-2)
         }
     };
-};

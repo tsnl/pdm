@@ -1,11 +1,13 @@
 #include "kd_var_solver.hh"
 
 #include <vector>
+#include <string>
 #include <map>
 #include <cassert>
 
 #include "pdm/core/bitsets.hh"
 #include "pdm/core/intern.hh"
+#include "pdm/core/integer.hh"
 #include "pdm/ast/arg/varg.hh"
 
 #include "var.hh"
@@ -15,6 +17,53 @@
 
 namespace pdm::types {
 
+    //
+    // Shared print helpers:
+    //
+
+    void KindDependentVarSolver::help_print_common_and_start_indented_block(
+        printer::Printer& printer,
+        std::string const& name
+    ) const {
+        // headline:
+        printer.print_str("KDVS ");
+        printer.print_str(name);
+        printer.print_cstr(" (tk: ");
+        printer.print_cstr(type_kind_as_str(m_required_type_kind));
+        printer.print_cstr(", vk: ");
+        printer.print_cstr(var_kind_as_str(m_var_kind));
+        printer.print_cstr(") {");
+
+        // indent + body:
+        printer.print_newline_indent();
+        {
+            // printing all added kind-dependent invariants:
+            u64 invariant_count = m_added_invariants.size();
+            printer.print_cstr("- Invariants (");
+            printer.print_uint_dec(invariant_count);
+            printer.print_cstr(")");
+            if (!m_added_invariants.empty()) {
+                printer.print_newline_indent();
+
+                for (auto kdi: m_added_invariants) {
+                    printer.print_newline();
+                    printer.print_cstr("- ");
+                    kdi->print(printer);
+                }
+
+                printer.print_newline_deindent();
+            }
+        }
+
+        // note that the caller must call 'deindent'
+    }
+
+    //
+    //
+    // Private:
+    //
+    //
+
     // SimplestKDVS is used to implement opaque types without any order:
     // Unit, String
     class SimplestKDVS: public KindDependentVarSolver {
@@ -22,28 +71,38 @@ namespace pdm::types {
         inline SimplestKDVS(VarKind var_kind, TypeKind required_type_kind);
 
       public:
-        virtual SolvePhase2_Result lazy_try_add_invariant_impl(KindDependentInvariant* invariant) override;
+        KdResult lazy_try_add_invariant_impl(KindDependentInvariant* invariant) override;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
 
     inline SimplestKDVS::SimplestKDVS(VarKind var_kind, TypeKind required_type_kind)
     :   KindDependentVarSolver(VarKind::Type, required_type_kind)
     {}
 
-    SolvePhase2_Result SimplestKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
+    KdResult SimplestKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
         if (required_type_kind() == TypeKind::Void) {
             if (dynamic_cast<IsVoidInvariant*>(new_invariant) != nullptr) {
-                return SolvePhase2_Result::NoChange;
+                return KdResult::NoChange;
             }
         }
         else if (required_type_kind() == TypeKind::String) {
             if (dynamic_cast<IsStringInvariant*>(new_invariant) != nullptr) {
-                return SolvePhase2_Result::NoChange;
+                return KdResult::NoChange;
             }
         }
         else {
-            return SolvePhase2_Result::CompilerError;
+            return KdResult::CompilerError;
         }
-        return SolvePhase2_Result::TypingError;
+        return KdResult::TypingError;
+    }
+
+    void SimplestKDVS::print(printer::Printer& printer) const {
+        help_print_common_and_start_indented_block(printer, "Simplest");
+        {}
+        printer.print_newline_deindent();
+        printer.print_cstr("}");
     }
 
     // NumberKDVS is used to typecheck sets of numbers:
@@ -58,7 +117,10 @@ namespace pdm::types {
         NumberKDVS(VarKind var_kind, TypeKind type_kind);
 
       public:
-        virtual SolvePhase2_Result lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) override;
+        KdResult lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) override;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
 
     NumberKDVS::NumberKDVS(VarKind var_kind, TypeKind type_kind)
@@ -67,7 +129,7 @@ namespace pdm::types {
         m_opt_max_width_in_bits(-1)
     {}
 
-    SolvePhase2_Result NumberKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
+    KdResult NumberKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
         switch (required_type_kind())
         {
             case TypeKind::SignedInt:
@@ -76,22 +138,22 @@ namespace pdm::types {
                 auto int_invariant = dynamic_cast<IsIntInvariant*>(new_invariant);
                 
                 // checking 'uses_sign_extension' is valid:
-                bool needs_sign_extension = (required_type_kind() == TypeKind::SignedInt ? true : false);
+                bool needs_sign_extension = (required_type_kind() == TypeKind::SignedInt);
                 if (int_invariant->uses_sign_extension() != needs_sign_extension) {
-                    return SolvePhase2_Result::TypingError;
+                    return KdResult::TypingError;
                 }
 
                 // solving intersection of min and max width,
                 // updating result if applied:
-                SolvePhase2_Result result = SolvePhase2_Result::NoChange; 
+                KdResult result = KdResult::NoChange;
                 {
                     if (m_opt_min_width_in_bits < 0 || m_opt_min_width_in_bits < int_invariant->min_width_in_bits()) {
                         m_opt_min_width_in_bits = int_invariant->min_width_in_bits();
-                        result = SolvePhase2_Result::UpdatedOrFresh;
+                        result = KdResult::UpdatedOrFresh;
                     }
                     if (m_opt_max_width_in_bits < 0 || m_opt_max_width_in_bits > int_invariant->max_width_in_bits()) {
                         m_opt_max_width_in_bits = int_invariant->max_width_in_bits();
-                        result = SolvePhase2_Result::UpdatedOrFresh;
+                        result = KdResult::UpdatedOrFresh;
                     }
                 }
                 
@@ -103,15 +165,15 @@ namespace pdm::types {
 
                 // solving intersection of min and max width,
                 // updating result if applied:
-                SolvePhase2_Result result = SolvePhase2_Result::NoChange; 
+                KdResult result = KdResult::NoChange;
                 {
                     if (m_opt_min_width_in_bits < 0 || m_opt_min_width_in_bits < float_invariant->min_width_in_bits()) {
                         m_opt_min_width_in_bits = float_invariant->min_width_in_bits();
-                        result = sp2res_and(result, SolvePhase2_Result::UpdatedOrFresh);
+                        result = kdr_and(result, KdResult::UpdatedOrFresh);
                     }
                     if (m_opt_max_width_in_bits < 0 || m_opt_max_width_in_bits > float_invariant->max_width_in_bits()) {
                         m_opt_max_width_in_bits = float_invariant->max_width_in_bits();
-                        result = sp2res_and(result, SolvePhase2_Result::UpdatedOrFresh);
+                        result = kdr_and(result, KdResult::UpdatedOrFresh);
                     }
                 }
                 
@@ -119,9 +181,32 @@ namespace pdm::types {
             }
             default:
             {
-                return SolvePhase2_Result::CompilerError;
+                return KdResult::CompilerError;
             }
         }
+    }
+
+    void NumberKDVS::print(printer::Printer &printer) const {
+        help_print_common_and_start_indented_block(printer, "Number");
+        {
+            printer.print_newline();
+            printer.print_cstr("- Min-WidthInBits: ");
+            if (m_opt_min_width_in_bits >= 0) {
+                printer.print_uint_dec(m_opt_min_width_in_bits);
+            } else {
+                printer.print_cstr("Any");
+            }
+
+            printer.print_newline();
+            printer.print_cstr("- Max-WidthInBits: ");
+            if (m_opt_max_width_in_bits >= 0) {
+                printer.print_uint_dec(m_opt_max_width_in_bits);
+            } else {
+                printer.print_cstr("Any");
+            }
+        }
+        printer.print_newline_deindent();
+        printer.print_cstr("}");
     }
 
     // TupleKDVS is used to typecheck tuples.
@@ -131,10 +216,13 @@ namespace pdm::types {
         std::vector<TypeVar*> m_typeof_items_tvs;
 
       public:
-        TupleKDVS(VarKind var_kind);
+        explicit TupleKDVS(VarKind var_kind);
 
       public:
-        virtual SolvePhase2_Result lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) override;
+        KdResult lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) override;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
 
     TupleKDVS::TupleKDVS(VarKind var_kind)
@@ -142,17 +230,17 @@ namespace pdm::types {
         m_typeof_items_tvs()
     {}
 
-    SolvePhase2_Result TupleKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
+    KdResult TupleKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
         auto tuple_invariant = dynamic_cast<IsTupleInvariant*>(new_invariant);
         if (tuple_invariant == nullptr) {
-            return SolvePhase2_Result::TypingError;
+            return KdResult::TypingError;
         }
         
         if (m_typeof_items_tvs.size() != tuple_invariant->typeof_items_tvs().size()) {
-            return SolvePhase2_Result::TypingError;
+            return KdResult::TypingError;
         }
 
-        SolvePhase2_Result result = SolvePhase2_Result::NoChange;
+        KdResult result = KdResult::NoChange;
         
         // equating fields:
         assert(m_typeof_items_tvs.size() == tuple_invariant->typeof_items_tvs().size());
@@ -160,11 +248,36 @@ namespace pdm::types {
             Var* old_field_var = m_typeof_items_tvs[index];
             Var* new_field_var = tuple_invariant->typeof_items_tvs()[index];
             
-            SolvePhase2_Result ao_res = old_field_var->higher_order_assume_equals(new_field_var);
-            result = sp2res_and(result, ao_res);
+            KdResult ao_res = old_field_var->higher_order_assume_equals(new_field_var);
+            result = kdr_and(result, ao_res);
         }
         
         return result;
+    }
+
+    void TupleKDVS::print(printer::Printer& printer) const {
+        help_print_common_and_start_indented_block(printer, "TupleKDVS");
+        {
+            printer.print_cstr("- Items (");
+            printer.print_uint_dec(m_typeof_items_tvs.size());
+            printer.print_cstr("):");
+            printer.print_newline();
+            {
+                size_t count = m_typeof_items_tvs.size();
+                for (size_t i = 0; i < count; i++) {
+                    printer.print_cstr("- Field ");
+                    printer.print_uint_dec(i);
+                    printer.print_cstr(": ");
+                    m_typeof_items_tvs[i]->print_title(printer);
+
+                    if (i+1 != count) {
+                        printer.print_newline();
+                    }
+                }
+            }
+        }
+        printer.print_newline_deindent();
+        printer.print_cstr("}");
     }
 
     // FieldCollectionKDVS is used to typecheck types with items a dictionary of fields:
@@ -183,18 +296,21 @@ namespace pdm::types {
         FieldCollectionKDVS(VarKind var_kind, TypeKind type_kind);
 
       public:
-        virtual SolvePhase2_Result lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) override;
+        KdResult lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) override;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
 
     FieldCollectionKDVS::FieldCollectionKDVS(VarKind var_kind, TypeKind type_kind)
     :   KindDependentVarSolver(var_kind, type_kind)
     {}
 
-    SolvePhase2_Result FieldCollectionKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
+    KdResult FieldCollectionKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
         // ensuring IsFieldCollectionInvariant:
         auto new_field_collection_invariant = dynamic_cast<IsFieldCollectionInvariant*>(new_invariant);
         if (new_field_collection_invariant == nullptr) {
-            return SolvePhase2_Result::TypingError;
+            return KdResult::TypingError;
         }
 
         // checking type_kind against Invariant kind:
@@ -204,7 +320,7 @@ namespace pdm::types {
             {
                 auto new_struct_invariant = dynamic_cast<IsStructInvariant*>(new_invariant);
                 if (new_struct_invariant == nullptr) {
-                    return SolvePhase2_Result::TypingError;
+                    return KdResult::TypingError;
                 }
                 break;
             }
@@ -212,7 +328,7 @@ namespace pdm::types {
             {
                 auto new_enum_invariant = dynamic_cast<IsEnumInvariant*>(new_invariant);
                 if (new_enum_invariant == nullptr) {
-                    return SolvePhase2_Result::TypingError;
+                    return KdResult::TypingError;
                 }
                 break;
             }
@@ -220,19 +336,19 @@ namespace pdm::types {
             {
                 auto new_module_invariant = dynamic_cast<IsModuleInvariant*>(new_invariant);
                 if (new_module_invariant == nullptr) {
-                    return SolvePhase2_Result::TypingError;
+                    return KdResult::TypingError;
                 }
                 break;
             }
             default:
             {
                 // unexpected type kind.
-                return SolvePhase2_Result::CompilerError;
+                return KdResult::CompilerError;
             }
         }
 
         // updating fields:
-        SolvePhase2_Result result = SolvePhase2_Result::NoChange;
+        KdResult result = KdResult::NoChange;
         for (
             auto struct_invariant_field_iterator = new_field_collection_invariant->fields().begin(); 
             struct_invariant_field_iterator != new_field_collection_invariant->fields().end(); 
@@ -245,18 +361,40 @@ namespace pdm::types {
             if (kdvs_field_iterator != m_fields.end()) {
                 // equals existing field
                 Var* kdvs_field_var = kdvs_field_iterator->second;
-                result = sp2res_and(
-                    result,
-                    kdvs_field_var->higher_order_assume_equals(struct_invariant_field_var)
+                result = kdr_and(
+                        result,
+                        kdvs_field_var->higher_order_assume_equals(struct_invariant_field_var)
                 );   
             } else {
                 // insert invariant field var:
                 auto field_insert_res = m_fields.insert({field_name, struct_invariant_field_var});
                 assert(field_insert_res.second);
-                result = sp2res_and(result, SolvePhase2_Result::UpdatedOrFresh);
+                result = kdr_and(result, KdResult::UpdatedOrFresh);
             }
         }
         return result;
+    }
+
+    void FieldCollectionKDVS::print(printer::Printer& printer) const {
+        help_print_common_and_start_indented_block(printer, "FieldCollection");
+        {
+            printer.print_newline();
+            printer.print_cstr("- Fields (");
+            printer.print_uint_dec(m_fields.size());
+            printer.print_cstr(")");
+            // each field prints its own prefix newline, incl. one extra for here.
+            if (!m_fields.empty()) {
+                for (auto it: m_fields) {
+                    printer.print_newline();
+                    printer.print_cstr("- Field '");
+                    printer.print_intstr(it.first);
+                    printer.print_cstr("': ");
+                    it.second->print_title(printer);
+                }
+            }
+        }
+        printer.print_newline_deindent();
+        printer.print_cstr("}");
     }
 
     // FnKDVS is used to typecheck TypeVars that contain functions.
@@ -264,6 +402,7 @@ namespace pdm::types {
       public:
         struct FnArg {
             ast::VArgAccessSpec varg_access_spec;
+            intern::String name;
             TypeVar* typeof_arg_tv;
         };
 
@@ -272,44 +411,54 @@ namespace pdm::types {
         TypeVar* m_typeof_ret_tv;
 
       public:
-        FnKDVS(VarKind var_kind);
+        explicit FnKDVS(VarKind var_kind);
 
       public:
-        virtual SolvePhase2_Result lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) override;
+        KdResult lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) override;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
-    
+
     FnKDVS::FnKDVS(VarKind var_kind) 
     :   KindDependentVarSolver(var_kind, TypeKind::Fn) ,
         m_args(),
         m_typeof_ret_tv(nullptr)
     {}
-    SolvePhase2_Result FnKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
+    KdResult FnKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
         auto new_fn_invariant = dynamic_cast<IsVCallableInvariant*>(new_invariant);
         if (new_fn_invariant == nullptr) {
-            return SolvePhase2_Result::TypingError;
+            return KdResult::TypingError;
         }
 
         // checking same arg count
         if (m_args.size() != new_fn_invariant->formal_args().size()) {
-            return SolvePhase2_Result::TypingError;
+            return KdResult::TypingError;
         }
 
         // relating each arg:
         size_t args_count = m_args.size();
+        KdResult args_sp2res = KdResult::NoChange;
         for (size_t index = 0; index < args_count; index++) {
             VCallArg const& fn_invariant_fn_arg = new_fn_invariant->formal_args()[index];
             FnKDVS::FnArg const& fn_kdvs_arg = m_args[index];
-            
+
             // checking same arg access spec:
             if (fn_invariant_fn_arg.varg_access_spec != fn_kdvs_arg.varg_access_spec) {
-                return SolvePhase2_Result::TypingError;
+                return KdResult::TypingError;
             } else {
                 if (new_fn_invariant->strength() == VCallInvariantStrength::Formal) {
-                    return fn_invariant_fn_arg.typeof_arg_tv->higher_order_assume_equals(fn_kdvs_arg.typeof_arg_tv);
+                    args_sp2res = kdr_and(
+                            args_sp2res,
+                            fn_invariant_fn_arg.typeof_arg_tv->higher_order_assume_equals(fn_kdvs_arg.typeof_arg_tv)
+                    );
                 } else if (new_fn_invariant->strength() == VCallInvariantStrength::Actual) {
-                    return fn_invariant_fn_arg.typeof_arg_tv->higher_order_assume_subvar(fn_kdvs_arg.typeof_arg_tv);
+                    args_sp2res = kdr_and(
+                            args_sp2res,
+                            fn_invariant_fn_arg.typeof_arg_tv->higher_order_assume_subvar(fn_kdvs_arg.typeof_arg_tv)
+                    );
                 } else {
-                    return SolvePhase2_Result::CompilerError;
+                    return KdResult::CompilerError;
                 }
             }
         }
@@ -322,9 +471,65 @@ namespace pdm::types {
         } else if (new_fn_invariant->strength() == VCallInvariantStrength::Actual) {
             return fn_invariant_typeof_ret_tv->higher_order_assume_subvar(fn_kdvs_typeof_ret_tv);
         } else {
-            return SolvePhase2_Result::CompilerError;
+            return KdResult::CompilerError;
         }
     }
+
+    void FnKDVS::print(printer::Printer& printer) const {
+        help_print_common_and_start_indented_block(printer, "FieldCollection");
+        {
+            printer.print_cstr("- Args (");
+            printer.print_uint_dec(m_args.size());
+            printer.print_cstr(")");
+            if (!m_args.empty()) {
+                printer.print_newline_indent();
+                for (size_t arg_index = 0; arg_index < m_args.size(); arg_index++) {
+                    FnArg const& arg = m_args[arg_index];
+
+                    // printing a list item prefix:
+                    printer.print_cstr("- ");
+
+                    // printing the access spec:
+                    switch (arg.varg_access_spec)
+                    {
+                        case ast::VArgAccessSpec::In:
+                        {
+                            // do nothing.
+                            break;
+                        }
+                        case ast::VArgAccessSpec::Out:
+                        {
+                            printer.print_cstr("out ");
+                            break;
+                        }
+                        case ast::VArgAccessSpec::InOut:
+                        {
+                            printer.print_cstr("inout ");
+                            break;
+                        }
+                    }
+
+                    // printing arg name:
+                    printer.print_intstr(arg.name);
+
+                    // printing arg type var:
+                    printer.print_cstr(": ");
+                    arg.typeof_arg_tv->print_title(printer);
+
+                    if (arg_index+1 != m_args.size()) {
+                        printer.print_newline();
+                    }
+                }
+                printer.print_newline_deindent();
+            }
+
+            printer.print_cstr("- Returns: ");
+            m_typeof_ret_tv->print_title(printer);
+        }
+        printer.print_newline_deindent();
+        printer.print_cstr("}");
+    }
+
 
     // Array:
     class ArrayKDVS: public KindDependentVarSolver {
@@ -332,14 +537,17 @@ namespace pdm::types {
         TypeVar* m_opt_typeof_element_tv;
 
       public:
-        inline ArrayKDVS(VarKind var_kind);
+        explicit inline ArrayKDVS(VarKind var_kind);
 
       public:
         inline TypeVar* opt_typeof_element_tv() const;
         inline void opt_typeof_element_tv(TypeVar* tv);
         
       public:
-        virtual SolvePhase2_Result lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) override;
+        KdResult lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) override;
+
+      public:
+        void print(printer::Printer& printer) const override;
     };
     
     inline ArrayKDVS::ArrayKDVS(VarKind var_kind)
@@ -353,19 +561,29 @@ namespace pdm::types {
         m_opt_typeof_element_tv = tv;
     }
 
-    SolvePhase2_Result ArrayKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
+    KdResult ArrayKDVS::lazy_try_add_invariant_impl(KindDependentInvariant* new_invariant) {
         auto new_array_invariant = dynamic_cast<IsArrayInvariant*>(new_invariant);
         if (new_array_invariant == nullptr) {
-            return SolvePhase2_Result::TypingError;
+            return KdResult::TypingError;
         }
 
         TypeVar* typeof_array_invariant_item_tv = new_array_invariant->item_tv();
         if (m_opt_typeof_element_tv == nullptr) {
             m_opt_typeof_element_tv = typeof_array_invariant_item_tv;
-            return SolvePhase2_Result::UpdatedOrFresh;
+            return KdResult::UpdatedOrFresh;
         } else {
             return m_opt_typeof_element_tv->higher_order_assume_equals(typeof_array_invariant_item_tv);
         }
+    }
+
+    void ArrayKDVS::print(printer::Printer& printer) const {
+        help_print_common_and_start_indented_block(printer, "Array");
+        {
+            printer.print_cstr("- ItemType: ");
+            m_opt_typeof_element_tv->print_title(printer);
+        }
+        printer.print_newline_deindent();
+        printer.print_cstr("}");
     }
 
 }
@@ -376,7 +594,7 @@ namespace pdm::types {
 
 namespace pdm::types {
 
-    SolvePhase2_Result KindDependentVarSolver::try_add_invariant(KindDependentInvariant* invariant) {
+    KdResult KindDependentVarSolver::try_add_invariant(KindDependentInvariant* invariant) {
         // from https://www.cplusplus.com/reference/set/set/insert/
         // The single element versions (1) return a pair, with its member pair::first set to 
         // an iterator pointing to [the inserted element in the collection].
@@ -387,22 +605,23 @@ namespace pdm::types {
         if (new_element_inserted) {
             return lazy_try_add_invariant_impl(invariant);
         } else {
-            return SolvePhase2_Result::NoChange;
+            return KdResult::NoChange;
         }
     }
 
-    NewKDVS try_new_kdvs_for(VarKind var_kind, TypeKindBitset local_allowed_type_kinds_bitset) {
-        NewKDVS rv;
+    NewKDVS try_new_kdvs_for(VarKind var_kind, u64 allowed_type_kinds_bitset) {
+        NewKDVS rv{};
+        auto local_allowed_type_kinds_bitset = allowed_type_kinds_bitset;
 
         if (local_allowed_type_kinds_bitset == 0) {
-            rv.result = SolvePhase1_Result::InsufficientInfo;
+            rv.result = KcResult::InsufficientInfo;
             rv.kdvs = nullptr;
         } 
         else if (is_type_var_kind(var_kind)) {
             if (exactly_1_bit_is_1_in_bitset(local_allowed_type_kinds_bitset)) {
-                rv.result = SolvePhase1_Result::Ok;
-                TypeKind type_kind = static_cast<TypeKind>(local_allowed_type_kinds_bitset);
-                assert(type_kind <= TypeKind::__Max && "bug in 'exactly_1_bit_is_1_in_bitset'");
+                rv.result = KcResult::Ok;
+                auto type_kind = extract_type_kind_from_bitset(local_allowed_type_kinds_bitset);
+                assert(type_kind <= TypeKind::META_Max && "bug in 'exactly_1_bit_is_1_in_bitset'");
                 switch (type_kind)
                 {
                     case TypeKind::Void:
@@ -460,7 +679,7 @@ namespace pdm::types {
             }
         } 
         else {
-            rv.result = SolvePhase1_Result::Error_MixedKind;
+            rv.result = KcResult::Error_MixedKind;
             rv.kdvs = nullptr;
         }
 

@@ -72,12 +72,10 @@ namespace pdm::types {
 
         SignedIntFixedClassVar m_signed_int_cv;
         UnsignedIntFixedClassVar m_unsigned_int_cv;
-        IntFixedClassVar m_int_cv;
         FloatFixedClassVar m_float_cv;
-        NumberFixedClassVar m_number_cv;
         
       public:
-        Manager(Compiler* opt_compiler_ptr = nullptr);
+        explicit Manager(Compiler* opt_compiler_ptr = nullptr);
 
       // create tv (TypeVar), cv (ClassVar), and 3 kinds of TemplateVars:
       public:
@@ -113,14 +111,12 @@ namespace pdm::types {
 
         ClassVar* get_signed_int_cv() { return &m_signed_int_cv; }
         ClassVar* get_unsigned_int_cv() { return &m_unsigned_int_cv; }
-        ClassVar* get_int_cv() { return &m_int_cv; }
         ClassVar* get_float_cv() { return &m_float_cv; }
-        ClassVar* get_number_cv() { return &m_number_cv; }
         
       // interface
       public:
         // map each 'Relation' class to a function application here.
-        SolvePhase2_Result assume_relation_holds(Relation* relation);
+        KdResult assume_relation_holds(Relation* relation);
         TestOpResult test(Relation* relation);
 
         bool typecheck();

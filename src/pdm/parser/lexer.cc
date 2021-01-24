@@ -384,15 +384,6 @@ namespace pdm::parser::aux {
                     if (source->read_head() == '>' && source->advance_head()) {
                         return Tk::ARROW;
                     }
-                    if (source->read_head() == '-' && source->advance_head()) {
-                        if (source->read_head() == '-' && source->advance_head()) {
-                            // triple-dash
-                            return Tk::TRIPLE_DASH;
-                        } else {
-                            assert(0 && "NotImplemented: Incomplete triple-dash error.");
-                            // error!
-                        }
-                    }
                     return Tk::MINUS;
                 }
                 break;

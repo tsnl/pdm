@@ -27,34 +27,36 @@ namespace pdm::types {
     
     // After the solver, we can typecheck each KDVS by attempting to generate 
 
-    // SP1: creating a KDVS (KindDependentVarSolver) from common attributes
-    enum class SolvePhase1_Result {
+    // KcResult = Kind-check result.
+    // Kind checks are a coarser kind of type-check performed before more granular typechecking.
+    enum class KcResult {
         InsufficientInfo,
         Error_MixedKind,
         Ok
     };
 
-    // SP2: 
-    enum class SolvePhase2_Result {
+    // KdResult = Kind-dependent result.
+    // Represents results from post-kind-check territory.
+    enum class KdResult {
         CompilerError,
         TypingError,
         UpdatedOrFresh,
         NoChange,
     };
 
-    inline SolvePhase2_Result sp2res_and(SolvePhase2_Result r1, SolvePhase2_Result r2);
-    inline bool sp2res_is_error(SolvePhase2_Result sp2res);
+    inline KdResult kdr_and(KdResult r1, KdResult r2);
+    inline bool kdr_is_error(KdResult kdr);
 
-    inline SolvePhase2_Result sp2res_and(SolvePhase2_Result r1, SolvePhase2_Result r2) {
-        return static_cast<SolvePhase2_Result>(
+    inline KdResult kdr_and(KdResult r1, KdResult r2) {
+        return static_cast<KdResult>(
             std::min(static_cast<int>(r1), static_cast<int>(r2))
         );
     }
 
-    inline bool sp2res_is_error(SolvePhase2_Result sp2res) {
+    inline bool kdr_is_error(KdResult kdr) {
         return (
-            sp2res == SolvePhase2_Result::TypingError ||
-            sp2res == SolvePhase2_Result::CompilerError
+            kdr == KdResult::TypingError ||
+            kdr == KdResult::CompilerError
         );
     }
 }

@@ -380,8 +380,15 @@ namespace pdm::printer {
                 print_newline();
             }
             // print_newline();
-            for (ast::Stmt* stmt: script->body_stmts()) {
+            size_t body_count = script->body_stmts().size();
+            for (size_t body_index = 0; body_index < body_count; body_index++) {
+                ast::Stmt* stmt = script->body_stmts()[body_index];
                 print_node(stmt);
+                print_cstr(";");
+                
+                if (1+body_index != body_count) {
+                    print_newline();
+                }
             }
         }
         print_newline_deindent();
@@ -394,17 +401,10 @@ namespace pdm::printer {
     // statements:
     void Printer::print_mod_stmt(ast::ModStmt* mod) {
         if (mod->mod_stmt_kind() == ast::ModStmtKind::TopModule) {
-            print_cstr("--- mod ");
+            print_cstr("mod ");
             print_intstr(mod->module_name());
-            print_cstr(" ---");
-            print_newline();
-            for (size_t index = 0; index < mod->defns().size(); index++) {
-                ast::Node* node = mod->defns()[index];
-                print_node(node);
-                if (index+1 != mod->defns().size()) {
-                    print_newline();
-                }
-            }
+            print_cstr(" ");
+            help_print_chain(this, mod->defns(), nullptr);
         } else {
             print_cstr("sub ");
             print_intstr(mod->module_name());

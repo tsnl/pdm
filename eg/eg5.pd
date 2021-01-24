@@ -1,58 +1,59 @@
 # Enums: simple enough.
 
---- Optional ---
+mod Optional {
 
-O [T AnyType]
-| Some (T)
-| None
-;
+    O [T AnyType]
+    | Some (T)
+    | None
+    ;
 
-
---- Rational ---
-
-Q = opt.Opt[{
-    numerator Int32,
-    denominator Int32
-}];
-
-rational = fn (numerator Int32, denominator Int32) -> Rational {
-    if (denominator == 0) then {
-        Rational.Some({
-            numerator = numerator,
-            denominator = denominator
-        })
-    } else {
-        Rational.None
-    }
 };
 
-RationalBinOp = Fn (Float32, Float32) -> F32;
+mod Rational {
 
-apply = fn (x Q, y Q, f RationalBinOp) -> Q {
-    match (x) with {
-        Some (vx) then {
-            match (y) with {
-                Some (vy) then { Q.Some(f(vx,vy)) },
-                None      then { Q.None }
+    Q = opt.Opt[{
+        numerator Int32,
+        denominator Int32
+    }];
+
+    rational = fn (numerator Int32, denominator Int32) -> Rational {
+        if (denominator == 0) then {
+            Rational.Some({
+                numerator = numerator,
+                denominator = denominator
+            })
+        } else {
+            Rational.None
+        }
+    };
+
+    RationalBinOp = Fn (Float32, Float32) -> F32;
+
+    apply = fn (x Q, y Q, f RationalBinOp) -> Q {
+        match (x) with {
+            Some (vx) then {
+                match (y) with {
+                    Some (vy) then { Q.Some(f(vx,vy)) },
+                    None      then { Q.None }
+                }
+            },
+            None then {
+                Q.None
             }
-        },
-        None then {
-            Q.None
         }
     }
-}
 
-add_incorrectly = fn (x Q, y Q) -> Q {
-    apply(x, y, lambda (x,y) {
-        numerator = (x.numerator + y.numerator),
-        denominator = (x.denominator + y.denominator)
-    })
+    add_incorrectly = fn (x Q, y Q) -> Q {
+        apply(x, y, lambda (x,y) {
+            numerator = (x.numerator + y.numerator),
+            denominator = (x.denominator + y.denominator)
+        })
+    };
+
+    # TODO: explore monad unwrapping
+    # TODO: support 0-length enum values.
+    # - Enum fields reference a constructor function or default value (even though TIDs)
+    # - Each 'match' arm starts with a TID (for an enum branch), followed by an optional lpattern, followed by 'then', followed by paren_exp branch.
+    # TODO: revert 'lambda' to lpattern without return-- need a short function notation...
+
 };
-
-# TODO: explore monad unwrapping
-# TODO: support 0-length enum values.
-# - Enum fields reference a constructor function or default value (even though TIDs)
-# - Each 'match' arm starts with a TID (for an enum branch), followed by an optional lpattern, followed by 'then', followed by paren_exp branch.
-# TODO: revert 'lambda' to lpattern without return-- need a short function notation...
-
-

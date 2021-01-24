@@ -1,5 +1,7 @@
---- mod Fibx ---
+mod Fibx {
 
-register = fn (x Int32, y Int32) {
-    # print, or something?
+    register = fn (x Int32, y Int32) {
+        # print, or something?
+    };
+
 };

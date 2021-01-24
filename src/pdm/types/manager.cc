@@ -1,8 +1,11 @@
 #include "manager.hh"
 
 #include <iostream>
+#include <string>
 
 #include "solving.hh"
+#include "relation.hh"
+#include "kd_var_solver.hh"
 
 #include "pdm/core/config.hh"
 
@@ -47,9 +50,7 @@ namespace pdm::types {
             // fixed classes:
             m_signed_int_cv.print(p);
             m_unsigned_int_cv.print(p);
-            m_int_cv.print(p);
             m_float_cv.print(p);
-            m_number_cv.print(p);
 
             // holes:
             for (TypeVar const& tv: m_all_unknown_monotype_tvs) {
@@ -67,7 +68,7 @@ namespace pdm::types {
             for (TemplateVar_ClassType const& ctv: m_all_class_template_vars) {
                 ctv.print(p);
             }
-            
+
             // todo: print all Relations with pointers to referenced TVs.
         }
         p.print_newline_deindent();
@@ -110,10 +111,10 @@ namespace pdm::types {
         return ref;
     }
 
-    SolvePhase2_Result Manager::assume_relation_holds(Relation* relation) {
+    KdResult Manager::assume_relation_holds(Relation* relation) {
         m_all_relations.push_back(relation);
-        // todo: apply the relation to argument variables in terms of component invariants.
-        return SolvePhase2_Result::UpdatedOrFresh;
+        relation->on_assume(this);
+        return KdResult::UpdatedOrFresh;
     }
     TestOpResult Manager::test(Relation* relation) {
         std::cout << "NotImplemented: typer::Manager::test" << std::endl;
@@ -122,26 +123,8 @@ namespace pdm::types {
     }
 
     bool Manager::typecheck() {
-    //     auto const var_in_slice = [&all_vars] (Var* var, size_t min_index, size_t end_index) {
-    //         // bounds checks:
-    //         assert(
-    //             (min_index < all_vars.size()) &&
-    //             (end_index <= all_vars.size()) &&
-    //             (min_index <= end_index)
-    //         );
 
-    //         // scanning:
-    //         for (size_t index = min_index; index < end_index; index++) {
-    //             if (all_vars[index] == var) {
-    //                 return true;
-    //             }
-    //         }
-
-    //         // not found:
-    //         return false;
-    //     }
-
-        // Solve Phase 1: runs only once, either passes or fails:
+        // First Solve Phase 1: runs only once, either passes or fails:
         // iteratively call var solvers...
         bool sp1_pass = true;
 
@@ -150,17 +133,17 @@ namespace pdm::types {
         // for now, just printing errors per-var-- easier to debug.
 
         for (Var* var: m_all_var_refs) {
-            // SP2:
-            SolvePhase1_Result sp1_res = var->solve_phase1();
+            KcResult kind_check_result = var->kind_check();
 
             // Parsing status:
-            switch (sp1_res) {
-                case SolvePhase1_Result::InsufficientInfo:
+            switch (kind_check_result) {
+                case KcResult::InsufficientInfo:
                 {
                     // insufficient info is ok! wait for SP2
                     sp1_pass = true;
+                    break;
                 }
-                case SolvePhase1_Result::Error_MixedKind:
+                case KcResult::Error_MixedKind:
                 {
                     sp1_pass = false;
                     std::string headline = (
@@ -182,13 +165,12 @@ namespace pdm::types {
                     ));
                     break;
                 }
-                case SolvePhase1_Result::Ok:
+                case KcResult::Ok:
                 {
                     break;
                 }
             }
         }
-
         if (!sp1_pass) {
             std::string headline = "Errors detected in typing setup: terminating.";
             std::string desc = "";
@@ -203,29 +185,28 @@ namespace pdm::types {
             return false;
         }
 
-        // from this point, we can assume that all Vars have a KDVS
-
-        // until fixed...
+        // Running SP2:
+        // until fixed or a max iteration count is exceeded...
         bool fixed = false;
-        auto last_iter_sp2res = SolvePhase2_Result::CompilerError;
+        auto last_iter_sp2res = KdResult::CompilerError;
         size_t const max_iter_count = 8 * 1024;
         size_t iter_count = 0;
         while (!fixed && iter_count < max_iter_count) {
             size_t system_size = m_all_var_refs.size();
             
             // ... run an sp2 iter for each and every var...
-            auto all_vars_sp2res = SolvePhase2_Result::NoChange;
+            auto all_vars_sp2res = KdResult::NoChange;
             for (size_t index = 0; index < system_size; index++) {
                 Var* var = m_all_var_refs[index];
-                SolvePhase2_Result var_sp2res = var->solve_phase2_iter();
-                all_vars_sp2res = sp2res_and(all_vars_sp2res, var_sp2res);
+                KdResult var_sp2res = var->update_kd_invariants();
+                all_vars_sp2res = kdr_and(all_vars_sp2res, var_sp2res);
             }
 
             // ... and thereby determine fixed-ness
             fixed = (
-                (all_vars_sp2res == SolvePhase2_Result::CompilerError) ||
-                (all_vars_sp2res == SolvePhase2_Result::TypingError) ||
-                (all_vars_sp2res == SolvePhase2_Result::NoChange)
+                    (all_vars_sp2res == KdResult::CompilerError) ||
+                    (all_vars_sp2res == KdResult::TypingError) ||
+                    (all_vars_sp2res == KdResult::NoChange)
             );
             last_iter_sp2res = all_vars_sp2res;
             iter_count++;
@@ -241,26 +222,42 @@ namespace pdm::types {
             return false;
         }
 
-        if (!sp2res_is_error(last_iter_sp2res)) {
-            return true;
-        } else {
+        if (kdr_is_error(last_iter_sp2res)) {
+            feedback::Severity common_severity = feedback::Severity::Error;
+            std::string common_headline;
+            switch (last_iter_sp2res)
+            {
+                case KdResult::TypingError:
+                {
+                    common_severity = common_severity;
+                    common_headline = "Inconsistent type relations detected";
+                    break;
+                }
+                default:
+                {
+                    common_severity = feedback::Severity::CompilerError;
+                    common_headline = "Bug-induced typer error";
+                    break;
+                }
+            }
+            
             for (Var* var: m_all_var_refs) {
-                SolvePhase2_Result var_sp2res = var->solve_phase2_iter();
+                KdResult var_sp2res = var->update_kd_invariants();
                 
                 // only filtering the most severe errors:
                 if (var_sp2res == last_iter_sp2res) {
-                    std::string headline;
+                    std::string headline = common_headline;
                     std::string desc;
                     std::vector<feedback::Note*> notes; 
                     if (var->opt_client_ast_node() != nullptr) {
-                        std::string desc0 = "see type here...";
+                        std::string desc0 = "see typing variable '" + var->name() + "' here...";
                         notes.push_back(new feedback::AstNodeNote(
                             std::move(desc0),
                             var->opt_client_ast_node()
                         ));
                     }
                     feedback::post(new feedback::Letter(
-                        feedback::Severity::Error,
+                        common_severity,
                         std::move(headline),
                         std::move(desc),
                         std::move(notes)
@@ -269,6 +266,14 @@ namespace pdm::types {
             }
             return false;
         }
-    }
 
+        // even if stable, could still be errors.
+        // todo: extract a solution, return false if fails
+        assert(last_iter_sp2res == KdResult::NoChange);
+        {
+
+        }
+
+        return true;
+    }
 }

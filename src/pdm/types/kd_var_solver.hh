@@ -1,10 +1,13 @@
 #ifndef INCLUDED__PDM__TYPES__KD_VAR_SOLVER_HH
 #define INCLUDED__PDM__TYPES__KD_VAR_SOLVER_HH
 
+#include <string>
 #include <vector>
 #include <set>
 
 #include "pdm/core/integer.hh"
+#include "pdm/printer/printer.hh"
+
 #include "solving.hh"
 #include "var_kind.hh"
 #include "invariant.hh"
@@ -25,12 +28,17 @@ namespace pdm::types {
         virtual ~KindDependentVarSolver() = default;
 
       private:
-        SolvePhase2_Result try_add_invariant(KindDependentInvariant* invariant);
-        virtual SolvePhase2_Result lazy_try_add_invariant_impl(KindDependentInvariant* invariant) = 0;
+        KdResult try_add_invariant(KindDependentInvariant* invariant);
+        virtual KdResult lazy_try_add_invariant_impl(KindDependentInvariant* invariant) = 0;
 
       public:
         inline VarKind var_kind() const;
         inline TypeKind required_type_kind() const;
+
+      public:
+        virtual void print(printer::Printer& printer) const = 0;
+      protected:
+        void help_print_common_and_start_indented_block(printer::Printer& printer, std::string const& name) const;
     };
     inline KindDependentVarSolver::KindDependentVarSolver(VarKind var_kind, TypeKind required_type_kind)
     :   m_var_kind(var_kind),
@@ -44,7 +52,7 @@ namespace pdm::types {
     }
 
     struct NewKDVS {
-        SolvePhase1_Result result;
+        KcResult result;
         KindDependentVarSolver* kdvs;
     };
     NewKDVS try_new_kdvs_for(VarKind var_kind, u64 allowed_type_kinds_bitset);

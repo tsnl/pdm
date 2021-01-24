@@ -268,7 +268,6 @@
 %token EXCLAIM   "!"
 %token PIPE      "|"
 %token COLON_DASH  ":-"
-%token TRIPLE_DASH "---"
 %token EOS       "EOS"
 
 %token COLON_LTHAN ":<"
@@ -302,8 +301,8 @@ script_head_stmt
     ;
 
 script_body
-    : %empty                        { $$.reserve(16); }
-    | script_body script_body_stmt  { $$ = std::move($1); $$.push_back($2); }
+    : %empty                                  { $$.reserve(16); }
+    | script_body script_body_stmt SEMICOLON  { $$ = std::move($1); $$.push_back($2); }
     ;
 script_body_stmt
     : top_mod_stmt
@@ -314,7 +313,7 @@ script_body_stmt
  */
 
 top_mod_stmt
-    : TRIPLE_DASH KW_MOD TID TRIPLE_DASH mod_content    { $$ = mgr->new_mod_stmt(@$, $3.ID_intstr, std::move(std::vector<ast::TPattern*>{}), std::move($5)); }
+    : KW_MOD TID LCYBRK mod_content RCYBRK    { $$ = mgr->new_mod_stmt(@$, $2.ID_intstr, std::move(std::vector<ast::TPattern*>{}), std::move($4)); }
     ;
 sub_mod_stmt
     : KW_SUB TID              LCYBRK mod_content RCYBRK    { $$ = mgr->new_mod_stmt(@$, $2.ID_intstr, std::move(std::vector<ast::TPattern*>{}), std::move($4)); }

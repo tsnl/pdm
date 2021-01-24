@@ -86,7 +86,7 @@ namespace pdm::types {
       public:
         SubtypeOfRelation(ast::Node* node, TypeVar* subtype_tv, TypeVar* supertype_tv);
       protected:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
     inline SubtypeOfRelation::SubtypeOfRelation(ast::Node* node, TypeVar* subtype_tv, TypeVar* supertype_tv)
     :   Relation(node, "SubtypeOf"),
@@ -103,7 +103,7 @@ namespace pdm::types {
       public:
         SubclassOfRelation(ast::Node* node, ClassVar* subclass_cv, ClassVar* superclass_cv);
       protected:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
     inline SubclassOfRelation::SubclassOfRelation(ast::Node* node, ClassVar* subclass_cv, ClassVar* superclass_cv)
     :   Relation(node, std::move(std::string("SubclassOf"))),
@@ -118,7 +118,7 @@ namespace pdm::types {
       public:
         inline ClassOfRelation(ast::Node* node, ClassVar* class_cv, TypeVar* member_tv);
       protected:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
     inline ClassOfRelation::ClassOfRelation(ast::Node* node, ClassVar* class_cv, TypeVar* member_tv)
     :   Relation(node, std::move(std::string("ClassOf"))),
@@ -136,7 +136,7 @@ namespace pdm::types {
       public:
         TypeEqualsRelation(ast::Node* node, TypeVar* lhs_tv, TypeVar* rhs_tv);
       protected:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
     inline TypeEqualsRelation::TypeEqualsRelation(ast::Node* node, TypeVar* lhs_tv, TypeVar* rhs_tv)
     :   Relation(node, "TypeEquals"),
@@ -154,7 +154,7 @@ namespace pdm::types {
       public:
         ClassEqualsRelation(ast::Node* node, ClassVar* lhs_cv, ClassVar* rhs_cv);
       protected:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
     inline ClassEqualsRelation::ClassEqualsRelation(ast::Node* node, ClassVar* lhs_cv, ClassVar* rhs_cv)
     :   Relation(node, "ClassEquals"),
@@ -185,7 +185,7 @@ namespace pdm::types {
         }
 
       public:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
 
     // LetTypeRelation is used for type statements
@@ -209,7 +209,7 @@ namespace pdm::types {
         }
 
       public:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
 
     // LetClassRelation is used for typeclass statements
@@ -317,7 +317,7 @@ namespace pdm::types {
         TypeVar* typeof_rhs_index_tv() const;
 
       public:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
     inline DotIndexRelation::DotIndexRelation(ast::Node* ast_node, TypeVar* typeof_lhs_tv, TypeVar* typeof_rhs_index_tv)
     :   Relation(ast_node, "DotIndexRelation"),
@@ -358,7 +358,7 @@ namespace pdm::types {
         inline TupleOfRelation(std::string&& why, ast::Node* node, TypeVar* tuple_tv, std::vector<TypeVar*>&& fields_tvs);
 
       public:
-        virtual bool on_assume_impl(types::Manager* types_mgr) override;
+        bool on_assume_impl(types::Manager* types_mgr) override;
     };
     inline TupleOfRelation::TupleOfRelation(std::string&& why, ast::Node* node, TypeVar* tuple_tv, std::vector<TypeVar*>&& fields_tvs)
     :   Relation(node, "TupleOf:" + std::move(why)),
@@ -382,7 +382,7 @@ namespace pdm::types {
         inline FieldCollectionOfRelation(FieldCollectionKind field_collection_kind, std::string&& why, ast::Node* node, TypeVar* field_collection_of_tv, std::map<intern::String, TypeVar*>&& fields_tvs);
 
       protected:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
 
       protected:
         inline TypeVar* collection_tv() const;
@@ -411,12 +411,21 @@ namespace pdm::types {
 
     class StructOfRelation: public FieldCollectionOfRelation {
       public:
-        inline StructOfRelation(std::string&& why, ast::Node* node, TypeVar* struct_of_tv, std::map<intern::String, TypeVar*>&& fields_tvs);
+        inline StructOfRelation(
+            std::string&& why,
+            ast::Node* node,
+            TypeVar* struct_tv,
+            std::map<intern::String, TypeVar*>&& fields_tvs
+        );
 
       public:
         inline TypeVar* struct_tv() const;
     };
-    inline StructOfRelation::StructOfRelation(std::string&& why, ast::Node* node, TypeVar* struct_tv, std::map<intern::String, TypeVar*>&& fields_tvs)
+    inline StructOfRelation::StructOfRelation(
+        std::string&& why, ast::Node* node,
+        TypeVar* struct_tv,
+        std::map<intern::String, TypeVar*>&& fields_tvs
+    )
     :   FieldCollectionOfRelation(
             FieldCollectionOfRelation::FieldCollectionKind::Struct, 
             std::move("StructOf:" + std::move(why)), 
@@ -484,21 +493,21 @@ namespace pdm::types {
         }
 
       public:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
     class FormalVCallableRelation: public VCallableRelation {
       public:
         FormalVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv);
 
       public:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
     class ActualVCallableRelation: public VCallableRelation {
       public:
         ActualVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv);
 
       public:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
     inline FormalVCallableRelation::FormalVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<TypeVar*>&& args_tvs, TypeVar* ret_tv)
     :   VCallableRelation(VCallableRelationStrength::Formal, ast_node, fn_tv, std::move(args_tvs), ret_tv)
@@ -520,7 +529,7 @@ namespace pdm::types {
           m_then(then) {}
 
       public:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
     class IfThenElseRelation: public Relation {
       private:
@@ -536,7 +545,7 @@ namespace pdm::types {
           m_else(else_tv) {}
 
       public:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
 
     // cast
@@ -552,7 +561,7 @@ namespace pdm::types {
           m_src(src_tv) {}
 
       public:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
 
     // convert
@@ -566,8 +575,7 @@ namespace pdm::types {
         : Relation(ast_node, "ConvertableRelation") {}
 
       public:
-        // todo: pass a types_mgr arg
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
 
     // templates:
@@ -595,7 +603,7 @@ namespace pdm::types {
         TemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, Var* rhs_var, TemplateRelationExpectedMonoKind template_relation_expected_lhs_kind, std::string template_name_suffix, TemplateRelationStrength strength);
 
       public:
-        virtual bool on_assume_impl(types::Manager* manager) override;
+        bool on_assume_impl(types::Manager* manager) override;
     };
     inline TemplateRelation::TemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, Var* rhs_var, TemplateRelationExpectedMonoKind expected_rhs_kind, std::string template_name_suffix, TemplateRelationStrength strength)
     :   Relation(ast_node, "Template:" + template_name_suffix),

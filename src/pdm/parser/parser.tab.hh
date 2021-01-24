@@ -706,11 +706,10 @@ namespace pdm { namespace parser {
     EXCLAIM = 319,                 // "!"
     PIPE = 320,                    // "|"
     COLON_DASH = 321,              // ":-"
-    TRIPLE_DASH = 322,             // "---"
-    EOS = 323,                     // "EOS"
-    COLON_LTHAN = 324,             // ":<"
-    GTHAN_COLON = 325,             // ">:"
-    NONE = 326                     // "<null>"
+    EOS = 322,                     // "EOS"
+    COLON_LTHAN = 323,             // ":<"
+    GTHAN_COLON = 324,             // ">:"
+    NONE = 325                     // "<null>"
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -727,7 +726,7 @@ namespace pdm { namespace parser {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 72, ///< Number of tokens.
+        YYNTOKENS = 71, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -796,114 +795,113 @@ namespace pdm { namespace parser {
         S_EXCLAIM = 64,                          // "!"
         S_PIPE = 65,                             // "|"
         S_COLON_DASH = 66,                       // ":-"
-        S_TRIPLE_DASH = 67,                      // "---"
-        S_EOS = 68,                              // "EOS"
-        S_COLON_LTHAN = 69,                      // ":<"
-        S_GTHAN_COLON = 70,                      // ">:"
-        S_NONE = 71,                             // "<null>"
-        S_YYACCEPT = 72,                         // $accept
-        S_script = 73,                           // script
-        S_script_head = 74,                      // script_head
-        S_script_head_stmt = 75,                 // script_head_stmt
-        S_script_body = 76,                      // script_body
-        S_script_body_stmt = 77,                 // script_body_stmt
-        S_top_mod_stmt = 78,                     // top_mod_stmt
-        S_sub_mod_stmt = 79,                     // sub_mod_stmt
-        S_mod_content = 80,                      // mod_content
-        S_mod_content_stmt = 81,                 // mod_content_stmt
-        S_mod_val_stmt = 82,                     // mod_val_stmt
-        S_mod_type_stmt = 83,                    // mod_type_stmt
-        S_mod_enum_stmt = 84,                    // mod_enum_stmt
-        S_enum_field_pl = 85,                    // enum_field_pl
-        S_unprefixed_enum_field_pl = 86,         // unprefixed_enum_field_pl
-        S_enum_field = 87,                       // enum_field
-        S_mod_typeclass_stmt = 88,               // mod_typeclass_stmt
-        S_import_stmt = 89,                      // import_stmt
-        S_extern_stmt = 90,                      // extern_stmt
-        S_chain_prefix_stmt = 91,                // chain_prefix_stmt
-        S_const_stmt = 92,                       // const_stmt
-        S_val_stmt = 93,                         // val_stmt
-        S_var_stmt = 94,                         // var_stmt
-        S_set_stmt = 95,                         // set_stmt
-        S_discard_stmt = 96,                     // discard_stmt
-        S_tid = 97,                              // tid
-        S_vid = 98,                              // vid
-        S_floatl = 99,                           // floatl
-        S_stringl = 100,                         // stringl
-        S_mod_prefix = 101,                      // mod_prefix
-        S_expr = 102,                            // expr
-        S_long_exp = 103,                        // long_exp
-        S_expr_cl0 = 104,                        // expr_cl0
-        S_expr_cl2 = 105,                        // expr_cl2
-        S_type_query_exp_sl = 106,               // type_query_exp_sl
-        S_bracketed_exp = 107,                   // bracketed_exp
-        S_unit_exp = 108,                        // unit_exp
-        S_paren_exp = 109,                       // paren_exp
-        S_vtupleExpr = 110,                      // vtupleExpr
-        S_vstructExpr = 111,                     // vstructExpr
-        S_primary_exp = 112,                     // primary_exp
-        S_int_expr = 113,                        // int_expr
-        S_stringls = 114,                        // stringls
-        S_if_exp = 115,                          // if_exp
-        S_chain_exp = 116,                       // chain_exp
-        S_chain_prefix = 117,                    // chain_prefix
-        S_lambda_exp = 118,                      // lambda_exp
-        S_postfix_exp = 119,                     // postfix_exp
-        S_tcall_exp = 120,                       // tcall_exp
-        S_vcall_exp = 121,                       // vcall_exp
-        S_dot_name_exp = 122,                    // dot_name_exp
-        S_dot_index_exp = 123,                   // dot_index_exp
-        S_unary_exp = 124,                       // unary_exp
-        S_unary_op = 125,                        // unary_op
-        S_binary_exp = 126,                      // binary_exp
-        S_mul_binary_op = 127,                   // mul_binary_op
-        S_mul_binary_exp = 128,                  // mul_binary_exp
-        S_add_binary_op = 129,                   // add_binary_op
-        S_add_binary_exp = 130,                  // add_binary_exp
-        S_cmp_binary_op = 131,                   // cmp_binary_op
-        S_cmp_binary_exp = 132,                  // cmp_binary_exp
-        S_eq_binary_op = 133,                    // eq_binary_op
-        S_eq_binary_exp = 134,                   // eq_binary_exp
-        S_and_binary_exp = 135,                  // and_binary_exp
-        S_xor_binary_exp = 136,                  // xor_binary_exp
-        S_or_binary_exp = 137,                   // or_binary_exp
-        S_type_query_exp = 138,                  // type_query_exp
-        S_type_query_op = 139,                   // type_query_op
-        S_type_spec = 140,                       // type_spec
-        S_type_spec_cl1 = 141,                   // type_spec_cl1
-        S_type_spec_cl2 = 142,                   // type_spec_cl2
-        S_struct_type_spec_field = 143,          // struct_type_spec_field
-        S_struct_type_spec_field_cl = 144,       // struct_type_spec_field_cl
-        S_primary_type_spec = 145,               // primary_type_spec
-        S_paren_type_spec = 146,                 // paren_type_spec
-        S_tuple_type_spec = 147,                 // tuple_type_spec
-        S_mod_prefix_tid = 148,                  // mod_prefix_tid
-        S_fn_type_spec = 149,                    // fn_type_spec
-        S_postfix_type_spec = 150,               // postfix_type_spec
-        S_tcall_type_spec = 151,                 // tcall_type_spec
-        S_unary_type_spec = 152,                 // unary_type_spec
-        S_long_type_spec = 153,                  // long_type_spec
-        S_struct_type_spec = 154,                // struct_type_spec
-        S_targ = 155,                            // targ
-        S_targ_cl = 156,                         // targ_cl
-        S_varg = 157,                            // varg
-        S_varg_cl = 158,                         // varg_cl
-        S_class_spec = 159,                      // class_spec
-        S_primary_class_spec = 160,              // primary_class_spec
-        S_postfix_class_spec = 161,              // postfix_class_spec
-        S_struct_exp_field = 162,                // struct_exp_field
-        S_vpattern_field = 163,                  // vpattern_field
-        S_lpattern_field = 164,                  // lpattern_field
-        S_tpattern_field = 165,                  // tpattern_field
-        S_destructured_lpattern = 166,           // destructured_lpattern
-        S_lpattern = 167,                        // lpattern
-        S_vpattern = 168,                        // vpattern
-        S_tpattern = 169,                        // tpattern
-        S_vpattern_field_cl = 170,               // vpattern_field_cl
-        S_lpattern_field_cl = 171,               // lpattern_field_cl
-        S_tpattern_field_cl = 172,               // tpattern_field_cl
-        S_struct_exp_field_cl = 173,             // struct_exp_field_cl
-        S_tpattern_seq = 174                     // tpattern_seq
+        S_EOS = 67,                              // "EOS"
+        S_COLON_LTHAN = 68,                      // ":<"
+        S_GTHAN_COLON = 69,                      // ">:"
+        S_NONE = 70,                             // "<null>"
+        S_YYACCEPT = 71,                         // $accept
+        S_script = 72,                           // script
+        S_script_head = 73,                      // script_head
+        S_script_head_stmt = 74,                 // script_head_stmt
+        S_script_body = 75,                      // script_body
+        S_script_body_stmt = 76,                 // script_body_stmt
+        S_top_mod_stmt = 77,                     // top_mod_stmt
+        S_sub_mod_stmt = 78,                     // sub_mod_stmt
+        S_mod_content = 79,                      // mod_content
+        S_mod_content_stmt = 80,                 // mod_content_stmt
+        S_mod_val_stmt = 81,                     // mod_val_stmt
+        S_mod_type_stmt = 82,                    // mod_type_stmt
+        S_mod_enum_stmt = 83,                    // mod_enum_stmt
+        S_enum_field_pl = 84,                    // enum_field_pl
+        S_unprefixed_enum_field_pl = 85,         // unprefixed_enum_field_pl
+        S_enum_field = 86,                       // enum_field
+        S_mod_typeclass_stmt = 87,               // mod_typeclass_stmt
+        S_import_stmt = 88,                      // import_stmt
+        S_extern_stmt = 89,                      // extern_stmt
+        S_chain_prefix_stmt = 90,                // chain_prefix_stmt
+        S_const_stmt = 91,                       // const_stmt
+        S_val_stmt = 92,                         // val_stmt
+        S_var_stmt = 93,                         // var_stmt
+        S_set_stmt = 94,                         // set_stmt
+        S_discard_stmt = 95,                     // discard_stmt
+        S_tid = 96,                              // tid
+        S_vid = 97,                              // vid
+        S_floatl = 98,                           // floatl
+        S_stringl = 99,                          // stringl
+        S_mod_prefix = 100,                      // mod_prefix
+        S_expr = 101,                            // expr
+        S_long_exp = 102,                        // long_exp
+        S_expr_cl0 = 103,                        // expr_cl0
+        S_expr_cl2 = 104,                        // expr_cl2
+        S_type_query_exp_sl = 105,               // type_query_exp_sl
+        S_bracketed_exp = 106,                   // bracketed_exp
+        S_unit_exp = 107,                        // unit_exp
+        S_paren_exp = 108,                       // paren_exp
+        S_vtupleExpr = 109,                      // vtupleExpr
+        S_vstructExpr = 110,                     // vstructExpr
+        S_primary_exp = 111,                     // primary_exp
+        S_int_expr = 112,                        // int_expr
+        S_stringls = 113,                        // stringls
+        S_if_exp = 114,                          // if_exp
+        S_chain_exp = 115,                       // chain_exp
+        S_chain_prefix = 116,                    // chain_prefix
+        S_lambda_exp = 117,                      // lambda_exp
+        S_postfix_exp = 118,                     // postfix_exp
+        S_tcall_exp = 119,                       // tcall_exp
+        S_vcall_exp = 120,                       // vcall_exp
+        S_dot_name_exp = 121,                    // dot_name_exp
+        S_dot_index_exp = 122,                   // dot_index_exp
+        S_unary_exp = 123,                       // unary_exp
+        S_unary_op = 124,                        // unary_op
+        S_binary_exp = 125,                      // binary_exp
+        S_mul_binary_op = 126,                   // mul_binary_op
+        S_mul_binary_exp = 127,                  // mul_binary_exp
+        S_add_binary_op = 128,                   // add_binary_op
+        S_add_binary_exp = 129,                  // add_binary_exp
+        S_cmp_binary_op = 130,                   // cmp_binary_op
+        S_cmp_binary_exp = 131,                  // cmp_binary_exp
+        S_eq_binary_op = 132,                    // eq_binary_op
+        S_eq_binary_exp = 133,                   // eq_binary_exp
+        S_and_binary_exp = 134,                  // and_binary_exp
+        S_xor_binary_exp = 135,                  // xor_binary_exp
+        S_or_binary_exp = 136,                   // or_binary_exp
+        S_type_query_exp = 137,                  // type_query_exp
+        S_type_query_op = 138,                   // type_query_op
+        S_type_spec = 139,                       // type_spec
+        S_type_spec_cl1 = 140,                   // type_spec_cl1
+        S_type_spec_cl2 = 141,                   // type_spec_cl2
+        S_struct_type_spec_field = 142,          // struct_type_spec_field
+        S_struct_type_spec_field_cl = 143,       // struct_type_spec_field_cl
+        S_primary_type_spec = 144,               // primary_type_spec
+        S_paren_type_spec = 145,                 // paren_type_spec
+        S_tuple_type_spec = 146,                 // tuple_type_spec
+        S_mod_prefix_tid = 147,                  // mod_prefix_tid
+        S_fn_type_spec = 148,                    // fn_type_spec
+        S_postfix_type_spec = 149,               // postfix_type_spec
+        S_tcall_type_spec = 150,                 // tcall_type_spec
+        S_unary_type_spec = 151,                 // unary_type_spec
+        S_long_type_spec = 152,                  // long_type_spec
+        S_struct_type_spec = 153,                // struct_type_spec
+        S_targ = 154,                            // targ
+        S_targ_cl = 155,                         // targ_cl
+        S_varg = 156,                            // varg
+        S_varg_cl = 157,                         // varg_cl
+        S_class_spec = 158,                      // class_spec
+        S_primary_class_spec = 159,              // primary_class_spec
+        S_postfix_class_spec = 160,              // postfix_class_spec
+        S_struct_exp_field = 161,                // struct_exp_field
+        S_vpattern_field = 162,                  // vpattern_field
+        S_lpattern_field = 163,                  // lpattern_field
+        S_tpattern_field = 164,                  // tpattern_field
+        S_destructured_lpattern = 165,           // destructured_lpattern
+        S_lpattern = 166,                        // lpattern
+        S_vpattern = 167,                        // vpattern
+        S_tpattern = 168,                        // tpattern
+        S_vpattern_field_cl = 169,               // vpattern_field_cl
+        S_lpattern_field_cl = 170,               // lpattern_field_cl
+        S_tpattern_field_cl = 171,               // tpattern_field_cl
+        S_struct_exp_field_cl = 172,             // struct_exp_field_cl
+        S_tpattern_seq = 173                     // tpattern_seq
       };
     };
 
@@ -2058,13 +2056,13 @@ switch (yykind)
       symbol_type (int tok, location_type l)
         : super_type(token_type (tok), std::move (l))
       {
-        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_SUB || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_VAL || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_LAMBDA || tok == token::KW_TFN || tok == token::KW_TYPE || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::KW_OUT || tok == token::KW_INOUT || tok == token::KW_DISCARD || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::COLON_DASH || tok == token::TRIPLE_DASH || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
+        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_SUB || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_VAL || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_LAMBDA || tok == token::KW_TFN || tok == token::KW_TYPE || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::KW_OUT || tok == token::KW_INOUT || tok == token::KW_DISCARD || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::COLON_DASH || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
       }
 #else
       symbol_type (int tok, const location_type& l)
         : super_type(token_type (tok), l)
       {
-        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_SUB || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_VAL || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_LAMBDA || tok == token::KW_TFN || tok == token::KW_TYPE || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::KW_OUT || tok == token::KW_INOUT || tok == token::KW_DISCARD || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::COLON_DASH || tok == token::TRIPLE_DASH || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
+        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_SUB || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORT || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_VAL || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_LAMBDA || tok == token::KW_TFN || tok == token::KW_TYPE || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_TYPECLASS || tok == token::KW_OUT || tok == token::KW_INOUT || tok == token::KW_DISCARD || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::COLON_DASH || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -3139,21 +3137,6 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_TRIPLE_DASH (location_type l)
-      {
-        return symbol_type (token::TRIPLE_DASH, std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_TRIPLE_DASH (const location_type& l)
-      {
-        return symbol_type (token::TRIPLE_DASH, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
       make_EOS (location_type l)
       {
         return symbol_type (token::EOS, std::move (l));
@@ -3515,7 +3498,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 820,     ///< Last index in yytable_.
+      yylast_ = 779,     ///< Last index in yytable_.
       yynnts_ = 103,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
@@ -3532,7 +3515,7 @@ switch (yykind)
 
 #line 19 "parser.yy"
 } } // pdm::parser
-#line 3536 "parser.tab.hh"
+#line 3519 "parser.tab.hh"
 
 
 // "%code provides" blocks.
@@ -3545,7 +3528,7 @@ switch (yykind)
     int yylex(pdm::parser::parser::semantic_type* st, pdm::source::Loc* llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
     void yyerror(pdm::source::Loc* llocp, char const* message, pdm::source::Source* source, pdm::parser::Lexer* lexer);
 
-#line 3549 "parser.tab.hh"
+#line 3532 "parser.tab.hh"
 
 
 #endif // !YY_YY_PARSER_TAB_HH_INCLUDED
