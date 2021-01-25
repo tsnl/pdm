@@ -65,7 +65,7 @@ namespace pdm::types {
             for (TemplateVar_RetType const& ttv: m_all_type_template_vars) {
                 ttv.print(p);
             }
-            for (TemplateVar_ClassType const& ctv: m_all_class_template_vars) {
+            for (TemplateVar_RetClass const& ctv: m_all_class_template_vars) {
                 ctv.print(p);
             }
 
@@ -104,7 +104,7 @@ namespace pdm::types {
         m_all_var_refs.push_back(ref);
         return ref;
     }
-    TemplateVar_ClassType* Manager::new_class_template_var(std::string&& name, ast::Node* opt_client_ast_node) {
+    TemplateVar_RetClass* Manager::new_class_template_var(std::string&& name, ast::Node* opt_client_ast_node) {
         m_all_class_template_vars.emplace_back(std::move(name), opt_client_ast_node);
         auto ref = &m_all_class_template_vars.back();
         m_all_var_refs.push_back(ref);

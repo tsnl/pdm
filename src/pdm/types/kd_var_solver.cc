@@ -594,7 +594,11 @@ namespace pdm::types {
                     }
 
                     // printing arg name:
-                    printer.print_intstr(arg.name);
+                    if (arg.name.has_value()) {
+                        printer.print_intstr(arg.name.value());
+                    } else {
+                        printer.print_cstr("*");
+                    }
 
                     // printing arg type var:
                     printer.print_cstr(": ");

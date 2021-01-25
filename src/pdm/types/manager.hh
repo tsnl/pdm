@@ -46,7 +46,7 @@ namespace pdm::types {
         std::deque<UnknownClassVar>   m_all_unknown_cvs;
         std::deque<TemplateVar_RetValue>    m_all_value_template_vars;
         std::deque<TemplateVar_RetType>     m_all_type_template_vars;
-        std::deque<TemplateVar_ClassType>   m_all_class_template_vars;
+        std::deque<TemplateVar_RetClass>   m_all_class_template_vars;
         std::vector<Var*>                   m_all_var_refs;     // stored in creation order for data locality
         std::vector<Relation*>              m_all_relations;
 
@@ -85,7 +85,7 @@ namespace pdm::types {
 
         TemplateVar_RetValue* new_value_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
         TemplateVar_RetType*  new_type_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
-        TemplateVar_ClassType* new_class_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        TemplateVar_RetClass* new_class_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
 
       // get core TVs:
       public:

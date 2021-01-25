@@ -5,29 +5,30 @@
 
 namespace pdm::types {
     class Manager;
-    class TypeVar;
+    class Var;
 }
 
 namespace pdm::ast {
 
     class Exp: public Node {
       private:
-        types::TypeVar* m_x_evaltype_tv;
+        types::Var* m_x_typeof_var;
 
       protected:
         Exp(source::Loc loc, Kind kind)
-        : Node(loc, kind) {}
+        : Node(loc, kind),
+          m_x_typeof_var(nullptr) {}
 
       protected:
         // todo: implement 'is_const_evaluable' for all 'exp's
         // virtual bool is_const_evaluable() const;
 
       public:
-        types::TypeVar* x_typeof_tv() const {
-            return m_x_evaltype_tv;
+        types::Var * x_typeof_var() const {
+            return m_x_typeof_var;
         }
-        void x_typeof_tv(types::TypeVar* evaltype_tv) {
-            m_x_evaltype_tv = evaltype_tv;
+        void x_typeof_tv(types::Var* typeof_var) {
+            m_x_typeof_var = typeof_var;
         }
     };
 

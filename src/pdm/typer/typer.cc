@@ -108,6 +108,13 @@ namespace pdm::types {
       // helpers:
       protected:
         bool help_posttype_const_or_val_or_var_stmt(ast::Node* node, ast::LPattern* lhs, ast::Exp* rhs);
+
+        static TypeVar* expect_type_var(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
+        static ClassVar* expect_class_var(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
+        static TemplateVar_RetValue* expect_template_ret_value(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
+        static TemplateVar_RetType* expect_template_ret_type(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
+        static TemplateVar_RetClass* expect_template_ret_class(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
+        static Var* expect_var_check(Var* var, std::string&& expected_desc, std::string&& in_desc, VarKind expected_var_kind, source::Loc loc);
     };
 
     //
@@ -196,7 +203,12 @@ namespace pdm::types {
             
             TypeVar* rhs_tv = nullptr;
             if (node->rhs_kind() == ast::ModValStmt::RhsKind::Internal) {
-                rhs_tv = node->opt_rhs_exp()->x_typeof_tv();
+                rhs_tv = expect_type_var(
+                    node->opt_rhs_exp()->x_typeof_var(),
+                    std::move(std::string("an expression")),
+                    std::move(std::string("a module value-field assignment RHS")),
+                    node->loc()
+                );
             } else if (node->rhs_kind() == ast::ModValStmt::RhsKind::External) {
                 assert(0 && "NotImplemented: mod_val statements with external RHS");
                 return false;
@@ -267,7 +279,7 @@ namespace pdm::types {
             node->x_typeof_tv(int_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
-            TypeVar* int_tv = node->x_typeof_tv();
+            auto int_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
             KdResult sp2_result = m_types_mgr->assume_relation_holds(new ClassOfRelation(
                 node,
                 m_types_mgr->get_unsigned_int_cv(), int_tv
@@ -285,7 +297,7 @@ namespace pdm::types {
             node->x_typeof_tv(float_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
-            TypeVar* float_tv = node->x_typeof_tv();
+            auto float_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
             KdResult sp2_result = m_types_mgr->assume_relation_holds(new ClassOfRelation(
                 node,
                 m_types_mgr->get_float_cv(), float_tv
@@ -301,7 +313,7 @@ namespace pdm::types {
             TypeVar* string_tv = m_types_mgr->get_string_tv();
             node->x_typeof_tv(string_tv);
         } else {
-            TypeVar* typeof_string_tv = node->x_typeof_tv();
+            auto typeof_string_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
             KdResult sp2_result = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(
                 node,
                 m_types_mgr->get_string_tv(), typeof_string_tv
@@ -326,9 +338,16 @@ namespace pdm::types {
             TypeVar* paren_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(paren_tv);
         } else {
-            TypeVar* paren_tv = node->x_typeof_tv();
-            TypeVar* nested_tv = node->nested_exp()->x_typeof_tv();
-            KdResult kd_res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, paren_tv, nested_tv));
+            auto paren_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
+            TypeVar* nested_tv = expect_type_var(
+                node->nested_exp()->x_typeof_var(),
+                std::move(std::string("an expression")),
+                std::move(std::string("a parenthetical expression")),
+                node->loc()
+            );
+
+            auto relation = new TypeEqualsRelation(node, paren_tv, nested_tv);
+            KdResult kd_res = m_types_mgr->assume_relation_holds(relation);
             
             std::string source_desc = "see paren expression here...";
             return post_feedback_from_first_kd_res(kd_res, std::move(source_desc), node->loc());
@@ -381,8 +400,13 @@ namespace pdm::types {
             TypeVar* chain_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(chain_exp_tv);
         } else {
-            TypeVar* chain_tv = node->x_typeof_tv();
-            TypeVar* nested_tv = node->suffix()->x_typeof_tv();
+            auto chain_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
+            TypeVar* nested_tv = expect_type_var(
+                node->suffix()->x_typeof_var(),
+                std::move(std::string("an expression suffix")),
+                std::move(std::string("a chain-expression")),
+                node->loc()
+            );
             auto relation = new TypeEqualsRelation(node, chain_tv, nested_tv);
             KdResult kd_res = m_types_mgr->assume_relation_holds(relation);
 
@@ -400,8 +424,8 @@ namespace pdm::types {
             node->x_typeof_tv(lambda_exp_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
-            // todo: implement all the function/vcall typing stuff here!
-            TypeVar* lambda_exp_tv = node->x_typeof_tv();
+
+            auto lambda_exp_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
             size_t args_count = node->lhs_vpattern()->fields().size();
             std::vector<VCallArg> args{args_count}; {
                 for (size_t index = 0; index < args_count; index++) {
@@ -411,37 +435,30 @@ namespace pdm::types {
                     args[index].typeof_arg_tv = field->x_defn_tv();
                 }
             }
+
             TypeVar* ret_tv = m_types_mgr->get_void_tv();
             if (node->opt_ret_typespec()) {
-                Var* ret_var = node->opt_ret_typespec()->x_spectype_var();
-                if (ret_var == nullptr) {
-                    // an error occurred while typing the return type. ignore, but still fail.
-                    ok = false;
-                } else {
-                    ret_tv = dynamic_cast<TypeVar*>(ret_var);
-                    if (ret_tv == nullptr) {
-                        std::string headline = "Incorrect set specifier in lambda expression return.";
-                        std::string desc = "Expected type specifier, instead received class or incomplete template.";
-                        std::vector<feedback::Note*> notes{1}; {
-                            std::string note_desc = "incorrect set specifier here...";
-                            notes[0] = new feedback::SourceLocNote(std::move(note_desc), node->loc());
-                        }
-                        feedback::post(new feedback::Letter(
-                                feedback::Severity::Error,
-                                std::move(headline),
-                                std::move(desc),
-                                std::move(notes)
-                        ));
-
-                        // setting fail bit:
-                        ok = false;
-                    }
-                }
-
+                ret_tv = expect_type_var(
+                    node->opt_ret_typespec()->x_spectype_var(),
+                    std::move(std::string("a type specifier")),
+                    std::move(std::string("a lambda function's return type-specifier")),
+                    node->loc()
+                );
             }
-            auto relation = new FormalVCallableRelation(node, lambda_exp_tv, std::move(args), ret_tv);
-            KdResult kd_res = m_types_mgr->assume_relation_holds(relation);
 
+            auto body_tv = expect_type_var(
+                node->rhs_body()->x_typeof_var(),
+                std::move(std::string("an expression")),
+                std::move(std::string("a lambda function's return body")),
+                node->rhs_body()->loc()
+            );
+            auto relation1 = new TypeEqualsRelation(node, ret_tv, body_tv);
+            KdResult kd_res1 = m_types_mgr->assume_relation_holds(relation1);
+
+            auto relation2 = new FormalVCallableRelation(node, lambda_exp_tv, std::move(args), ret_tv);
+            KdResult kd_res2 = m_types_mgr->assume_relation_holds(relation2);
+
+            auto kd_res = kdr_and(kd_res1, kd_res2);
             if (kdr_is_error(kd_res)) {
                 post_feedback_from_first_kd_res(kd_res, "if expression here...", node->loc());
                 return false;
@@ -460,17 +477,42 @@ namespace pdm::types {
             if (node->else_exp() == nullptr) {
                 relation = new IfThenRelation(
                     node,
-                    node->x_typeof_tv(),
-                    node->cond_exp()->x_typeof_tv(),
-                    node->then_exp()->x_typeof_tv()
+                    dynamic_cast<TypeVar*>(node->x_typeof_var()),
+                    expect_type_var(
+                        node->cond_exp()->x_typeof_var(),
+                        std::move(std::string("an expression")),
+                        std::move(std::string("the condition of an if-then expression")),
+                        node->loc()
+                    ),
+                    expect_type_var(
+                        node->then_exp()->x_typeof_var(),
+                        std::move(std::string("an expression")),
+                        std::move(std::string("the 'then' branch of an if-then expression")),
+                        node->loc()
+                    )
                 );
             } else {
                 relation = new IfThenElseRelation(
                     node,
-                    node->x_typeof_tv(),
-                    node->cond_exp()->x_typeof_tv(),
-                    node->then_exp()->x_typeof_tv(),
-                    node->else_exp()->x_typeof_tv()
+                    dynamic_cast<TypeVar*>(node->x_typeof_var()),
+                    expect_type_var(
+                        node->cond_exp()->x_typeof_var(),
+                        std::move(std::string("an expression")),
+                        std::move(std::string("the condition of an if-then-else expression")),
+                        node->loc()
+                    ),
+                    expect_type_var(
+                        node->then_exp()->x_typeof_var(),
+                        std::move(std::string("an expression")),
+                        std::move(std::string("the 'then' branch of an if-then-else expression")),
+                        node->loc()
+                    ),
+                    expect_type_var(
+                        node->else_exp()->x_typeof_var(),
+                        std::move(std::string("an expression")),
+                        std::move(std::string("the 'else' branch of an if-then-else expression")),
+                        node->loc()
+                    )
                 );
             }
             KdResult kd_res = m_types_mgr->assume_relation_holds(relation);
@@ -533,14 +575,63 @@ namespace pdm::types {
         return true;
     }
     bool TyperVisitor::on_visit__vcall_exp(ast::VCallExp* node, VisitOrder visit_order) {
+        bool ok = true;
+
         if (visit_order == VisitOrder::Pre) {
-            std::string tv_name = "VCallExp";
+            std::string tv_name = "VCallExp_Ret";
             TypeVar* vcall_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
             node->x_typeof_tv(vcall_exp_tv);
         } else {
+            assert(visit_order == VisitOrder::Post);
 
+            auto ret_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
+
+            // todo: if templates are called, need special handling...
+            TypeVar* called_tv = expect_type_var(
+                node->lhs_called()->x_typeof_var(),
+                std::move(std::string("an expression to call")),
+                std::move(std::string("a function call expression")),
+                node->loc()
+            );
+
+            size_t args_count = node->args().size();
+            std::vector<VCallArg> args{args_count}; {
+                for (size_t index = 0; index < args_count; index++) {
+                    ast::VArg* arg = node->args()[index];
+                    args[index].name = {};
+                    args[index].varg_access_spec = arg->access_spec();
+
+                    Var* arg_var = arg->arg_exp()->x_typeof_var();
+                    assert(arg_var != nullptr && "Typer error: expected arg var from pre-visit.");
+                    auto arg_tv = dynamic_cast<TypeVar*>(arg_var);
+                    if (arg_tv != nullptr) {
+                        args[index].typeof_arg_tv = arg_tv;
+                    } else {
+                        std::string headline = "Expected value VCallExp argument, received template.";
+                        std::vector<feedback::Note*> notes{1}; {
+                            std::string note_desc = "incorrect arg here...";
+                            notes[0] = new feedback::SourceLocNote(std::move(note_desc), arg->arg_exp()->loc());
+                        }
+                        feedback::post(new feedback::Letter(
+                            feedback::Severity::Error,
+                            std::move(headline),"",
+                            std::move(notes)
+                        ));
+                        ok = false;
+                    }
+                }
+            }
+
+            auto relation = new FormalVCallableRelation(node, called_tv, std::move(args), ret_tv);
+            KdResult kd_res = m_types_mgr->assume_relation_holds(relation);
+
+            if (kdr_is_error(kd_res)) {
+                post_feedback_from_first_kd_res(kd_res, "if expression here...", node->loc());
+                return false;
+            }
         }
-        return true;
+
+        return ok;
     }
     bool TyperVisitor::on_visit__tcall_exp(ast::TCallExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
@@ -941,7 +1032,12 @@ namespace pdm::types {
     //
 
     bool TyperVisitor::help_posttype_const_or_val_or_var_stmt(ast::Node* node, ast::LPattern* lpattern, ast::Exp* rhs_exp) {
-        TypeVar* typeof_rhs_tv = rhs_exp->x_typeof_tv();
+        TypeVar* typeof_rhs_tv = expect_type_var(
+            rhs_exp->x_typeof_var(),
+            std::move(std::string("an expression")),
+            std::move(std::string("a 'Let' value-id-binding")),
+            rhs_exp->loc()
+        );
         if (lpattern->destructure()) {
             // todo: destructure as a tuple
             std::cout << "NotImplemented: tuple-lpattern destructuring" << std::endl;
@@ -951,21 +1047,27 @@ namespace pdm::types {
             TypeVar* typeof_lhs_tv = field->x_defn_tv();
             
             // "let lhs = rhs" <=> rhs :< lhs
-            KdResult assume_op_result1 = m_types_mgr->assume_relation_holds(new SubtypeOfRelation(node, typeof_rhs_tv, typeof_lhs_tv));
+            auto relation = new SubtypeOfRelation(node, typeof_rhs_tv, typeof_lhs_tv);
+            KdResult assume_op_result1 = m_types_mgr->assume_relation_holds(relation);
             
-            // if typespec, tie!
+            // if typespec, ensure exact type equality
             KdResult assume_op_result2 = KdResult::NoChange; {
                 if (field->opt_rhs_typespec()) {
-                    Var* typespec_var = field->opt_rhs_typespec()->x_spectype_var();
-                    if (is_type_var_kind(typespec_var->var_kind())) {
+                    TypeVar* typespec_tv = expect_type_var(
+                        field->opt_rhs_typespec()->x_spectype_var(),
+                        std::move(std::string("a type specifier")),
+                        std::move(std::string("an L-pattern field")),
+                        node->loc()
+                    );
+                    if (typespec_tv != nullptr) {
                         // typeof_lhs_tv :: typeof_typespec_tv
-                        assume_op_result2 = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(
+                        auto ts_relation = new TypeEqualsRelation(
                             field,
                             typeof_lhs_tv,
-                            dynamic_cast<TypeVar*>(typespec_var)
-                        ));
+                            typespec_tv
+                        );
+                        assume_op_result2 = m_types_mgr->assume_relation_holds(relation);
                     } else {
-                        // todo: post 'expected class, received type' error feedback
                         assume_op_result2 = KdResult::TypingError;
                     }
                 }
@@ -977,6 +1079,103 @@ namespace pdm::types {
         }
         return true;
     }
+
+    Var* TyperVisitor::expect_var_check(
+        Var* var,
+        std::string&& expected_desc,
+        std::string&& in_desc,
+        VarKind expected_var_kind,
+        source::Loc loc
+    ) {
+        if (var != nullptr && var->var_kind() == expected_var_kind) {
+            // passes!
+            return var;
+        } else {
+            if (var != nullptr) {
+                std::string vk_as_str = var_kind_as_str(var->var_kind());
+
+                std::string headline = "Expected " + std::move(expected_desc) + " in " + std::move(in_desc);
+                std::string desc = "Instead, the term has a '" + vk_as_str + "' type variable.";
+                std::vector<feedback::Note*> notes{1}; {
+                    std::string note_desc = "incorrect term here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(note_desc), loc);
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
+            }
+            return nullptr;
+        }
+    }
+
+    TypeVar* TyperVisitor::expect_type_var(
+        Var* var,
+        std::string&& expected_desc, std::string&& in_desc,
+        source::Loc loc
+    ) {
+        Var* checked_var = expect_var_check(var, std::move(expected_desc), std::move(in_desc), VarKind::Type, loc);
+        if (checked_var == nullptr) {
+            return nullptr;
+        } else {
+            return dynamic_cast<TypeVar*>(checked_var);
+        }
+    }
+
+    ClassVar* TyperVisitor::expect_class_var(
+        Var* var,
+        std::string&& expected_desc, std::string&& in_desc,
+        source::Loc loc
+    ) {
+        Var* checked_var = expect_var_check(var, std::move(expected_desc), std::move(in_desc), VarKind::Class, loc);
+        if (checked_var == nullptr) {
+            return nullptr;
+        } else {
+            return dynamic_cast<ClassVar*>(checked_var);
+        }
+    }
+
+    TemplateVar_RetValue* TyperVisitor::expect_template_ret_value(
+        Var* var,
+        std::string&& expected_desc, std::string&& in_desc,
+        source::Loc loc
+    ) {
+        Var* checked_var = expect_var_check(var, std::move(expected_desc), std::move(in_desc), VarKind::Template_RetValue, loc);
+        if (checked_var == nullptr) {
+            return nullptr;
+        } else {
+            return dynamic_cast<TemplateVar_RetValue*>(checked_var);
+        }
+    }
+
+    TemplateVar_RetType* TyperVisitor::expect_template_ret_type(
+        Var* var,
+        std::string&& expected_desc, std::string&& in_desc,
+        source::Loc loc
+    ) {
+        Var* checked_var = expect_var_check(var, std::move(expected_desc), std::move(in_desc), VarKind::Template_RetType, loc);
+        if (checked_var == nullptr) {
+            return nullptr;
+        } else {
+            return dynamic_cast<TemplateVar_RetType*>(checked_var);
+        }
+    }
+
+    TemplateVar_RetClass* TyperVisitor::expect_template_ret_class(
+        Var* var,
+        std::string&& expected_desc, std::string&& in_desc,
+        source::Loc loc
+    ) {
+        Var* checked_var = expect_var_check(var, std::move(expected_desc), std::move(in_desc), VarKind::Template_RetClass, loc);
+        if (checked_var == nullptr) {
+            return nullptr;
+        } else {
+            return dynamic_cast<TemplateVar_RetClass*>(checked_var);
+        }
+    }
+
 }
 
 //

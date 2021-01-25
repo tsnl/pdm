@@ -197,7 +197,7 @@ namespace pdm::types {
         // they set 'kd_res'.
         KdResult kd_res = KdResult::NoChange;
 
-        // unify kind bitsets based on super-vars and subvars:
+        // unify kind bitsets based on super-vars and subvars, and create a KDVS if required:
         {
             auto const unify_kind_bitset_from = [] (std::vector<Var*> const& related_vars) {
                 // must update from all related vars since any could have gained new kind bits since the
@@ -205,14 +205,26 @@ namespace pdm::types {
                 TypeKindBitset related_kind_bitset = 0;
                 size_t related_var_count = related_vars.size();
                 for (size_t index = 0; index < related_var_count; index++) {
-                    related_kind_bitset |= related_vars[index]->m_assumed_kind_bitset;
+                    auto related_var = related_vars[index];
+
+                    // ignore bitsets from related vars that already have errors:
+                    if (!kdr_is_error(related_var->m_prev_solve_iter_result)) {
+                        related_kind_bitset |= related_var->m_assumed_kind_bitset;
+                    }
                 }
                 return related_kind_bitset;
             };
+
             // applying all super-var bitsets to own, calculating an SP2_Result accordingly:
             TypeKindBitset new_kind_bitset = m_assumed_kind_bitset;
+
+            // ... from supervars:
             new_kind_bitset |= unify_kind_bitset_from(m_assumed_supervars);
+
+            // ... from subvars:
             new_kind_bitset |= unify_kind_bitset_from(m_assumed_subvars);
+
+            // then checking:
             if (new_kind_bitset != m_assumed_kind_bitset) {
                 // supervar_kind_bitset has expanded.
                 m_assumed_kind_bitset = new_kind_bitset;
@@ -286,12 +298,12 @@ namespace pdm::types {
             m_kdvs_consumed_kd_invariant_count = b;
         }
 
+        // flush invariants to subvars:
         // - fresh subvars need all invariants, old and new.
         // - old subvars only need new invariants.
         // - after propagating updates, need to update bounds for next iter.
         {
             size_t old_invariant_count = m_sp2_propagated_sofar_kd_invariant_count;
-            // size_t old_invariant_count = m_sp2_propagated_sofar_kd_invariant_count;
             size_t old_subvar_count = m_sp2_propagated_sofar_subvar_count;
 
             // adding only new invariants to old subvars:
@@ -487,6 +499,7 @@ namespace pdm::types {
                 if (m_assumed_kind_bitset & tk_bits(tk)) {
                     p.print_cstr("| ");
                     p.print_cstr(type_kind_as_str(tk));
+                    p.print_cstr(" ");
                 }
             }
         } else {

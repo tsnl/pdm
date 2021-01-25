@@ -111,7 +111,7 @@ namespace pdm::types {
 
     void IsArrayInvariant::print(printer::Printer &printer) const {
         printer.print_cstr("(KD) IsArrayOf: ");
-        m_item_tv->print(printer);
+        m_item_tv->print_title(printer);
     }
 
     void IsVCallableInvariant::print(printer::Printer &printer) const {
@@ -126,7 +126,7 @@ namespace pdm::types {
         printer.print_cstr("IsVCallable (");
         printer.print_uint_dec(m_formal_args.size());
         printer.print_cstr(") -> ");
-        m_typeof_ret_tv->print(printer);
+        m_typeof_ret_tv->print_title(printer);
     }
 
 //    void ?::print(printer::Printer& printer) {

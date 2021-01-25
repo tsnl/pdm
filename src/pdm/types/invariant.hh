@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <cassert>
+#include <optional>
 
 #include "pdm/core/config.hh"
 #include "pdm/core/integer.hh"
@@ -387,13 +388,28 @@ namespace pdm::types {
     
     // func/vcall:
     struct VCallArg {
-        intern::String      name;
+        std::optional<intern::String> name;
         ast::VArgAccessSpec varg_access_spec;
-        TypeVar*            typeof_arg_tv;
+        TypeVar* typeof_arg_tv;
 
       public:
-        bool operator== (VCallArg const& other) const = default;
+        bool operator== (VCallArg const& other) const;
     };
+    inline bool VCallArg::operator==(const VCallArg &other) const {
+        // if either arg is missing a name, we don't check if names match.
+        // only if both args have a name do we check they must match.
+        bool ignore_name_match = !name.has_value() || !other.name.has_value();
+        if (!ignore_name_match) {
+            if (name.value() != other.name.value()) {
+                return false;
+            }
+        }
+        return (
+            (varg_access_spec == other.varg_access_spec) &&
+            (typeof_arg_tv == other.typeof_arg_tv)
+        );
+    }
+
     enum class VCallInvariantStrength {
         Formal,
         Actual

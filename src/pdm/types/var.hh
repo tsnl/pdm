@@ -24,7 +24,7 @@ namespace pdm::types {
     class ClassVar;
     class TemplateVar_RetValue;
     class TemplateVar_RetType;
-    class TemplateVar_ClassType;
+    class TemplateVar_RetClass;
 
     class Relation;
     class Invariant;
@@ -374,11 +374,11 @@ namespace pdm::types {
     :   TemplateVar(std::move(name), client_ast_node, VarKind::Template_RetType)
     {}
     
-    class TemplateVar_ClassType: public TemplateVar {
+    class TemplateVar_RetClass: public TemplateVar {
       public:
-        inline TemplateVar_ClassType(std::string&& name, ast::Node* client_ast_node);
+        inline TemplateVar_RetClass(std::string&& name, ast::Node* client_ast_node);
     };
-    inline TemplateVar_ClassType::TemplateVar_ClassType(std::string&& name, ast::Node* client_ast_node)
+    inline TemplateVar_RetClass::TemplateVar_RetClass(std::string&& name, ast::Node* client_ast_node)
     :   TemplateVar(std::move(name), client_ast_node, VarKind::Template_RetClass)
     {}
 
