@@ -1,5 +1,41 @@
 # Roadmap
 
+## Jan 31 2021
+
+Queueing 2 tasks:
+
+TODO: Typing numeric literals can be improved using optional suffices.
+- 'u' indicates unsigned int
+- 'f' indicates float
+- otherwise, default to signed int/float depending on whether '.' in number
+- e.g. 24f => 24.0, Float
+- e.g. 42u => 42, UnsignedInt
+- e.g. 23 => 23, SignedInt
+- e.g. 23.0 => 23.0, Float
+
+In Typer, can create UnaryOpRelation and BinaryOpRelation
+2 checks:
+- relate to return value [and other arg if binary]
+- mandate solution in a limited, defined set.
+
+Kinds cannot be mixed using algebraic operators.
+Explicit conversions must be used to transition between kinds.
+Of course, subtyping relations within the same kind are still respected.
+
+This way, every class' members are of one unique kind. RIP AnyType.
+
+Thus, each ClassVar has one KDVS, just like TypeVar.
+
+TODO: finish templates + remove multiple template args
+- in typer and types, just establish type relationships between formal and actual arguments.
+  ClassOf distils to subvar relation, that can be checked just like TypeVar.
+- multiple template args eschewed in favor of `sub` submodule statements that may accept
+  template args.
+  - this allows intermediate types to be written naturally using typedef statements.
+  * TODO: add support for tpatterns in 'sub' statements in typer.
+- `Var reification` involves converting a Var into a concrete solution and checking finite.
+  - ProxyTypeVars, ClassVars, and Templates are exempt.
+
 ## Jan 18 2021
 
 ```
