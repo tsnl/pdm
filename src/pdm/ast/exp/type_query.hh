@@ -24,23 +24,31 @@ namespace pdm::ast {
         TypeSpec*     m_rhs_typespec;
       
       protected:
-        TypeQueryExp(source::Loc loc, TypeQueryKind kind, TypeSpec* lhs_typespec, TypeSpec* rhs_typespec)
-        : Exp(loc, Kind::TypeQueryExp),
-          m_query_kind(kind),
-          m_lhs_typespec(lhs_typespec),
-          m_rhs_typespec(rhs_typespec) {}
+        TypeQueryExp(source::Loc loc, TypeQueryKind kind, TypeSpec* lhs_typespec, TypeSpec* rhs_typespec);
       
       public:
-        TypeQueryKind query_kind() const {
-            return m_query_kind;
-        }
-        TypeSpec* lhs_typespec() const {
-            return m_lhs_typespec;
-        }
-        TypeSpec* rhs_typespec() const {
-            return m_rhs_typespec;
-        }
+        [[nodiscard]] TypeQueryKind query_kind() const;
+        [[nodiscard]] TypeSpec* lhs_typespec() const;
+        [[nodiscard]] TypeSpec* rhs_typespec() const;
     };
+
+    inline TypeQueryExp::TypeQueryExp(source::Loc loc, TypeQueryKind kind, TypeSpec* lhs_typespec, TypeSpec* rhs_typespec)
+    :   Exp(loc, Kind::TypeQueryExp),
+        m_query_kind(kind),
+        m_lhs_typespec(lhs_typespec),
+        m_rhs_typespec(rhs_typespec) {}
+
+    inline TypeQueryKind TypeQueryExp::query_kind() const {
+        return m_query_kind;
+    }
+
+    inline TypeSpec* TypeQueryExp::lhs_typespec() const {
+        return m_lhs_typespec;
+    }
+
+    inline TypeSpec* TypeQueryExp::rhs_typespec() const {
+        return m_rhs_typespec;
+    }
 
 }
 

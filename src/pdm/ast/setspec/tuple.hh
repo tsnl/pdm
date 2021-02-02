@@ -17,15 +17,19 @@ namespace pdm::ast {
         std::vector<TypeSpec*> m_items;
 
       protected:
-        TupleTypeSpec(source::Loc loc, std::vector<TypeSpec*>&& items)
-        : TypeSpec(loc, Kind::TupleTypeSpec),
-          m_items(std::move(items)) {}
+        TupleTypeSpec(source::Loc loc, std::vector<TypeSpec*>&& items);
 
       public:
-        std::vector<TypeSpec*> const& items() const {
-            return m_items;
-        }
+        [[nodiscard]] std::vector<TypeSpec*> const& items() const;
     };
+
+    inline std::vector<TypeSpec*> const& TupleTypeSpec::items() const {
+        return m_items;
+    }
+
+    inline TupleTypeSpec::TupleTypeSpec(source::Loc loc, std::vector<TypeSpec*>&& items)
+    :   TypeSpec(loc, Kind::TupleTypeSpec),
+        m_items(std::move(items)) {}
 
 }   // namespace pdm::ast
 

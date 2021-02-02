@@ -23,23 +23,32 @@ namespace pdm::ast {
         scoper::Defn const* m_x_defn;
 
       protected:
-        IdExp(source::Loc loc, intern::String name)
-        : Exp(loc, Kind::IdExp),
-          m_name(name) {}
+        IdExp(source::Loc loc, intern::String name);
 
       public:
-        intern::String name() const {
-            return m_name;
-        }
+        [[nodiscard]] intern::String name() const;
 
       public:
-        scoper::Defn const* x_defn() const {
-            return m_x_defn;
-        }
-        void x_defn(scoper::Defn const* defn) {
-            m_x_defn = defn;
-        }
+        [[nodiscard]] scoper::Defn const* x_defn() const;
+        void x_defn(scoper::Defn const* defn);
     };
+
+    inline IdExp::IdExp(source::Loc loc, intern::String name)
+    :   Exp(loc, Kind::IdExp),
+        m_name(name),
+        m_x_defn{} {}
+
+    inline intern::String IdExp::name() const {
+        return m_name;
+    }
+
+    inline scoper::Defn const* IdExp::x_defn() const {
+        return m_x_defn;
+    }
+
+    inline void IdExp::x_defn(const scoper::Defn* defn) {
+        m_x_defn = defn;
+    }
 
 }
 

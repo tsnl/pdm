@@ -235,6 +235,8 @@
 
 %token <TokenInfo> DINT_LIT "42"
 %token <TokenInfo> XINT_LIT "0x2a"
+%token <TokenInfo> UNSIGNED_DINT_LIT "42u"
+%token <TokenInfo> UNSIGNED_XINT_LIT "0x2Au"
 %token <TokenInfo> FLOAT_LIT "4.2"
 %token <TokenInfo> DQSTRING_LIT "\"dq-string-literal\""
 %token <TokenInfo> SQSTRING_LIT "'sq-string-literal'"
@@ -472,8 +474,10 @@ primary_exp
     | lambda_exp
     ;
 int_expr
-    : DINT_LIT  { $$ = mgr->new_int_exp(@$, $1.Int, ast::IntExp::Base::Dec); }
-    | XINT_LIT  { $$ = mgr->new_int_exp(@$, $1.Int, ast::IntExp::Base::Hex); }
+    : DINT_LIT  { $$ = mgr->new_int_exp(@$, $1.Int, ast::IntExp::Base::Dec, false); }
+    | XINT_LIT  { $$ = mgr->new_int_exp(@$, $1.Int, ast::IntExp::Base::Hex, false); }
+    | UNSIGNED_DINT_LIT  { $$ = mgr->new_int_exp(@$, $1.Int, ast::IntExp::Base::Dec, true); }
+    | UNSIGNED_XINT_LIT  { $$ = mgr->new_int_exp(@$, $1.Int, ast::IntExp::Base::Hex, true); }
     ;
 stringls
     : SQSTRING_LIT           { $$.emplace_back(@$, *$1.String_utf8string, ast::StringExp::QuoteKind::SingleQuote); }

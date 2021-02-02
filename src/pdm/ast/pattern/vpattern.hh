@@ -27,50 +27,67 @@ namespace pdm::ast {
             friend Manager;
 
           private:
-            source::Loc     m_loc;
-            intern::String  m_lhs_name;
             TypeSpec*       m_typespec;
             VArgAccessSpec  m_accepted_varg_kind;
             types::TypeVar* m_x_defn_tv;
 
           protected:
-            Field(source::Loc loc, intern::String lhs_name, TypeSpec* rhs_typespec, VArgAccessSpec accepted_varg_kind)
-            :   BaseField(loc, Kind::Aux_VPatternField, lhs_name),
-                m_typespec(rhs_typespec),
-                m_accepted_varg_kind(accepted_varg_kind),
-                m_x_defn_tv(nullptr)
-            {}
+            Field(source::Loc loc, intern::String lhs_name, TypeSpec* rhs_typespec, VArgAccessSpec accepted_varg_kind);
 
           public:
-            TypeSpec* rhs_typespec() const {
-                return m_typespec;
-            }
-            VArgAccessSpec accepted_varg_kind() const {
-                return m_accepted_varg_kind;
-            }
+            [[nodiscard]] TypeSpec* rhs_typespec() const;
+            [[nodiscard]] VArgAccessSpec accepted_varg_kind() const;
 
           public:
-            types::TypeVar* x_defn_tv() const {
-                return m_x_defn_tv;
-            }
-            void x_defn_tv(types::TypeVar* defn_tv) {
-                m_x_defn_tv = defn_tv;
-            }
+            [[nodiscard]] types::TypeVar* x_defn_tv() const;
+            void x_defn_tv(types::TypeVar* defn_tv);
         };
       
       private:
         std::vector<VPattern::Field*> m_fields;
 
       protected:
-        VPattern(source::Loc loc, std::vector<VPattern::Field*>&& fields)
-        : Node(loc, Kind::VPattern),
-          m_fields(std::move(fields)) {}
+        VPattern(source::Loc loc, std::vector<VPattern::Field*>&& fields);
 
       public:
-        std::vector<VPattern::Field*> const& fields() const {
-            return m_fields;
-        }
+        [[nodiscard]] std::vector<VPattern::Field*> const& fields() const;
     };
+
+    inline std::vector<VPattern::Field*> const& VPattern::fields() const {
+        return m_fields;
+    }
+
+    inline VPattern::VPattern(source::Loc loc, std::vector<VPattern::Field*>&& fields)
+    :   Node(loc, Kind::VPattern),
+        m_fields(std::move(fields)) {}
+
+    inline void VPattern::Field::x_defn_tv(types::TypeVar* defn_tv) {
+        m_x_defn_tv = defn_tv;
+    }
+
+    inline types::TypeVar* VPattern::Field::x_defn_tv() const {
+        return m_x_defn_tv;
+    }
+
+    inline VArgAccessSpec VPattern::Field::accepted_varg_kind() const {
+        return m_accepted_varg_kind;
+    }
+
+    inline TypeSpec* VPattern::Field::rhs_typespec() const {
+        return m_typespec;
+    }
+
+    inline VPattern::Field::Field(
+        source::Loc loc,
+        intern::String lhs_name,
+        TypeSpec* rhs_typespec,
+        VArgAccessSpec accepted_varg_kind
+    )
+    :   BaseField(loc, Kind::Aux_VPatternField, lhs_name),
+        m_typespec(rhs_typespec),
+        m_accepted_varg_kind(accepted_varg_kind),
+        m_x_defn_tv(nullptr)
+    {}
 
 }
 

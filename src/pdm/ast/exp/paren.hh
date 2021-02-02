@@ -22,10 +22,12 @@ namespace pdm::ast {
           m_nested(nested) {}
       
       public:
-        Exp* nested_exp() const {
-            return m_nested;
-        }
+        [[nodiscard]] Exp* nested_exp() const;
     };
+
+    inline Exp* ParenExp::nested_exp() const {
+        return m_nested;
+    }
 
 }
 

@@ -25,34 +25,48 @@ namespace pdm::ast {
             Exp*           m_value;
 
           protected:
-            Field(source::Loc loc, intern::String name, Exp* value)
-            : m_loc(loc), m_name(name), m_value(value) {}
+            Field(source::Loc loc, intern::String name, Exp* value);
           
           public:
-            source::Loc const& loc() const {
-                return m_loc;
-            }
-            intern::String name() const {
-                return m_name;
-            }
-            Exp* value() const {
-                return m_value;
-            }
+            [[nodiscard]] source::Loc const& loc() const;
+            [[nodiscard]] intern::String name() const;
+            [[nodiscard]] Exp* value() const;
         };
 
       private:
         std::vector<StructExp::Field*> m_fields;
     
       protected:
-        StructExp(source::Loc loc, std::vector<StructExp::Field*>&& fields)
-        : Exp(loc, Kind::StructExp),
-          m_fields(std::move(fields)) {}
+        StructExp(source::Loc loc, std::vector<StructExp::Field*>&& fields);
 
       public:
-        std::vector<StructExp::Field*> const& fields() const {
-            return m_fields;
-        }
+        [[nodiscard]] std::vector<StructExp::Field*> const& fields() const;
     };
+
+    inline StructExp::Field::Field(source::Loc loc, intern::String name, Exp *value)
+    :   m_loc(loc),
+        m_name(name),
+        m_value(value) {}
+
+    inline source::Loc const& StructExp::Field::loc() const {
+        return m_loc;
+    }
+
+    inline intern::String StructExp::Field::name() const {
+        return m_name;
+    }
+
+    inline Exp* StructExp::Field::value() const {
+        return m_value;
+    }
+
+    inline StructExp::StructExp(source::Loc loc, std::vector<StructExp::Field*>&& fields)
+    :   Exp(loc, Kind::StructExp),
+        m_fields(std::move(fields)) {}
+
+    inline std::vector<StructExp::Field*> const& StructExp::fields() const {
+        return m_fields;
+    }
 
 }
 

@@ -16,15 +16,19 @@ namespace pdm::ast {
         long double m_value;
     
       protected:
-        FloatExp(source::Loc loc, long double value)
-        : Exp(loc, Kind::FloatExp),
-          m_value(value) {}
+        FloatExp(source::Loc loc, long double value);
 
       public:
-        long double value() const {
-            return m_value;
-        }
+        [[nodiscard]] long double value() const;
     };
+
+    inline FloatExp::FloatExp(source::Loc loc, long double value)
+    :   Exp(loc, Kind::FloatExp),
+        m_value(value) {}
+
+    inline long double FloatExp::value() const {
+        return m_value;
+    }
 
 }
 

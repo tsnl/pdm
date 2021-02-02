@@ -28,8 +28,8 @@ namespace pdm::ast {
         ModuleDotExp(source::Loc loc, std::vector<intern::String>&& prefix_module_names, intern::String rhs_name);
 
       public:
-        std::vector<intern::String> const& lhs_prefix_module_names() const;
-        intern::String rhs_name() const;
+        [[nodiscard]] std::vector<intern::String> const& lhs_prefix_module_names() const;
+        [[nodiscard]] intern::String rhs_name() const;
     };
     inline ModuleDotExp::ModuleDotExp(source::Loc loc, std::vector<intern::String>&& prefix_module_names, intern::String rhs_name)
     :   Exp(loc, Kind::ModuleDotExp),

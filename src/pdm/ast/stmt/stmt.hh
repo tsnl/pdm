@@ -10,9 +10,11 @@ namespace pdm::ast {
 
     class Stmt: public Node {
       protected:
-        Stmt(source::Loc loc, Kind stmt_kind)
-        : Node(loc, stmt_kind) {}
+        Stmt(source::Loc loc, Kind stmt_kind);
     };
+
+    inline Stmt::Stmt(source::Loc loc, Kind stmt_kind)
+    :   Node(loc, stmt_kind) {}
 
 }
 

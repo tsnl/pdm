@@ -18,15 +18,19 @@ namespace pdm::ast {
         std::vector<Exp*> m_items;
 
       protected:
-        TupleExp(source::Loc loc, std::vector<Exp*>&& items)
-        : Exp(loc, Kind::TupleExp),
-          m_items(std::move(items)) {}
+        TupleExp(source::Loc loc, std::vector<Exp*>&& items);
       
       public:
-        std::vector<Exp*> const& items() const {
-            return m_items;
-        }
+        [[nodiscard]] std::vector<Exp*> const& items() const;
     };
+
+    inline TupleExp::TupleExp(source::Loc loc, std::vector<Exp*>&& items)
+    :   Exp(loc, Kind::TupleExp),
+        m_items(std::move(items)) {}
+
+    inline std::vector<Exp*> const& TupleExp::items() const {
+        return m_items;
+    }
 
 }
 

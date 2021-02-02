@@ -19,19 +19,25 @@ namespace pdm::ast {
         Exp*           m_link_arg;
     
       protected:
-        ExternStmt(source::Loc loc, intern::String ext_mod_name, Exp* link_arg)
-        : Stmt(loc, Kind::ExternStmt),
-          m_ext_mod_name(ext_mod_name),
-          m_link_arg(link_arg) {}
+        ExternStmt(source::Loc loc, intern::String ext_mod_name, Exp* link_arg);
     
       public:
-        intern::String ext_mod_name() const {
-            return m_ext_mod_name;
-        }
-        Exp* link_arg() const {
-            return m_link_arg;
-        }
+        [[nodiscard]] intern::String ext_mod_name() const;
+        [[nodiscard]] Exp* link_arg() const;
     };
+
+    inline ExternStmt::ExternStmt(source::Loc loc, intern::String ext_mod_name, Exp* link_arg)
+    :   Stmt(loc, Kind::ExternStmt),
+        m_ext_mod_name(ext_mod_name),
+        m_link_arg(link_arg) {}
+
+    inline intern::String ExternStmt::ext_mod_name() const {
+        return m_ext_mod_name;
+    }
+
+    inline Exp* ExternStmt::link_arg() const {
+        return m_link_arg;
+    }
 
 }
 

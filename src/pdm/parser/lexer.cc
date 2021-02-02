@@ -117,7 +117,7 @@ namespace pdm::parser::aux {
     static TokenKind lexOneToken(Reader* source, TokenInfo* info, source::Loc* out_loc);
     static TokenKind lexOneSimpleToken(Reader* source);
     static TokenKind helpLexOneSimpleToken(Reader* source);
-    static TokenKind lexOneNumber(Reader* source, TokenInfo* info);
+    static TokenKind lexOneNumber(Reader* source, TokenInfo* optInfoP);
     static TokenKind lexOneIntChunk(Reader* source, TokenInfo* info, int noPrefix);
     static TokenKind lexOneIdOrKeyword(Reader* source, TokenInfo* info, source::Pos const& firstPos);
     static TokenKind lexOneString(Reader* source, TokenInfo* infoP, source::Pos const& firstPos);
@@ -420,54 +420,72 @@ namespace pdm::parser::aux {
         }
         return Tk::NONE;
     }
-    TokenKind lexOneNumber(Reader* source, TokenInfo* optInfoP) {
+    TokenKind lexOneNumber(Reader* source, TokenInfo* infoP) {
         TokenInfo prefixTokenInfo;
         TokenKind prefixTokenKind = lexOneIntChunk(source, &prefixTokenInfo, 0);
-        if (prefixTokenKind == Tk::DINT_LIT) {
-            if (source->read_head() == '.' && source->advance_head()) {
-                // float
-                TokenInfo suffixTokenInfo;
-                lexOneIntChunk(source, &suffixTokenInfo, true);
-                
-                // converting prefix and suffix ints into a double value:
-                if (optInfoP) {
-                    double dotPrefix = prefixTokenInfo.Int;
-                    double dotSuffix = suffixTokenInfo.Int;
-                    while (dotSuffix >= 1.0) {
-                        dotSuffix /= 10;
-                    }
-                    double value = dotPrefix + dotSuffix;
-                    if (optInfoP) {
-                        optInfoP->Float = value;
-                    }
-                }
-                return Tk::FLOAT_LIT;
-            
+        
+        TokenKind outTokenKind;
+        TokenInfo outTokenInfo;
+        if (prefixTokenKind == Tk::DINT_LIT && source->read_head() == '.' && source->advance_head()) {
+            // float
+            TokenInfo suffixTokenInfo;
+            lexOneIntChunk(source, &suffixTokenInfo, true);
+
+            // converting prefix and suffix ints into a double value:
+            double dotPrefix = prefixTokenInfo.Int;
+            double dotSuffix = suffixTokenInfo.Int;
+            while (dotSuffix >= 1.0) {
+                dotSuffix /= 10;
             }
+            double value = dotPrefix + dotSuffix;
+
+            outTokenKind = Tk::FLOAT_LIT;
+            outTokenInfo.Float = value;
         }
-        if (optInfoP) {
-            *optInfoP = prefixTokenInfo;
+        else if (source->read_head() == 'u' && source->advance_head()) {
+            // unsigned int
+            switch (prefixTokenKind)
+            {
+                case Tk::DINT_LIT:
+                {
+                    outTokenKind = Tk::UNSIGNED_DINT_LIT;
+                    break;
+                }
+                case Tk::XINT_LIT:
+                {
+                    outTokenKind = Tk::UNSIGNED_XINT_LIT;
+                    break;
+                }
+                default:
+                {
+                    assert(0 && "Unsupported prefix token kind.");
+                }
+            }
+            outTokenInfo = prefixTokenInfo;
         }
-        return prefixTokenKind;
+        else {
+            outTokenKind = prefixTokenKind;
+            outTokenInfo = prefixTokenInfo;
+        }
+
+        *infoP = outTokenInfo;
+        return outTokenKind;
     }
-    TokenKind lexOneIntChunk(Reader* source, TokenInfo* optInfoP, int noPrefix) {
+    TokenKind lexOneIntChunk(Reader* source, TokenInfo* infoP, int noPrefix) {
         // Checking for a hex prefix:
         TokenKind tokenKind = Tk::DINT_LIT;
         if (!noPrefix) {
-            if (source->read_head() == '0') {
-                if (source->advance_head()) {
-                    if (source->read_head() == 'x') {
-                        // 0x hex prefix detected.
-                        source->advance_head();
-                        tokenKind = Tk::XINT_LIT;
-                    }
+            if (source->read_head() == '0' && source->advance_head()) {
+                if (source->read_head() == 'x' && source->advance_head()) {
+                    // 0x hex prefix detected.
+                    tokenKind = Tk::XINT_LIT;
                 }
             }
         }
         // Repeatedly reading integer characters:
         size_t value = 0;
         do {
-            char intChar = source->read_head();
+            int intChar = source->read_head();
             if (intChar == '_') {
                 continue;
             } else if (tokenKind == Tk::DINT_LIT) {
@@ -496,9 +514,7 @@ namespace pdm::parser::aux {
         } while (source->advance_head());
 
         // Writing results to infoP:
-        if (optInfoP) {
-            optInfoP->Int = value;
-        }
+        infoP->Int = value;
 
         // Returning results:
         return tokenKind;

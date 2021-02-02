@@ -22,19 +22,25 @@ namespace pdm::ast {
         std::vector<TArg*> m_args;
 
       public:
-        TCallExp(source::Loc loc, Exp* lhs_called, std::vector<TArg*>&& args)
-        : Exp(loc, Kind::TCallExp),
-          m_lhs_called(lhs_called),
-          m_args(std::move(args)) {}
+        TCallExp(source::Loc loc, Exp* lhs_called, std::vector<TArg*>&& args);
 
       public:
-        Exp* lhs_called() const {
-            return m_lhs_called;
-        }
-        std::vector<TArg*> const& args() const {
-            return m_args;
-        }
+        [[nodiscard]] Exp* lhs_called() const;
+        [[nodiscard]] std::vector<TArg*> const& args() const;
     };
+
+    inline TCallExp::TCallExp(source::Loc loc, Exp* lhs_called, std::vector<TArg*>&& args)
+    :   Exp(loc, Kind::TCallExp),
+        m_lhs_called(lhs_called),
+        m_args(std::move(args)) {}
+
+    inline Exp* TCallExp::lhs_called() const {
+        return m_lhs_called;
+    }
+
+    inline std::vector<TArg*> const& TCallExp::args() const {
+        return m_args;
+    }
 
 }
 

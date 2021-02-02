@@ -22,35 +22,47 @@ namespace pdm::ast {
             TypeSpec*      m_rhs_typespec;
           
           public:
-            Field(source::Loc loc, intern::String name, TypeSpec* typespec)
-            : m_loc(loc),
-              m_lhs_name(name), m_rhs_typespec(typespec) {}
+            Field(source::Loc loc, intern::String name, TypeSpec* typespec);
           
           public:
-            source::Loc const& loc() const {
-                return m_loc;
-            }
-            intern::String lhs_name() const {
-                return m_lhs_name;
-            }
-            TypeSpec* rhs_typespec() const {
-                return m_rhs_typespec;
-            }
+            [[nodiscard]] source::Loc const& loc() const;
+            [[nodiscard]] intern::String lhs_name() const;
+            [[nodiscard]] TypeSpec* rhs_typespec() const;
         };
 
       private:
         std::vector<StructTypeSpec::Field*> m_fields;
         
       protected:
-        StructTypeSpec(source::Loc loc, std::vector<StructTypeSpec::Field*>&& fields)
-        : TypeSpec(loc, Kind::StructTypeSpec),
-          m_fields(std::move(fields)) {}
+        StructTypeSpec(source::Loc loc, std::vector<StructTypeSpec::Field*>&& fields);
 
       public:
-        std::vector<StructTypeSpec::Field*> const& fields() const {
-            return m_fields;
-        }
+        [[nodiscard]] std::vector<StructTypeSpec::Field*> const& fields() const;
     };
+
+    inline std::vector<StructTypeSpec::Field*> const& StructTypeSpec::fields() const {
+        return m_fields;
+    }
+
+    inline StructTypeSpec::StructTypeSpec(source::Loc loc, std::vector<StructTypeSpec::Field*>&& fields)
+    :   TypeSpec(loc, Kind::StructTypeSpec),
+        m_fields(std::move(fields)) {}
+
+    inline StructTypeSpec::Field::Field(source::Loc loc, intern::String name, TypeSpec* typespec)
+    :   m_loc(loc),
+        m_lhs_name(name), m_rhs_typespec(typespec) {}
+
+    inline TypeSpec* StructTypeSpec::Field::rhs_typespec() const {
+        return m_rhs_typespec;
+    }
+
+    inline intern::String StructTypeSpec::Field::lhs_name() const {
+        return m_lhs_name;
+    }
+
+    inline source::Loc const& StructTypeSpec::Field::loc() const {
+        return m_loc;
+    }
 
 }
 

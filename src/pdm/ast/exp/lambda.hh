@@ -29,16 +29,22 @@ namespace pdm::ast {
           m_body(body) {}
       
       public:
-        VPattern* lhs_vpattern() const {
-            return m_lhs_vpattern;
-        }
-        TypeSpec* opt_ret_typespec() const {
-            return m_opt_ret_typespec;
-        }
-        Exp* rhs_body() const {
-            return m_body;
-        }
+        [[nodiscard]] VPattern* lhs_vpattern() const;
+        [[nodiscard]] TypeSpec* opt_ret_typespec() const;
+        [[nodiscard]] Exp* rhs_body() const;
     };
+
+    inline VPattern* LambdaExp::lhs_vpattern() const {
+        return m_lhs_vpattern;
+    }
+
+    inline TypeSpec* LambdaExp::opt_ret_typespec() const {
+        return m_opt_ret_typespec;
+    }
+
+    inline Exp* LambdaExp::rhs_body() const {
+        return m_body;
+    }
 
 }
 

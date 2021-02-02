@@ -15,15 +15,19 @@ namespace pdm::ast {
         TypeSpec* m_nested_typespec;
     
       protected:
-        ParenTypeSpec(source::Loc loc, TypeSpec* nested_typespec)
-        : TypeSpec(loc, Kind::ParenTypeSpec),
-          m_nested_typespec(nested_typespec) {}
+        ParenTypeSpec(source::Loc loc, TypeSpec* nested_typespec);
 
       public:
-        TypeSpec* nested_typespec() const {
-            return m_nested_typespec;
-        }
+        [[nodiscard]] TypeSpec* nested_typespec() const;
     };
+
+    inline ParenTypeSpec::ParenTypeSpec(source::Loc loc, TypeSpec* nested_typespec)
+    :   TypeSpec(loc, Kind::ParenTypeSpec),
+        m_nested_typespec(nested_typespec) {}
+
+    inline TypeSpec* ParenTypeSpec::nested_typespec() const {
+        return m_nested_typespec;
+    }
 }
 
 #endif  // INCLUDED_PDM_AST_TYPESPEC_PAREN_HH

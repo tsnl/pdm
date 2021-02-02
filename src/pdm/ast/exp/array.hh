@@ -18,15 +18,19 @@ namespace pdm::ast {
         std::vector<Exp*> m_items;
       
       protected:
-        ArrayExp(source::Loc loc, std::vector<Exp*>&& items)
-        : Exp(loc, Kind::ArrayExp),
-          m_items(std::move(items)) {}
+        ArrayExp(source::Loc loc, std::vector<Exp*>&& items);
       
       public:
-        std::vector<Exp*> const& items() const {
-            return m_items;
-        }
+        [[nodiscard]] std::vector<Exp*> const& items() const;
     };
+
+    inline ArrayExp::ArrayExp(source::Loc loc, std::vector<Exp*>&& items)
+    :   Exp(loc, Kind::ArrayExp),
+        m_items(std::move(items)) {}
+
+    inline std::vector<Exp*> const &ArrayExp::items() const {
+        return m_items;
+    }
 
 }
 

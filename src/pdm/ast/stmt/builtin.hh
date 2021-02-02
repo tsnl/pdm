@@ -21,17 +21,28 @@ namespace pdm::ast {
         types::TypeVar* m_x_tv;
 
       public:
-        BuiltinStmt(std::string&& desc);
+        explicit BuiltinStmt(std::string&& desc);
 
       public:
-        std::string const& desc() const {
-            return m_desc;
-        }
+        [[nodiscard]] std::string const& desc() const;
         
       public:
         void x_tv(types::TypeVar* tv);
-        types::TypeVar* x_tv() const;
+        [[nodiscard]] types::TypeVar* x_tv() const;
     };
+
+    inline BuiltinStmt::BuiltinStmt(std::string&& desc)
+    :   Stmt(source::Loc::none, Kind::BuiltinStmt),
+        m_desc(std::move(desc)),
+        m_x_tv(nullptr) {}
+
+    inline types::TypeVar* BuiltinStmt::x_tv() const {
+        return m_x_tv;
+    }
+
+    inline std::string const &BuiltinStmt::desc() const {
+        return m_desc;
+    }
 
 }
 

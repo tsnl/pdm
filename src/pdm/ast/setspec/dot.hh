@@ -20,19 +20,30 @@ namespace pdm::ast {
         intern::String              m_rhs_name;
 
       protected:
-        DotNameTypeSpec_ModPrefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name)
-        : TypeSpec(loc, Kind::DotNameTypeSpec_ModPrefix),
-          m_lhs_prefixes(std::move(lhs_prefixes)),
-          m_rhs_name(rhs_name) {}
+        DotNameTypeSpec_ModPrefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name);
       
       public:
-        std::vector<intern::String> const& lhs_prefixes() const {
-            return m_lhs_prefixes;
-        }
-        intern::String rhs_name() const {
-            return m_rhs_name;
-        }
+        [[nodiscard]] std::vector<intern::String> const& lhs_prefixes() const;
+        [[nodiscard]] intern::String rhs_name() const;
     };
+
+    inline DotNameTypeSpec_ModPrefix::DotNameTypeSpec_ModPrefix(
+        source::Loc loc,
+        std::vector<intern::String>&& lhs_prefixes,
+        intern::String rhs_name
+    )
+    :   TypeSpec(loc, Kind::DotNameTypeSpec_ModPrefix),
+        m_lhs_prefixes(std::move(lhs_prefixes)),
+        m_rhs_name(rhs_name)
+    {}
+
+    inline intern::String DotNameTypeSpec_ModPrefix::rhs_name() const {
+        return m_rhs_name;
+    }
+
+    inline std::vector<intern::String> const& DotNameTypeSpec_ModPrefix::lhs_prefixes() const {
+        return m_lhs_prefixes;
+    }
 
     //
     // Removed:

@@ -52,13 +52,7 @@ namespace pdm::ast {
             intern::String name,
             std::vector<TPattern*> tpatterns,
             Exp* rhs
-        )
-        :   ModContentStmt(loc, Kind::ModValStmt),
-            m_name(name),
-            m_tpatterns(std::move(tpatterns)),
-            m_rhs(ExpRhs{rhs}),
-            m_x_defn_var(nullptr)
-        {}
+        );
 
         ModValStmt(
             source::Loc loc,
@@ -67,60 +61,89 @@ namespace pdm::ast {
             TypeSpec* ext_typespec,
             intern::String ext_mod_name,
             utf8::String ext_fn_name
-        )
-        :   ModContentStmt(loc, Kind::ModValStmt),
-            m_name(name),
-            m_tpatterns(std::move(tpatterns)),
-            m_rhs(ExternRhs{ext_mod_name, ext_fn_name, ext_typespec}),
-            m_x_defn_var(nullptr)
-        {}
+        );
 
       public:
-        intern::String name() const {
-            return m_name;
-        }
-        std::vector<TPattern*> const& tpatterns() const {
-            return m_tpatterns;
-        }
+        [[nodiscard]] intern::String name() const;
+        [[nodiscard]] std::vector<TPattern*> const& tpatterns() const;
       public:
-        RhsKind rhs_kind() const {
-            if (std::holds_alternative<ExpRhs>(m_rhs)) {
-                return RhsKind::Internal;
-            } else {
-                return RhsKind::External;
-            }
-        }
-        Exp* opt_rhs_exp() const {
-            if (std::holds_alternative<ExpRhs>(m_rhs)) {
-                return std::get<ExpRhs>(m_rhs).exp;
-            } else {
-                return nullptr;
-            }
-        }
-        intern::String opt_rhs_ext_mod_name() const {
-            if (std::holds_alternative<ExpRhs>(m_rhs)) {
-                return std::get<ExternRhs>(m_rhs).ext_mod_name;
-            } else {
-                return {};
-            }
-        }
-        utf8::String opt_rhs_ext_fn_name() const {
-            if (std::holds_alternative<ExpRhs>(m_rhs)) {
-                return std::get<ExternRhs>(m_rhs).ext_fn_name;
-            } else {
-                return {};
-            }
-        }
+        [[nodiscard]] RhsKind rhs_kind() const;
+        [[nodiscard]] Exp* opt_rhs_exp() const;
+        [[nodiscard]] intern::String opt_rhs_ext_mod_name() const;
+        [[nodiscard]] utf8::String opt_rhs_ext_fn_name() const;
 
       // extension properties set by scoper:
       public:
-        types::Var* x_defn_var() const {
-            return m_x_defn_var;
-        }
-        void x_defn_var(types::Var* var) {
-            m_x_defn_var = var;
-        }
+        [[nodiscard]] types::Var* x_defn_var() const;
+        void x_defn_var(types::Var* var);
     };
+
+    inline ModValStmt::ModValStmt(source::Loc loc, intern::String name, std::vector<TPattern*> tpatterns, Exp* rhs)
+    :   ModContentStmt(loc, Kind::ModValStmt),
+        m_name(name),
+        m_tpatterns(std::move(tpatterns)),
+        m_rhs(ExpRhs{rhs}),
+        m_x_defn_var(nullptr)
+    {}
+
+    inline ModValStmt::ModValStmt(
+        source::Loc loc, intern::String name, std::vector<TPattern*> tpatterns,
+        TypeSpec* ext_typespec, intern::String ext_mod_name, utf8::String ext_fn_name
+    )
+    :   ModContentStmt(loc, Kind::ModValStmt),
+        m_name(name),
+        m_tpatterns(std::move(tpatterns)),
+        m_rhs(ExternRhs{ext_mod_name, std::move(ext_fn_name), ext_typespec}),
+        m_x_defn_var(nullptr)
+    {}
+
+    inline intern::String ModValStmt::name() const {
+        return m_name;
+    }
+
+    inline types::Var* ModValStmt::x_defn_var() const {
+        return m_x_defn_var;
+    }
+
+    inline void ModValStmt::x_defn_var(types::Var* var) {
+        m_x_defn_var = var;
+    }
+
+    inline utf8::String ModValStmt::opt_rhs_ext_fn_name() const {
+        if (std::holds_alternative<ExpRhs>(m_rhs)) {
+            return std::get<ExternRhs>(m_rhs).ext_fn_name;
+        } else {
+            return {};
+        }
+    }
+
+    inline intern::String ModValStmt::opt_rhs_ext_mod_name() const {
+        if (std::holds_alternative<ExpRhs>(m_rhs)) {
+            return std::get<ExternRhs>(m_rhs).ext_mod_name;
+        } else {
+            return {};
+        }
+    }
+
+    inline Exp *ModValStmt::opt_rhs_exp() const {
+        if (std::holds_alternative<ExpRhs>(m_rhs)) {
+            return std::get<ExpRhs>(m_rhs).exp;
+        } else {
+            return nullptr;
+        }
+    }
+
+    inline ModValStmt::RhsKind ModValStmt::rhs_kind() const {
+        if (std::holds_alternative<ExpRhs>(m_rhs)) {
+            return RhsKind::Internal;
+        } else {
+            return RhsKind::External;
+        }
+    }
+
+    inline std::vector<TPattern*> const& ModValStmt::tpatterns() const {
+        return m_tpatterns;
+    }
 
 }
 

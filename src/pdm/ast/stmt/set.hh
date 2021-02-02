@@ -21,19 +21,25 @@ namespace pdm::ast {
         ast::Exp* m_rhs_exp;
 
       protected:
-        SetStmt(source::Loc loc, ast::Exp* lhs_exp, ast::Exp* rhs_exp)
-        : Stmt(loc, Kind::SetStmt),
-          m_lhs_exp(lhs_exp), 
-          m_rhs_exp(rhs_exp) {}
+        SetStmt(source::Loc loc, ast::Exp* lhs_exp, ast::Exp* rhs_exp);
 
       public:
-        ast::Exp* lhs_exp() const {
-            return m_lhs_exp;
-        }
-        ast::Exp* rhs_exp() const {
-            return m_rhs_exp;
-        }
+        [[nodiscard]] ast::Exp* lhs_exp() const;
+        [[nodiscard]] ast::Exp* rhs_exp() const;
     };
+
+    inline SetStmt::SetStmt(source::Loc loc, ast::Exp* lhs_exp, ast::Exp* rhs_exp)
+    :   Stmt(loc, Kind::SetStmt),
+        m_lhs_exp(lhs_exp),
+        m_rhs_exp(rhs_exp) {}
+
+    inline ast::Exp* SetStmt::lhs_exp() const {
+        return m_lhs_exp;
+    }
+
+    inline ast::Exp* SetStmt::rhs_exp() const {
+        return m_rhs_exp;
+    }
 
 }
 

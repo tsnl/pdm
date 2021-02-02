@@ -21,39 +21,49 @@ namespace pdm::ast {
         friend Manager;
 
       private:
-        source::Source*       m_source;
-        std::vector<Stmt*>    m_head_stmts;
+        source::Source* m_source;
+        std::vector<Stmt*> m_head_stmts;
         std::vector<ModStmt*> m_body_mod_stmts;
-        
         scoper::Frame* m_x_script_frame;
 
       protected:
-        Script(source::Source* source, source::Loc loc, std::vector<Stmt*>&& head_stmts, std::vector<ModStmt*>&& body_mod_stmts)
-        : Node(loc, Kind::Script),
-          m_source(source),
-          m_head_stmts(std::move(head_stmts)),
-          m_body_mod_stmts(std::move(body_mod_stmts)),
-          m_x_script_frame(nullptr) {}
+        Script(
+            source::Source* source,
+            source::Loc loc,
+            std::vector<Stmt*>&& head_stmts,
+            std::vector<ModStmt*>&& body_mod_stmts
+        );
 
       public:
-        source::Source* source() const {
-            return m_source;
-        }
-        std::vector<Stmt*> const& head_stmts() const {
-            return m_head_stmts;
-        }
-        std::vector<ModStmt*> const& body_stmts() const {
-            return m_body_mod_stmts;
-        }
+        [[nodiscard]] source::Source* source() const;
+        [[nodiscard]] std::vector<Stmt*> const& head_stmts() const;
+        [[nodiscard]] std::vector<ModStmt*> const& body_stmts() const;
 
       public:
-        scoper::Frame* x_script_frame() const {
-            return m_x_script_frame;
-        }
-        void x_script_frame(scoper::Frame* frame) {
-            m_x_script_frame = frame;
-        }
+        [[nodiscard]] scoper::Frame* x_script_frame() const;
+        void x_script_frame(scoper::Frame* frame);
     };
+
+    inline std::vector<ModStmt*> const& Script::body_stmts() const {
+        return m_body_mod_stmts;
+    }
+
+    inline std::vector<Stmt*> const& Script::head_stmts() const {
+        return m_head_stmts;
+    }
+
+    inline source::Source* Script::source() const {
+        return m_source;
+    }
+
+    inline scoper::Frame* Script::x_script_frame() const {
+        return m_x_script_frame;
+    }
+
+    inline void Script::x_script_frame(scoper::Frame* frame) {
+        m_x_script_frame = frame;
+    }
+
 
 }   // namespace pdm::ast
 

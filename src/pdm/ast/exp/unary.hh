@@ -24,19 +24,25 @@ namespace pdm::ast {
         Exp*          m_operand;
 
       protected:
-        UnaryExp(source::Loc loc, UnaryOperator unary_operator, Exp* operand)
-        : Exp(loc, Kind::UnaryExp),
-          m_operator(unary_operator),
-          m_operand(operand) {}
+        UnaryExp(source::Loc loc, UnaryOperator unary_operator, Exp* operand);
       
       public:
-        UnaryOperator unary_operator() const {
-            return m_operator;
-        }
-        Exp* operand() const {
-            return m_operand;
-        }
+        [[nodiscard]] UnaryOperator unary_operator() const;
+        [[nodiscard]] Exp* operand() const;
     };
+
+    inline UnaryExp::UnaryExp(source::Loc loc, UnaryOperator unary_operator, Exp *operand)
+    :   Exp(loc, Kind::UnaryExp),
+        m_operator(unary_operator),
+        m_operand(operand) {}
+
+    inline Exp *UnaryExp::operand() const {
+        return m_operand;
+    }
+
+    inline UnaryOperator UnaryExp::unary_operator() const {
+        return m_operator;
+    }
 
 }
 

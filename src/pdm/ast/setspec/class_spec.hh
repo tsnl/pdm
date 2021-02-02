@@ -10,7 +10,7 @@ namespace pdm::ast {
         inline ClassSpec(source::Loc loc, Kind node_kind);
 
       protected:
-        virtual bool check_x_spectype_var(types::Var* var) const override;
+        bool check_x_spec_var(types::Var* var) const override;
     };
 
     inline ClassSpec::ClassSpec(source::Loc loc, Kind node_kind) 

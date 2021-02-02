@@ -22,21 +22,34 @@ namespace pdm::ast {
       private:
         u64          m_value;
         IntExp::Base m_base;
+        bool         m_force_unsigned;
 
       protected:
-        IntExp(source::Loc loc, u64 value, IntExp::Base base)
-        : Exp(loc, Kind::IntExp),
-          m_value(value),
-          m_base(base) {}
+        IntExp(source::Loc loc, u64 value, IntExp::Base base, bool force_unsigned);
       
       public:
-        u64 value() const {
-            return m_value;
-        }
-        IntExp::Base base() const {
-            return m_base;
-        }
+        [[nodiscard]] u64 value() const;
+        [[nodiscard]] IntExp::Base base() const;
+        [[nodiscard]] bool force_unsigned() const;
     };
+
+    inline IntExp::IntExp(source::Loc loc, u64 value, IntExp::Base base, bool force_unsigned)
+    :   Exp(loc, Kind::IntExp),
+        m_value(value),
+        m_base(base),
+        m_force_unsigned(force_unsigned) {}
+
+    inline u64 IntExp::value() const {
+        return m_value;
+    }
+
+    inline IntExp::Base IntExp::base() const {
+        return m_base;
+    }
+
+    inline bool IntExp::force_unsigned() const {
+        return m_force_unsigned;
+    }
 
 }
 

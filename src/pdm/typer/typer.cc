@@ -274,17 +274,30 @@ namespace pdm::types {
     }
     bool TyperVisitor::on_visit__int_exp(ast::IntExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            // todo: replace with fresh TV
-            TypeVar* int_tv = m_types_mgr->get_u32_tv();
-            node->x_typeof_tv(int_tv);
+            std::string tv_name; {
+                if (node->force_unsigned()) {
+                    tv_name = "UnsignedIntExp";
+                } else {
+                    tv_name = "SignedIntExp";
+                }
+            }
+            TypeVar* int_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
+            node->x_typeof_var(int_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
             auto int_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
-            KdResult sp2_result = m_types_mgr->assume_relation_holds(new ClassOfRelation(
-                node,
-                m_types_mgr->get_unsigned_int_cv(), int_tv
-            ));
-            
+            auto inferred_cv = (
+                (node->force_unsigned()) ?
+                m_types_mgr->get_unsigned_int_cv() :
+                m_types_mgr->get_signed_int_cv()
+            );
+            KdResult sp2_result = (
+                m_types_mgr->assume_relation_holds(new ClassOfRelation(
+                    node,
+                    inferred_cv,
+                    int_tv
+                ))
+            );
             std::string source_desc = "see integer expression here...";
             return post_feedback_from_first_kd_res(sp2_result, std::move(source_desc), node->loc());
         }
@@ -294,7 +307,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             // todo: replace with fresh TV
             TypeVar* float_tv = m_types_mgr->get_f32_tv();
-            node->x_typeof_tv(float_tv);
+            node->x_typeof_var(float_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
             auto float_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
@@ -311,7 +324,7 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__string_exp(ast::StringExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             TypeVar* string_tv = m_types_mgr->get_string_tv();
-            node->x_typeof_tv(string_tv);
+            node->x_typeof_var(string_tv);
         } else {
             auto typeof_string_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
             KdResult sp2_result = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(
@@ -328,7 +341,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             auto id_tv = dynamic_cast<TypeVar*>(node->x_defn()->var());
             assert(id_tv != nullptr && "Scoper failed!");
-            node->x_typeof_tv(id_tv);
+            node->x_typeof_var(id_tv);
         }
         return true;
     }
@@ -336,7 +349,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "ParenExp";
             TypeVar* paren_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(paren_tv);
+            node->x_typeof_var(paren_tv);
         } else {
             auto paren_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
             TypeVar* nested_tv = expect_type_var(
@@ -358,7 +371,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "TupleExp(" + std::to_string(node->items().size()) + ")";
             TypeVar* tuple_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(tuple_tv);
+            node->x_typeof_var(tuple_tv);
         } else {
             // todo: set tuple field requirements here by equating to a TupleTV
         }
@@ -368,7 +381,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "ArrayExp(" + std::to_string(node->items().size()) + ")";
             TypeVar* array_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(array_tv);
+            node->x_typeof_var(array_tv);
         } else {
             // todo: set array exp requirements here by equating to an ArrayTV
         }
@@ -378,7 +391,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "StructExp(" + std::to_string(node->fields().size()) + ")";
             TypeVar* struct_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(struct_exp_tv);
+            node->x_typeof_var(struct_exp_tv);
         } else {
             // todo: set struct exp requirements here by equating to a StructTV
         }
@@ -388,7 +401,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "TypeQueryExp";
             TypeVar* type_query_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(type_query_exp_tv);
+            node->x_typeof_var(type_query_exp_tv);
         } else {
             // todo: implement this typer.
         }
@@ -398,7 +411,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "ChainExp";
             TypeVar* chain_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(chain_exp_tv);
+            node->x_typeof_var(chain_exp_tv);
         } else {
             auto chain_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
             TypeVar* nested_tv = expect_type_var(
@@ -421,7 +434,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "LambdaExp";
             TypeVar* lambda_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(lambda_exp_tv);
+            node->x_typeof_var(lambda_exp_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
 
@@ -439,7 +452,7 @@ namespace pdm::types {
             TypeVar* ret_tv = m_types_mgr->get_void_tv();
             if (node->opt_ret_typespec()) {
                 ret_tv = expect_type_var(
-                    node->opt_ret_typespec()->x_spectype_var(),
+                        node->opt_ret_typespec()->x_spec_var(),
                     std::move(std::string("a type specifier")),
                     std::move(std::string("a lambda function's return type-specifier")),
                     node->loc()
@@ -471,7 +484,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "IfExp";
             TypeVar* if_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(if_exp_tv);
+            node->x_typeof_var(if_exp_tv);
         } else {
             Relation* relation = nullptr;
             if (node->else_exp() == nullptr) {
@@ -528,7 +541,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "DotIndexExp";
             TypeVar* dot_index_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(dot_index_exp_tv);
+            node->x_typeof_var(dot_index_exp_tv);
         } else {
 
         }
@@ -538,7 +551,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "DotNameExp";
             TypeVar* dot_name_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(dot_name_exp_tv);
+            node->x_typeof_var(dot_name_exp_tv);
         } else {
 
         }
@@ -558,7 +571,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "UnaryExp";
             TypeVar* unary_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(unary_exp_tv);
+            node->x_typeof_var(unary_exp_tv);
         } else {
 
         }
@@ -568,7 +581,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "BinaryExp";
             TypeVar* binary_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(binary_exp_tv);
+            node->x_typeof_var(binary_exp_tv);
         } else {
 
         }
@@ -580,7 +593,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "VCallExp_Ret";
             TypeVar* vcall_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(vcall_exp_tv);
+            node->x_typeof_var(vcall_exp_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
 
@@ -637,7 +650,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "TCallExp";
             TypeVar* tcall_exp_tv = m_types_mgr->new_unknown_monotype_tv(std::move(tv_name), node);
-            node->x_typeof_tv(tcall_exp_tv);
+            node->x_typeof_var(tcall_exp_tv);
         } else {
 
         }
@@ -650,7 +663,7 @@ namespace pdm::types {
             for (ast::VPattern::Field* field: node->fields()) {
                 TypeVar* tv = field->x_defn_tv();
                 
-                Var* spectype_var = field->rhs_typespec()->x_spectype_var();
+                Var* spectype_var = field->rhs_typespec()->x_spec_var();
                 TypeVar* spectype_tv = dynamic_cast<TypeVar*>(spectype_var);
                 if (spectype_tv != nullptr) {
                     KdResult kd_res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(field, tv, spectype_tv));
@@ -682,10 +695,10 @@ namespace pdm::types {
                 auto field_tv = dynamic_cast<TypeVar*>(field_var);
                 assert(field_tv != nullptr);
 
-                Var* field_spec_var = field->rhs_set_spec()->x_spectype_var();
+                Var* field_spec_var = field->rhs_set_spec()->x_spec_var();
                 assert(field_spec_var != nullptr);
 
-                if (field->kind() == ast::TPattern::FieldKind::Value) {
+                if (field->field_kind() == ast::TPattern::FieldKind::Value) {
                     // [value Type]
                     auto field_spec_tv = dynamic_cast<TypeVar*>(field_spec_var);
                     if (field_spec_tv != nullptr && field_tv != nullptr) {
@@ -706,7 +719,7 @@ namespace pdm::types {
                             std::move(notes)
                         ));
                     }
-                } else if (field->kind() == ast::TPattern::FieldKind::Type) {
+                } else if (field->field_kind() == ast::TPattern::FieldKind::Type) {
                     // [Type Class]
                     auto field_spec_cv = dynamic_cast<ClassVar*>(field_spec_var);
                     auto proxy_field_tv = field_tv;
@@ -738,7 +751,7 @@ namespace pdm::types {
             for (ast::LPattern::Field* field: node->fields()) {
                 TypeVar* tv = field->x_defn_tv();
                 if (field->opt_rhs_typespec()) {
-                    TypeVar* rhs_tv = dynamic_cast<TypeVar*>(field->opt_rhs_typespec()->x_spectype_var());
+                    TypeVar* rhs_tv = dynamic_cast<TypeVar*>(field->opt_rhs_typespec()->x_spec_var());
                     if (rhs_tv != nullptr) {
                         KdResult kd_res = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, tv, rhs_tv));
                         
@@ -767,24 +780,24 @@ namespace pdm::types {
     // typespecs:
     bool TyperVisitor::on_visit__id_typespec(ast::IdTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            node->x_spectype_var(node->x_defn()->var());
+            node->x_spec_var(node->x_defn()->var());
         }
         return true;
     }
     bool TyperVisitor::on_visit__id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            node->x_spectype_var(node->x_defn()->var());
+            node->x_spec_var(node->x_defn()->var());
         }
         return true;
     }
     bool TyperVisitor::on_visit__fn_typespec(ast::FnTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string name = "FnTypeSpec";
-            node->x_spectype_var(m_types_mgr->new_unknown_monotype_tv(std::move(name), node));
+            node->x_spec_var(m_types_mgr->new_unknown_monotype_tv(std::move(name), node));
         } else {
             assert(visit_order == VisitOrder::Post);
-            // node->x_spectype_var(m_types_mgr->new_func_tv()) ...
-            auto spectype_tv = dynamic_cast<TypeVar*>(node->x_spectype_var());
+            // node->x_spec_var(m_types_mgr->new_func_tv()) ...
+            auto spectype_tv = dynamic_cast<TypeVar*>(node->x_spec_var());
 
             size_t args_count = node->lhs_vpattern()->fields().size();
             std::vector<VCallArg> args{args_count};
@@ -797,7 +810,7 @@ namespace pdm::types {
 
             TypeVar* ret_tv = m_types_mgr->get_void_tv();
             if (node->opt_ret_typespec() != nullptr) {
-                Var* ret_spectype_var = node->opt_ret_typespec()->x_spectype_var();
+                Var* ret_spectype_var = node->opt_ret_typespec()->x_spec_var();
                 auto ret_spectype_tv = dynamic_cast<TypeVar*>(ret_spectype_var);
                 if (ret_spectype_tv != nullptr) {
                     ret_tv = ret_spectype_tv;
@@ -837,7 +850,7 @@ namespace pdm::types {
             );
 
             Var* new_var = m_types_mgr->new_class_template_var(std::move(name), node);
-            node->x_spectype_var();
+            // node->x_spec_var();
         } else {
             assert(visit_order == VisitOrder::Post);
         }
@@ -855,7 +868,7 @@ namespace pdm::types {
             );
 
             Var* new_var = m_types_mgr->new_class_template_var(std::move(name), node);
-            node->x_spectype_var();
+            // node->x_spec_var();
         } else {
             assert(visit_order == VisitOrder::Post);
         }
@@ -865,12 +878,12 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string name = "Tuple";
             TypeVar* tuple_tv = m_types_mgr->new_unknown_monotype_tv(std::move(name), node);
-            node->x_spectype_var(tuple_tv);
+            node->x_spec_var(tuple_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
             
             // getting the tuple_tv:
-            auto tuple_tv = dynamic_cast<TypeVar*>(node->x_spectype_var());
+            auto tuple_tv = dynamic_cast<TypeVar*>(node->x_spec_var());
             assert(tuple_tv != nullptr);
 
             // collecting a vector of field tvs:
@@ -880,7 +893,7 @@ namespace pdm::types {
                 ast::TypeSpec* field_type_spec = node->items()[field_index];
                 assert(field_type_spec != nullptr);
 
-                Var* field_item_var = field_type_spec->x_spectype_var();
+                Var* field_item_var = field_type_spec->x_spec_var();
                 auto field_item_tv = dynamic_cast<TypeVar*>(field_item_var);
                 if (field_item_tv != nullptr) {
                     fields_tvs[field_index] = field_item_tv;
@@ -919,7 +932,7 @@ namespace pdm::types {
 
         if (visit_order == VisitOrder::Pre) {
             // todo: lookup mod prefices
-            // node->x_spectype_var(spectype_var);
+            // node->x_spec_var(spectype_var);
         } else {
             assert(visit_order == VisitOrder::Post);
         }
@@ -929,17 +942,17 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string name = "StructTypeSpec";
             TypeVar* struct_tv = m_types_mgr->new_unknown_monotype_tv(std::move(name), node);
-            node->x_spectype_var(struct_tv);
+            node->x_spec_var(struct_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
-            auto struct_tv = dynamic_cast<TypeVar*>(node->x_spectype_var());
+            auto struct_tv = dynamic_cast<TypeVar*>(node->x_spec_var());
             assert(struct_tv != nullptr);
             
             // collecting & checking fields_tvs:
             std::map<intern::String, TypeVar*> fields_tvs;
             bool fields_ok = true;
             for (ast::StructTypeSpec::Field* field: node->fields()) {
-                Var* field_var = field->rhs_typespec()->x_spectype_var();
+                Var* field_var = field->rhs_typespec()->x_spec_var();
                 assert(field_var != nullptr);
 
                 // verifying the name is unique:
@@ -1054,7 +1067,7 @@ namespace pdm::types {
             KdResult assume_op_result2 = KdResult::NoChange; {
                 if (field->opt_rhs_typespec()) {
                     TypeVar* typespec_tv = expect_type_var(
-                        field->opt_rhs_typespec()->x_spectype_var(),
+                            field->opt_rhs_typespec()->x_spec_var(),
                         std::move(std::string("a type specifier")),
                         std::move(std::string("an L-pattern field")),
                         node->loc()

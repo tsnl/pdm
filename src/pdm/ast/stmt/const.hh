@@ -14,19 +14,25 @@ namespace pdm::ast {
         Exp*      m_rhs_exp;
 
       public:
-        ConstStmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp)
-        : Stmt(loc, Kind::ConstStmt),
-          m_lhs_lpattern(lhs_lpattern),
-          m_rhs_exp(rhs_exp) {}
+        ConstStmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
 
       public:
-        LPattern* lhs_lpattern() const {
-            return m_lhs_lpattern;
-        }
-        Exp* rhs_exp() const {
-            return m_rhs_exp;
-        }
+        [[nodiscard]] LPattern* lhs_lpattern() const;
+        [[nodiscard]] Exp* rhs_exp() const;
     };
+
+    inline ConstStmt::ConstStmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp)
+    :   Stmt(loc, Kind::ConstStmt),
+        m_lhs_lpattern(lhs_lpattern),
+        m_rhs_exp(rhs_exp) {}
+
+    inline LPattern* ConstStmt::lhs_lpattern() const {
+        return m_lhs_lpattern;
+    }
+
+    inline Exp* ConstStmt::rhs_exp() const {
+        return m_rhs_exp;
+    }
 
 }
 

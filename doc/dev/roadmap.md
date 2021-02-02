@@ -1,17 +1,63 @@
 # Roadmap
 
+## Feb 1 2021
+
+Demanding effects up-front makes code permanently incorrect and hard to understand.
+Even then, not user-extensible.
+Better idea: use libraries!
+- Allow the user to 'run' arbitrary expressions after a specified fence (by name).
+- Further use `'@' ID` to support LISP-style IDs-- i.e. interned strings.
+  - Can intern string literals using `@ <string-literal>`, no problem.
+  - Note that dynamic interns not possible, so symbol-set frozen across fences.
+  - For now, assume `@StartOfCompilationFence` and `@EndOfCompilationFence` are two of a handful
+    of builtin compilation fences.
+  
+  ```
+  run @EndOfCompilation {
+      Stdio:printf("Compilation complete. Commencing checks...\n");
+  
+      # pre-process assets, whatever
+
+      # run your tests using filesystem, network, and any effects here.
+      # 'extend the compiler'
+      # if assertions always return true, the compiler will flag those as a compile-time error.
+      assert MyTestSuite:on_end_of_compilation_tester();
+      assert MyResourceManager:check_all_files_ok();
+  };
+
+  run @StartOfApplication {
+      Stdio:printf("Hello, world!\n");
+  };
+  ```
+- Note that the compiler only uses a small subset of fences.
+- Note that each 'run' block can be exported as its own function and then executed appropriately.
+- Note that 'const' expressions are resolved during compilation, not after, which is a flaw.
+  - Would be really useful to bake constants using arbitrary code.
+  - Consider adding an `Oven` such that...
+    - 'Oven' is a general purpose key-value store.
+      - Values in the `Oven` can be accessed by interned-string.
+      - just a synchronized, mutable map of ints to pointers
+    - after `EndOfCompilation`, a user script may edit the `Oven`.
+      - read+write => you can test the oven before baking
+    - before `StartApplication`,  the compiler generates a new application using values in the oven,
+      i.e. `baking`
+  - Top-level constants & 'const' are still frozen during ALL execution phases
+
 ## Jan 31 2021
 
 Queueing 2 tasks:
 
-TODO: Typing numeric literals can be improved using optional suffices.
+DONE: Typing numeric literals can be improved using optional suffices.
 - 'u' indicates unsigned int
-- 'f' indicates float
 - otherwise, default to signed int/float depending on whether '.' in number
-- e.g. 24f => 24.0, Float
 - e.g. 42u => 42, UnsignedInt
 - e.g. 23 => 23, SignedInt
 - e.g. 23.0 => 23.0, Float
+Family now unambiguous from literal representation.
+
+- removed Feb 1: 
+    -   'f' suffix indicates float
+        hex int? 0xfff ambig. between 0xfff and 0xff as float)
 
 In Typer, can create UnaryOpRelation and BinaryOpRelation
 2 checks:

@@ -19,23 +19,31 @@ namespace pdm::ast {
         Exp* m_else_exp;
     
       protected:
-        IfExp(source::Loc loc, Exp* cond_exp, Exp* then_exp, Exp* else_exp)
-        : Exp(loc, Kind::IfExp),
-          m_cond_exp(cond_exp),
-          m_then_exp(then_exp),
-          m_else_exp(else_exp) {}
+        IfExp(source::Loc loc, Exp* cond_exp, Exp* then_exp, Exp* else_exp);
 
       public:
-        Exp* cond_exp() const {
-            return m_cond_exp;
-        }
-        Exp* then_exp() const {
-            return m_then_exp;
-        }
-        Exp* else_exp() const {
-            return m_else_exp;
-        }
+        [[nodiscard]] Exp* cond_exp() const;
+        [[nodiscard]] Exp* then_exp() const;
+        [[nodiscard]] Exp* else_exp() const;
     };
+
+    inline IfExp::IfExp(source::Loc loc, Exp* cond_exp, Exp* then_exp, Exp* else_exp)
+    :   Exp(loc, Kind::IfExp),
+        m_cond_exp(cond_exp),
+        m_then_exp(then_exp),
+        m_else_exp(else_exp) {}
+
+    inline Exp* IfExp::cond_exp() const {
+        return m_cond_exp;
+    }
+
+    inline Exp* IfExp::then_exp() const {
+        return m_then_exp;
+    }
+
+    inline Exp* IfExp::else_exp() const {
+        return m_else_exp;
+    }
 
 }
 

@@ -106,7 +106,7 @@ namespace pdm::ast {
         FloatExp* new_float_exp(source::Loc loc, long double value);
         IdExp* new_id_exp(source::Loc loc, intern::String name);
         IfExp* new_if_exp(source::Loc loc, Exp* cond_exp, Exp* then_exp, Exp* else_exp);
-        IntExp* new_int_exp(source::Loc loc, u64 value, IntExp::Base base);
+        IntExp* new_int_exp(source::Loc loc, u64 value, IntExp::Base base, bool force_unsigned);
         LambdaExp* new_lambda_exp(source::Loc loc, VPattern* lhs_lpattern, TypeSpec* opt_ret_typespec, Exp* body);
         ParenExp* new_paren_exp(source::Loc loc, Exp* nested);
         StringExp* new_string_exp(source::Loc loc, utf8::String content, StringExp::QuoteKind quote_kind);

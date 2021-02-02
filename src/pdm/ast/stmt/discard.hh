@@ -17,15 +17,19 @@ namespace pdm::ast {
         Exp* m_exp;
 
       protected:
-        DiscardStmt(source::Loc loc, Exp* exp)
-        : Stmt(loc, Kind::DiscardStmt),
-          m_exp(exp) {}
+        DiscardStmt(source::Loc loc, Exp* exp);
 
       public:
-        Exp* discarded_exp() const {
-            return m_exp;
-        }
+        [[nodiscard]] Exp* discarded_exp() const;
     };
+
+    inline DiscardStmt::DiscardStmt(source::Loc loc, Exp* exp)
+    :   Stmt(loc, Kind::DiscardStmt),
+        m_exp(exp) {}
+
+    inline Exp* DiscardStmt::discarded_exp() const {
+        return m_exp;
+    }
 
 }
 

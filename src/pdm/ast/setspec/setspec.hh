@@ -17,23 +17,23 @@ namespace pdm::ast {
         inline SetSpec(source::Loc loc, Kind kind);
 
       public:
-        inline types::Var* x_spectype_var() const;
-        inline void x_spectype_var(types::Var* spectype_var);
+        [[nodiscard]] inline types::Var* x_spec_var() const;
+        inline void x_spec_var(types::Var* spec_var);
         
       protected:
-        virtual bool check_x_spectype_var(types::Var* var) const = 0;
+        virtual bool check_x_spec_var(types::Var* var) const = 0;
     };
 
     inline SetSpec::SetSpec(source::Loc loc, Kind kind)
     :   Node(loc, kind),
         m_x_spectype_var(nullptr)
     {}
-    inline types::Var* SetSpec::x_spectype_var() const {
+    inline types::Var* SetSpec::x_spec_var() const {
         return m_x_spectype_var;
     }
-    inline void SetSpec::x_spectype_var(types::Var* spectype_var) {
-        assert(check_x_spectype_var(spectype_var));
-        m_x_spectype_var = spectype_var;
+    inline void SetSpec::x_spec_var(types::Var* spec_var) {
+        assert(check_x_spec_var(spec_var));
+        m_x_spectype_var = spec_var;
     }
 
 }

@@ -59,8 +59,8 @@ namespace pdm::ast {
     IfExp* Manager::new_if_exp(source::Loc loc, Exp* cond_exp, Exp* then_exp, Exp* else_exp) {
         return emplace<IfExp>(loc, cond_exp, then_exp, else_exp);
     }
-    IntExp* Manager::new_int_exp(source::Loc loc, u64 value, IntExp::Base base) {
-        return emplace<IntExp>(loc, value, base);
+    IntExp* Manager::new_int_exp(source::Loc loc, u64 value, IntExp::Base base, bool force_unsigned) {
+        return emplace<IntExp>(loc, value, base, force_unsigned);
     }
     LambdaExp* Manager::new_lambda_exp(source::Loc loc, VPattern* lhs_lpattern, TypeSpec* opt_ret_typespec, Exp* body) {
         return emplace<LambdaExp>(loc, lhs_lpattern, opt_ret_typespec, body);

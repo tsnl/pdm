@@ -15,22 +15,29 @@ namespace pdm::ast {
         types::Var* m_x_typeof_var;
 
       protected:
-        Exp(source::Loc loc, Kind kind)
-        : Node(loc, kind),
-          m_x_typeof_var(nullptr) {}
+        Exp(source::Loc loc, Kind kind);
 
       protected:
         // todo: implement 'is_const_evaluable' for all 'exp's
         // virtual bool is_const_evaluable() const;
 
       public:
-        types::Var * x_typeof_var() const {
-            return m_x_typeof_var;
-        }
-        void x_typeof_tv(types::Var* typeof_var) {
-            m_x_typeof_var = typeof_var;
-        }
+        [[nodiscard]] types::Var* x_typeof_var() const;
+        void x_typeof_var(types::Var* typeof_var);
     };
+
+    inline Exp::Exp(source::Loc loc, Kind kind)
+    :   Node(loc, kind),
+        m_x_typeof_var(nullptr)
+    {}
+
+    inline types::Var *Exp::x_typeof_var() const {
+        return m_x_typeof_var;
+    }
+
+    inline void Exp::x_typeof_var(types::Var* typeof_var) {
+        m_x_typeof_var = typeof_var;
+    }
 
 }
 

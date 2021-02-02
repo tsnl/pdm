@@ -23,23 +23,32 @@ namespace pdm::ast {
         scoper::Defn const* m_x_defn;
 
       public:
-        IdTypeSpec(source::Loc loc, intern::String name)
-        : TypeSpec(loc, Kind::IdTypeSpec),
-          m_name(name) {}
+        IdTypeSpec(source::Loc loc, intern::String name);
       
       public:
-        intern::String name() const {
-            return m_name;
-        }
+        [[nodiscard]] intern::String name() const;
 
       public:
-        scoper::Defn const* x_defn() const {
-            return m_x_defn;
-        }
-        void x_defn(scoper::Defn const* defn) {
-            m_x_defn = defn;
-        }
+        [[nodiscard]] scoper::Defn const* x_defn() const;
+        void x_defn(scoper::Defn const* defn);
     };
+
+    inline scoper::Defn const *IdTypeSpec::x_defn() const {
+        return m_x_defn;
+    }
+
+    inline void IdTypeSpec::x_defn(const scoper::Defn *defn) {
+        m_x_defn = defn;
+    }
+
+    inline intern::String IdTypeSpec::name() const {
+        return m_name;
+    }
+
+    inline IdTypeSpec::IdTypeSpec(source::Loc loc, intern::String name)
+    :   TypeSpec(loc, Kind::IdTypeSpec),
+        m_name(name),
+        m_x_defn(nullptr) {}
 
 }
 

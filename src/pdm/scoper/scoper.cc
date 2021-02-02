@@ -780,10 +780,10 @@ namespace pdm::scoper {
                 std::string field_prefix = defn_kind_as_text(DefnKind::FormalTArg);
                 std::string field_name = field->lhs_name().content();
                 std::string tv_name = "TPattern(" + field_prefix + "):" + field_name;
-                if (field->kind() == ast::TPattern::FieldKind::Value) {
+                if (field->field_kind() == ast::TPattern::FieldKind::Value) {
                     // storing typeof arg:
                     field_var = scoper()->types_mgr()->new_unknown_monotype_tv(std::move(tv_name), node);
-                } else if (field->kind() == ast::TPattern::FieldKind::Type) {
+                } else if (field->field_kind() == ast::TPattern::FieldKind::Type) {
                     // storing PROXY arg:
                     // doesn't need a unique soln, typechecked like a class, but has 'typevar' interface for
                     // typing formal arguments in place of (as a proxy of) actual arguments.

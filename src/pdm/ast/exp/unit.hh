@@ -14,9 +14,11 @@ namespace pdm::ast {
         friend Manager;
       
       protected:
-        UnitExp(source::Loc loc)
-        : Exp(loc, Kind::UnitExp) {}
+        explicit UnitExp(source::Loc loc);
     };
+
+    inline UnitExp::UnitExp(source::Loc loc)
+    :   Exp(loc, Kind::UnitExp) {}
 
 }
 

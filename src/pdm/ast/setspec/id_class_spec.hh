@@ -14,16 +14,17 @@ namespace pdm::ast {
         inline IdClassSpec(source::Loc loc, intern::String name);
       
       public:
-        inline intern::String name() const;
+        [[nodiscard]] inline intern::String name() const;
 
       public:
-        inline scoper::Defn const* x_defn() const;
+        [[nodiscard]] inline scoper::Defn const* x_defn() const;
         inline void x_defn(scoper::Defn const* defn);
     };
 
     inline IdClassSpec::IdClassSpec(source::Loc loc, intern::String name)
     :   ClassSpec(loc, Kind::IdClassSpec),
-        m_name(name) 
+        m_name(name),
+        m_x_defn(nullptr)
     {}
 
     inline intern::String IdClassSpec::name() const {

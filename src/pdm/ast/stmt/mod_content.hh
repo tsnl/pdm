@@ -16,7 +16,7 @@ namespace pdm::ast {
         inline ModContentStmt(source::Loc loc, Kind stmt_kind);
         
       public:
-        inline ModStmt* opt_parent_mod_stmt() const;
+        [[nodiscard]] inline ModStmt* opt_parent_mod_stmt() const;
         inline void opt_parent_mod_stmt(ModStmt* mod_stmt);
     };
     inline ModContentStmt::ModContentStmt(source::Loc loc, Kind stmt_kind)

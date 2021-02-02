@@ -31,8 +31,8 @@ namespace pdm::ast {
         friend Manager;
 
       private:
-        intern::String               m_module_name;
-        std::vector<TPattern*>       m_module_tpatterns;
+        intern::String m_module_name;
+        std::vector<TPattern*> m_module_tpatterns;
         std::vector<ModContentStmt*> m_defns;
         ModStmtKind m_mod_stmt_kind;
 
@@ -44,40 +44,31 @@ namespace pdm::ast {
         ModStmt(source::Loc loc, intern::String module_name, std::vector<TPattern*> module_tpatterns, std::vector<ModContentStmt*>&& defns, ModStmtKind mod_stmt_kind);
       
       public:
-        intern::String module_name() const {
-            return m_module_name;
-        }
-        std::vector<ModContentStmt*> const& defns() const {
-            return m_defns;
-        }
-        std::vector<TPattern*> const& tpatterns() const {
-            return m_module_tpatterns;
-        }
-        ModStmtKind mod_stmt_kind() const {
-            return m_mod_stmt_kind;
-        }
+        [[nodiscard]] intern::String module_name() const;
+        [[nodiscard]] std::vector<ModContentStmt*> const& defns() const;
+        [[nodiscard]] std::vector<TPattern*> const& tpatterns() const;
+        [[nodiscard]] ModStmtKind mod_stmt_kind() const;
 
       public:
-        scoper::Frame* x_module_frame() const {
-            return m_x_module_frame;
-        }
-        void x_module_frame(scoper::Frame* frame) {
-            m_x_module_frame = frame;
-        }
+        [[nodiscard]] scoper::Frame* x_module_frame() const;
+        void x_module_frame(scoper::Frame* frame);
 
       public:
-        types::TypeVar* x_module_tv() const {
-            return m_x_module_tv;
-        }
-        void x_module_tv(types::TypeVar* module_tv) {
-            m_x_module_tv = module_tv;
-        }
+        [[nodiscard]] types::TypeVar* x_module_tv() const;
+        void x_module_tv(types::TypeVar* module_tv);
     };
 
-    inline ModStmt::ModStmt(source::Loc loc, intern::String module_name, std::vector<TPattern*> module_tpatterns, std::vector<ModContentStmt*>&& defns, ModStmtKind mod_stmt_kind)
+    inline ModStmt::ModStmt(
+        source::Loc loc,
+        intern::String module_name,
+        std::vector<TPattern*> module_tpatterns,
+        std::vector<ModContentStmt*>&& defns,
+        ModStmtKind mod_stmt_kind
+    )
     :   ModContentStmt(loc, Kind::ModStmt),
         m_module_name(module_name),
-        m_defns(defns),
+        m_module_tpatterns(std::move(module_tpatterns)),
+        m_defns(std::move(defns)),
         m_x_module_frame(nullptr),
         m_x_module_tv(nullptr) ,
         m_mod_stmt_kind(mod_stmt_kind)
@@ -91,6 +82,38 @@ namespace pdm::ast {
         if (m_mod_stmt_kind == ModStmtKind::TopModule) {
             assert(m_module_tpatterns.empty() && "Cannot pass tpatterns to TopModule.");
         }
+    }
+
+    inline intern::String ModStmt::module_name() const {
+        return m_module_name;
+    }
+
+    inline std::vector<ModContentStmt *> const &ModStmt::defns() const {
+        return m_defns;
+    }
+
+    inline std::vector<TPattern *> const &ModStmt::tpatterns() const {
+        return m_module_tpatterns;
+    }
+
+    inline ModStmtKind ModStmt::mod_stmt_kind() const {
+        return m_mod_stmt_kind;
+    }
+
+    inline scoper::Frame *ModStmt::x_module_frame() const {
+        return m_x_module_frame;
+    }
+
+    inline void ModStmt::x_module_frame(scoper::Frame *frame) {
+        m_x_module_frame = frame;
+    }
+
+    inline types::TypeVar *ModStmt::x_module_tv() const {
+        return m_x_module_tv;
+    }
+
+    inline void ModStmt::x_module_tv(types::TypeVar *module_tv) {
+        m_x_module_tv = module_tv;
     }
 
 }

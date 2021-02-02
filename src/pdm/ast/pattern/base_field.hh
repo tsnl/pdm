@@ -19,21 +19,17 @@ namespace pdm::ast {
 
       // getters:
       public:
-        intern::String lhs_name() const { 
-            return m_lhs_name; 
-        }
-
-      // Extension properties set by scoper:
-      public:
-        scoper::Defn* x_defn() const;
-        void x_defn(scoper::Defn* defn);
+        [[nodiscard]] intern::String lhs_name() const;
     };
 
-    inline 
-    BaseField::BaseField(source::Loc loc, Kind kind, intern::String lhs_name)
+    inline BaseField::BaseField(source::Loc loc, Kind kind, intern::String lhs_name)
     :   Node(loc, kind),
         m_lhs_name(lhs_name)
     {}
+
+    inline intern::String BaseField::lhs_name() const {
+        return m_lhs_name;
+    }
 
 }
 

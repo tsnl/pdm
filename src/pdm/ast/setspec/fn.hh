@@ -18,19 +18,25 @@ namespace pdm::ast {
         TypeSpec* m_opt_ret_typespec;
 
       protected:
-        FnTypeSpec(source::Loc loc, VPattern* lhs_vpattern, TypeSpec* opt_rhs_typespec)
-        : TypeSpec(loc, Kind::FnTypeSpec),
-          m_lhs_vpattern(lhs_vpattern),
-          m_opt_ret_typespec(opt_rhs_typespec) {}
+        FnTypeSpec(source::Loc loc, VPattern* lhs_vpattern, TypeSpec* opt_rhs_typespec);
 
       public:
-        VPattern* lhs_vpattern() const {
-            return m_lhs_vpattern;
-        }
-        TypeSpec* opt_ret_typespec() const {
-            return m_opt_ret_typespec;
-        }
+        [[nodiscard]] VPattern* lhs_vpattern() const;
+        [[nodiscard]] TypeSpec* opt_ret_typespec() const;
     };
+
+    inline TypeSpec* FnTypeSpec::opt_ret_typespec() const {
+        return m_opt_ret_typespec;
+    }
+
+    inline VPattern* FnTypeSpec::lhs_vpattern() const {
+        return m_lhs_vpattern;
+    }
+
+    inline FnTypeSpec::FnTypeSpec(source::Loc loc, VPattern* lhs_vpattern, TypeSpec* opt_rhs_typespec)
+    :   TypeSpec(loc, Kind::FnTypeSpec),
+        m_lhs_vpattern(lhs_vpattern),
+        m_opt_ret_typespec(opt_rhs_typespec) {}
 
 }
 

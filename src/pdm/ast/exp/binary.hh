@@ -27,23 +27,31 @@ namespace pdm::ast {
         Exp* m_rhs_operand;
 
       protected:
-        BinaryExp(source::Loc loc, BinaryOperator binary_operator, Exp* lhs_operand, Exp* rhs_operand)
-        : Exp(loc, Kind::BinaryExp),
-          m_operator(binary_operator),
-          m_lhs_operand(lhs_operand),
-          m_rhs_operand(rhs_operand) {}
+        BinaryExp(source::Loc loc, BinaryOperator binary_operator, Exp* lhs_operand, Exp* rhs_operand);
 
       public:
-        BinaryOperator binary_operator() const {
-            return m_operator;
-        }
-        Exp* lhs_operand() const {
-            return m_lhs_operand;
-        }
-        Exp* rhs_operand() const {
-            return m_rhs_operand;
-        }
+        [[nodiscard]] BinaryOperator binary_operator() const;
+        [[nodiscard]] Exp* lhs_operand() const;
+        [[nodiscard]] Exp* rhs_operand() const;
     };
+
+    inline BinaryExp::BinaryExp(source::Loc loc, BinaryOperator binary_operator, Exp* lhs_operand, Exp* rhs_operand)
+    :   Exp(loc, Kind::BinaryExp),
+        m_operator(binary_operator),
+        m_lhs_operand(lhs_operand),
+        m_rhs_operand(rhs_operand) {}
+
+    inline BinaryOperator BinaryExp::binary_operator() const {
+        return m_operator;
+    }
+
+    inline Exp* BinaryExp::lhs_operand() const {
+        return m_lhs_operand;
+    }
+
+    inline Exp* BinaryExp::rhs_operand() const {
+        return m_rhs_operand;
+    }
 
 }
 

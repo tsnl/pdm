@@ -24,8 +24,8 @@ namespace pdm::ast {
         inline TCallTypeSpec(source::Loc loc, TypeSpec* lhs_called, std::vector<TArg*>&& args);
         
       public:
-        inline TypeSpec* lhs_called() const;
-        inline std::vector<TArg*> const& args() const;
+        [[nodiscard]] inline TypeSpec* lhs_called() const;
+        [[nodiscard]] inline std::vector<TArg*> const& args() const;
     };
 
     inline TCallTypeSpec::TCallTypeSpec(source::Loc loc, TypeSpec* lhs_called, std::vector<TArg*>&& args)
@@ -51,12 +51,13 @@ namespace pdm::ast {
         inline TCallClassSpec(source::Loc loc, ClassSpec* lhs_called, std::vector<TArg*>&& args);
 
       public:
-        inline ClassSpec* lhs_called() const;
-        inline std::vector<TArg*> const& args() const;
+        [[nodiscard]] inline ClassSpec* lhs_called() const;
+        [[nodiscard]] inline std::vector<TArg*> const& args() const;
     };
 
     inline TCallClassSpec::TCallClassSpec(source::Loc loc, ClassSpec* lhs_called, std::vector<TArg*>&& args)
-    :   ClassSpec(loc, Kind::TCallClassSpec)
+    :   ClassSpec(loc, Kind::TCallClassSpec),
+        m_lhs_called(lhs_called)
     {}
     inline ClassSpec* TCallClassSpec::lhs_called() const {
         return m_lhs_called;

@@ -20,19 +20,25 @@ namespace pdm::ast {
         Exp*               m_suffix;
       
       protected:
-        ChainExp(source::Loc loc, std::vector<Stmt*>&& prefix, Exp* suffix = nullptr)
-        : Exp(loc, Kind::ChainExp),
-          m_prefix(std::move(prefix)),
-          m_suffix(suffix) {}
+        ChainExp(source::Loc loc, std::vector<Stmt*>&& prefix, Exp* suffix = nullptr);
       
       public:
-        std::vector<Stmt*> const& prefix() const {
-            return m_prefix;
-        }
-        Exp* suffix() const {
-            return m_suffix;
-        }
+        [[nodiscard]] std::vector<Stmt*> const& prefix() const;
+        [[nodiscard]] Exp* suffix() const;
     };
+
+    inline ChainExp::ChainExp(source::Loc loc, std::vector<Stmt*>&& prefix, Exp* suffix)
+    :   Exp(loc, Kind::ChainExp),
+        m_prefix(std::move(prefix)),
+        m_suffix(suffix) {}
+
+    inline std::vector<Stmt*> const& ChainExp::prefix() const {
+        return m_prefix;
+    }
+
+    inline Exp* ChainExp::suffix() const {
+        return m_suffix;
+    }
 
 }
 
