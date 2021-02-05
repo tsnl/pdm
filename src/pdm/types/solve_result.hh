@@ -35,28 +35,36 @@ namespace pdm::types {
         Ok
     };
 
-    // KdResult = Kind-dependent result.
+    inline bool kcr_is_error(KcResult kcr);
+
+    inline bool kcr_is_error(KcResult kcr) {
+        return (
+            kcr == KcResult::Error_MixedKind
+        );
+    }
+
+    // SolveResult = Kind-dependent result.
     // Represents results from post-kind-check territory.
-    enum class KdResult {
+    enum class SolveResult {
         CompilerError,
         TypingError,
         UpdatedOrFresh,
         NoChange,
     };
 
-    inline KdResult kdr_and(KdResult r1, KdResult r2);
-    inline bool kdr_is_error(KdResult kdr);
+    inline SolveResult result_and(SolveResult r1, SolveResult r2);
+    inline bool result_is_error(SolveResult kdr);
 
-    inline KdResult kdr_and(KdResult r1, KdResult r2) {
-        return static_cast<KdResult>(
+    inline SolveResult result_and(SolveResult r1, SolveResult r2) {
+        return static_cast<SolveResult>(
             std::min(static_cast<int>(r1), static_cast<int>(r2))
         );
     }
 
-    inline bool kdr_is_error(KdResult kdr) {
+    inline bool result_is_error(SolveResult kdr) {
         return (
-            kdr == KdResult::TypingError ||
-            kdr == KdResult::CompilerError
+            kdr == SolveResult::TypingError ||
+            kdr == SolveResult::CompilerError
         );
     }
 }

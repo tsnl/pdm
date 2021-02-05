@@ -11,6 +11,7 @@ mod Shapes {
         center Tuple[F32,F32],
         radius Tuple[F32]
     };
+
     circumference = fn (circle Circle) -> F32 {
         val tau = {
             val pi = 3.14159;

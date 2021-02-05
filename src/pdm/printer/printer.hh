@@ -31,7 +31,7 @@ namespace pdm::printer {
         
         void print_u32_char(int ch);
         
-        void print_cstr(char const* cstr);
+        void print_c_str(char const* cstr);
         void print_str(std::string const& s);
         void print_u8_str(utf8::String const& s);
         void print_intstr(intern::String const& s);

@@ -8,13 +8,11 @@
 #include "pdm/printer/printer.hh"
 
 #include "type.hh"
-#include "var_kind.hh"
+#include "var_archetype.hh"
 #include "typeop_result.hh"
-#include "solving.hh"
-#include "invariant.hh"
-#include "kd_var_solver.hh"
-
-#include "interval.hh"
+#include "solve_result.hh"
+#include "var_invariant.hh"
+#include "kdvs.hh"
 
 namespace pdm::types {
     class Manager;
@@ -27,7 +25,7 @@ namespace pdm::types {
     class TemplateVar_RetClass;
 
     class Relation;
-    class Invariant;
+    class VarInvariant;
 }
 namespace pdm::ast {
     class Node;
@@ -40,79 +38,89 @@ namespace pdm::types {
     // - each Var only has kd-invariants of one kind <=> each Var has exactly one kind.
     // - no Var (even typeclass) may span kinds.
     class Var {
+      public:
+        struct Edge {
+            Var* var;
+            bool is_induced_by_solver;
+        };
+
       private:
         std::string m_name;
         ast::Node* m_opt_client_ast_node;
-        VarKind m_var_kind;
+        VarArchetype m_var_archetype;
 
-        // all applied invariants stored as common or kind-dependent.
-        std::vector<CommonInvariant*> m_assumed_common_invariants;
+        std::vector<KindIndependentVarInvariant*> m_assumed_common_invariants;
         std::vector<KindDependentInvariant*> m_assumed_kind_dependent_invariants;
-
-        // (common attributes)
-        // common invariants broken into a bitset, subvars, and supervars:
-        TypeKindBitset m_assumed_kind_bitset;
-        std::vector<Var*> m_assumed_subvars;
-        std::vector<Var*> m_assumed_supervars;
-        size_t m_sp2_propagated_sofar_subvar_count;
-        size_t m_sp2_propagated_sofar_kd_invariant_count;
-        size_t m_sp2_propagated_sofar_supervar_count;
-
-        // (kind-dependent attributes)
-        // based on common attributes, create a kind-dependent var solver subclass:
+        std::vector<KindDependentInvariant*> m_invalid_assumed_kind_dependent_invariants;
+        Kind m_assumed_kind;
+        std::vector<Edge> m_assumed_sub_var_edges;
+        std::vector<Edge> m_assumed_super_var_edges;
+        size_t m_sp1_checked_sub_var_count;
+        size_t m_sp1_checked_super_var_count;
+        size_t m_sp2_last_flushed_sub_var_count;
+        size_t m_sp2_last_flushed_super_var_count;
+        size_t m_sp2_last_flushed_kd_invariant_count;
         KindDependentVarSolver* m_kdvs;
-        size_t m_kdvs_consumed_kd_invariant_count;
 
         // for each solution iter, we cache the previous iter's result:
+        SolveResult m_initial_solve_iter_result;
+        SolveResult m_prev_solve_iter_result;
+
+      // the solution:
+      protected:
         Type* m_opt_type_soln;
-        KdResult m_initial_solve_iter_result;
-        KdResult m_prev_solve_iter_result;
+        bool m_finished;
+        bool m_finish_res;
 
       // constructor/dtor:
       protected:
-        Var(std::string&& name, ast::Node* opt_client_ast_node, VarKind var_kind, KdResult default_solve_iter_result);
+        Var(std::string&& name, ast::Node* opt_client_ast_node, VarArchetype var_kind,
+            SolveResult initial_solve_iter_result);
 
         virtual ~Var() {}
 
       // public getters:
       public:
-        std::string const& name() const;
-        VarKind var_kind() const;
-        ast::Node* opt_client_ast_node() const;
-        std::vector<CommonInvariant*> const& assumed_common_invariants() const;
-        std::vector<KindDependentInvariant*> const& assumed_kind_dependent_invariants() const;
-        std::vector<Var*> const& assumed_subvars() const;
-        std::vector<Var*> const& assumed_supervars() const;
-        bool is_constant() const;
+        [[nodiscard]] std::string const& name() const;
+        [[nodiscard]] VarArchetype var_archetype() const;
+        [[nodiscard]] ast::Node* opt_client_ast_node() const;
+        [[nodiscard]] std::vector<KindIndependentVarInvariant*> const& assumed_common_invariants() const;
+        [[nodiscard]] std::vector<KindDependentInvariant*> const& assumed_kind_dependent_invariants() const;
+        [[nodiscard]] std::vector<Edge> const& assumed_sub_var_edges() const;
+        [[nodiscard]] std::vector<Edge> const& assumed_super_var_edges() const;
+        [[nodiscard]] bool is_constant() const;
 
       // Assuming: setting up type invariants.
       // - assume updates the IntervalSet representation
       // - solve (called after all 'assume')
       public:
-        KdResult assume_invariant_holds(Invariant* invariant);
-        KdResult assume_invariant_holds__override_fixed_to_init(Invariant* invariant);
-        KdResult higher_order_assume_equals(Var* var);
-        KdResult higher_order_assume_subvar(Var* var);
+        SolveResult assume_invariant_holds(VarInvariant* invariant);
+        SolveResult assume_invariant_holds_overwrite_fixed(VarInvariant* invariant);
+        SolveResult equals_by_induction(Var* var);
+        SolveResult sub_var_by_induction(Var* var);
       private:
-        KdResult assume_invariant_holds_impl(Invariant* invariant, bool override_fixed);
+        SolveResult assume_invariant_holds_impl(VarInvariant* invariant, bool override_fixed);
 
-      // Solving: Phase 1 (SP1)
+      // Solving:
       public:
-        KcResult kind_check();
-      private:
-        KcResult help_kind_check_for_mixed_types();
+        SolveResult solve_iter();
 
-      // Solving: Phase 2 (SP2)
+      // Accessing available solution:
       public:
-        KdResult update_kd_invariants();
-      private:
-        KdResult update_kd_invariants_impl();
-
-      public:
-        TestOpResult test(Invariant* invariant);
+        [[nodiscard]] Type* get_type_soln();
 
       private:
-        static KdResult help_assume_subvar(Var* subvar, Var* supervar, bool is_second_order_invariant);
+        SolveResult solve_iter_impl();
+        SolveResult solve_iter_phase1();
+        static Kind get_kind_from_edges_and_update_start_index(
+            std::vector<Var::Edge> const& edges, size_t* start_index_p
+        );
+        SolveResult solve_iter_phase2();
+        bool finish();
+        bool finish_impl();
+
+      private:
+        static SolveResult help_assume_sub_var(Var* sub_var, Var* super_var, bool is_second_order_invariant);
 
       // debug printing:
       public:
@@ -122,57 +130,41 @@ namespace pdm::types {
         void help_print_assumed_kind_bitset(printer::Printer& p) const;
         void help_print_assumed_common_invariants(printer::Printer& p) const;
         void help_print_assumed_kind_dependent_invariants(printer::Printer& p) const;
-        void help_print_assumed_subvars(printer::Printer& p) const;
-        void help_print_assumed_supervars(printer::Printer& p) const;
-        void help_print_kdvs(printer::Printer& p) const;
+        void help_print_assumed_sub_vars(printer::Printer& p) const;
+        void help_print_assumed_super_vars(printer::Printer& p) const;
         void help_print_opt_client_ast_node(printer::Printer& p) const;
+        void help_print_kdvs(printer::Printer& p) const;
+        void help_print_soln(printer::Printer& p) const;
     };
-    inline Var::Var(std::string&& name, ast::Node* opt_client_ast_node, VarKind var_kind, KdResult initial_solve_iter_result)
-    :   m_name(std::move(name)),
-        m_opt_client_ast_node(opt_client_ast_node),
-        m_var_kind(var_kind),
-        m_assumed_common_invariants(),
-        m_assumed_kind_dependent_invariants(),
-        m_assumed_kind_bitset(0),
-        m_assumed_subvars(),
-        m_assumed_supervars(),
-        m_sp2_propagated_sofar_subvar_count(0),
-        m_sp2_propagated_sofar_kd_invariant_count(0),
-        m_sp2_propagated_sofar_supervar_count(0),
-        m_initial_solve_iter_result(initial_solve_iter_result),
-        m_prev_solve_iter_result(initial_solve_iter_result),
-        m_kdvs(nullptr),
-        m_kdvs_consumed_kd_invariant_count(0)
-    {}
+
     inline std::string const& Var::name() const {
         return m_name;
     }
-    inline VarKind Var::var_kind() const {
-        return m_var_kind;
+    inline VarArchetype Var::var_archetype() const {
+        return m_var_archetype;
     }
     inline ast::Node* Var::opt_client_ast_node() const {
         return m_opt_client_ast_node;
     }
-    inline std::vector<CommonInvariant*> const& Var::assumed_common_invariants() const {
+    inline std::vector<KindIndependentVarInvariant*> const& Var::assumed_common_invariants() const {
         return m_assumed_common_invariants;
     }
     inline std::vector<KindDependentInvariant*> const& Var::assumed_kind_dependent_invariants() const {
         return m_assumed_kind_dependent_invariants;
     }
-    inline std::vector<Var*> const& Var::assumed_subvars() const {
-        return m_assumed_subvars;
+    inline std::vector<Var::Edge> const& Var::assumed_sub_var_edges() const {
+        return m_assumed_sub_var_edges;
     }
-    inline std::vector<Var*> const& Var::assumed_supervars() const {
-        return m_assumed_supervars;
+    inline std::vector<Var::Edge> const& Var::assumed_super_var_edges() const {
+        return m_assumed_super_var_edges;
     }
     inline bool Var::is_constant() const {
-        return m_initial_solve_iter_result == KdResult::NoChange;
+        return m_initial_solve_iter_result == SolveResult::NoChange;
     }
 
     // typevar:
     enum class TypeVarSolnBill {
         Fixed,          // do not solve, use provided solution
-        ProxyForMany,   // do not solve, accepts multiple solutions (really a class with a type interface)
         Monotype        // solve for a unique solution
     };
     class TypeVar: public Var {
@@ -184,7 +176,7 @@ namespace pdm::types {
         inline TypeVar(std::string&& name, Type* opt_fixed_soln, ast::Node* opt_client_ast_node, TypeVarSolnBill soln_bill);
 
       private:
-        static KdResult initial_sp2_result_for_soln_bill(TypeVarSolnBill soln_bill);
+        static SolveResult initial_sp2_result_for_soln_bill(TypeVarSolnBill soln_bill);
 
       // public getters:
       public:
@@ -197,12 +189,9 @@ namespace pdm::types {
         bool is_soln_fixed() const {
             return soln_bill() == TypeVarSolnBill::Fixed;
         }
-        bool is_proxy_for_many() const {
-            return soln_bill() == TypeVarSolnBill::ProxyForMany;
-        }
     };
     inline TypeVar::TypeVar(std::string&& name, Type* opt_fixed_soln, ast::Node* opt_client_ast_node, TypeVarSolnBill soln_bill)
-    :   Var(std::move(name), opt_client_ast_node, VarKind::Type, initial_sp2_result_for_soln_bill(soln_bill)),
+    :   Var(std::move(name), opt_client_ast_node, VarArchetype::Type, initial_sp2_result_for_soln_bill(soln_bill)),
         m_newest_soln(opt_fixed_soln),
         m_soln_bill(soln_bill)
     {
@@ -233,15 +222,6 @@ namespace pdm::types {
     struct Float32FixedTypeVar: public FixedTypeVar { Float32FixedTypeVar(); };
     struct Float64FixedTypeVar: public FixedTypeVar { Float64FixedTypeVar(); };
 
-    // proxy:
-    class ProxyTypeVar: public TypeVar {
-      public:
-        inline ProxyTypeVar(std::string&& name, ast::Node* client_ast_node);
-    };
-    inline ProxyTypeVar::ProxyTypeVar(std::string&& name, ast::Node* client_ast_node)
-    :   TypeVar(std::move(name), nullptr, client_ast_node, TypeVarSolnBill::ProxyForMany)
-    {}
-
     // monotype:
     class MonotypeTypeVar: public TypeVar {
       public:
@@ -258,10 +238,10 @@ namespace pdm::types {
     };
     class ClassVar: public Var {
       protected:
-        inline ClassVar(std::string&& name, ast::Node* client_ast_node, KdResult sp2_result);
+        inline ClassVar(std::string&& name, ast::Node* client_ast_node, SolveResult sp2_result);
     };
-    inline ClassVar::ClassVar(std::string&& name, ast::Node* client_ast_node, KdResult sp2_result)
-    :   Var(std::move(name), client_ast_node, VarKind::Class, sp2_result)
+    inline ClassVar::ClassVar(std::string&& name, ast::Node* client_ast_node, SolveResult sp2_result)
+    :   Var(std::move(name), client_ast_node, VarArchetype::Class, sp2_result)
     {}
 
     class UnknownClassVar: public ClassVar {
@@ -269,7 +249,7 @@ namespace pdm::types {
         inline UnknownClassVar(std::string&& name, ast::Node* client_ast_node);
     };
     inline UnknownClassVar::UnknownClassVar(std::string&& name, ast::Node* client_ast_node)
-    :   ClassVar(std::move(name), client_ast_node, KdResult::UpdatedOrFresh)
+    :   ClassVar(std::move(name), client_ast_node, SolveResult::UpdatedOrFresh)
     {}
 
     class FixedClassVar: public ClassVar {
@@ -277,7 +257,7 @@ namespace pdm::types {
         inline FixedClassVar(std::string&& name);
     };
     inline FixedClassVar::FixedClassVar(std::string&& name)
-    :   ClassVar(std::move(name), nullptr, KdResult::NoChange)
+    :   ClassVar(std::move(name), nullptr, SolveResult::NoChange)
     {}
     struct SignedIntFixedClassVar: public FixedClassVar { SignedIntFixedClassVar(); };
     struct UnsignedIntFixedClassVar: public FixedClassVar { UnsignedIntFixedClassVar(); };
@@ -345,13 +325,13 @@ namespace pdm::types {
       private:
         std::vector<TemplateFormalArg> m_formal_args;
       protected:
-        inline TemplateVar(std::string&& name, ast::Node* client_ast_node, VarKind var_kind);
+        inline TemplateVar(std::string&& name, ast::Node* client_ast_node, VarArchetype var_kind);
 
       public:
         std::vector<TemplateFormalArg> const& formal_args() const;
     };
-    inline TemplateVar::TemplateVar(std::string&& name, ast::Node* client_ast_node, VarKind var_kind)
-    :   Var(std::move(name), client_ast_node, var_kind, KdResult::UpdatedOrFresh),
+    inline TemplateVar::TemplateVar(std::string&& name, ast::Node* client_ast_node, VarArchetype var_kind)
+    :   Var(std::move(name), client_ast_node, var_kind, SolveResult::UpdatedOrFresh),
         m_formal_args()
     {}
     inline std::vector<TemplateFormalArg> const& TemplateVar::formal_args() const {
@@ -363,7 +343,7 @@ namespace pdm::types {
         inline TemplateVar_RetValue(std::string&& name, ast::Node* client_ast_node);
     };
     inline TemplateVar_RetValue::TemplateVar_RetValue(std::string&& name, ast::Node* client_ast_node)
-    :   TemplateVar(std::move(name), client_ast_node, VarKind::Template_RetValue)
+    :   TemplateVar(std::move(name), client_ast_node, VarArchetype::Template_RetValue)
     {}
 
     class TemplateVar_RetType: public TemplateVar {
@@ -371,7 +351,7 @@ namespace pdm::types {
         inline TemplateVar_RetType(std::string&& name, ast::Node* client_ast_node);
     };
     inline TemplateVar_RetType::TemplateVar_RetType(std::string&& name, ast::Node* client_ast_node)
-    :   TemplateVar(std::move(name), client_ast_node, VarKind::Template_RetType)
+    :   TemplateVar(std::move(name), client_ast_node, VarArchetype::Template_RetType)
     {}
     
     class TemplateVar_RetClass: public TemplateVar {
@@ -379,7 +359,7 @@ namespace pdm::types {
         inline TemplateVar_RetClass(std::string&& name, ast::Node* client_ast_node);
     };
     inline TemplateVar_RetClass::TemplateVar_RetClass(std::string&& name, ast::Node* client_ast_node)
-    :   TemplateVar(std::move(name), client_ast_node, VarKind::Template_RetClass)
+    :   TemplateVar(std::move(name), client_ast_node, VarArchetype::Template_RetClass)
     {}
 
 }   // namespace pdm::typer

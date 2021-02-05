@@ -231,7 +231,7 @@ namespace pdm::scoper {
 
     // debug:
     void Scoper::print(printer::Printer& printer) {
-        printer.print_cstr("Scoper dump");
+        printer.print_c_str("Scoper dump");
         printer.print_newline_indent();
         m_root_frame->print(printer);
         printer.print_newline_deindent();
@@ -362,7 +362,7 @@ namespace pdm::scoper {
             types::TypeVar* module_tv; {
                 std::string tv_prefix = "Defn(Module):";
                 std::string tv_name = tv_prefix + node->module_name().content();
-                module_tv = scoper()->types_mgr()->new_unknown_monotype_tv(std::move(tv_name), node);
+                module_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
             }
 
             // defining the new module in the script:
@@ -392,7 +392,7 @@ namespace pdm::scoper {
                 // single typeclass
                 std::string cv_prefix = "Single(Typeclass):";
                 std::string cv_name = cv_prefix + node->typeclass_name().content();
-                typeclass_var = scoper()->types_mgr()->new_unknown_cv(std::move(cv_name), node);
+                typeclass_var = scoper()->types_mgr()->new_unknown_class_var(std::move(cv_name), node);
             } else {
                 // template function
                 std::string var_prefix = "Template(Typeclass):";
@@ -421,7 +421,9 @@ namespace pdm::scoper {
             {
                 // defining the candidate explicitly:
                 std::string candidate_var_name = "TypeclassCandidate:" + std::string(node->candidate_name().content());
-                types::TypeVar* candidate_var = scoper()->types_mgr()->new_unknown_proxy_tv(std::move(candidate_var_name), node);
+                types::TypeVar* candidate_var = scoper()->types_mgr()->new_unknown_type_var(
+                    std::move(candidate_var_name), node
+                );
                 assert(candidate_var != nullptr);
 
                 Defn candidate_defn {
@@ -456,7 +458,7 @@ namespace pdm::scoper {
                 // single type
                 std::string tv_prefix = "Single(Type):";
                 std::string tv_name = tv_prefix + node->lhs_name().content();
-                type_var = scoper()->types_mgr()->new_unknown_monotype_tv(std::move(tv_name));
+                type_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name));
             } else {
                 // actually template function
                 std::string template_prefix = "Template(Type):";
@@ -495,7 +497,7 @@ namespace pdm::scoper {
                 // single value
                 std::string tv_prefix = "Single(Enum):";
                 std::string tv_name = tv_prefix + node->name().content();
-                enum_var = scoper()->types_mgr()->new_unknown_monotype_tv(std::move(tv_name), node);
+                enum_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
             } else {
                 // template function
                 std::string template_prefix = "Template(Enum):";
@@ -534,7 +536,7 @@ namespace pdm::scoper {
                 // single value
                 std::string tv_prefix = "Const:";
                 std::string tv_name = tv_prefix + node->name().content();
-                mod_val_var = scoper()->types_mgr()->new_unknown_monotype_tv(std::move(tv_name), node);
+                mod_val_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
             } else {
                 // template function
                 std::string template_prefix = "TemplateConst:";
@@ -610,7 +612,7 @@ namespace pdm::scoper {
             types::TypeVar* ext_mod_tv = nullptr; {
                 std::string tv_prefix = "Defn(ExternModule):";
                 std::string tv_name = std::move(tv_prefix) + node->ext_mod_name().content();
-                ext_mod_tv = scoper()->types_mgr()->new_unknown_monotype_tv(std::move(tv_name), node);
+                ext_mod_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
             }
             bool defn_ok = top_frame()->define(Defn(
                 DefnKind::ExternObject,
@@ -630,7 +632,7 @@ namespace pdm::scoper {
             types::TypeVar* mod_tv = nullptr; {
                 std::string tv_prefix = "Defn(ImportModule):";
                 std::string tv_name = std::move(tv_prefix) + node->import_name().content();
-                mod_tv = scoper()->types_mgr()->new_unknown_monotype_tv(std::move(tv_name), node);
+                mod_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
             }
             Defn new_defn {
                 DefnKind::ImportModule,
@@ -751,7 +753,7 @@ namespace pdm::scoper {
                 std::string field_prefix = defn_kind_as_text(m_vpattern_defn_kind_stack.top());
                 std::string field_name = field->lhs_name().content();
                 std::string tv_name = "VPattern(" + field_prefix + "):" + field_name;
-                types::TypeVar* field_tv = scoper()->types_mgr()->new_unknown_monotype_tv(std::move(tv_name), node);
+                types::TypeVar* field_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
                 Defn new_defn {
                     m_vpattern_defn_kind_stack.top(),
                     field->lhs_name(),
@@ -782,12 +784,12 @@ namespace pdm::scoper {
                 std::string tv_name = "TPattern(" + field_prefix + "):" + field_name;
                 if (field->field_kind() == ast::TPattern::FieldKind::Value) {
                     // storing typeof arg:
-                    field_var = scoper()->types_mgr()->new_unknown_monotype_tv(std::move(tv_name), node);
+                    field_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
                 } else if (field->field_kind() == ast::TPattern::FieldKind::Type) {
                     // storing PROXY arg:
                     // doesn't need a unique soln, typechecked like a class, but has 'typevar' interface for
                     // typing formal arguments in place of (as a proxy of) actual arguments.
-                    field_var = scoper()->types_mgr()->new_unknown_proxy_tv(std::move(tv_name), node);
+                    field_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
                 }
                 
                 assert(field_var != nullptr && "Unknown TPattern Field Kind or bad var.");
@@ -815,7 +817,7 @@ namespace pdm::scoper {
                 std::string field_prefix = defn_kind_as_text(m_lpattern_defn_kind_stack.top());
                 std::string field_name = field->lhs_name().content();
                 std::string tv_name = "LPattern(" + field_prefix + "):" + field_name;
-                types::TypeVar* field_tv = scoper()->types_mgr()->new_unknown_monotype_tv(std::move(tv_name), node);
+                types::TypeVar* field_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
                 Defn new_defn {
                     m_lpattern_defn_kind_stack.top(),
                     field->lhs_name(),
@@ -871,7 +873,7 @@ namespace pdm::scoper {
     bool ScoperVisitor::on_visit__dot_name_typespec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) {
         return true;
     }
-    bool ScoperVisitor::on_visit__struct_typespec(ast::StructTypeSpec* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit__struct_type_spec(ast::StructTypeSpec* node, VisitOrder visit_order) {
         return true;
     }
     bool ScoperVisitor::on_visit__paren_typespec(ast::ParenTypeSpec* node, VisitOrder visit_order) {

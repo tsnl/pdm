@@ -13,7 +13,7 @@
 
 #include "var.hh"
 #include "typeop_result.hh"
-#include "invariant.hh"
+#include "var_invariant.hh"
 
 //
 // forward declarations:
@@ -21,7 +21,7 @@
 
 namespace pdm::types {
     class Manager;
-    class Invariant;
+    class VarInvariant;
     class Var;
     class TypeVar;
     class ClassVar;
@@ -619,17 +619,17 @@ namespace pdm::types {
         {
             case TemplateRelationExpectedMonoKind::Value:
             {
-                assert(lhs_template_var->var_kind() == VarKind::Template_RetValue);
+                assert(lhs_template_var->var_archetype() == VarArchetype::Template_RetValue);
                 break;
             }
             case TemplateRelationExpectedMonoKind::Type:
             {
-                assert(lhs_template_var->var_kind() == VarKind::Template_RetType);
+                assert(lhs_template_var->var_archetype() == VarArchetype::Template_RetType);
                 break;
             }
             case TemplateRelationExpectedMonoKind::Class:
             {
-                assert(lhs_template_var->var_kind() == VarKind::Template_RetClass);
+                assert(lhs_template_var->var_archetype() == VarArchetype::Template_RetClass);
                 break;
             }
             default:

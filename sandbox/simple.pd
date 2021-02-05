@@ -1,15 +1,12 @@
 mod Greetings {
 
-    hello = 0;
-
-    world = fn (x UInt32, magic_number Int32) -> UInt32 {
-        if (x == 1u) then {
-            x
-        } else {
-            x
-        }
+    demo1 = fn (question String, answer Int32) -> Int32 {
+        val phrase1 = question;
+        val phrase2 = phrase1;
+        val phrase3 = phrase2;
+        answer
     };
 
-    yeet = world(1, 0x42u) + "hoobydooby";
+    demo2 = demo1("We come in peace.", 42);
 
 };

@@ -11,7 +11,7 @@ namespace pdm::printer {
         for (int index = 0; index < prefix.size(); index++) {
             ast::Node* item = prefix[index];
             printer->print_node(item);
-            printer->print_cstr(";");
+            printer->print_c_str(";");
 
             if (tail == nullptr) {
                 // if no tail, need to skip last 'print_newline' for 'print_newline_deindent' later.
@@ -38,7 +38,7 @@ namespace pdm::printer {
         printer->print_str(prefix);
         printer->print_u32_char(' ');
         printer->print_node(lhs);
-        printer->print_cstr(" = ");
+        printer->print_c_str(" = ");
         printer->print_node(rhs);
     }
 
@@ -71,7 +71,7 @@ namespace pdm::printer {
         }
     }
     void Printer::print_str(std::string const& s) {
-        print_cstr(s.c_str());
+        print_c_str(s.c_str());
     }
     void Printer::print_u8_str(utf8::String const& s) {
         for (int index = 0; index < s.size(); index++) {
@@ -81,9 +81,9 @@ namespace pdm::printer {
     }
     void Printer::print_intstr(intern::String const& s) {
         char const* cstr = s.content();
-        print_cstr(cstr);
+        print_c_str(cstr);
     }
-    void Printer::print_cstr(char const* cstr) {
+    void Printer::print_c_str(char const* cstr) {
         for (char const* cptr = cstr; *cptr; cptr++) {
             print_u32_char(*cptr);
         }
@@ -367,16 +367,16 @@ namespace pdm::printer {
 
     // scripts:
     void Printer::print_script(ast::Script* script) {
-        print_cstr("script ");
+        print_c_str("script ");
         print_u32_char('"');
         print_str(script->source()->abs_path());
         print_u32_char('"');
-        print_cstr(" {");
+        print_c_str(" {");
         print_newline_indent();
         {
             for (ast::Stmt* stmt: script->head_stmts()) {
                 print_node(stmt);
-                print_cstr(";");
+                print_c_str(";");
                 print_newline();
             }
             // print_newline();
@@ -384,7 +384,7 @@ namespace pdm::printer {
             for (size_t body_index = 0; body_index < body_count; body_index++) {
                 ast::Stmt* stmt = script->body_stmts()[body_index];
                 print_node(stmt);
-                print_cstr(";");
+                print_c_str(";");
                 
                 if (1+body_index != body_count) {
                     print_newline();
@@ -392,7 +392,7 @@ namespace pdm::printer {
             }
         }
         print_newline_deindent();
-        print_cstr("}");
+        print_c_str("}");
 
         // scripts are the only nodes followed by a newline.
         print_newline();
@@ -401,16 +401,16 @@ namespace pdm::printer {
     // statements:
     void Printer::print_mod_stmt(ast::ModStmt* mod) {
         if (mod->mod_stmt_kind() == ast::ModStmtKind::TopModule) {
-            print_cstr("mod ");
+            print_c_str("mod ");
             print_intstr(mod->module_name());
-            print_cstr(" ");
+            print_c_str(" ");
             help_print_chain(this, mod->defns(), nullptr);
         } else {
-            print_cstr("sub ");
+            print_c_str("sub ");
             print_intstr(mod->module_name());
             for (ast::TPattern* tpattern: mod->tpatterns()) {
                 print_node(tpattern);
-                print_cstr(" ");
+                print_c_str(" ");
             }
             help_print_chain(this, mod->defns(), nullptr);
         }
@@ -418,18 +418,18 @@ namespace pdm::printer {
     void Printer::print_mod_typeclass_stmt(ast::ModTypeclassStmt* tcs) {
         // print_cstr("typeclass ");
         print_intstr(tcs->typeclass_name());
-        print_cstr(" ");
+        print_c_str(" ");
         for (ast::TPattern* tpattern: tcs->tpatterns()) {
             print_node(tpattern);
-            print_cstr(" ");
+            print_c_str(" ");
         }
-        print_cstr(":- ");
-        
-        print_cstr("<");
+        print_c_str(":- ");
+
+        print_c_str("<");
         print_intstr(tcs->candidate_name());
-        print_cstr(" ");
+        print_c_str(" ");
         print_node(tcs->candidate_class_spec());
-        print_cstr("> ");
+        print_c_str("> ");
         
         help_print_chain(this, tcs->conditions(), nullptr);
     }
@@ -451,7 +451,7 @@ namespace pdm::printer {
             }
             case ast::ModTypeStmt::RhsKind::Extern:
             {
-                print_cstr(" from ");
+                print_c_str(" from ");
                 print_intstr(ts->opt_rhs_ext_mod_name());
                 print_u32_char(' ');
                 print_u32_char('"');
@@ -466,12 +466,12 @@ namespace pdm::printer {
 
         // todo: print targs
 
-        print_cstr(" = ");
+        print_c_str(" = ");
 
         print_newline();
         {
             for (ast::ModEnumStmt::Field* field: enm->fields()) {
-                print_cstr("| ");
+                print_c_str("| ");
                 print_intstr(field->name());
                 if (field->has_explicit_typespecs()) {
                     print_u32_char('(');
@@ -500,13 +500,13 @@ namespace pdm::printer {
         switch (mod_val_stmt->rhs_kind()) {
             case ast::ModValStmt::RhsKind::Internal:
             {
-                print_cstr("= ");
+                print_c_str("= ");
                 print_node(mod_val_stmt->opt_rhs_exp());
                 break;
             }
             case ast::ModValStmt::RhsKind::External:
             {
-                print_cstr("from ");
+                print_c_str("from ");
                 print_intstr(mod_val_stmt->opt_rhs_ext_mod_name());
                 print_u32_char(' ');
                 print_u32_char('"');
@@ -532,23 +532,23 @@ namespace pdm::printer {
         print_node(node->discarded_exp());
     }
     void Printer::print_extern_stmt(ast::ExternStmt* es) {
-        print_cstr("extern ");
+        print_c_str("extern ");
         print_intstr(es->ext_mod_name());
         print_u32_char(' ');
         print_node(es->link_arg());
     }
     void Printer::print_import_stmt(ast::ImportStmt* is) {
-        print_cstr("import ");
+        print_c_str("import ");
         print_intstr(is->import_name());
         // fixme; incorrect escapes, so hacky, but eh
-        print_cstr(" from \"");
+        print_c_str(" from \"");
         print_u8_str(is->import_from_str());
-        print_cstr("\" type \"");
+        print_c_str("\" type \"");
         print_u8_str(is->import_type_str());
         print_u32_char('"');
     }
     void Printer::print_using_stmt(ast::UsingStmt* node) {
-        print_cstr("using ");
+        print_c_str("using ");
         print_intstr(node->module_name());
         print_u32_char('.');
         print_str(node->suffix());
@@ -557,7 +557,7 @@ namespace pdm::printer {
 
     // expressions:
     void Printer::print_unit_exp(ast::UnitExp*) {
-        print_cstr("()");
+        print_c_str("()");
     }
     void Printer::print_int_exp(ast::IntExp* ie) {
         switch (ie->base()) {
@@ -687,17 +687,17 @@ namespace pdm::printer {
         {
             case ast::TypeQueryKind::LhsEqualsRhs:
             {
-                print_cstr(" :: ");
+                print_c_str(" :: ");
                 break;
             }
             case ast::TypeQueryKind::LhsSubtypesRhs:
             {
-                print_cstr(" :< ");
+                print_c_str(" :< ");
                 break;
             }
             case ast::TypeQueryKind::LhsSupertypesRhs:
             {
-                print_cstr(" >: ");
+                print_c_str(" >: ");
                 break;
             }
         }
@@ -733,25 +733,25 @@ namespace pdm::printer {
         }
     }
     void Printer::print_lambda_exp(ast::LambdaExp* node) {
-        print_cstr("fn ");
+        print_c_str("fn ");
         print_node(node->lhs_vpattern());
-        print_cstr(" ");
+        print_c_str(" ");
         if (node->opt_ret_typespec() != nullptr) {
-            print_cstr("-> ");
+            print_c_str("-> ");
             print_node(node->opt_ret_typespec());
-            print_cstr(" ");
+            print_c_str(" ");
         }
         print_node(node->rhs_body());
     }
     void Printer::print_if_exp(ast::IfExp* node) {
-        print_cstr("if ");
+        print_c_str("if ");
         print_node(node->cond_exp());
         if (node->then_exp() != nullptr) {
-            print_cstr(" then ");
+            print_c_str(" then ");
             print_node(node->then_exp());
         }
         if (node->else_exp() != nullptr) {
-            print_cstr(" else ");
+            print_c_str(" else ");
             print_node(node->else_exp());
         }
     }
@@ -767,14 +767,14 @@ namespace pdm::printer {
         } else if (node->rhs_hint() == ast::DotNameExp::RhsHint::LhsEnum) {
             print_u32_char('.');
         } else {
-            print_cstr(" <dot-?> ");
+            print_c_str(" <dot-?> ");
         }
         print_intstr(node->rhs_name());
     }
     void Printer::print_module_dot_exp(ast::ModuleDotExp* node) {
         for (intern::String prefix_module_name: node->lhs_prefix_module_names()) {
             print_intstr(prefix_module_name);
-            print_cstr(":");
+            print_c_str(":");
         }
         print_intstr(node->rhs_name());
     }
@@ -803,12 +803,12 @@ namespace pdm::printer {
             }
             case ast::UnaryOperator::Not:
             {
-                print_cstr("not ");
+                print_c_str("not ");
                 break;
             }
             default:
             {
-                print_cstr("<UnaryOperator::?> ");
+                print_c_str("<UnaryOperator::?> ");
                 break;
             }
         }
@@ -821,77 +821,77 @@ namespace pdm::printer {
         {
             case ast::BinaryOperator::Mul:
             {
-                print_cstr(" * ");
+                print_c_str(" * ");
                 break;
             }
             case ast::BinaryOperator::Div:
             {
-                print_cstr(" / ");
+                print_c_str(" / ");
                 break;
             }
             case ast::BinaryOperator::Rem:
             {
-                print_cstr(" % ");
+                print_c_str(" % ");
                 break;
             }
             case ast::BinaryOperator::Add:
             {
-                print_cstr(" + ");
+                print_c_str(" + ");
                 break;
             }
             case ast::BinaryOperator::Subtract:
             {
-                print_cstr(" - ");
+                print_c_str(" - ");
                 break;
             }
             case ast::BinaryOperator::Less:
             {
-                print_cstr(" < ");
+                print_c_str(" < ");
                 break;
             }
             case ast::BinaryOperator::Greater:
             {
-                print_cstr(" > ");
+                print_c_str(" > ");
                 break;
             }
             case ast::BinaryOperator::LessOrEq:
             {
-                print_cstr(" <= ");
+                print_c_str(" <= ");
                 break;
             }
             case ast::BinaryOperator::GreaterOrEq:
             {
-                print_cstr(" >= ");
+                print_c_str(" >= ");
                 break;
             }
             case ast::BinaryOperator::Equals:
             {
-                print_cstr(" == ");
+                print_c_str(" == ");
                 break;
             }
             case ast::BinaryOperator::NotEquals:
             {
-                print_cstr(" <> ");
+                print_c_str(" <> ");
                 break;
             }
             case ast::BinaryOperator::And:
             {
-                print_cstr(" and ");
+                print_c_str(" and ");
                 break;
             }
             case ast::BinaryOperator::XOr:
             {
-                print_cstr(" xor ");
+                print_c_str(" xor ");
                 break;
             }
             case ast::BinaryOperator::Or:
             {
-                print_cstr(" or ");
+                print_c_str(" or ");
                 break;
             }
             default:
             {
-                print_cstr(" <BinaryOperator::?> ");
+                print_c_str(" <BinaryOperator::?> ");
                 break;
             }
         }
@@ -940,12 +940,12 @@ namespace pdm::printer {
                 }
                 case ast::VArgAccessSpec::Out:
                 {
-                    print_cstr("out ");
+                    print_c_str("out ");
                     break;
                 }
                 case ast::VArgAccessSpec::InOut:
                 {
-                    print_cstr("inout ");
+                    print_c_str("inout ");
                     break;
                 }
             }
@@ -1016,7 +1016,7 @@ namespace pdm::printer {
         print_intstr(node->name());
     }
     void Printer::print_fn_typespec(ast::FnTypeSpec* node) {
-        print_cstr("Fn ");
+        print_c_str("Fn ");
         print_node(node->lhs_vpattern());
         print_u32_char(' ');
         print_node(node->opt_ret_typespec());
@@ -1111,12 +1111,12 @@ namespace pdm::printer {
             }
             case ast::VArgAccessSpec::Out:
             {
-                print_cstr("out ");
+                print_c_str("out ");
                 break;
             }
             case ast::VArgAccessSpec::InOut:
             {
-                print_cstr("inout ");
+                print_c_str("inout ");
                 break;
             }
         }
@@ -1125,7 +1125,7 @@ namespace pdm::printer {
 
     // non-syntactic elements:
     void Printer::print_builtin_type_stmt(ast::BuiltinStmt* node) {
-        print_cstr("[builtin-type ");
+        print_c_str("[builtin-type ");
         print_u32_char('"');
         print_str(node->desc());
         print_u32_char('"');

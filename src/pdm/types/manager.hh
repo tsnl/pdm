@@ -42,7 +42,6 @@ namespace pdm::types {
         Compiler* m_opt_compiler_ptr;
 
         std::deque<MonotypeTypeVar>   m_all_unknown_monotype_tvs;
-        std::deque<ProxyTypeVar>      m_all_unknown_proxy_tvs;
         std::deque<UnknownClassVar>   m_all_unknown_cvs;
         std::deque<TemplateVar_RetValue>    m_all_value_template_vars;
         std::deque<TemplateVar_RetType>     m_all_type_template_vars;
@@ -79,9 +78,8 @@ namespace pdm::types {
 
       // create tv (TypeVar), cv (ClassVar), and 3 kinds of TemplateVars:
       public:
-        TypeVar* new_unknown_monotype_tv(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
-        TypeVar* new_unknown_proxy_tv(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
-        ClassVar* new_unknown_cv(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        TypeVar* new_unknown_type_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        ClassVar* new_unknown_class_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
 
         TemplateVar_RetValue* new_value_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
         TemplateVar_RetType*  new_type_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
@@ -116,7 +114,7 @@ namespace pdm::types {
       // interface
       public:
         // map each 'Relation' class to a function application here.
-        KdResult assume_relation_holds(Relation* relation);
+        SolveResult assume_relation_holds(Relation* relation);
         TestOpResult test(Relation* relation);
 
         bool typecheck();

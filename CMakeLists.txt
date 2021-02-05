@@ -168,21 +168,19 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/manager.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/manager.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/typeop_result.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/invariant.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/invariant.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var_invariant.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var_invariant.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type_kind.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/interval.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/interval.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/kind.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var_kind.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var_archetype.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/relation.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/relation.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/solving.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/kd_var_solver.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/kd_var_solver.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/solve_result.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/kdvs.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/kdvs.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/typer/typer.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/typer/typer.hh

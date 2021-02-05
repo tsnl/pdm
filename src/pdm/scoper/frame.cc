@@ -22,14 +22,14 @@ namespace pdm::scoper {
     }
 
     void Frame::print(printer::Printer& p) const {
-        p.print_cstr("Frame ");
-        p.print_cstr(frame_kind_as_text(kind()));
-        p.print_cstr(" at ");
+        p.print_c_str("Frame ");
+        p.print_c_str(frame_kind_as_text(kind()));
+        p.print_c_str(" at ");
         p.print_uint_hex(reinterpret_cast<u64>(this));
-        p.print_cstr(" {");
+        p.print_c_str(" {");
         p.print_newline_indent();
         {
-            p.print_cstr("Contexts:");
+            p.print_c_str("Contexts:");
             p.print_newline_indent();
             {
                 // reading all contexts into a stack...
@@ -60,9 +60,9 @@ namespace pdm::scoper {
             // p.print_newline();
 
             // child frames:
-            p.print_cstr("Subframes: (");
+            p.print_c_str("Subframes: (");
             p.print_uint_hex(m_child_frames.size());
-            p.print_cstr(") ...");
+            p.print_c_str(") ...");
             if (m_child_frames.empty()) {
                 // p.print_newline();
             } else {
@@ -79,7 +79,7 @@ namespace pdm::scoper {
             }
         }
         p.print_newline_deindent();
-        p.print_cstr("}");
+        p.print_c_str("}");
     }
 
 }

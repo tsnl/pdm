@@ -3,9 +3,9 @@
 #include <iostream>
 #include <string>
 
-#include "solving.hh"
+#include "solve_result.hh"
 #include "relation.hh"
-#include "kd_var_solver.hh"
+#include "kdvs.hh"
 
 #include "pdm/core/config.hh"
 
@@ -22,10 +22,35 @@ namespace pdm::types {
         m_i8_tv(), m_i16_tv(), m_i32_tv(), m_i64_tv(), m_i128_tv(),
         m_u1_tv(), m_u8_tv(), m_u16_tv(), m_u32_tv(), m_u64_tv(), m_u128_tv(),
         m_f16_tv(), m_f32_tv(), m_f64_tv() 
-    {}
+    {
+        // adding references to builtin types to the 'all' set:
+        size_t builtin_tv_count = 16;
+        size_t reserved_tv_count = 128 - builtin_tv_count;
+        m_all_var_refs.reserve(builtin_tv_count + reserved_tv_count);
+        {
+            m_all_var_refs.push_back(get_void_tv());
+            m_all_var_refs.push_back(get_string_tv());
+
+            m_all_var_refs.push_back(get_i8_tv());
+            m_all_var_refs.push_back(get_i16_tv());
+            m_all_var_refs.push_back(get_i32_tv());
+            m_all_var_refs.push_back(get_i64_tv());
+            m_all_var_refs.push_back(get_i128_tv());
+
+            m_all_var_refs.push_back(get_u1_tv());
+            m_all_var_refs.push_back(get_u16_tv());
+            m_all_var_refs.push_back(get_u32_tv());
+            m_all_var_refs.push_back(get_u64_tv());
+            m_all_var_refs.push_back(get_u128_tv());
+
+            m_all_var_refs.push_back(get_f16_tv());
+            m_all_var_refs.push_back(get_f32_tv());
+            m_all_var_refs.push_back(get_f64_tv());
+        }
+    }
 
     void Manager::print(printer::Printer& p, std::string const& title) const {
-        p.print_cstr("-- Type Manager Dump: ");
+        p.print_c_str("-- Type Manager Dump: ");
         p.print_str(title);
         p.print_newline_indent();
         {
@@ -74,19 +99,13 @@ namespace pdm::types {
         p.print_newline_deindent();
     }
 
-    TypeVar* Manager::new_unknown_monotype_tv(std::string&& name, ast::Node* opt_client_ast_node) {
+    TypeVar* Manager::new_unknown_type_var(std::string&& name, ast::Node* opt_client_ast_node) {
         m_all_unknown_monotype_tvs.emplace_back(std::move(name), opt_client_ast_node);
         auto ref = &m_all_unknown_monotype_tvs.back();
         m_all_var_refs.push_back(ref);
         return ref;
     }
-    TypeVar* Manager::new_unknown_proxy_tv(std::string&& name, ast::Node* opt_client_ast_node) {
-        m_all_unknown_proxy_tvs.emplace_back(std::move(name), opt_client_ast_node);
-        auto ref = &m_all_unknown_proxy_tvs.back();
-        m_all_var_refs.push_back(ref);
-        return ref;
-    }
-    ClassVar* Manager::new_unknown_cv(std::string&& name, ast::Node* opt_client_ast_node) {
+    ClassVar* Manager::new_unknown_class_var(std::string&& name, ast::Node* opt_client_ast_node) {
         m_all_unknown_cvs.emplace_back(std::move(name), opt_client_ast_node);
         auto ref = &m_all_unknown_cvs.back();
         m_all_var_refs.push_back(ref);
@@ -111,10 +130,10 @@ namespace pdm::types {
         return ref;
     }
 
-    KdResult Manager::assume_relation_holds(Relation* relation) {
+    SolveResult Manager::assume_relation_holds(Relation* relation) {
         m_all_relations.push_back(relation);
         relation->on_assume(this);
-        return KdResult::UpdatedOrFresh;
+        return SolveResult::UpdatedOrFresh;
     }
     TestOpResult Manager::test(Relation* relation) {
         std::cout << "NotImplemented: typer::Manager::test" << std::endl;
@@ -124,75 +143,16 @@ namespace pdm::types {
 
     bool Manager::typecheck() {
 
-        // Checking initial kinds:
-        {
-            bool sp1_pass = true;
+        // todo: use a deferred error reporting system, compare failed vars against Relations
+        //       and report failed Relations.
+        //       for now, just printing errors per-var-- easier to debug.
 
-            // todo: use a deferred error reporting system, compare failed vars against Relations
-            //       and report failed Relations.
-            // for now, just printing errors per-var-- easier to debug.
-
-            for (Var* var: m_all_var_refs) {
-                KcResult kind_check_result = var->kind_check();
-
-                // Parsing status:
-                switch (kind_check_result) {
-                    case KcResult::InsufficientInfo:
-                    {
-                        // insufficient info is ok! wait for SP2
-                        sp1_pass = true;
-                        break;
-                    }
-                    case KcResult::Error_MixedKind:
-                    {
-                        sp1_pass = false;
-                        std::string headline = (
-                            "Mixed type-kinds in type/class variable."
-                        );
-                        std::string more = "";
-                        std::vector<feedback::Note*> notes;
-                        if (var->opt_client_ast_node() != nullptr) {
-                            std::string desc0 = "see syntax element here...";
-                            notes.push_back(new feedback::AstNodeNote(
-                                std::move(desc0), var->opt_client_ast_node()
-                            ));
-                        }
-                        feedback::post(new feedback::Letter(
-                            feedback::Severity::Error,
-                            std::move(headline),
-                            std::move(more),
-                            std::move(notes)
-                        ));
-                        break;
-                    }
-                    case KcResult::Ok:
-                    {
-                        break;
-                    }
-                }
-            }
-            if (!sp1_pass) {
-                std::string headline = "Errors detected in typing setup: terminating.";
-                std::string desc = "";
-                std::vector<feedback::Note*> notes;
-                feedback::post(new feedback::Letter(
-                    feedback::Severity::FatalError,
-                    std::move(headline),
-                    std::move(desc),
-                    std::move(notes)
-                ));
-
-                return false;
-            }
-        }
-
-        // Running SP2:
-        // until fixed or a max iteration count is exceeded...
+        // Running solver iteratively until fixed or a max iteration count is exceeded:
+        auto last_iter_solve_res = SolveResult::CompilerError;
         {
             bool debug_print_on_each_iter = false;
             printer::Printer debug_printer{std::cerr};
             bool fixed = false;
-            auto last_iter_sp2res = KdResult::CompilerError;
             size_t const max_iter_count = 8 * 1024;
             size_t iter_count = 0;
             while (!fixed && iter_count < max_iter_count) {
@@ -207,20 +167,20 @@ namespace pdm::types {
                 size_t system_size = m_all_var_refs.size();
 
                 // ... run an sp2 iter for each and every var...
-                auto all_vars_sp2res = KdResult::NoChange;
+                auto all_vars_sp2res = SolveResult::NoChange;
                 for (size_t index = 0; index < system_size; index++) {
                     Var* var = m_all_var_refs[index];
-                    KdResult var_sp2res = var->update_kd_invariants();
-                    all_vars_sp2res = kdr_and(all_vars_sp2res, var_sp2res);
+                    SolveResult var_sp2res = var->solve_iter();
+                    all_vars_sp2res = result_and(all_vars_sp2res, var_sp2res);
                 }
 
                 // ... and thereby determine fixed-ness
                 fixed = (
-                    (all_vars_sp2res == KdResult::CompilerError) ||
-                    (all_vars_sp2res == KdResult::TypingError) ||
-                    (all_vars_sp2res == KdResult::NoChange)
+                    (all_vars_sp2res == SolveResult::CompilerError) ||
+                    (all_vars_sp2res == SolveResult::TypingError) ||
+                    (all_vars_sp2res == SolveResult::NoChange)
                 );
-                last_iter_sp2res = all_vars_sp2res;
+                last_iter_solve_res = all_vars_sp2res;
                 iter_count++;
             }
             if (iter_count >= max_iter_count) {
@@ -233,11 +193,16 @@ namespace pdm::types {
                 ));
                 return false;
             }
+        }
 
-            if (kdr_is_error(last_iter_sp2res)) {
+        // from this point, all invariants are stable.
+
+        // checking all nodes:
+        {
+            if (result_is_error(last_iter_solve_res)) {
                 feedback::Severity common_severity = feedback::Severity::Error;
                 std::string common_headline;
-                if (last_iter_sp2res == KdResult::TypingError) {
+                if (last_iter_solve_res == SolveResult::TypingError) {
                     common_severity = common_severity;
                     common_headline = "Inconsistent type relations detected";
                 } else {
@@ -246,10 +211,10 @@ namespace pdm::types {
                 }
 
                 for (Var* var: m_all_var_refs) {
-                    KdResult var_sp2res = var->update_kd_invariants();
+                    SolveResult var_sp2res = var->solve_iter();
 
                     // only filtering the most severe errors:
-                    if (var_sp2res == last_iter_sp2res) {
+                    if (var_sp2res == last_iter_solve_res) {
                         std::string headline = common_headline;
                         std::string desc;
                         std::vector<feedback::Note*> notes;
@@ -272,9 +237,41 @@ namespace pdm::types {
             }
         }
 
+        // from here, we can ensure invariants are stable.
+
+        // Checking stabilized kinds:
+        {
+            bool sp1_pass = true;
+
+            // todo: use a deferred error reporting system, compare failed vars against Relations
+            //       and report failed Relations.
+            //       for now, just printing errors per-var-- easier to debug.
+
+            bool finished_ok = true;
+            for (Var* var: m_all_var_refs) {
+                Type* type_soln = var->get_type_soln();
+                if (!type_soln) {
+                    finished_ok = false;
+                }
+            }
+            if (!finished_ok) {
+                std::string headline = "Typing Error";
+                std::string desc = "(Var::finish did not return true for all Vars)";
+                std::vector<feedback::Note*> notes;
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::FatalError,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
+
+                return false;
+            }
+        }
+
         // even if stable, could still be errors.
         // todo: extract a solution, return false if fails
-        // assert(last_iter_sp2res == KdResult::NoChange);
+        // assert(last_iter_sp2res == SolveResult::NoChange);
         // {
         // }
 

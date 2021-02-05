@@ -8,46 +8,54 @@
 #include "pdm/core/integer.hh"
 #include "pdm/printer/printer.hh"
 
-#include "solving.hh"
-#include "var_kind.hh"
-#include "invariant.hh"
+#include "solve_result.hh"
+#include "var_archetype.hh"
+#include "var_invariant.hh"
+#include "type.hh"
+
+namespace pdm::types {
+    class Var;
+}
 
 namespace pdm::types {
 
     class KindDependentVarSolver {
       private:
         std::set<KindDependentInvariant*> m_added_invariants;
-        VarKind m_var_kind;
-        TypeKind m_required_type_kind;
+        VarArchetype m_var_kind;
+        Kind m_required_type_kind;
+        Type* m_reified_soln;
 
       protected:
-        inline KindDependentVarSolver(VarKind var_kind, TypeKind type_kind);
+        inline KindDependentVarSolver(VarArchetype var_kind, Kind type_kind);
         virtual ~KindDependentVarSolver() = default;
 
       // use 'try_add_invariant' to transfer invariants from Vars (plural, incl. sub- and sup-)
       // to solution set.
       public:
-        KdResult try_add_invariant(KindDependentInvariant* invariant);
-      private:
-        virtual KdResult lazy_try_add_invariant_impl(KindDependentInvariant* invariant) = 0;
+        SolveResult try_add_invariant(KindDependentInvariant* invariant);
+        Type* reify(Var* parent_var);
+      protected:
+        virtual SolveResult lazy_try_add_invariant_impl(KindDependentInvariant* invariant) = 0;
+        virtual Type* reify_impl(Var* parent_var) = 0;
 
       public:
-        inline VarKind var_kind() const;
-        inline TypeKind required_type_kind() const;
+        [[nodiscard]] inline VarArchetype var_kind() const;
+        [[nodiscard]] inline Kind required_type_kind() const;
 
       public:
         virtual void print(printer::Printer& printer) const = 0;
       protected:
         void help_print_common_and_start_indented_block(printer::Printer& printer, std::string const& name) const;
     };
-    inline KindDependentVarSolver::KindDependentVarSolver(VarKind var_kind, TypeKind required_type_kind)
+    inline KindDependentVarSolver::KindDependentVarSolver(VarArchetype var_kind, Kind required_type_kind)
     :   m_var_kind(var_kind),
         m_required_type_kind(required_type_kind)
     {}
-    inline VarKind KindDependentVarSolver::var_kind() const {
+    inline VarArchetype KindDependentVarSolver::var_kind() const {
         return m_var_kind;
     }
-    inline TypeKind KindDependentVarSolver::required_type_kind() const {
+    inline Kind KindDependentVarSolver::required_type_kind() const {
         return m_required_type_kind;
     }
 
@@ -55,7 +63,7 @@ namespace pdm::types {
         KcResult result;
         KindDependentVarSolver* kdvs;
     };
-    NewKDVS try_new_kdvs_for(VarKind var_kind, u64 allowed_type_kinds_bitset);
+    NewKDVS try_new_kdvs_for(VarArchetype var_kind, Kind type_kind);
 
 }
 

@@ -7,15 +7,15 @@ namespace pdm::ast {
         "BuiltinStmt",
         "DiscardStmt",
         "ConstStmt",
-        "LetStmt",
+        "ValStmt",
         "VarStmt",
         "SetStmt",
-        "FnStmt",
-        "TypeStmt",
-        "EnumStmt",
-        "TypeclassStmt",
+        "ModValStmt",
+        "ModTypeStmt",
+        "ModEnumStmt",
+        "ModTypeclassStmt",
         "ModStmt",
-        "LinkStmt",
+        "ExternStmt",
         "ImportStmt",
         "UsingStmt",
 
@@ -26,7 +26,7 @@ namespace pdm::ast {
         "ArrayExp", "TupleExp", "StructExp", "ChainExp",
         "LambdaExp",
         "IfExp",
-        "DotIndexExp", "DotNameExp",
+        "ModuleDotExp", "DotIndexExp", "DotNameExp",
         "UnaryExp", "BinaryExp",
         "VCallExp", "TCallExp",
         "TypeQueryExp",
@@ -35,11 +35,13 @@ namespace pdm::ast {
         "TPattern",
         "LPattern",
 
-        "IdTypeSpec",
-        "PtrTypeSpec",
-        "FnTypeSpec", "TCallTypeSpec",
-        "DotNameTypeSpec_TypePrefix", "DotNameTypeSpec_ModPrefix",
+        "IdTypeSpec", "IdClassSpec",
+        "ParenTypeSpec",
+        "FnTypeSpec",
+        "TCallTypeSpec", "TCallClassSpec",
+        "DotNameTypeSpec_ModPrefix",
         "TupleTypeSpec", "StructTypeSpec"
+        // "DotNameTypeSpec_TypePrefix"
     };
 
     char const* kind_as_text(Kind kind) {

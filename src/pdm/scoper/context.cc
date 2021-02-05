@@ -122,20 +122,20 @@ namespace pdm::scoper {
     //
 
     void Context::print(printer::Printer& p) const {
-        p.print_cstr(context_kind_as_text(kind()));
-        p.print_cstr(" {");
+        p.print_c_str(context_kind_as_text(kind()));
+        p.print_c_str(" {");
         for (int defn_index = 0; defn_index < m_defns.size(); defn_index++) {
             Defn const& defn = m_defns[defn_index];
             defn.print(p);
             if (defn_index+1 != m_defns.size()) {
-                p.print_cstr(", ");
+                p.print_c_str(", ");
             }
         }
-        p.print_cstr("}");
+        p.print_c_str("}");
         if (m_opt_link) {
-            p.print_cstr(" link_to (Frame at ");
+            p.print_c_str(" link_to (Frame at ");
             p.print_uint_hex(reinterpret_cast<u64>(m_opt_link));
-            p.print_cstr(")");
+            p.print_c_str(")");
         }
     }
 

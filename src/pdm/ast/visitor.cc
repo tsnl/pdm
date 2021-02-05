@@ -599,7 +599,7 @@ namespace pdm::ast {
             }
             case Kind::StructTypeSpec:
             {
-                return on_visit__struct_typespec(dynamic_cast<StructTypeSpec*>(node), visit_order);
+                return on_visit__struct_type_spec(dynamic_cast<StructTypeSpec *>(node), visit_order);
             }
             case Kind::ParenTypeSpec:
             {

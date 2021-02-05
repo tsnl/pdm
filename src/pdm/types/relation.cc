@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "relation.hh"
-#include "invariant.hh"
+#include "var_invariant.hh"
 #include "manager.hh"
 
 #include "var.hh"
@@ -17,22 +17,24 @@ namespace pdm::types {
     }
 
     bool SubtypeOfRelation::on_assume_impl(types::Manager* manager) {
-        KdResult assume_op_result = m_subtype_tv->assume_invariant_holds(new SubtypeOfInvariant(this, m_supertype_tv));
-        return !kdr_is_error(assume_op_result);
+        SolveResult assume_op_result = m_subtype_tv->assume_invariant_holds(
+            new SubtypeOfInvariant(this, m_supertype_tv));
+        return !result_is_error(assume_op_result);
     }
     bool SubclassOfRelation::on_assume_impl(types::Manager* manager) {
-        KdResult assume_op_result = m_subclass_cv->assume_invariant_holds(new SubclassOfInvariant(this, m_superclass_cv));
-        return !kdr_is_error(assume_op_result);
+        SolveResult assume_op_result = m_subclass_cv->assume_invariant_holds(
+            new SubclassOfInvariant(this, m_superclass_cv));
+        return !result_is_error(assume_op_result);
     }
     bool ClassOfRelation::on_assume_impl(types::Manager* manager) {
-        KdResult assume_op_result = m_class_cv->assume_invariant_holds(new ClassOfInvariant(this, m_member_tv));
-        return !kdr_is_error(assume_op_result);
+        SolveResult assume_op_result = m_class_cv->assume_invariant_holds(new ClassOfInvariant(this, m_member_tv));
+        return !result_is_error(assume_op_result);
     }
     
     bool TypeEqualsRelation::on_assume_impl(types::Manager* manager) {
-        KdResult assume_op_result1 = manager->assume_relation_holds(&m_lhs_subtype_of_rhs_relation);
-        KdResult assume_op_result2 = manager->assume_relation_holds(&m_rhs_subtype_of_lhs_relation);
-        if (!kdr_is_error(kdr_and(assume_op_result1, assume_op_result2))) {
+        SolveResult assume_op_result1 = manager->assume_relation_holds(&m_lhs_subtype_of_rhs_relation);
+        SolveResult assume_op_result2 = manager->assume_relation_holds(&m_rhs_subtype_of_lhs_relation);
+        if (!result_is_error(result_and(assume_op_result1, assume_op_result2))) {
             return (
                 m_lhs_subtype_of_rhs_relation.on_assume_impl(manager) &&
                 m_rhs_subtype_of_lhs_relation.on_assume_impl(manager)
@@ -42,9 +44,9 @@ namespace pdm::types {
         }
     }
     bool ClassEqualsRelation::on_assume_impl(types::Manager* manager) {
-        KdResult assume_op_result1 = manager->assume_relation_holds(&m_lhs_subclass_of_rhs_relation);
-        KdResult assume_op_result2 = manager->assume_relation_holds(&m_rhs_subclass_of_lhs_relation);
-        if (!kdr_is_error(kdr_and(assume_op_result1, assume_op_result2))) {
+        SolveResult assume_op_result1 = manager->assume_relation_holds(&m_lhs_subclass_of_rhs_relation);
+        SolveResult assume_op_result2 = manager->assume_relation_holds(&m_rhs_subclass_of_lhs_relation);
+        if (!result_is_error(result_and(assume_op_result1, assume_op_result2))) {
             return (
                 m_lhs_subclass_of_rhs_relation.on_assume_impl(manager) &&
                 m_rhs_subclass_of_lhs_relation.on_assume_impl(manager)
@@ -55,22 +57,23 @@ namespace pdm::types {
     }
 
     bool LetValueRelation::on_assume_impl(types::Manager* manager) {
-        KdResult assume_op_result = m_typeof_lhs_tv->assume_invariant_holds(new SubtypeOfInvariant(this, m_typeof_rhs_tv));
-        return !kdr_is_error(assume_op_result);
+        SolveResult assume_op_result = m_typeof_lhs_tv->assume_invariant_holds(
+            new SubtypeOfInvariant(this, m_typeof_rhs_tv));
+        return !result_is_error(assume_op_result);
     }
     bool LetTypeRelation::on_assume_impl(types::Manager* manager) {
-        KdResult assume_op_result1 = m_lhs_tv->assume_invariant_holds(new SubtypeOfInvariant(this, m_rhs_tv));
-        KdResult assume_op_result2 = m_rhs_tv->assume_invariant_holds(new SubtypeOfInvariant(this, m_lhs_tv));
-        return !kdr_is_error(kdr_and(assume_op_result1, assume_op_result2));
+        SolveResult assume_op_result1 = m_lhs_tv->assume_invariant_holds(new SubtypeOfInvariant(this, m_rhs_tv));
+        SolveResult assume_op_result2 = m_rhs_tv->assume_invariant_holds(new SubtypeOfInvariant(this, m_lhs_tv));
+        return !result_is_error(result_and(assume_op_result1, assume_op_result2));
     }
     bool LetClassRelation::on_assume_impl(types::Manager* manager) {
-        KdResult assume_op_result1 = m_lhs_cv->assume_invariant_holds(new SubclassOfInvariant(this, m_rhs_cv));
-        KdResult assume_op_result2 = m_rhs_cv->assume_invariant_holds(new SubclassOfInvariant(this, m_lhs_cv));
-        return !kdr_is_error(kdr_and(assume_op_result1, assume_op_result2));
+        SolveResult assume_op_result1 = m_lhs_cv->assume_invariant_holds(new SubclassOfInvariant(this, m_rhs_cv));
+        SolveResult assume_op_result2 = m_rhs_cv->assume_invariant_holds(new SubclassOfInvariant(this, m_lhs_cv));
+        return !result_is_error(result_and(assume_op_result1, assume_op_result2));
     }
 
     bool DotNameRelation::on_assume_impl(types::Manager* manager) {
-        Invariant* the_invariant = nullptr;
+        VarInvariant* the_invariant = nullptr;
         
         std::cout << "NotImplemented: DotNameRelation::on_assume_impl" << std::endl;
 
@@ -101,7 +104,7 @@ namespace pdm::types {
                 break;
             }
         }
-        return !kdr_is_error(m_lhs->assume_invariant_holds(the_invariant));
+        return !result_is_error(m_lhs->assume_invariant_holds(the_invariant));
     }
     bool FieldCollectionOfRelation::on_assume_impl(types::Manager* manager) {
         // todo: implement me!
@@ -115,7 +118,7 @@ namespace pdm::types {
     }
 
     bool DotIndexRelation::on_assume_impl(types::Manager* manager) {
-        Invariant* the_invariant = nullptr;
+        VarInvariant* the_invariant = nullptr;
         // todo: require LHS is an array or a tuple.
         // todo: require index is an int.
         std::cout << "NotImplemented: TupleOfRelation::on_assume_impl" << std::endl;
@@ -126,25 +129,30 @@ namespace pdm::types {
         std::vector<VCallArg> formal_args = args();
         auto invariant = new IsVCallableInvariant(
             VCallInvariantStrength::Formal,
-            this, VarKind::Type,
+            this, VarArchetype::Type,
             std::move(formal_args), ret_tv()
         );
-        KdResult kd_res = fn_tv()->assume_invariant_holds(invariant);
-        return !kdr_is_error(kd_res);
+        SolveResult kd_res = fn_tv()->assume_invariant_holds(invariant);
+        return !result_is_error(kd_res);
     }
     bool ActualVCallableRelation::on_assume_impl(types::Manager* manager) {
-        // todo: implement me!
-        std::cout << "NotImplemented: ActualVCallableRelation::on_assume_impl" << std::endl;
-        return true;
+        std::vector<VCallArg> actual_args = args();
+        auto invariant = new IsVCallableInvariant(
+            VCallInvariantStrength::Actual,
+            this, VarArchetype::Type,
+            std::move(actual_args), ret_tv()
+        );
+        SolveResult kd_res = fn_tv()->assume_invariant_holds(invariant);
+        return !result_is_error(kd_res);
     }
 
     bool IfThenRelation::on_assume_impl(types::Manager* manager) {
-        KdResult kd_res = KdResult::NoChange;
+        SolveResult kd_res = SolveResult::NoChange;
 
         // cond :< bool
         {
             auto cond_branch_invariant = new SubtypeOfInvariant(this, manager->get_u1_tv());
-            kd_res = kdr_and(kd_res, m_cond->assume_invariant_holds(cond_branch_invariant));
+            kd_res = result_and(kd_res, m_cond->assume_invariant_holds(cond_branch_invariant));
         }
 
         // then :< output
@@ -153,30 +161,30 @@ namespace pdm::types {
             kd_res = m_output_tv->assume_invariant_holds(then_branch_invariant);
         }
 
-        return !kdr_is_error(kd_res);
+        return !result_is_error(kd_res);
     }
     bool IfThenElseRelation::on_assume_impl(types::Manager* manager) {
-        KdResult kd_res = KdResult::NoChange;
+        SolveResult kd_res = SolveResult::NoChange;
 
         // cond :< bool
         {
             auto cond_branch_invariant = new SubtypeOfInvariant(this, manager->get_u1_tv());
-            kd_res = kdr_and(kd_res, m_cond->assume_invariant_holds(cond_branch_invariant));
+            kd_res = result_and(kd_res, m_cond->assume_invariant_holds(cond_branch_invariant));
         }
 
         // then :< output
         {
             auto then_branch_invariant = new SubtypeOfInvariant(this, m_then);
-            kd_res = kdr_and(kd_res, m_output->assume_invariant_holds(then_branch_invariant));
+            kd_res = result_and(kd_res, m_output->assume_invariant_holds(then_branch_invariant));
         }
 
         // else :< output
         {
             auto else_branch_invariant = new SubtypeOfInvariant(this, m_else);
-            kd_res = kdr_and(kd_res, m_output->assume_invariant_holds(else_branch_invariant));
+            kd_res = result_and(kd_res, m_output->assume_invariant_holds(else_branch_invariant));
         }
 
-        return !kdr_is_error(kd_res);
+        return !result_is_error(kd_res);
     }
 
     bool BitcastableRelation::on_assume_impl(types::Manager* manager) {

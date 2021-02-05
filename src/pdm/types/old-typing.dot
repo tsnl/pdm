@@ -60,7 +60,7 @@ digraph {
             invariant -> {assumed_kind_bitset, assumed_subvars, assumed_supervars, assumed_deferred_kd_invariants};
 
             // SP1:
-            {assumed_kind_bitset, assumed_subvars, assumed_supervars, assumed_deferred_kd_invariants} -> sp1_spread_to_sub;
+            {assumed_kind_bitset,assumed_sub_var_edges, assumed_supervars, assumed_deferred_kd_invariants} -> sp1_spread_to_sub;
 
             sp1_spread_to_sub -> local_interval_set
             [label="Updates"];

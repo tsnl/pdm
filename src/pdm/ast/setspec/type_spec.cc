@@ -6,8 +6,8 @@ namespace pdm::ast {
 
     bool TypeSpec::check_x_spec_var(types::Var* var) const {
         return (
-            var->var_kind() == types::VarKind::Type ||
-            var->var_kind() == types::VarKind::Template_RetType
+            var->var_archetype() == types::VarArchetype::Type ||
+            var->var_archetype() == types::VarArchetype::Template_RetType
         );
     }
 

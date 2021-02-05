@@ -5,10 +5,11 @@
 #include <vector>
 
 #include "pdm/core/intern.hh"
+#include "pdm/printer/printer.hh"
 #include "pdm/ast/arg/varg.hh"
 
-#include "invariant.hh"
-#include "type_kind.hh"
+#include "var_invariant.hh"
+#include "kind.hh"
 
 namespace pdm::types {
     class TypeVar;
@@ -22,32 +23,25 @@ namespace pdm::types {
     class Type {
       private:
         std::string m_name;
-        TypeKind    m_type_kind;
+        Kind m_type_kind;
 
       protected:
-        Type(std::string name, TypeKind type_kind)
+        Type(std::string name, Kind type_kind)
         : m_name(std::move(name)),
           m_type_kind(type_kind) {}
 
       public:
-        std::string const& name() const;
-        TypeKind type_kind() const;
+        [[nodiscard]] std::string const& name() const;
+        [[nodiscard]] Kind type_kind() const;
 
       public:
-        bool test_subtypeOf(Type const* supertype) const;
-        inline bool test_supertypeOf(Type const* subtype) const;
-
-      private:
-        virtual bool help_test_subtypeOf_postKindCheck(Type const* supertype_of_same_type_kind) const;
+        void print(printer::Printer& p) const;
     };
     inline std::string const& Type::name() const {
         return m_name;
     }
-    inline TypeKind Type::type_kind() const {
+    inline Kind Type::type_kind() const {
         return m_type_kind;
-    }
-    inline bool Type::test_supertypeOf(Type const* subtype) const {
-        return subtype->test_subtypeOf(this);
     }
 
     //
@@ -67,7 +61,7 @@ namespace pdm::types {
       // protected constructor:
       protected:
         VoidType()
-        : Type("VoidType", TypeKind::Void) {}
+        : Type("VoidType", Kind::Void) {}
     };
 
     //
@@ -87,7 +81,7 @@ namespace pdm::types {
       // protected singleton constructor:
       protected:
         StringType()
-        : Type("StringType", TypeKind::String) {}
+        : Type("StringType", Kind::String) {}
     };
 
     //
@@ -131,7 +125,7 @@ namespace pdm::types {
       // protected constructor:
       protected:
         IntType(std::string&& name, int width_in_bits, bool using_sign_ext)
-        :   Type("IntType:" + std::move(name), (using_sign_ext ? TypeKind::SignedInt : TypeKind::UnsignedInt)),
+        :   Type("IntType:" + std::move(name), (using_sign_ext ? Kind::SignedInt : Kind::UnsignedInt)),
             m_width_in_bits(width_in_bits),
             m_using_sign_ext(using_sign_ext)
         {}
@@ -156,7 +150,7 @@ namespace pdm::types {
 
       protected:
         FloatType(std::string&& name, int width_in_bits)
-        :   Type("FloatType:" + std::move(name), TypeKind::Float),
+        :   Type("FloatType:" + std::move(name), Kind::Float),
             m_width_in_bits(width_in_bits) 
         {}
     };
@@ -172,7 +166,7 @@ namespace pdm::types {
         TupleType(std::string&& name, std::vector<Type*>&& fields);
     };
     inline TupleType::TupleType(std::string&& name, std::vector<Type*>&& fields)
-    :   Type("TupleType:" + std::move(name), TypeKind::Tuple),
+    :   Type("TupleType:" + std::move(name), Kind::Tuple),
         m_fields(fields)
     {}
 
@@ -197,7 +191,7 @@ namespace pdm::types {
 
       public:
         StructType(std::string&& name, std::vector<StructTypeField>&& fields)
-        : Type("StructType:" + std::move(name), TypeKind::Struct),
+        : Type("StructType:" + std::move(name), Kind::Struct),
           m_fields(std::move(fields)) {}
     };
 
@@ -217,7 +211,7 @@ namespace pdm::types {
         Type*           m_typepsec_soln;
 
       public:
-        EnumTypeField(intern::String name)
+        explicit EnumTypeField(intern::String name)
         : m_kind(EnumFieldKind::DefaultTs),
           m_name(name),
           m_typepsec_soln(nullptr) {}
@@ -233,7 +227,7 @@ namespace pdm::types {
         std::vector<EnumTypeField> m_fields;
       public:
         EnumType(std::string&& name, std::vector<EnumTypeField>&& fields)
-        : Type("EnumType:" + std::move(name), TypeKind::Enum),
+        : Type("EnumType:" + std::move(name), Kind::Enum),
           m_fields(std::move(fields)) {}
     };
 
@@ -264,7 +258,7 @@ namespace pdm::types {
         std::vector<ModuleField> m_fields;
       public:
         ModuleType(std::string&& name, std::vector<ModuleField>&& fields)
-        : Type("ModuleType:" + std::move(name), TypeKind::Module),
+        : Type("ModuleType:" + std::move(name), Kind::Module),
           m_fields(std::move(fields)) {}
     };
 
@@ -288,9 +282,9 @@ namespace pdm::types {
         FuncTypeFormalArg(ast::VArgAccessSpec arg_access_spec, intern::String name, Type* arg_typespec);
 
       public:
-        ast::VArgAccessSpec arg_access_spec() const;
-        intern::String name() const;
-        Type* arg_typespec() const;
+        [[nodiscard]] ast::VArgAccessSpec arg_access_spec() const;
+        [[nodiscard]] intern::String name() const;
+        [[nodiscard]] Type* arg_typespec() const;
     };
     inline FuncTypeFormalArg::FuncTypeFormalArg(ast::VArgAccessSpec arg_access_spec, intern::String name, Type* arg_typespec)
     :   m_arg_access_spec(arg_access_spec),
@@ -318,22 +312,24 @@ namespace pdm::types {
         {}
 
       public:
-        FuncArgReadWriteSpec read_write_spec() const {
+        [[nodiscard]] FuncArgReadWriteSpec read_write_spec() const {
             return m_read_write_spec;
         }
-        Type* arg_typespec() const {
+        [[nodiscard]] Type* arg_typespec() const {
             return m_arg_typespec;
         }
     };
     class FnType: public Type {
       private:
         std::vector<FuncTypeFormalArg> m_formal_args;
-        TypeVar*                       m_ret_tv;
+        Type* m_typeof_ret;
+
       public:
-        FnType(std::string&& name, std::vector<FuncTypeFormalArg>&& formal_args, TypeVar* ret_tv)
-        : Type("FnType:" + std::move(name), TypeKind::Fn),
+        FnType(std::string&& name, std::vector<FuncTypeFormalArg>&& formal_args, Type* typeof_ret)
+        : Type("FnType:" + std::move(name), Kind::Fn),
           m_formal_args(std::move(formal_args)),
-          m_ret_tv(ret_tv) {}
+          m_typeof_ret(typeof_ret)
+        {}
     };
 
 }   // namespace pdm::typer

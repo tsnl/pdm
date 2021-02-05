@@ -1,5 +1,50 @@
 # Roadmap
 
+## Feb 4 2021
+
+Simplified, the compiler now type-checks everything the old compiler could _except_ 
+unary and binary expressions.
+
+It took some time to catch a few lazy copy-paste errors, but now 'val' type-inference
+works correctly, and the `types` module, with a lot of cleaning, will be a delight to
+use.
+
+**TODO:** Implement typing for unary expressions
+
+**TODO:** Implement typing for binary expressions
+
+Once this is done, I can emit LLVM IR.
+Emitting executable IR makes testing the whole pipeline much easier, even if long 
+dumps are more complex to debug.
+
+**TODO:** Emit LLVM IR (cf old C implementation)
+
+This also opens many more exciting doors (like linking to 'real' libraries) to keep
+me entertained while...
+
+**TODO:** Implement typing for templates
+
+**TODO:** Implement const-checking & evaluation
+- use recursion on AST to evaluate const nodes.
+- start with only literals, unary and binary operators.
+- if evaluable, then constant, else variable.
+- functions are more contrived, and require interpreter context with loaded globals
+
+After this, the compiler will be usable to write libraries, but multiple entry points,
+better packaging, interpreted mode, debugger will follow.
+
+Crucially, can start writing...
+1. Standard library
+2. Practical shims (e.g. to my rendering engine, an HTTP library, etc)
+
+Still loads of work, but feeling motivated seeing the compiler work so well. ^_^
+
+```
+i  i  i
+=======
+-------
+```
+
 ## Feb 1 2021
 
 Demanding effects up-front makes code permanently incorrect and hard to understand.

@@ -26,7 +26,7 @@ namespace pdm::scoper {
 
     void Defn::print(printer::Printer& p) const {
         p.print_intstr(name());
-        p.print_cstr(":");
-        p.print_cstr(defn_kind_as_text(kind()));
+        p.print_c_str(":");
+        p.print_c_str(defn_kind_as_text(kind()));
     }
 }
