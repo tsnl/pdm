@@ -19,6 +19,10 @@ namespace pdm::types {
         m_member_tv->print_title(printer);
     }
 
+    void IsNumberVarInvariant::print(printer::Printer& printer) const {
+        printer.print_c_str("IsNumberInvariant");
+    }
+
     void IsVoidInvariant::print(printer::Printer &printer) const {
         printer.print_c_str("(KD) IsVoidInvariant");
     }

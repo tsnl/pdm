@@ -1,0 +1,11 @@
+mod Fibonacci0 {
+
+    fib = fn (x Int32) -> Int32 {
+        if (x == 0 or x == 1) then {
+            x
+        } else {
+            fib(x-1) + fib(x-2)
+        }
+    };
+
+};

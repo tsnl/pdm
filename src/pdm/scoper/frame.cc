@@ -61,7 +61,7 @@ namespace pdm::scoper {
 
             // child frames:
             p.print_c_str("Subframes: (");
-            p.print_uint_hex(m_child_frames.size());
+            p.print_uint_dec(m_child_frames.size());
             p.print_c_str(") ...");
             if (m_child_frames.empty()) {
                 // p.print_newline();

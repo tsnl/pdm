@@ -45,6 +45,14 @@ namespace pdm::types {
         }
     }
 
+    inline bool is_number_type_kind(Kind type_kind) {
+        return (
+            type_kind == Kind::SignedInt ||
+            type_kind == Kind::UnsignedInt ||
+            type_kind == Kind::Float
+        );
+    }
+
 }
 
 #endif  // INCLUDED_PDM_TYPES_TYPE_KIND_HH

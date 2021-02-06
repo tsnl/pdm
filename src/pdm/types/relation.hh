@@ -185,7 +185,7 @@ namespace pdm::types {
             return m_typeof_rhs_tv;
         }
 
-      public:
+      protected:
         bool on_assume_impl(types::Manager* manager) override;
     };
 
@@ -209,7 +209,7 @@ namespace pdm::types {
             return m_rhs_tv;
         }
 
-      public:
+      protected:
         bool on_assume_impl(types::Manager* manager) override;
     };
 
@@ -233,7 +233,7 @@ namespace pdm::types {
             return m_rhs_cv;
         }
 
-      public:
+      protected:
         virtual bool on_assume_impl(types::Manager* manager) override;
     };
 
@@ -261,7 +261,7 @@ namespace pdm::types {
         TypeVar* eval_type() const;
         DotNameRelationKind dot_name_relation_kind() const;
 
-      public:
+      protected:
         virtual bool on_assume_impl(types::Manager* manager) override;
     };
     inline DotNameRelation::DotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name, DotNameRelationKind dot_name_relation_kind)
@@ -317,7 +317,7 @@ namespace pdm::types {
         TypeVar* typeof_lhs_tv() const;
         TypeVar* typeof_rhs_index_tv() const;
 
-      public:
+      protected:
         bool on_assume_impl(types::Manager* manager) override;
     };
     inline DotIndexRelation::DotIndexRelation(ast::Node* ast_node, TypeVar* typeof_lhs_tv, TypeVar* typeof_rhs_index_tv)
@@ -358,7 +358,7 @@ namespace pdm::types {
       public:
         inline TupleOfRelation(std::string&& why, ast::Node* node, TypeVar* tuple_tv, std::vector<TypeVar*>&& fields_tvs);
 
-      public:
+      protected:
         bool on_assume_impl(types::Manager* types_mgr) override;
     };
     inline TupleOfRelation::TupleOfRelation(std::string&& why, ast::Node* node, TypeVar* tuple_tv, std::vector<TypeVar*>&& fields_tvs)
@@ -497,14 +497,14 @@ namespace pdm::types {
       public:
         FormalVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<VCallArg>&& args_tvs, TypeVar* ret_tv);
 
-      public:
+      protected:
         bool on_assume_impl(types::Manager* manager) override;
     };
     class ActualVCallableRelation: public VCallableRelation {
       public:
         ActualVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<VCallArg>&& args_tvs, TypeVar* ret_tv);
 
-      public:
+      protected:
         bool on_assume_impl(types::Manager* manager) override;
     };
     inline FormalVCallableRelation::FormalVCallableRelation(ast::Node* ast_node, TypeVar* fn_tv, std::vector<VCallArg>&& args_tvs, TypeVar* ret_tv)
@@ -528,7 +528,7 @@ namespace pdm::types {
           m_cond(cond),
           m_then(then) {}
 
-      public:
+      protected:
         bool on_assume_impl(types::Manager* manager) override;
     };
     class IfThenElseRelation: public Relation {
@@ -546,7 +546,7 @@ namespace pdm::types {
           m_then(then_tv),
           m_else(else_tv) {}
 
-      public:
+      protected:
         bool on_assume_impl(types::Manager* manager) override;
     };
 
@@ -562,7 +562,7 @@ namespace pdm::types {
           m_dst(dst_tv),
           m_src(src_tv) {}
 
-      public:
+      protected:
         bool on_assume_impl(types::Manager* manager) override;
     };
 
@@ -576,7 +576,7 @@ namespace pdm::types {
         ConvertableRelation(ast::Node* ast_node, TypeVar* dst_tv, TypeVar* src_tv)
         : Relation(ast_node, "ConvertableRelation") {}
 
-      public:
+      protected:
         bool on_assume_impl(types::Manager* manager) override;
     };
 
@@ -604,7 +604,7 @@ namespace pdm::types {
       protected:
         TemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, Var* rhs_var, TemplateRelationExpectedMonoKind template_relation_expected_lhs_kind, std::string template_name_suffix, TemplateRelationStrength strength);
 
-      public:
+      protected:
         bool on_assume_impl(types::Manager* manager) override;
     };
     inline TemplateRelation::TemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, Var* rhs_var, TemplateRelationExpectedMonoKind expected_rhs_kind, std::string template_name_suffix, TemplateRelationStrength strength)
@@ -693,6 +693,23 @@ namespace pdm::types {
         return new ActualTemplateRelation(ast_node, lhs_class_template_var, TemplateRelationExpectedMonoKind::Class, targs, rhs_var);
     }
 
+    // IsNumberRelation used to ensure numeric values resolve to a numeric class only (such that an assembler impl is
+    // available)
+    class IsNumberRelation: public Relation {
+      private:
+        TypeVar* m_number_tv;
+
+      public:
+        inline IsNumberRelation(ast::Node* ast_node, TypeVar* number_tv);
+
+      protected:
+        bool on_assume_impl(types::Manager* manager) override;
+    };
+
+    inline IsNumberRelation::IsNumberRelation(ast::Node* ast_node, TypeVar* number_tv)
+    :   Relation(ast_node, "IsNumberRelation"),
+        m_number_tv(number_tv)
+    {}
 }
 
 #endif  // INCLUDED_PDM_TYPES_RELATION_HH

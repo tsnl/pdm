@@ -534,8 +534,6 @@ unary_exp
 unary_op
     : PLUS       { $$ = ast::UnaryOperator::Plus; }
     | MINUS      { $$ = ast::UnaryOperator::Minus; }
-    | ASTERISK   { $$ = ast::UnaryOperator::DeRef; }
-    | CARET      { $$ = ast::UnaryOperator::GetRef; }
     | KW_NOT     { $$ = ast::UnaryOperator::Not; }
     ;
 

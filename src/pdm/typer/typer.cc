@@ -160,7 +160,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             TypeVar* module_tv = node->x_module_tv();
         } else {
-            // todo: do nothing? double-check
+            // todo: add fields
         }
         return true;
     }
@@ -204,7 +204,7 @@ namespace pdm::types {
             TypeVar* rhs_tv = nullptr;
             if (node->rhs_kind() == ast::ModValStmt::RhsKind::Internal) {
                 rhs_tv = expect_type_var(
-                    node->opt_rhs_exp()->x_typeof_var(),
+                    node->opt_rhs_exp()->x_type_of_var(),
                     std::move(std::string("an expression")),
                     std::move(std::string("a module value-field assignment RHS")),
                     node->loc()
@@ -269,8 +269,23 @@ namespace pdm::types {
     
     // expressions:
     bool TyperVisitor::on_visit__unit_exp(ast::UnitExp* node, VisitOrder visit_order) {
-        // todo: implement this typer.
-        return true;
+        if (visit_order == VisitOrder::Pre) {
+            std::string name = "UnitExp";
+            TypeVar* type_of_exp_tv = m_types_mgr->new_unknown_type_var(std::move(name), node);
+            node->x_type_of_var(type_of_exp_tv);
+            return true;
+        } else {
+            assert(visit_order == VisitOrder::Post);
+            auto type_of_exp_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
+            assert(type_of_exp_tv && "Uninitialized type_of_exp_tv");
+
+            SolveResult result = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(
+                node,
+                type_of_exp_tv, m_types_mgr->get_void_tv()
+            ));
+
+            return !result_is_error(result);
+        }
     }
     bool TyperVisitor::on_visit__int_exp(ast::IntExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
@@ -282,10 +297,10 @@ namespace pdm::types {
                 }
             }
             TypeVar* int_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(int_tv);
+            node->x_type_of_var(int_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
-            auto int_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
+            auto int_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
             auto inferred_cv = (
                 (node->force_unsigned()) ?
                 m_types_mgr->get_unsigned_int_cv() :
@@ -307,10 +322,10 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "FloatExp";
             TypeVar* float_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(float_tv);
+            node->x_type_of_var(float_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
-            auto float_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
+            auto float_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
             assert(float_tv != nullptr);
             SolveResult sp2_result = m_types_mgr->assume_relation_holds(new ClassOfRelation(
                 node,
@@ -325,9 +340,9 @@ namespace pdm::types {
     bool TyperVisitor::on_visit__string_exp(ast::StringExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             TypeVar* string_tv = m_types_mgr->get_string_tv();
-            node->x_typeof_var(string_tv);
+            node->x_type_of_var(string_tv);
         } else {
-            auto typeof_string_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
+            auto typeof_string_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
             SolveResult sp2_result = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(
                 node,
                 m_types_mgr->get_string_tv(), typeof_string_tv
@@ -342,7 +357,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             auto id_tv = dynamic_cast<TypeVar*>(node->x_defn()->var());
             assert(id_tv != nullptr && "Scoper failed!");
-            node->x_typeof_var(id_tv);
+            node->x_type_of_var(id_tv);
         }
         return true;
     }
@@ -350,11 +365,11 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "ParenExp";
             TypeVar* paren_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(paren_tv);
+            node->x_type_of_var(paren_tv);
         } else {
-            auto paren_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
+            auto paren_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
             TypeVar* nested_tv = expect_type_var(
-                node->nested_exp()->x_typeof_var(),
+                node->nested_exp()->x_type_of_var(),
                 std::move(std::string("an expression")),
                 std::move(std::string("a parenthetical expression")),
                 node->loc()
@@ -372,7 +387,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "TupleExp(" + std::to_string(node->items().size()) + ")";
             TypeVar* tuple_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(tuple_tv);
+            node->x_type_of_var(tuple_tv);
         } else {
             // todo: set tuple field requirements here by equating to a TupleTV
         }
@@ -382,7 +397,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "ArrayExp(" + std::to_string(node->items().size()) + ")";
             TypeVar* array_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(array_tv);
+            node->x_type_of_var(array_tv);
         } else {
             // todo: set array exp requirements here by equating to an ArrayTV
         }
@@ -392,7 +407,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "StructExp(" + std::to_string(node->fields().size()) + ")";
             TypeVar* struct_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(struct_exp_tv);
+            node->x_type_of_var(struct_exp_tv);
         } else {
             // todo: set struct exp requirements here by equating to a StructTV
         }
@@ -402,7 +417,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "TypeQueryExp";
             TypeVar* type_query_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(type_query_exp_tv);
+            node->x_type_of_var(type_query_exp_tv);
         } else {
             // todo: implement this typer.
             // note: only used in typeclass_stmt
@@ -413,11 +428,11 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "ChainExp";
             TypeVar* chain_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(chain_exp_tv);
+            node->x_type_of_var(chain_exp_tv);
         } else {
-            auto chain_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
+            auto chain_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
             TypeVar* nested_tv = expect_type_var(
-                node->suffix()->x_typeof_var(),
+                node->suffix()->x_type_of_var(),
                 std::move(std::string("an expression suffix")),
                 std::move(std::string("a chain-expression")),
                 node->loc()
@@ -436,11 +451,11 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "LambdaExp";
             TypeVar* lambda_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(lambda_exp_tv);
+            node->x_type_of_var(lambda_exp_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
 
-            auto lambda_exp_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
+            auto lambda_exp_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
             size_t args_count = node->lhs_vpattern()->fields().size();
             std::vector<VCallArg> args{args_count}; {
                 for (size_t index = 0; index < args_count; index++) {
@@ -462,7 +477,7 @@ namespace pdm::types {
             }
 
             auto body_tv = expect_type_var(
-                node->rhs_body()->x_typeof_var(),
+                node->rhs_body()->x_type_of_var(),
                 std::move(std::string("an expression")),
                 std::move(std::string("a lambda function's return body")),
                 node->rhs_body()->loc()
@@ -486,21 +501,21 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "IfExp";
             TypeVar* if_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(if_exp_tv);
+            node->x_type_of_var(if_exp_tv);
         } else {
             Relation* relation = nullptr;
             if (node->else_exp() == nullptr) {
                 relation = new IfThenRelation(
                     node,
-                    dynamic_cast<TypeVar*>(node->x_typeof_var()),
+                    dynamic_cast<TypeVar*>(node->x_type_of_var()),
                     expect_type_var(
-                        node->cond_exp()->x_typeof_var(),
+                        node->cond_exp()->x_type_of_var(),
                         std::move(std::string("an expression")),
                         std::move(std::string("the condition of an if-then expression")),
                         node->loc()
                     ),
                     expect_type_var(
-                        node->then_exp()->x_typeof_var(),
+                        node->then_exp()->x_type_of_var(),
                         std::move(std::string("an expression")),
                         std::move(std::string("the 'then' branch of an if-then expression")),
                         node->loc()
@@ -509,21 +524,21 @@ namespace pdm::types {
             } else {
                 relation = new IfThenElseRelation(
                     node,
-                    dynamic_cast<TypeVar*>(node->x_typeof_var()),
+                    dynamic_cast<TypeVar*>(node->x_type_of_var()),
                     expect_type_var(
-                        node->cond_exp()->x_typeof_var(),
+                        node->cond_exp()->x_type_of_var(),
                         std::move(std::string("an expression")),
                         std::move(std::string("the condition of an if-then-else expression")),
                         node->loc()
                     ),
                     expect_type_var(
-                        node->then_exp()->x_typeof_var(),
+                        node->then_exp()->x_type_of_var(),
                         std::move(std::string("an expression")),
                         std::move(std::string("the 'then' branch of an if-then-else expression")),
                         node->loc()
                     ),
                     expect_type_var(
-                        node->else_exp()->x_typeof_var(),
+                        node->else_exp()->x_type_of_var(),
                         std::move(std::string("an expression")),
                         std::move(std::string("the 'else' branch of an if-then-else expression")),
                         node->loc()
@@ -543,7 +558,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "DotIndexExp";
             TypeVar* dot_index_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(dot_index_exp_tv);
+            node->x_type_of_var(dot_index_exp_tv);
         } else {
             // todo: require subtype of an array or tuple...
         }
@@ -553,7 +568,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "DotNameExp";
             TypeVar* dot_name_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(dot_name_exp_tv);
+            node->x_type_of_var(dot_name_exp_tv);
         } else {
             // todo: require subtype of a struct
         }
@@ -573,9 +588,78 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "UnaryExp";
             TypeVar* unary_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(unary_exp_tv);
+            node->x_type_of_var(unary_exp_tv);
         } else {
+            assert(visit_order == VisitOrder::Post);
 
+            auto ret_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
+            assert(ret_tv != nullptr);
+
+            auto arg_tv = expect_type_var(
+                node->operand()->x_type_of_var(),
+                std::move(std::string("an expression")),
+                std::move(std::string("a unary expression")),
+                node->loc()
+            );
+
+            bool preserves_type = false;
+            ClassVar* arg_class_cv = nullptr;
+            ClassVar* ret_class_cv = nullptr;
+            switch (node->unary_operator())
+            {
+                case ast::UnaryOperator::Not:
+                {
+                    // UnsignedInt -> UnsignedInt
+                    arg_class_cv = m_types_mgr->get_unsigned_int_cv();
+                    ret_class_cv = m_types_mgr->get_unsigned_int_cv();
+                    preserves_type = true;
+                    break;
+                }
+                case ast::UnaryOperator::Plus:
+                {
+                    // UnsignedInt -> SignedInt
+                    arg_class_cv = m_types_mgr->get_unsigned_int_cv();
+                    ret_class_cv = m_types_mgr->get_signed_int_cv();
+                    preserves_type = false;
+                    break;
+                }
+                case ast::UnaryOperator::Minus:
+                {
+                    // SignedInt -> SignedInt
+                    arg_class_cv = m_types_mgr->get_signed_int_cv();
+                    ret_class_cv = m_types_mgr->get_signed_int_cv();
+                    preserves_type = true;
+                    break;
+                }
+                default:
+                {
+                    if (pdm::DEBUG) {
+                        assert(0 && "NotImplemented: visit unary exp for unknown operator.");
+                    }
+                    return false;
+                }
+            }
+
+            if (arg_class_cv && ret_class_cv) {
+                // ret_tv :: arg_tv
+                auto res1 = SolveResult::NoChange;
+                if (preserves_type) {
+                    res1 = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(node, ret_tv, arg_tv));
+                }
+
+                // ret_tv ret_class_cv
+                // arg_tv arg_class_cv
+                auto res2 = result_and(
+                    m_types_mgr->assume_relation_holds(
+                        new ClassOfRelation(node, arg_class_cv, arg_tv)
+                    ),
+                    m_types_mgr->assume_relation_holds(
+                        new ClassOfRelation(node, ret_class_cv, ret_tv)
+                    )
+                );
+
+                return !(result_is_error(result_and(res1, res2)));
+            }
         }
         return true;
     }
@@ -583,9 +667,130 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "BinaryExp";
             TypeVar* binary_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(binary_exp_tv);
+            node->x_type_of_var(binary_exp_tv);
         } else {
+            auto binary_exp_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
+            assert(binary_exp_tv && "Uninitialized TV");
 
+            auto ret_tv = binary_exp_tv;
+            auto type_of_lhs_tv = expect_type_var(
+                node->lhs_operand()->x_type_of_var(),
+                "an expression",
+                "the left argument slot of a binary operator expression",
+                node->loc()
+            );
+            auto type_of_rhs_tv = expect_type_var(
+                node->rhs_operand()->x_type_of_var(),
+                "an expression",
+                "the right argument slot of a binary operator expression",
+                node->loc()
+            );
+            if (!type_of_lhs_tv || !type_of_rhs_tv) {
+                return false;
+            } else {
+                switch (node->binary_operator())
+                {
+                    case ast::BinaryOperator::Mul:
+                    case ast::BinaryOperator::Div:
+                    case ast::BinaryOperator::Rem:
+                    case ast::BinaryOperator::Add:
+                    case ast::BinaryOperator::Subtract:
+                    {
+                        // (t1, t2) -> t
+                        // (t IsNumber)
+                        // note t :< t1 and t :< t2, so t1 and t2 are converted (extended) to t before operation.
+
+                        // ensuring return type is a number:
+                        auto ret_number_relation = new IsNumberRelation(node, ret_tv);
+                        auto res1 = m_types_mgr->assume_relation_holds(ret_number_relation);
+
+                        // relating arg types to return type:
+                        // ret_tv :< type_of_lhs_tv
+                        // ret_tv :< type_of_rhs_tv
+                        auto eq_relation1 = new SubtypeOfRelation(node, ret_tv, type_of_lhs_tv);
+                        auto eq_relation2 = new SubtypeOfRelation(node, ret_tv, type_of_rhs_tv);
+                        auto res2 = result_and(
+                            m_types_mgr->assume_relation_holds(eq_relation1),
+                            m_types_mgr->assume_relation_holds(eq_relation2)
+                        );
+
+                        return !result_is_error(result_and(res1, res2));
+                    }
+                    case ast::BinaryOperator::Less:
+                    case ast::BinaryOperator::LessOrEq:
+                    case ast::BinaryOperator::Greater:
+                    case ast::BinaryOperator::GreaterOrEq:
+                    {
+                        // (t, t) -> UInt1
+                        // (t IsNumber)
+                        // here, t is explicitly instantiated.
+
+                        // ensuring return type is UInt1 aka Boolean:
+                        auto ret_relation = new TypeEqualsRelation(node, ret_tv, m_types_mgr->get_u1_tv());
+                        auto ret_result = m_types_mgr->assume_relation_holds(ret_relation);
+
+                        // creating a 't' type that subtypes both arg types:
+                        std::string t_name = "BinaryCmpExpArg";
+                        TypeVar* t = m_types_mgr->new_unknown_type_var(std::move(t_name), node);
+                        auto t_result = result_and(
+                            result_and(
+                                // t :< lhs
+                                m_types_mgr->assume_relation_holds(new SubtypeOfRelation(node, t, type_of_lhs_tv)),
+
+                                // t :< rhs
+                                m_types_mgr->assume_relation_holds(new SubtypeOfRelation(node, t, type_of_rhs_tv))
+                            ),
+
+                            // t IsNumber
+                            m_types_mgr->assume_relation_holds(new IsNumberRelation(node, t))
+                        );
+
+                        return !result_is_error(result_and(t_result, ret_result));
+                    }
+                    case ast::BinaryOperator::Equals:
+                    case ast::BinaryOperator::NotEquals:
+                    {
+                        // (t, t) -> UInt1
+                        auto ret_relation = new TypeEqualsRelation(node, ret_tv, m_types_mgr->get_u1_tv());
+                        auto ret_result = m_types_mgr->assume_relation_holds(ret_relation);
+
+                        // creating a 't' type that subtypes both arg types:
+                        std::string t_name = "BinaryEqExpArg";
+                        auto t = m_types_mgr->new_unknown_type_var(std::move(t_name), node);
+                        auto t_result = result_and(
+                            m_types_mgr->assume_relation_holds(new SubtypeOfRelation(node, t, type_of_lhs_tv)),
+                            m_types_mgr->assume_relation_holds(new SubtypeOfRelation(node, t, type_of_rhs_tv))
+                        );
+
+                        return !result_is_error(result_and(ret_result, t_result));
+                    }
+                    case ast::BinaryOperator::And:
+                    case ast::BinaryOperator::Or:
+                    case ast::BinaryOperator::XOr:
+                    {
+                        // bitwise operations only defined on unsigned int class:
+                        auto res1 = m_types_mgr->assume_relation_holds(
+                            new SubtypeOfRelation(node, ret_tv, type_of_lhs_tv)
+                        );
+                        auto res2 = m_types_mgr->assume_relation_holds(
+                            new SubtypeOfRelation(node, ret_tv, type_of_rhs_tv)
+                        );
+                        auto res3 = m_types_mgr->assume_relation_holds(
+                            new ClassOfRelation(node, m_types_mgr->get_unsigned_int_cv(), ret_tv)
+                        );
+                        return !result_is_error(
+                            result_and(
+                                result_and(res1, res2),
+                                res3
+                            )
+                        );
+                    }
+                    default:
+                    {
+                        assert(0 && "NotImplemented: typing unknown BinaryOperator");
+                    }
+                }
+            }
         }
         return true;
     }
@@ -595,15 +800,14 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "VCallExp_Ret";
             TypeVar* vcall_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(vcall_exp_tv);
+            node->x_type_of_var(vcall_exp_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
 
-            auto ret_tv = dynamic_cast<TypeVar*>(node->x_typeof_var());
+            auto ret_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
 
-            // todo: if templates are called, need special handling...
             TypeVar* called_tv = expect_type_var(
-                node->lhs_called()->x_typeof_var(),
+                node->lhs_called()->x_type_of_var(),
                 std::move(std::string("an expression to call")),
                 std::move(std::string("a function call expression")),
                 node->loc()
@@ -616,7 +820,7 @@ namespace pdm::types {
                     args[index].name = {};
                     args[index].varg_access_spec = arg->access_spec();
 
-                    Var* arg_var = arg->arg_exp()->x_typeof_var();
+                    Var* arg_var = arg->arg_exp()->x_type_of_var();
                     assert(arg_var != nullptr && "Typer error: expected arg var from pre-visit.");
                     auto arg_tv = dynamic_cast<TypeVar*>(arg_var);
                     if (arg_tv != nullptr) {
@@ -652,7 +856,7 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "TCallExp";
             TypeVar* tcall_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-            node->x_typeof_var(tcall_exp_tv);
+            node->x_type_of_var(tcall_exp_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
             assert(0 && "NotImplemented: typing template call expressions");
@@ -1058,7 +1262,7 @@ namespace pdm::types {
 
     bool TyperVisitor::help_posttype_const_or_val_or_var_stmt(ast::Node* node, ast::LPattern* lpattern, ast::Exp* rhs_exp) {
         TypeVar* typeof_rhs_tv = expect_type_var(
-            rhs_exp->x_typeof_var(),
+            rhs_exp->x_type_of_var(),
             std::move(std::string("an expression")),
             std::move(std::string("a 'Let' value-id-binding")),
             rhs_exp->loc()

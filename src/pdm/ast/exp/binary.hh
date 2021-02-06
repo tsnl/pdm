@@ -5,6 +5,10 @@
 #include "pdm/source/loc.hh"
 #include "pdm/ast/exp/exp.hh"
 
+namespace pdm::types {
+    class TypeVar;
+}
+
 namespace pdm::ast {
 
     class Manager;

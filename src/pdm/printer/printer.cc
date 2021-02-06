@@ -791,16 +791,6 @@ namespace pdm::printer {
                 print_u32_char('-');
                 break;
             }
-            case ast::UnaryOperator::GetRef:
-            {
-                print_u32_char('^');
-                break;
-            }
-            case ast::UnaryOperator::DeRef:
-            {
-                print_u32_char('*');
-                break;
-            }
             case ast::UnaryOperator::Not:
             {
                 print_c_str("not ");

@@ -10,9 +10,9 @@ namespace pdm::ast {
     class Manager;
 
     enum class UnaryOperator {
-        Not,
-        GetRef, DeRef,
-        Plus, Minus,
+        Not,    // UnsignedInt -> UnsignedInt
+        Plus,   // UnsignedInt -> SignedInt
+        Minus,  // SignedInt -> SignedInt
         __Count
     };
 

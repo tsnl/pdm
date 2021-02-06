@@ -22,8 +22,8 @@ namespace pdm::ast {
         // virtual bool is_const_evaluable() const;
 
       public:
-        [[nodiscard]] types::Var* x_typeof_var() const;
-        void x_typeof_var(types::Var* typeof_var);
+        [[nodiscard]] types::Var* x_type_of_var() const;
+        void x_type_of_var(types::Var* typeof_var);
     };
 
     inline Exp::Exp(source::Loc loc, Kind kind)
@@ -31,11 +31,11 @@ namespace pdm::ast {
         m_x_typeof_var(nullptr)
     {}
 
-    inline types::Var *Exp::x_typeof_var() const {
+    inline types::Var *Exp::x_type_of_var() const {
         return m_x_typeof_var;
     }
 
-    inline void Exp::x_typeof_var(types::Var* typeof_var) {
+    inline void Exp::x_type_of_var(types::Var* typeof_var) {
         m_x_typeof_var = typeof_var;
     }
 

@@ -52,6 +52,7 @@ namespace pdm::types {
         std::vector<KindIndependentVarInvariant*> m_assumed_common_invariants;
         std::vector<KindDependentInvariant*> m_assumed_kind_dependent_invariants;
         std::vector<KindDependentInvariant*> m_invalid_assumed_kind_dependent_invariants;
+        std::vector<IsNumberVarInvariant*> m_opt_force_number_invariants;
         Kind m_assumed_kind;
         std::vector<Edge> m_assumed_sub_var_edges;
         std::vector<Edge> m_assumed_super_var_edges;
@@ -77,7 +78,7 @@ namespace pdm::types {
         Var(std::string&& name, ast::Node* opt_client_ast_node, VarArchetype var_kind,
             SolveResult initial_solve_iter_result);
 
-        virtual ~Var() {}
+        virtual ~Var() = default;
 
       // public getters:
       public:

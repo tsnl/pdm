@@ -159,6 +159,20 @@ namespace pdm::types {
         return m_member_tv;
     }
 
+    // select overloaded operators (e.g. arithmetic) can be solved by a few different classes that all include
+    // 'numbers'.
+    class IsNumberVarInvariant: public KindIndependentVarInvariant {
+      public:
+        inline IsNumberVarInvariant(Relation* parent_relation);
+
+      public:
+        void print(printer::Printer& printer) const override;
+    };
+
+    inline IsNumberVarInvariant::IsNumberVarInvariant(Relation *parent_relation)
+    : KindIndependentVarInvariant(parent_relation, VarArchetype::Type, "IsNumberInvariant")
+    {}
+
     //
     // Kind-dependent invariants:
     //

@@ -126,7 +126,7 @@ namespace pdm {
             m_i32_tv_client_astn = help_define_builtin_type(scoper, "Int32", types_mgr()->get_i32_tv());
             m_i64_tv_client_astn = help_define_builtin_type(scoper, "Int64", types_mgr()->get_i64_tv());
             m_i128_tv_client_astn = help_define_builtin_type(scoper, "Int128", types_mgr()->get_i128_tv());
-            m_u1_tv_client_astn = help_define_builtin_type(scoper, "Bool", types_mgr()->get_u1_tv());
+            m_u1_tv_client_astn = help_define_builtin_type(scoper, "UInt1", types_mgr()->get_u1_tv());
             m_u8_tv_client_astn = help_define_builtin_type(scoper, "UInt8", types_mgr()->get_u8_tv());
             m_u16_tv_client_astn = help_define_builtin_type(scoper, "UInt16", types_mgr()->get_u16_tv());
             m_u32_tv_client_astn = help_define_builtin_type(scoper, "UInt32", types_mgr()->get_u32_tv());

@@ -1,5 +1,19 @@
 # Roadmap
 
+## Feb 6 2021
+
+Finished typing unary, binary expressions from Feb 4.
+
+While the typer is now on par with the old typer, there is still more to type.
+
+**TODO:** Type compounds
+- module, external module as SimplestType (like Void, String)
+- tuple, dot-index expressions, IsDotIndexableVarInvariant like IsNumberVarInvariant (for tuples and arrays)
+- struct, dot-name expressions
+- enums, enum-dot-name expressions
+
+After this, can emit IR and/or work on templates.
+
 ## Feb 4 2021
 
 Simplified, the compiler now type-checks everything the old compiler could _except_ 
@@ -9,9 +23,11 @@ It took some time to catch a few lazy copy-paste errors, but now 'val' type-infe
 works correctly, and the `types` module, with a lot of cleaning, will be a delight to
 use.
 
-**TODO:** Implement typing for unary expressions
+**DONE:** Implement typing for unary expressions
+- Completed Feb 5
 
-**TODO:** Implement typing for binary expressions
+**DONE:** Implement typing for binary expressions
+- Completed Feb 6
 
 Once this is done, I can emit LLVM IR.
 Emitting executable IR makes testing the whole pipeline much easier, even if long 

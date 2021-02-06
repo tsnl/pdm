@@ -1,12 +1,7 @@
 mod Greetings {
 
-    demo1 = fn (question String, answer Int32) -> Int32 {
-        val phrase1 = question;
-        val phrase2 = phrase1;
-        val phrase3 = phrase2;
-        answer
+    sum = fn (x UInt32, y UInt32) -> UInt32 {
+        x + y
     };
-
-    demo2 = demo1("We come in peace.", 42);
 
 };

@@ -1,5 +1,6 @@
 #include "kdvs.hh"
 
+#include <iostream>
 #include <vector>
 #include <string>
 #include <map>
@@ -229,7 +230,11 @@ namespace pdm::types {
                     width_in_bits = m_opt_min_width_in_bits;
                 } else {
                     // todo: explain that min and max bounds get crossed
-                    assert(0 && "NotImplemented: error reporting for min/max bounds crossed in NumberKDVS");
+                    if (pdm::DEBUG) {
+                        // assert(0 && "NotImplemented: error reporting for min/max bounds crossed in NumberKDVS");
+                        std::cout << "NotImplemented: error reporting for min/max bounds crossed in NumberKDVS"
+                                  << std::endl;
+                    }
                     return nullptr;
                 }
             } else if (m_opt_min_width_in_bits != -1) {

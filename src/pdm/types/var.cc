@@ -93,6 +93,22 @@ namespace pdm::types {
                 return help_assume_sub_var(classof_invariant->member_tv(), this, false);
             }
 
+            // is number: separate invariant channel
+            auto is_number_invariant = dynamic_cast<IsNumberVarInvariant*>(invariant);
+            if (is_number_invariant != nullptr) {
+                auto old_invariant_it = std::find(
+                    m_opt_force_number_invariants.begin(),
+                    m_opt_force_number_invariants.end(),
+                    is_number_invariant
+                );
+                if (old_invariant_it == m_opt_force_number_invariants.end()) {
+                    m_opt_force_number_invariants.push_back(is_number_invariant);
+                    return SolveResult::UpdatedOrFresh;
+                } else {
+                    return SolveResult::NoChange;
+                }
+            }
+
             // Unknown KindIndependentVarInvariant kind...
             assert(0 && "Unknown KindIndependentVarInvariant.");
         }
@@ -158,10 +174,23 @@ namespace pdm::types {
         // checking for type_kind mismatch:
         if (!m_invalid_assumed_kind_dependent_invariants.empty()) {
             // todo: print invalid assumed variants, rejected due to required_type_kind() mismatch.
+            assert(
+                0 &&
+                "NotImplemented: printing invalid assumed constraints, rejected due to required_type_kind() mismatch."
+            );
             return false;
         }
 
-        // checking solve_iter result:
+        // if this Var must solve to a number, ensure so:
+        if (m_assumed_kind != Kind::META_Unknown) {
+            if (!m_opt_force_number_invariants.empty()) {
+                if (!is_number_type_kind(m_assumed_kind)) {
+                    return false;
+                }
+            }
+        }
+
+        // checking latest solve_iter result:
         bool solve_ok = false;
         {
             SolveResult result = solve_iter();
@@ -245,6 +274,8 @@ namespace pdm::types {
             // assert(0 && "NotImplemented: `Var::finish`");
             std::cout << "NotImplemented: Var::finish for TypeVar " << name() << std::endl;
         }
+
+        // todo: verifying that the
 
         // all ok!
         return true;
@@ -380,6 +411,7 @@ namespace pdm::types {
 
         // creating the KDVS:
         if (m_kdvs == nullptr) {
+            // invoking the KDVS submodule to make a KDVS:
             NewKDVS kdvs_create_info = try_new_kdvs_for(m_var_archetype, m_assumed_kind);
             switch (kdvs_create_info.result)
             {
@@ -406,8 +438,6 @@ namespace pdm::types {
         } else {
             // KDVS already exists; still valid.
         }
-
-        // todo: fix the rest of this function
 
         // flushing invariants to the KDVS:
         if (m_kdvs != nullptr && !m_assumed_kind_dependent_invariants.empty()) {
@@ -685,7 +715,7 @@ namespace pdm::types {
         if (m_opt_type_soln) {
             m_opt_type_soln->print(p);
         } else if (!is_type_var_archetype(var_archetype())) {
-            p.print_c_str(" N/A (Exempt-archetype)");
+            p.print_c_str("N/A (Exempt-archetype)");
         } else {
             p.print_c_str("NULL");
         }
