@@ -4,7 +4,9 @@
 #include <vector>
 #include <string>
 #include <map>
+
 #include <cassert>
+#include <cctype>
 
 #include "pdm/core/bitsets.hh"
 #include "pdm/core/intern.hh"
@@ -517,7 +519,162 @@ namespace pdm::types {
     }
 
     Type* FieldCollectionKDVS::reify_impl(Var* var) {
-        assert(0 && "NotImplemented: FieldCollectionKDVS::reify_impl");
+        using MapType = std::map<intern::String, Var*>;
+
+        switch (required_type_kind())
+        {
+            case Kind::Struct:
+            {
+                std::string construct_name = "AnonymousStruct";
+                std::vector<StructType::Field> construct_fields;
+                construct_fields.reserve(m_fields.size());
+                {
+                    // note that std::map orders by key, i.e. intern::String
+                    // intern::String is guaranteed to have a stable ordering property
+                    // so if two collections contain the same fields by name, they are already sorted and ready for
+                    // O(n) comparison.
+                    // ^_^
+                    for (auto const& it: m_fields) {
+                        intern::String field_name = it.first;
+                        Var* field_var = it.second;
+                        Type* field_type = field_var->get_type_soln();
+
+                        construct_fields.emplace_back(field_name, field_type);
+                    }
+                }
+                return new StructType(
+                    std::move(construct_name),
+                    std::move(construct_fields)
+                );
+            }
+            case Kind::Enum:
+            {
+                std::string construct_name = "AnonymousEnum";
+                std::vector<EnumType::Field> construct_fields;
+                construct_fields.reserve(m_fields.size());
+                {
+                    // note that std::map orders by key, i.e. intern::String
+                    // intern::String is guaranteed to have a stable ordering property
+                    // so if two collections contain the same fields by name, they are already sorted and ready for
+                    // O(n) comparison.
+                    // ^_^
+                    for (auto const& it: m_fields) {
+                        intern::String field_name = it.first;
+                        Var* field_var = it.second;
+                        Type* field_type = field_var->get_type_soln();
+
+                        construct_fields.emplace_back(field_name, field_type);
+                    }
+                }
+                return new EnumType(
+                    std::move(construct_name),
+                    std::move(construct_fields)
+                );
+            }
+            case Kind::Module:
+            {
+                // todo: ensure ModuleType stores fields in an order-independent way (e.g. using std::map)
+                // todo: ensure ModuleType fields include templates correctly.
+                std::string construct_name = "AnonymousModule";
+                std::vector<ModuleType::Field> construct_fields;
+                construct_fields.reserve(m_fields.size());
+                {
+                    // note that std::map orders by key, i.e. intern::String
+                    // intern::String is guaranteed to have a stable ordering property
+                    // so if two collections contain the same fields by name, they are already sorted and ready for
+                    // O(n) comparison.
+                    // ^_^
+
+                    for (auto const& it: m_fields) {
+                        intern::String field_name = it.first;
+                        Var* field_var = it.second;
+
+                        // deducing field kind from field_var and field_name:
+                        ModuleType::FieldKind field_kind;
+                        {
+                            bool is_vid = false;
+                            bool is_tid = false;
+                            for (char const* sp = field_name.content(); *sp; sp++) {
+                                if (*sp == '_' || isdigit(*sp)) {
+                                    continue;
+                                }
+                                else if (islower(*sp)) {
+                                    is_vid = true;
+                                    break;
+                                }
+                                else if (isupper(*sp)) {
+                                    is_tid = true;
+                                    break;
+                                }
+                                else {
+                                    assert(0 && "NotImplemented: invalid character in ID name.");
+                                }
+                            }
+
+                            assert(is_vid ^ is_tid);
+                            if (is_vid) {
+                                assert(
+                                    field_var->var_archetype() == VarArchetype::Type ||
+                                    field_var->var_archetype() == VarArchetype::Template_RetValue
+                                );
+                                field_kind = ModuleType::FieldKind::Value;
+                            } else if (is_tid) {
+                                bool is_mono_type_field = (
+                                    field_var->var_archetype() == VarArchetype::Type ||
+                                    field_var->var_archetype() == VarArchetype::Template_RetType
+                                );
+                                bool is_type_class_field = (
+                                    field_var->var_archetype() == VarArchetype::Class ||
+                                    field_var->var_archetype() == VarArchetype::Template_RetClass
+                                );
+
+                                if (is_mono_type_field) {
+                                    field_kind = ModuleType::FieldKind::Type;
+                                } else if (is_type_class_field) {
+                                    field_kind = ModuleType::FieldKind::Typeclass;
+                                } else {
+                                    assert(0 && "NotImplemented: unknown type field in module.");
+                                }
+                            } else {
+                                assert(0 && "NotImplemented: unknown field in module.");
+                            }
+                        }
+
+                        // deducing whether or not template from field_var's archetype:
+                        bool field_is_template = (
+                            field_var->var_archetype() == VarArchetype::Template_RetValue ||
+                            field_var->var_archetype() == VarArchetype::Template_RetType ||
+                            field_var->var_archetype() == VarArchetype::Template_RetClass
+                        );
+
+                        // reifying the field if a value or type:
+                        bool include_type_soln = (
+                            field_kind == ModuleType::FieldKind::Value ||
+                            field_kind == ModuleType::FieldKind::Type
+                        );
+                        Type* field_type = nullptr;
+                        if (include_type_soln) {
+                            field_type = field_var->get_type_soln();
+                        }
+
+                        construct_fields.emplace_back(field_kind, field_name, field_type, field_is_template);
+                    }
+                }
+                return new ModuleType(
+                    std::move(construct_name),
+                    std::move(construct_fields)
+                );
+                // assert(0 && "NotImplemented: FieldCollectionKDVS::reify_impl for Modules");
+                // std::cout << "NotImplemented: FieldCollectionKDVS::reify_impl for Modules" << std::endl;
+                break;
+            }
+            default:
+            {
+                assert(0 && "NotImplemented: unknown FieldCollectionKDVS Type Kind.");
+                break;
+            }
+        }
+
         return nullptr;
     }
 

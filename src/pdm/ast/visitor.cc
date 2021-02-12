@@ -84,18 +84,23 @@ namespace pdm::ast {
             }
             case Kind::ModTypeStmt:
             {
-                ModTypeStmt* type_stmt = dynamic_cast<ModTypeStmt*>(node);
+                auto type_stmt = dynamic_cast<ModTypeStmt*>(node);
                 ok = visit(type_stmt->opt_rhs_typespec()) && ok;
                 break;
             }
             case Kind::ModEnumStmt:
             {
-                // notably, enum doesn't need any visits; all fields should be processed in this node's pre or post visit handler.
+                auto enum_stmt = dynamic_cast<ModEnumStmt*>(node);
+                for (ast::ModEnumStmt::Field* field: enum_stmt->fields()) {
+                    if (field->opt_type_spec()) {
+                        ok = visit(field->opt_type_spec()) && ok;
+                    }
+                }
                 break;
             }
             case Kind::ModTypeclassStmt:
             {
-                ModTypeclassStmt* typeclass_stmt = dynamic_cast<ModTypeclassStmt*>(node);
+                auto typeclass_stmt = dynamic_cast<ModTypeclassStmt*>(node);
                 
                 ok = visit(typeclass_stmt->candidate_class_spec()) && ok;
                 for (TPattern* tpattern: typeclass_stmt->tpatterns()) {
@@ -108,7 +113,7 @@ namespace pdm::ast {
             }
             case Kind::ModStmt:
             {
-                ModStmt* module_stmt = dynamic_cast<ModStmt*>(node);
+                auto module_stmt = dynamic_cast<ModStmt*>(node);
                 for (Stmt* defn_stmt: module_stmt->defns()) {
                     ok = visit(defn_stmt) && ok;
                 }
@@ -116,18 +121,18 @@ namespace pdm::ast {
             }
             case Kind::ExternStmt:
             {
-                ExternStmt* extern_stmt = dynamic_cast<ExternStmt*>(node);
+                auto extern_stmt = dynamic_cast<ExternStmt*>(node);
                 ok = visit(extern_stmt->link_arg()) && ok;
                 break;
             }
             case Kind::ImportStmt:
             {
-                ImportStmt* import_stmt = dynamic_cast<ImportStmt*>(node);
+                auto import_stmt = dynamic_cast<ImportStmt*>(node);
                 break;
             }
             case Kind::UsingStmt:
             {
-                UsingStmt* using_stmt = dynamic_cast<UsingStmt*>(node);
+                auto using_stmt = dynamic_cast<UsingStmt*>(node);
                 break;
             }
 
@@ -145,13 +150,13 @@ namespace pdm::ast {
             }
             case Kind::ParenExp:
             {
-                ParenExp* paren_exp = dynamic_cast<ParenExp*>(node);
+                auto paren_exp = dynamic_cast<ParenExp*>(node);
                 ok = visit(paren_exp->nested_exp()) && ok;
                 break;
             }
             case Kind::ArrayExp:
             {
-                ArrayExp* array_exp = dynamic_cast<ArrayExp*>(node);
+                auto array_exp = dynamic_cast<ArrayExp*>(node);
                 for (auto const item_exp: array_exp->items()) {
                     ok = visit(item_exp) && ok;
                 }
@@ -159,7 +164,7 @@ namespace pdm::ast {
             }
             case Kind::TupleExp:
             {
-                TupleExp* tuple_exp = dynamic_cast<TupleExp*>(node);
+                auto tuple_exp = dynamic_cast<TupleExp*>(node);
                 for (Exp* tuple_item_exp: tuple_exp->items()) {
                     ok = visit(tuple_item_exp) && ok;
                 }
@@ -167,7 +172,7 @@ namespace pdm::ast {
             }
             case Kind::StructExp:
             {
-                StructExp* struct_exp = dynamic_cast<StructExp*>(node);
+                auto struct_exp = dynamic_cast<StructExp*>(node);
                 for (StructExp::Field* field: struct_exp->fields()) {
                     ok = visit(field->value()) && ok;
                 }
@@ -175,7 +180,7 @@ namespace pdm::ast {
             }
             case Kind::ChainExp:
             {
-                ChainExp* chain_exp = dynamic_cast<ChainExp*>(node);
+                auto chain_exp = dynamic_cast<ChainExp*>(node);
                 for (auto const prefix_stmt: chain_exp->prefix()) {
                     ok = visit(prefix_stmt) && ok;
                 }
@@ -206,13 +211,13 @@ namespace pdm::ast {
             }
             case Kind::DotIndexExp:
             {
-                DotIndexExp* dot_index_exp = dynamic_cast<DotIndexExp*>(node);
+                auto dot_index_exp = dynamic_cast<DotIndexExp*>(node);
                 ok = visit(dot_index_exp->lhs()) && ok;
                 break;
             }
             case Kind::DotNameExp:
             {
-                DotNameExp* dot_name_exp = dynamic_cast<DotNameExp*>(node);
+                auto dot_name_exp = dynamic_cast<DotNameExp*>(node);
                 ok = visit(dot_name_exp->lhs()) && ok;
                 break;
             }
@@ -222,20 +227,20 @@ namespace pdm::ast {
             }
             case Kind::UnaryExp:
             {
-                UnaryExp* unary_exp = dynamic_cast<UnaryExp*>(node);
+                auto unary_exp = dynamic_cast<UnaryExp*>(node);
                 ok = visit(unary_exp->operand()) && ok;
                 break;
             }
             case Kind::BinaryExp:
             {
-                BinaryExp* binary_exp = dynamic_cast<BinaryExp*>(node);
+                auto binary_exp = dynamic_cast<BinaryExp*>(node);
                 ok = visit(binary_exp->lhs_operand()) && ok;
                 ok = visit(binary_exp->rhs_operand()) && ok;
                 break;
             }
             case Kind::VCallExp:
             {
-                VCallExp* vcall_exp = dynamic_cast<VCallExp*>(node);
+                auto vcall_exp = dynamic_cast<VCallExp*>(node);
                 ok = visit(vcall_exp->lhs_called()) && ok;
                 for (VArg* arg: vcall_exp->args()) {
                     ok = visit(arg) && ok;
@@ -244,7 +249,7 @@ namespace pdm::ast {
             }
             case Kind::TCallExp:
             {
-                TCallExp* tcall_exp = dynamic_cast<TCallExp*>(node);
+                auto tcall_exp = dynamic_cast<TCallExp*>(node);
                 ok = visit(tcall_exp->lhs_called()) && ok;
                 for (TArg* arg: tcall_exp->args()) {
                     ok = visit(arg) && ok;
@@ -253,7 +258,7 @@ namespace pdm::ast {
             }
             case Kind::TypeQueryExp:
             {
-                TypeQueryExp* type_query_exp = dynamic_cast<TypeQueryExp*>(node);
+                auto type_query_exp = dynamic_cast<TypeQueryExp*>(node);
                 ok = visit(type_query_exp->lhs_typespec()) && ok;
                 ok = visit(type_query_exp->rhs_typespec()) && ok;
                 break;
@@ -265,7 +270,7 @@ namespace pdm::ast {
 
             case Kind::VPattern:
             {
-                VPattern* vpattern = dynamic_cast<VPattern*>(node);
+                auto vpattern = dynamic_cast<VPattern*>(node);
                 for (VPattern::Field* field: vpattern->fields()) {
                     ok = visit(field->rhs_typespec()) && ok;
                 }
@@ -273,7 +278,7 @@ namespace pdm::ast {
             }
             case Kind::TPattern:
             {
-                TPattern* tpattern = dynamic_cast<TPattern*>(node);
+                auto tpattern = dynamic_cast<TPattern*>(node);
                 for (TPattern::Field* field: tpattern->fields()) {
                     ok = visit(field->rhs_set_spec()) && ok;
                 }
@@ -281,7 +286,7 @@ namespace pdm::ast {
             }
             case Kind::LPattern:
             {
-                LPattern* lpattern = dynamic_cast<LPattern*>(node);
+                auto lpattern = dynamic_cast<LPattern*>(node);
                 for (LPattern::Field* field: lpattern->fields()) {
                     TypeSpec* opt_field_typespec = field->opt_rhs_typespec();
                     if (opt_field_typespec) {

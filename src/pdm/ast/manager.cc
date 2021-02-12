@@ -41,8 +41,8 @@ namespace pdm::ast {
     StructDotNameExp* Manager::new_struct_dot_name_exp(source::Loc loc, Exp* lhs, intern::String rhs_name) {
         return emplace<StructDotNameExp>(loc, lhs, rhs_name);
     }
-    EnumDotNameExp* Manager::new_enum_dot_name_exp(source::Loc loc, Exp* lhs, intern::String rhs_name, std::vector<ast::Exp*>&& args) {
-        return emplace<EnumDotNameExp>(loc, lhs, rhs_name, std::move(args));
+    EnumDotNameExp* Manager::new_enum_dot_name_exp(source::Loc loc, TypeSpec* lhs, intern::String rhs_name, Exp* opt_using_arg) {
+        return emplace<EnumDotNameExp>(loc, lhs, rhs_name, opt_using_arg);
     }
     ModuleDotExp* Manager::new_module_dot_exp(source::Loc loc, std::vector<intern::String>&& module_names, intern::String rhs_name) {
         return emplace<ModuleDotExp>(loc, std::move(module_names), rhs_name);
@@ -176,8 +176,8 @@ namespace pdm::ast {
     ModTypeclassStmt* Manager::new_mod_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, ClassSpec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions) {
         return emplace<ModTypeclassStmt>(loc, lhs_name, candidate_name, candidate_typespec, std::move(tpatterns), std::move(conditions));
     }
-    ModEnumStmt::Field* Manager::new_enum_stmt_field(source::Loc loc, intern::String name, std::vector<ast::TypeSpec*>&& typespecs, bool has_explicit_typespecs) {
-        return emplace<ModEnumStmt::Field>(loc, name, std::move(typespecs), has_explicit_typespecs);
+    ModEnumStmt::Field* Manager::new_enum_stmt_field(source::Loc loc, intern::String name, ast::TypeSpec* type_spec) {
+        return emplace<ModEnumStmt::Field>(loc, name, type_spec);
     }
     
     DotNameTypeSpec_ModPrefix* Manager::new_dot_name_type_spec_with_mod_prefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name) {

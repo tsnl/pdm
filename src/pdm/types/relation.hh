@@ -61,7 +61,7 @@ namespace pdm::types {
         virtual bool on_assume_impl(types::Manager* manager) = 0;
     };
 
-    inline Relation::Relation(ast::Node* ast_node, std::string&& why)
+    Relation::Relation(ast::Node* ast_node, std::string&& why)
     :   m_who(ast_node),
         m_why(std::move(why)),
         m_apply_state(ApplyState::NotApplied)
@@ -350,108 +350,119 @@ namespace pdm::types {
     // Bulk tuple, struct, enum:
     //
 
-    class TupleOfRelation: public Relation {
+    class IsTupleRelation: public Relation {
       private:
         TypeVar* m_tuple_tv;
         std::vector<TypeVar*> m_fields_tvs;
 
       public:
-        inline TupleOfRelation(std::string&& why, ast::Node* node, TypeVar* tuple_tv, std::vector<TypeVar*>&& fields_tvs);
+        inline IsTupleRelation(std::string&& why, ast::Node* node, TypeVar* tuple_tv, std::vector<TypeVar*>&& fields_tvs);
 
       protected:
         bool on_assume_impl(types::Manager* types_mgr) override;
     };
-    inline TupleOfRelation::TupleOfRelation(std::string&& why, ast::Node* node, TypeVar* tuple_tv, std::vector<TypeVar*>&& fields_tvs)
+    inline IsTupleRelation::IsTupleRelation(std::string&& why, ast::Node* node, TypeVar* tuple_tv, std::vector<TypeVar*>&& fields_tvs)
     :   Relation(node, "TupleOf:" + std::move(why)),
         m_tuple_tv(tuple_tv),
         m_fields_tvs(std::move(fields_tvs))
     {}
 
-    class FieldCollectionOfRelation: public Relation {
+    class IsFieldCollectionRelation: public Relation {
       protected:
         enum class FieldCollectionKind {
             Struct,
-            Enum
+            Enum,
+            Module
         };
 
       private:
         TypeVar* m_collection_tv;
-        std::map<intern::String, TypeVar*> m_fields;
+        std::map<intern::String, Var*> m_fields;
         FieldCollectionKind m_field_collection_kind;
 
       protected:
-        inline FieldCollectionOfRelation(FieldCollectionKind field_collection_kind, std::string&& why, ast::Node* node, TypeVar* field_collection_of_tv, std::map<intern::String, TypeVar*>&& fields_tvs);
+        inline IsFieldCollectionRelation(
+            FieldCollectionKind field_collection_kind,
+            std::string&& why,
+            ast::Node* node,
+            TypeVar* collection_tv,
+            std::map<intern::String, Var*>&& fields_tvs
+        );
 
       protected:
         bool on_assume_impl(types::Manager* manager) override;
 
       protected:
-        inline TypeVar* collection_tv() const;
-        inline FieldCollectionKind field_collection_kind() const;
+        [[nodiscard]] inline TypeVar* collection_tv() const;
+        [[nodiscard]] inline FieldCollectionKind field_collection_kind() const;
     };
-    inline FieldCollectionOfRelation::FieldCollectionOfRelation(
+    inline IsFieldCollectionRelation::IsFieldCollectionRelation(
         FieldCollectionKind field_collection_kind,
         std::string&& why,
         ast::Node* node,
-        TypeVar* field_collection_of_tv,
-        std::map<intern::String, TypeVar*>&& fields_tvs
+        TypeVar* collection_tv,
+        std::map<intern::String, Var*>&& fields_tvs
     )
     :   Relation(node, std::move(why)),
-        m_collection_tv(field_collection_of_tv),
+        m_collection_tv(collection_tv),
         m_fields(std::move(fields_tvs)),
         m_field_collection_kind(field_collection_kind)
     {}
     inline TypeVar* 
-    FieldCollectionOfRelation::collection_tv() const {
+    IsFieldCollectionRelation::collection_tv() const {
         return m_collection_tv;
     }
-    inline FieldCollectionOfRelation::FieldCollectionKind 
-    FieldCollectionOfRelation::field_collection_kind() const {
+    inline IsFieldCollectionRelation::FieldCollectionKind
+    IsFieldCollectionRelation::field_collection_kind() const {
         return m_field_collection_kind;
     }
 
-    class StructOfRelation: public FieldCollectionOfRelation {
+    class IsStructRelation: public IsFieldCollectionRelation {
       public:
-        inline StructOfRelation(
+        IsStructRelation(
             std::string&& why,
             ast::Node* node,
             TypeVar* struct_tv,
-            std::map<intern::String, TypeVar*>&& fields_tvs
+            std::map<intern::String, Var*> fields_tvs
         );
 
       public:
-        inline TypeVar* struct_tv() const;
+        [[nodiscard]] inline TypeVar* struct_tv() const;
     };
-    inline StructOfRelation::StructOfRelation(
-        std::string&& why, ast::Node* node,
-        TypeVar* struct_tv,
-        std::map<intern::String, TypeVar*>&& fields_tvs
-    )
-    :   FieldCollectionOfRelation(
-            FieldCollectionOfRelation::FieldCollectionKind::Struct, 
-            std::move("StructOf:" + std::move(why)), 
-            node, struct_tv, std::move(fields_tvs)
-        )
-    {}
-    inline TypeVar* StructOfRelation::struct_tv() const {
+
+    inline TypeVar* IsStructRelation::struct_tv() const {
         return collection_tv();
     }
 
-    class EnumOfRelation: public FieldCollectionOfRelation {
+    class IsEnumRelation: public IsFieldCollectionRelation {
       public:
-        inline EnumOfRelation(std::string&& why, ast::Node* node, TypeVar* struct_of_tv, std::map<intern::String, TypeVar*>&& fields_tvs);
+        IsEnumRelation(
+            std::string&& why,
+            ast::Node* node,
+            TypeVar* enum_tv,
+            std::map<intern::String, Var*> fields_tvs
+        );
 
       public:
-        inline TypeVar* enum_tv() const;
+        [[nodiscard]] inline TypeVar* enum_tv() const;
     };
-    inline EnumOfRelation::EnumOfRelation(std::string&& why, ast::Node* node, TypeVar* enum_tv, std::map<intern::String, TypeVar*>&& fields_tvs)
-    :   FieldCollectionOfRelation(
-            FieldCollectionOfRelation::FieldCollectionKind::Struct, 
-            std::move("EnumOf:" + std::move(why)), 
-            node, enum_tv, std::move(fields_tvs)
-        )
-    {}
-    inline TypeVar* EnumOfRelation::enum_tv() const {
+    inline TypeVar* IsEnumRelation::enum_tv() const {
+        return collection_tv();
+    }
+
+    class IsModuleRelation: public IsFieldCollectionRelation {
+      public:
+        IsModuleRelation(
+            std::string&& why,
+            ast::Node* node,
+            TypeVar* module_tv,
+            std::map<intern::String, Var*> fields_tvs
+        );
+
+      public:
+        [[nodiscard]] inline TypeVar* module_tv() const;
+    };
+    inline TypeVar* IsModuleRelation::module_tv() const {
         return collection_tv();
     }
 

@@ -163,7 +163,7 @@ namespace pdm::types {
     // 'numbers'.
     class IsNumberVarInvariant: public KindIndependentVarInvariant {
       public:
-        inline IsNumberVarInvariant(Relation* parent_relation);
+        explicit inline IsNumberVarInvariant(Relation* parent_relation);
 
       public:
         void print(printer::Printer& printer) const override;
@@ -322,10 +322,16 @@ namespace pdm::types {
         std::map<intern::String, Var*> m_fields;
 
       public:
-        IsFieldCollectionInvariant(Relation* parent_relation, VarArchetype domain_var_kind, Kind required_type_kind, std::string name, std::map<intern::String, Var*>&& fields);
+        IsFieldCollectionInvariant(
+            Relation* parent_relation,
+            VarArchetype domain_var_kind,
+            Kind required_type_kind,
+            std::string name,
+            std::map<intern::String, Var*>&& fields
+        );
   
       public:
-        inline std::map<intern::String, Var*> const& fields() const;
+        [[nodiscard]] inline std::map<intern::String, Var*> const& fields() const;
     };
     inline std::map<intern::String, Var*> const& IsFieldCollectionInvariant::fields() const {
         return m_fields;
@@ -333,21 +339,35 @@ namespace pdm::types {
 
     class IsStructInvariant: public IsFieldCollectionInvariant {
       public:
-        IsStructInvariant(Relation* parent_relation, VarArchetype domain_var_kind, std::string opt_name_suffix = "");
+        IsStructInvariant(
+            Relation* parent_relation, VarArchetype domain_var_kind,
+            std::map<intern::String, Var*> fields,
+            std::string opt_name_suffix = ""
+        );
 
       public:
         void print(printer::Printer& printer) const override;
     };
     class IsEnumInvariant: public IsFieldCollectionInvariant {
       public:
-        IsEnumInvariant(Relation* parent_relation, VarArchetype domain_var_kind, std::string opt_name_suffix = "");
+        IsEnumInvariant(
+            Relation* parent_relation,
+            VarArchetype domain_var_kind,
+            std::map<intern::String, Var*> fields,
+            std::string opt_name_suffix = ""
+        );
 
       public:
         void print(printer::Printer& printer) const override;
     };
     class IsModuleInvariant: public IsFieldCollectionInvariant {
       public:
-        IsModuleInvariant(Relation* parent_relation, VarArchetype domain_var_kind);
+        IsModuleInvariant(
+            Relation* parent_relation,
+            VarArchetype domain_var_kind,
+            std::map<intern::String, Var*> fields,
+            std::string opt_name_suffix = ""
+        );
 
       public:
         void print(printer::Printer& printer) const override;
@@ -359,17 +379,20 @@ namespace pdm::types {
         TypeVar* m_item_tv;
 
       public:
-        IsArrayInvariant(Relation* parent_relation, VarArchetype domain_var_kind, TypeVar* item_tv);
+        IsArrayInvariant(
+            Relation* parent_relation,
+            VarArchetype domain_var_kind,
+            TypeVar* item_tv,
+            std::string array_name
+        );
 
       public:
-        inline TypeVar* item_tv() const;
+        [[nodiscard]] inline TypeVar* item_tv() const;
 
       public:
         void print(printer::Printer& printer) const override;
     };
-    inline IsArrayInvariant::IsArrayInvariant(Relation* parent_relation, VarArchetype domain_var_kind, TypeVar* field_tv)
-    :   KindDependentInvariant(parent_relation, domain_var_kind, Kind::Tuple, "Array")
-    {}
+
     inline TypeVar* IsArrayInvariant::item_tv() const {
         return m_item_tv;
     }

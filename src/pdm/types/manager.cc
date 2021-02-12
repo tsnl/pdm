@@ -195,8 +195,6 @@ namespace pdm::types {
             }
         }
 
-        // from this point, all invariants are stable.
-
         // checking all nodes:
         {
             if (result_is_error(last_iter_solve_res)) {
@@ -237,7 +235,7 @@ namespace pdm::types {
             }
         }
 
-        // from here, we can ensure invariants are stable.
+        // from here, we can ensure invariants are stable and correct enough to propagate.
 
         // Checking stabilized kinds:
         {

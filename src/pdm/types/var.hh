@@ -70,8 +70,7 @@ namespace pdm::types {
       // the solution:
       protected:
         Type* m_opt_type_soln;
-        bool m_finished;
-        bool m_finish_res;
+        FinishResult m_finish_result;
 
       // constructor/dtor:
       protected:
@@ -113,9 +112,7 @@ namespace pdm::types {
       private:
         SolveResult solve_iter_impl();
         SolveResult solve_iter_phase1();
-        static Kind get_kind_from_edges_and_update_start_index(
-            std::vector<Var::Edge> const& edges, size_t* start_index_p
-        );
+        static Kind get_kind_from_edges(std::vector<Var::Edge> const& edges);
         SolveResult solve_iter_phase2();
         bool finish();
         bool finish_impl();

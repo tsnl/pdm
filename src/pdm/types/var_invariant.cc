@@ -66,6 +66,29 @@ namespace pdm::types {
         printer.print_c_str("]");
     }
 
+    IsFieldCollectionInvariant::IsFieldCollectionInvariant(
+        Relation* parent_relation,
+        VarArchetype domain_var_kind,
+        Kind required_type_kind,
+        std::string name,
+        std::map<intern::String, Var*>&& fields
+    )
+    :   KindDependentInvariant(parent_relation, domain_var_kind, required_type_kind, std::move(name)),
+        m_fields(std::move(fields))
+    {}
+
+    IsStructInvariant::IsStructInvariant(
+        Relation *parent_relation, VarArchetype domain_var_kind,
+        std::map<intern::String, Var*> fields,
+        std::string opt_name_suffix
+    )
+    :   IsFieldCollectionInvariant(
+            parent_relation, domain_var_kind, Kind::Struct,
+            "IsStruct" + (!opt_name_suffix.empty() ? ":" + std::move(opt_name_suffix) : ""),
+            std::move(fields)
+        )
+    {}
+
     void IsStructInvariant::print(printer::Printer &printer) const {
         printer.print_c_str("(KD) IsStructInvariant{");
         for (auto const& field: fields()) {
@@ -76,6 +99,19 @@ namespace pdm::types {
         }
         printer.print_c_str("}");
     }
+
+    IsEnumInvariant::IsEnumInvariant(
+        Relation* parent_relation,
+        VarArchetype domain_var_kind,
+        std::map<intern::String, Var*> fields,
+        std::string opt_name_suffix
+    )
+    :   IsFieldCollectionInvariant(
+        parent_relation, domain_var_kind, Kind::Enum,
+        "IsEnum" + (!opt_name_suffix.empty() ? ":" + std::move(opt_name_suffix) : ""),
+        std::move(fields)
+    )
+    {}
 
     void IsEnumInvariant::print(printer::Printer &printer) const {
         printer.print_c_str("(KD) IsEnumInvariant{");
@@ -88,6 +124,19 @@ namespace pdm::types {
         printer.print_c_str("}");
     }
 
+    IsModuleInvariant::IsModuleInvariant(
+        Relation *parent_relation,
+        VarArchetype domain_var_kind,
+        std::map<intern::String, Var*> fields,
+        std::string opt_module_name
+    )
+    :   IsFieldCollectionInvariant(
+        parent_relation, domain_var_kind, Kind::Module,
+        "IsModule" + (!opt_module_name.empty() ? ":" + std::move(opt_module_name) : ""),
+        std::move(fields)
+    )
+    {}
+
     void IsModuleInvariant::print(printer::Printer &printer) const {
         printer.print_c_str("(KD) IsModuleInvariant{");
         for (auto const& field: fields()) {
@@ -98,6 +147,16 @@ namespace pdm::types {
         }
         printer.print_c_str("}");
     }
+
+    IsArrayInvariant::IsArrayInvariant(
+        Relation* parent_relation,
+        VarArchetype domain_var_kind,
+        TypeVar* item_tv,
+        std::string array_name
+    )
+    :   KindDependentInvariant(parent_relation, domain_var_kind, Kind::Array, "IsArray:" + std::move(array_name)),
+        m_item_tv(item_tv)
+    {}
 
     void IsArrayInvariant::print(printer::Printer &printer) const {
         printer.print_c_str("(KD) IsArrayOf: ");

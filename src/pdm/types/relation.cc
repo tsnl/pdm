@@ -8,11 +8,62 @@
 
 namespace pdm::types {
 
+    //
+    // constructors:
+    //
+
+    IsStructRelation::IsStructRelation(
+        std::string&& why, ast::Node* node,
+        TypeVar* struct_tv,
+        std::map<intern::String, Var*> fields_tvs
+    )
+    : IsFieldCollectionRelation(
+        IsFieldCollectionRelation::FieldCollectionKind::Struct,
+        std::move(why),
+        node, struct_tv, std::move(fields_tvs)
+        )
+    {}
+
+    IsEnumRelation::IsEnumRelation(
+        std::string&& why,
+        ast::Node* node,
+        TypeVar* enum_tv,
+        std::map<intern::String, Var*> fields_tvs
+    )
+    : IsFieldCollectionRelation(
+        IsFieldCollectionRelation::FieldCollectionKind::Enum,
+        std::move(why),
+        node,
+        enum_tv, std::move(fields_tvs)
+        )
+    {}
+
+    IsModuleRelation::IsModuleRelation(
+        std::string&& why,
+        ast::Node* node,
+        TypeVar* module_tv,
+        std::map<intern::String, Var*> fields_tvs
+    )
+    : IsFieldCollectionRelation(
+        IsFieldCollectionRelation::FieldCollectionKind::Module,
+        std::move(why),
+        node,
+        module_tv,
+        std::move(fields_tvs)
+        )
+    {}
+
+    //
+    // on_assume:
+    //
+
     void Relation::on_assume(types::Manager* manager) {
-        if (on_assume_impl(manager)) {
-            m_apply_state = ApplyState::Applied_OK;
-        } else {
-            m_apply_state = ApplyState::Applied_Fail;
+        if (m_apply_state == ApplyState::NotApplied) {
+            if (on_assume_impl(manager)) {
+                m_apply_state = ApplyState::Applied_OK;
+            } else {
+                m_apply_state = ApplyState::Applied_Fail;
+            }
         }
     }
 
@@ -106,12 +157,42 @@ namespace pdm::types {
         }
         return !result_is_error(m_lhs->assume_invariant_holds(the_invariant));
     }
-    bool FieldCollectionOfRelation::on_assume_impl(types::Manager* manager) {
-        // todo: implement me!
-        std::cout << "NotImplemented: FieldCollectionOfRelation::on_assume_impl" << std::endl;
+
+    bool IsFieldCollectionRelation::on_assume_impl(types::Manager* manager) {
+        switch (m_field_collection_kind)
+        {
+            case FieldCollectionKind::Struct:
+            {
+                auto invariant = new IsStructInvariant(
+                    this,
+                    VarArchetype::Type,
+                    m_fields
+                );
+                return !result_is_error(m_collection_tv->assume_invariant_holds(invariant));
+            }
+            case FieldCollectionKind::Enum:
+            {
+                auto invariant = new IsEnumInvariant(
+                    this,
+                    VarArchetype::Type,
+                    m_fields
+                );
+                return !result_is_error(m_collection_tv->assume_invariant_holds(invariant));
+            }
+            case FieldCollectionKind::Module:
+            {
+                auto invariant = new IsModuleInvariant(
+                    this,
+                    VarArchetype::Type,
+                    m_fields
+                );
+                return !result_is_error(m_collection_tv->assume_invariant_holds(invariant));
+            }
+        }
         return true;
     }
-    bool TupleOfRelation::on_assume_impl(types::Manager* types_mgr) {
+
+    bool IsTupleRelation::on_assume_impl(types::Manager* types_mgr) {
         // todo: implement me!
         std::cout << "NotImplemented: TupleOfRelation::on_assume_impl" << std::endl;
         return true;
@@ -135,6 +216,7 @@ namespace pdm::types {
         SolveResult kd_res = fn_tv()->assume_invariant_holds(invariant);
         return !result_is_error(kd_res);
     }
+
     bool ActualVCallableRelation::on_assume_impl(types::Manager* manager) {
         std::vector<VCallArg> actual_args = args();
         auto invariant = new IsVCallableInvariant(
@@ -158,7 +240,7 @@ namespace pdm::types {
         // then :< output
         {
             auto then_branch_invariant = new SubtypeOfInvariant(this, m_then);
-            kd_res = m_output_tv->assume_invariant_holds(then_branch_invariant);
+            kd_res = result_and(kd_res, m_output_tv->assume_invariant_holds(then_branch_invariant));
         }
 
         return !result_is_error(kd_res);

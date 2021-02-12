@@ -1,7 +1,23 @@
 mod Greetings {
 
-    sum = fn (x UInt32, y UInt32) -> UInt32 {
-        x + y
+    Vec3f = {
+        x Float32,
+        y Float32,
+        z Float32
+    };
+
+    hello = fn () -> Vec3f {
+        val hello Vec3f = {
+            x = 0.0,
+            y = 0.0,
+            z = 0.0
+        };
+        hello
+    };
+
+    howdy = fn () -> Float32 {
+        val vector = hello();
+        vector.x + vector.y + vector.z
     };
 
 };

@@ -28,20 +28,18 @@ namespace pdm::ast {
             friend Manager;
 
           private:
-            source::Loc                 m_loc;
-            intern::String              m_name;
-            std::vector<ast::TypeSpec*> m_typespecs;
-            bool                        m_has_explicit_typespecs;
+            source::Loc    m_loc;
+            intern::String m_name;
+            ast::TypeSpec* m_opt_type_spec;
             
           protected:
             Field(source::Loc loc, intern::String name);
 
-            Field(source::Loc loc, intern::String name, std::vector<ast::TypeSpec*>&& typespecs, bool has_explicit_typespecs);
+            Field(source::Loc loc, intern::String name, ast::TypeSpec* opt_type_spec);
 
           public:
             [[nodiscard]] intern::String name() const;
-            [[nodiscard]] std::vector<ast::TypeSpec*> const& typespecs() const;
-            [[nodiscard]] bool has_explicit_typespecs() const;
+            [[nodiscard]] ast::TypeSpec* opt_type_spec() const;
         };
 
       // body:
@@ -97,33 +95,25 @@ namespace pdm::ast {
 
     inline ModEnumStmt::Field::Field(source::Loc loc, intern::String name)
     :   m_loc(loc),
-        m_name(name),
-        m_typespecs(),
-        m_has_explicit_typespecs(false)
+        m_name(name)
     {}
 
     inline ModEnumStmt::Field::Field(
         source::Loc loc,
         intern::String name,
-        std::vector<ast::TypeSpec*>&& typespecs,
-        bool has_explicit_typespecs
+        ast::TypeSpec* opt_type_spec
     )
     :   m_loc(loc),
         m_name(name),
-        m_typespecs(std::move(typespecs)),
-        m_has_explicit_typespecs(has_explicit_typespecs)
+        m_opt_type_spec(opt_type_spec)
     {}
 
     inline intern::String ModEnumStmt::Field::name() const {
         return m_name;
     }
 
-    inline std::vector<ast::TypeSpec*> const& ModEnumStmt::Field::typespecs() const {
-        return m_typespecs;
-    }
-
-    inline bool ModEnumStmt::Field::has_explicit_typespecs() const {
-        return m_has_explicit_typespecs;
+    inline ast::TypeSpec* ModEnumStmt::Field::opt_type_spec() const {
+        return m_opt_type_spec;
     }
 
 }

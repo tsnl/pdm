@@ -67,6 +67,15 @@ namespace pdm::types {
             kdr == SolveResult::CompilerError
         );
     }
+
+    // FinishResult: used after multiple solution iterations to get the final result
+    enum class FinishResult {
+        Plastic,
+        Baking,
+        Finished_Ok,
+        Finished_Broken_Typing,
+        Finished_Broken_Compiler
+    };
 }
 
-#endif  // INCLUDED__PDM__TYPES__SOLVING_HH .0ZZz
+#endif  // INCLUDED__PDM__TYPES__SOLVING_HH

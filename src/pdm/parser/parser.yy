@@ -359,9 +359,8 @@ unprefixed_enum_field_pl
     | unprefixed_enum_field_pl PIPE enum_field  { $$ = std::move($1); $$.push_back($3); }
     ;
 enum_field
-    : tid                            { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move(std::vector<ast::TypeSpec*>{}), false); }
-    | tid LPAREN RPAREN              { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move(std::vector<ast::TypeSpec*>{}), true); }
-    | tid LPAREN type_spec_cl1 RPAREN { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, std::move($3), true); }
+    : tid               { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, nullptr); }
+    | tid type_spec     { $$ = mgr->new_enum_stmt_field(@$, $1.ID_intstr, $2); }
     ;
 mod_typeclass_stmt
     : tid              COLON_DASH LTHAN tid class_spec GTHAN LCYBRK type_query_exp_sl RCYBRK { 
@@ -518,9 +517,10 @@ vcall_exp
     | postfix_exp LPAREN varg_cl RPAREN     { $$ = mgr->new_vcall_exp(@$, $1, std::move($3)); }
     ;
 dot_name_exp
-    : postfix_exp DOT VID                           { $$ = mgr->new_struct_dot_name_exp(@$, $1, $3.ID_intstr); }
-    | postfix_exp DOT TID LPAREN expr_cl0 RPAREN    { $$ = mgr->new_enum_dot_name_exp(@$, $1, $3.ID_intstr, std::move($5)); }
-    | mod_prefix VID   { $$ = mgr->new_module_dot_exp(@$, std::move($1), $2.ID_intstr); }
+    : postfix_exp DOT VID                       { $$ = mgr->new_struct_dot_name_exp(@$, $1, $3.ID_intstr); }
+    | type_spec DOT TID                         { $$ = mgr->new_enum_dot_name_exp(@$, $1, $3.ID_intstr, nullptr); }
+    | type_spec DOT TID KW_USING paren_exp      { $$ = mgr->new_enum_dot_name_exp(@$, $1, $3.ID_intstr, $5); }
+    | mod_prefix VID                            { $$ = mgr->new_module_dot_exp(@$, std::move($1), $2.ID_intstr); }
     ;
 dot_index_exp
     : postfix_exp DOT int_expr      { $$ = mgr->new_dot_index_exp(@$, $1, $3, ast::DotIndexExp::RhsHint::LhsNotPtr); }
@@ -604,10 +604,14 @@ type_query_op
 type_spec
     : unary_type_spec
     ;
-type_spec_cl1
-    : type_spec                    { $$.push_back($1); }
-    | type_spec_cl1 COMMA type_spec { $$ = std::move($1); $$.push_back($3); }
-    ;
+
+/*
+ *  type_spec_cl1
+ *      : type_spec                    { $$.push_back($1); }
+ *      | type_spec_cl1 COMMA type_spec { $$ = std::move($1); $$.push_back($3); }
+ *      ;
+ */
+
 type_spec_cl2
     : type_spec COMMA type_spec     { $$.reserve(2); $$.push_back($1); $$.push_back($3); }
     | type_spec_cl2 COMMA type_spec { $$ = std::move($1); $$.push_back($3); }

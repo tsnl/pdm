@@ -174,23 +174,24 @@ namespace pdm::types {
     // Structs:
     //
 
-    class StructTypeField {
-      private:
-        intern::String m_name;
-        Type*          m_type;
-
-      public:
-        StructTypeField(intern::String name, Type* type)
-        : m_name(name),
-          m_type(type) {}
-    };
-
     class StructType: public Type {
+      public:
+        class Field {
+          private:
+            intern::String m_name;
+            Type*          m_type;
+
+          public:
+            Field(intern::String name, Type* type)
+            :   m_name(name),
+                m_type(type) {}
+        };
+
       private:
-        std::vector<StructTypeField> m_fields;
+        std::vector<Field> m_fields;
 
       public:
-        StructType(std::string&& name, std::vector<StructTypeField>&& fields)
+        StructType(std::string&& name, std::vector<Field>&& fields)
         : Type("StructType:" + std::move(name), Kind::Struct),
           m_fields(std::move(fields)) {}
     };
@@ -199,65 +200,75 @@ namespace pdm::types {
     // Enums:
     //
 
-    enum class EnumFieldKind {
-        ExplicitTs,
-        DefaultTs
-    };
-
-    class EnumTypeField {
-      private:
-        EnumFieldKind   m_kind;
-        intern::String  m_name;
-        Type*           m_typepsec_soln;
-
-      public:
-        explicit EnumTypeField(intern::String name)
-        : m_kind(EnumFieldKind::DefaultTs),
-          m_name(name),
-          m_typepsec_soln(nullptr) {}
-
-        EnumTypeField(intern::String name, Type* typespec_soln)
-        : m_kind(EnumFieldKind::ExplicitTs),
-          m_name(name),
-          m_typepsec_soln(typespec_soln) {}
-    };
-
     class EnumType: public Type {
-      private:
-        std::vector<EnumTypeField> m_fields;
       public:
-        EnumType(std::string&& name, std::vector<EnumTypeField>&& fields)
-        : Type("EnumType:" + std::move(name), Kind::Enum),
-          m_fields(std::move(fields)) {}
+        enum class FieldKind {
+            ExplicitTs,
+            DefaultTs
+        };
+
+      public:
+        class Field {
+          private:
+            FieldKind      m_kind;
+            intern::String m_name;
+            Type*          m_type;
+
+          public:
+            explicit Field(intern::String name)
+            : m_kind(FieldKind::DefaultTs),
+              m_name(name),
+              m_type(nullptr) {}
+
+            Field(intern::String name, Type* type_soln)
+            : m_kind(FieldKind::ExplicitTs),
+              m_name(name),
+              m_type(type_soln) {}
+        };
+
+      private:
+        std::vector<Field> m_fields;
+
+      public:
+        EnumType(std::string&& name, std::vector<Field>&& fields)
+        :   Type("EnumType:" + std::move(name), Kind::Enum),
+            m_fields(std::move(fields))
+        {}
     };
 
     //
     // Modules:
     //
 
-    enum class ModuleFieldKind {
-        Value,
-        Type,
-        Typeclass,
-        ConstVal_TFunc,
-        Type_TFunc
-    };
-    class ModuleField {
-      private:
-        ModuleFieldKind m_kind;
-        intern::String  m_name;
-        Type*           m_opt_type_soln;
-      public:
-        ModuleField(ModuleFieldKind kind, intern::String name, Type* opt_type_soln)
-        : m_kind(kind),
-          m_name(name),
-          m_opt_type_soln(opt_type_soln) {}
-    };
     class ModuleType: public Type {
-      private:
-        std::vector<ModuleField> m_fields;
       public:
-        ModuleType(std::string&& name, std::vector<ModuleField>&& fields)
+        enum class FieldKind {
+            Value,
+            Type,
+            Typeclass
+        };
+
+      public:
+        class Field {
+          private:
+            FieldKind       m_kind;
+            intern::String  m_name;
+            Type*           m_opt_type_soln;
+            bool            m_is_template;
+
+          public:
+            Field(FieldKind kind, intern::String name, Type* opt_type_soln, bool is_template)
+            :   m_kind(kind),
+                m_name(name),
+                m_opt_type_soln(opt_type_soln),
+                m_is_template(is_template)
+            {}
+        };
+
+      private:
+        std::vector<Field> m_fields;
+      public:
+        ModuleType(std::string&& name, std::vector<Field>&& fields)
         : Type("ModuleType:" + std::move(name), Kind::Module),
           m_fields(std::move(fields)) {}
     };

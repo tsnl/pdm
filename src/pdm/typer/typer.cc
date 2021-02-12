@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <map>
 
 #include "pdm/source/loc.hh"
 
@@ -160,13 +161,61 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             TypeVar* module_tv = node->x_module_tv();
         } else {
-            // todo: add fields
+            assert(visit_order == VisitOrder::Post);
+
+            auto module_tv = dynamic_cast<TypeVar*>(node->x_module_tv());
+
+            std::map<intern::String, Var*> fields_tvs; {
+                for (ast::ModContentStmt* mcs: node->defns()) {
+                    switch (mcs->kind())
+                    {
+                        case ast::Kind::ModValStmt:
+                        {
+                            auto stmt = dynamic_cast<ast::ModValStmt*>(mcs);
+                            fields_tvs[stmt->name()] = stmt->x_defn_var();
+                            break;
+                        }
+                        case ast::Kind::ModTypeStmt:
+                        {
+                            auto stmt = dynamic_cast<ast::ModTypeStmt*>(mcs);
+                            fields_tvs[stmt->lhs_name()] = stmt->x_defn_var();
+                            break;
+                        }
+                        case ast::Kind::ModEnumStmt:
+                        {
+                            auto stmt = dynamic_cast<ast::ModEnumStmt*>(mcs);
+                            fields_tvs[stmt->name()] = stmt->x_defn_var();
+                            break;
+                        }
+                        case ast::Kind::ModTypeclassStmt:
+                        {
+                            auto stmt = dynamic_cast<ast::ModTypeclassStmt*>(mcs);
+                            fields_tvs[stmt->typeclass_name()] = stmt->x_defn_var();
+                            break;
+                        }
+                        default:
+                        {
+                            assert(0 && "NotImplementedError: Unknown module field stmt kind in typer.");
+                            break;
+                        }
+                    }
+                }
+            }
+
+            std::string relation_why = "IsModule:" + node->module_name().cpp_str();
+            auto relation = new IsModuleRelation(
+                std::move(relation_why),
+                node,
+                module_tv,
+                fields_tvs
+            );
+            return !result_is_error(m_types_mgr->assume_relation_holds(relation));
         }
         return true;
     }
     bool TyperVisitor::on_visit__mod_typeclass_stmt(ast::ModTypeclassStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            
+            assert(0 && "NotImplemented: on_visit__mod_type_class_stmt");
         }
         // todo: implement this typer.
         // - if template, set up formal args, use return for following steps.
@@ -178,19 +227,84 @@ namespace pdm::types {
     }
     bool TyperVisitor::on_visit__mod_type_stmt(ast::ModTypeStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            if (!node->lhs_tpatterns().empty()) {
-                
+            if (node->lhs_tpatterns().empty()) {
+                // std::string tv_name = "ModTypeStmt:" + node->lhs_name().cpp_str();
+                // auto defn_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
+                // node->x_defn_var(defn_tv);
+            } else {
+                assert(0 && "NotImplemented: on_visit__mod_type_stmt (Pre) with template args.");
+            }
+        } else {
+            if (node->lhs_tpatterns().empty()) {
+                assert(visit_order == VisitOrder::Post);
+                auto defn_tv = dynamic_cast<TypeVar*>(node->x_defn_var());
+                assert(defn_tv);
+
+                TypeVar* rhs_tv = nullptr;
+                {
+                    if (node->opt_rhs_typespec()) {
+                        std::string expected_desc = "a type specifier";
+                        std::string in_desc = "a `TypeID = <TypeSpec>` module statement";
+                        rhs_tv = expect_type_var(
+                            node->opt_rhs_typespec()->x_spec_var(),
+                            std::move(expected_desc),
+                            std::move(in_desc),
+                            node->loc()
+                        );
+                    }
+                    else {
+                        assert(0 && "NotImplemented: `TypeID from (...)`");
+                    }
+                }
+                assert(rhs_tv);
+
+                return !result_is_error(
+                    m_types_mgr->assume_relation_holds(
+                        new TypeEqualsRelation(node, defn_tv, rhs_tv)
+                    )
+                );
+            } else {
+                assert(0 && "NotImplemented: on_visit__mod_type_stmt (Post) with template args.");
             }
         }
         return true;
     }
     bool TyperVisitor::on_visit__mod_enum_stmt(ast::ModEnumStmt* node, VisitOrder visit_order) {
-        if (visit_order == VisitOrder::Pre) {
-            
-        } else {
+        if (visit_order == VisitOrder::Post) {
+            TypeVar* mod_enum_tv = nullptr;
+            if (node->tpatterns().empty()) {
+                mod_enum_tv = dynamic_cast<TypeVar*>(node->x_defn_var());
+            } else {
+                assert(0 && "NotImplemented: on_visit__mod_enum_stmt with template args.");
+            }
 
+            std::map<intern::String, Var*> fields_vars;
+            for (ast::ModEnumStmt::Field const* field: node->fields()) {
+                intern::String field_name = field->name();
+                Var* field_var = nullptr;
+                // todo: replace with struct: 'tag' and 'data' fields.
+                if (field->opt_type_spec()) {
+                    field_var = field->opt_type_spec()->x_spec_var();
+                    if (!field_var) {
+                        std::cout << "Whoops" << std::endl;
+                    }
+                } else {
+                    field_var = m_types_mgr->get_void_tv();
+                }
+                assert(field_var);
+
+                fields_vars[field_name] = field_var;
+            }
+
+            auto relation = new IsEnumRelation(
+                std::move(std::string{"IsEnumRelation"}),
+                node, mod_enum_tv,
+                std::move(fields_vars)
+            );
+            return !result_is_error(m_types_mgr->assume_relation_holds(relation));
+        } else {
+            return true;
         }
-        return true;
     }
     bool TyperVisitor::on_visit__mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Post) {
@@ -206,7 +320,7 @@ namespace pdm::types {
                 rhs_tv = expect_type_var(
                     node->opt_rhs_exp()->x_type_of_var(),
                     std::move(std::string("an expression")),
-                    std::move(std::string("a module value-field assignment RHS")),
+                    std::move(std::string("a `val_id = <exp>` module statement")),
                     node->loc()
                 );
             } else if (node->rhs_kind() == ast::ModValStmt::RhsKind::External) {
@@ -566,13 +680,92 @@ namespace pdm::types {
     }
     bool TyperVisitor::on_visit__dot_name_exp(ast::DotNameExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            std::string tv_name = "DotNameExp";
+            std::string tv_name;
+            {
+                switch (node->rhs_hint())
+                {
+                    case ast::DotNameExp::RhsHint::LhsEnum:
+                    {
+                        tv_name = "EnumDotNameExp";
+                        break;
+                    }
+                    case ast::DotNameExp::RhsHint::LhsStruct:
+                    {
+                        tv_name = "StructDotNameExp";
+                        break;
+                    }
+                    default:
+                    {
+                        assert(0 && "NotImplemented: typing DotNameExp: unknown DotNameExpLhsHint");
+                        return false;
+                    }
+                }
+            }
             TypeVar* dot_name_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
             node->x_type_of_var(dot_name_exp_tv);
+            return true;
         } else {
-            // todo: require subtype of a struct
+            auto out_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
+
+            switch (node->rhs_hint())
+            {
+                case ast::DotNameExp::RhsHint::LhsEnum:
+                {
+                    auto lhs_enum_type_spec = dynamic_cast<ast::TypeSpec*>(node->lhs());
+                    auto lhs_enum_tv = expect_type_var(
+                        lhs_enum_type_spec->x_spec_var(),
+                        "an enum type specifier",
+                        "an enum-dot-name expression",
+                        node->loc()
+                    );
+                    SolveResult result = m_types_mgr->assume_relation_holds(
+                        new TypeEqualsRelation(node, out_tv, lhs_enum_tv)
+                    );
+                    return !result_is_error(result);
+                }
+                case ast::DotNameExp::RhsHint::LhsStruct:
+                {
+                    auto lhs_struct_exp = dynamic_cast<ast::Exp*>(node->lhs());
+                    auto lhs_struct_tv = expect_type_var(
+                        lhs_struct_exp->x_type_of_var(),
+                        "a struct expression",
+                        "a struct-dot-name expression",
+                        node->loc()
+                    );
+
+                    // subtype of single-field struct:
+                    TypeVar* min_struct_super_tv = nullptr;
+                    {
+                        std::string min_struct_super_tv_name = "StructDotNameExp_MinSuperType";
+                        min_struct_super_tv = m_types_mgr->new_unknown_type_var(
+                            std::move(min_struct_super_tv_name),
+                            node
+                        );
+                    }
+                    assert(min_struct_super_tv);
+
+
+                    std::map<intern::String, Var*> fields_tvs;
+                    fields_tvs[node->rhs_name()] = out_tv;
+
+                    return !result_is_error(result_and(
+                        m_types_mgr->assume_relation_holds(new SubtypeOfRelation(
+                            node, lhs_struct_tv, min_struct_super_tv
+                        )),
+                        m_types_mgr->assume_relation_holds(new IsStructRelation(
+                            std::move(std::string{"StructDotNameExp"}), node,
+                            min_struct_super_tv,
+                            fields_tvs
+                        ))
+                    ));
+                }
+                default:
+                {
+                    assert(0 && "NotImplemented: typing DotNameExp: unknown DotNameExpLhsHint");
+                    return false;
+                }
+            }
         }
-        return true;
     }
     bool TyperVisitor::on_visit__module_dot_exp(ast::ModuleDotExp* node, VisitOrder visit_order) {
         assert(0 && "NotImplemented: TypeVisitor::on_visit__module_dot_exp");
@@ -1129,7 +1322,7 @@ namespace pdm::types {
 
             // relating:
             std::string why = "TupleTypeSpec";
-            SolveResult kd_res = m_types_mgr->assume_relation_holds(new TupleOfRelation(
+            SolveResult kd_res = m_types_mgr->assume_relation_holds(new IsTupleRelation(
                 std::move(why),
                 node,
                 tuple_tv,
@@ -1163,7 +1356,7 @@ namespace pdm::types {
             assert(struct_tv != nullptr);
             
             // collecting & checking fields_tvs:
-            std::map<intern::String, TypeVar*> fields_tvs;
+            std::map<intern::String, Var*> fields_tvs;
             bool fields_ok = true;
             for (ast::StructTypeSpec::Field* field: node->fields()) {
                 Var* field_var = field->rhs_typespec()->x_spec_var();
@@ -1219,7 +1412,7 @@ namespace pdm::types {
 
             // assuming a StructOf relation to bind struct_tv to fields:
             std::string name = "StructTypeSpec";
-            SolveResult kd_res = m_types_mgr->assume_relation_holds(new StructOfRelation(
+            SolveResult kd_res = m_types_mgr->assume_relation_holds(new IsStructRelation(
                 std::move(name), node,
                 struct_tv, std::move(fields_tvs)
             ));

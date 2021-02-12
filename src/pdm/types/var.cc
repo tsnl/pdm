@@ -38,8 +38,7 @@ namespace pdm::types {
         m_prev_solve_iter_result(initial_solve_iter_result),
         m_kdvs(nullptr),
         m_opt_type_soln(nullptr),
-        m_finished(false),
-        m_finish_res(false)
+        m_finish_result(FinishResult::Plastic)
     {}
 
     SolveResult Var::assume_invariant_holds(VarInvariant* invariant) {
@@ -159,12 +158,46 @@ namespace pdm::types {
     }
 
     bool Var::finish() {
-        if (m_finished) {
-            return m_finish_res;
-        } else {
-            m_finish_res = finish_impl();
-            m_finished = true;
-            return m_finish_res;
+        switch (m_finish_result)
+        {
+            case FinishResult::Finished_Ok:
+            {
+                return true;
+            }
+            case FinishResult::Finished_Broken_Typing:
+            {
+                return false;
+            }
+            case FinishResult::Finished_Broken_Compiler:
+            {
+                if (pdm::DEBUG) {
+                    assert(0 && "Compiler error in Var::finish");
+                }
+                return false;
+            }
+            case FinishResult::Baking:
+            {
+                // no new information-- mid-cycle.
+                // todo: return a promise?
+                return true;
+            }
+            case FinishResult::Plastic:
+            {
+                // set 'baking' to true
+                m_finish_result = FinishResult::Baking;
+
+                // finishing:
+                bool finish_ok = finish_impl();
+
+                // parsing OK and returning/updating 'result' to fixed:
+                if (finish_ok) {
+                    m_finish_result = FinishResult::Finished_Ok;
+                    return true;
+                } else {
+                    m_finish_result = FinishResult::Finished_Broken_Typing;
+                    return false;
+                }
+            }
         }
     }
     bool Var::finish_impl() {
@@ -255,17 +288,19 @@ namespace pdm::types {
         if (is_type_var_archetype(var_archetype())) {
             bool reify_ok = false;
             {
-                if (m_kdvs != nullptr) {
-                    // todo: write & invoke KDVS::reify
+                if (m_kdvs) {
                     m_opt_type_soln = m_kdvs->reify(this);
                     reify_ok = (m_opt_type_soln != nullptr);
                 } else {
                     // todo: reject since insufficient information
+                    // assert(0 && "NotImplemented: report insufficient information at Var::finish");
+                    std::cout << "NotImplemented: report insufficient information at Var::finish" << std::endl;
                     reify_ok = false;
                 }
             }
             if (!reify_ok) {
-                // todo: post error
+                // assert(0 && "NotImplemented: report !reify_ok in Var::finish");
+                std::cout << "NotImplemented: report !reify_ok in Var::finish" << std::endl;
                 return false;
             }
 
@@ -274,8 +309,6 @@ namespace pdm::types {
             // assert(0 && "NotImplemented: `Var::finish`");
             std::cout << "NotImplemented: Var::finish for TypeVar " << name() << std::endl;
         }
-
-        // todo: verifying that the
 
         // all ok!
         return true;
@@ -321,14 +354,9 @@ namespace pdm::types {
         return result;
     }
     SolveResult Var::solve_iter_phase1() {
-        Kind super_var_kind = get_kind_from_edges_and_update_start_index(
-            m_assumed_super_var_edges,
-            &m_sp1_checked_sub_var_count
-        );
-        Kind sub_var_kind = get_kind_from_edges_and_update_start_index(
-            m_assumed_sub_var_edges,
-            &m_sp1_checked_super_var_count
-        );
+        Kind super_var_kind = get_kind_from_edges(m_assumed_super_var_edges);
+        Kind sub_var_kind = get_kind_from_edges(m_assumed_sub_var_edges);
+
         if (super_var_kind == Kind::META_GetKindFromEdgesError || sub_var_kind == Kind::META_GetKindFromEdgesError) {
             return SolveResult::TypingError;
         }
@@ -380,10 +408,10 @@ namespace pdm::types {
 
         return result;
     }
-    Kind Var::get_kind_from_edges_and_update_start_index(std::vector<Var::Edge> const& edges, size_t* start_index_p) {
+    Kind Var::get_kind_from_edges(std::vector<Var::Edge> const& edges) {
         Kind common_kind = Kind::META_Unknown;
         size_t edges_count = edges.size();
-        for (size_t index = *start_index_p; index < edges_count; index++) {
+        for (size_t index = 0; index < edges_count; index++) {
             Var::Edge const& edge = edges[index];
             Kind edge_kind = edge.var->m_assumed_kind;
             if (edge_kind == Kind::META_Unknown) {
@@ -396,7 +424,6 @@ namespace pdm::types {
                 return Kind::META_GetKindFromEdgesError;
             }
         }
-        *start_index_p = edges_count;
         return common_kind;
     }
 
@@ -729,8 +756,7 @@ namespace pdm::types {
     FixedTypeVar::FixedTypeVar(std::string&& name, Type* fixed_soln)
     :   TypeVar("FixedType:" + std::move(name), fixed_soln, nullptr, TypeVarSolnBill::Fixed)
     {
-        m_finished = true;
-        m_finish_res = true;
+        m_finish_result = FinishResult::Finished_Ok;
         m_opt_type_soln = fixed_soln;
     }
     

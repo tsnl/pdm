@@ -473,16 +473,9 @@ namespace pdm::printer {
             for (ast::ModEnumStmt::Field* field: enm->fields()) {
                 print_c_str("| ");
                 print_intstr(field->name());
-                if (field->has_explicit_typespecs()) {
-                    print_u32_char('(');
-                    for (int typespec_index = 0; typespec_index < field->typespecs().size(); typespec_index++) {
-                        ast::TypeSpec* typespec = field->typespecs()[typespec_index];
-                        print_node(typespec);
-                        if (typespec_index+1 != field->typespecs().size()) {
-                            print_u32_char(',');
-                        }
-                    }
-                    print_u32_char(')');
+                if (field->opt_type_spec()) {
+                    print_c_str(" ");
+                    print_node(field->opt_type_spec());
                 }
                 print_newline();
             }
@@ -770,6 +763,15 @@ namespace pdm::printer {
             print_c_str(" <dot-?> ");
         }
         print_intstr(node->rhs_name());
+
+        if (node->rhs_hint() == ast::DotNameExp::RhsHint::LhsEnum) {
+            auto self = dynamic_cast<ast::EnumDotNameExp*>(node);
+            assert(self);
+            if (self->opt_using_arg()) {
+                print_c_str(" using ");
+                print_node(self->opt_using_arg());
+            }
+        }
     }
     void Printer::print_module_dot_exp(ast::ModuleDotExp* node) {
         for (intern::String prefix_module_name: node->lhs_prefix_module_names()) {

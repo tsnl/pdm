@@ -8,6 +8,7 @@
 #include "pdm/ast/kind.hh"
 #include "pdm/ast/stmt/stmt.hh"
 #include "pdm/ast/exp/exp.hh"
+#include "pdm/ast/setspec//type_spec.hh"
 
 namespace pdm::ast {
     class Manager;
@@ -48,15 +49,15 @@ namespace pdm::ast {
         friend Manager;
 
       private:
-        Exp* m_lhs;
+        Node* m_lhs;
       
       protected:
-        DotExp(source::Loc loc, Kind node_kind, Exp* lhs)
+        DotExp(source::Loc loc, Kind node_kind, Node* lhs)
         : Exp(loc, node_kind),
           m_lhs(lhs) {}
 
       public:
-        Exp* lhs() const {
+        [[nodiscard]] Node* lhs() const {
             return m_lhs;
         }
     };
@@ -75,16 +76,16 @@ namespace pdm::ast {
         DotNameExp::RhsHint m_rhs_hint;
 
       protected:
-        DotNameExp(source::Loc loc, Exp* lhs, intern::String rhs_name, RhsHint rhs_hint)
+        DotNameExp(source::Loc loc, Node* lhs, intern::String rhs_name, RhsHint rhs_hint)
         : DotExp(loc, Kind::DotNameExp, lhs),
           m_rhs_name(rhs_name),
           m_rhs_hint(rhs_hint) {}
 
       public:
-        intern::String rhs_name() const {
+        [[nodiscard]] intern::String rhs_name() const {
             return m_rhs_name;
         }
-        DotNameExp::RhsHint rhs_hint() const {
+        [[nodiscard]] DotNameExp::RhsHint rhs_hint() const {
             return m_rhs_hint;
         }
     };
@@ -101,15 +102,21 @@ namespace pdm::ast {
         friend Manager;
 
       private:
-        std::vector<Exp*> m_args;
+        Exp* m_opt_using_arg;
 
       public:
-        inline EnumDotNameExp(source::Loc loc, Exp* lhs, intern::String rhs_name, std::vector<Exp*>&& args);
+        inline EnumDotNameExp(source::Loc loc, TypeSpec* lhs, intern::String rhs_name, Exp* opt_using_arg);
+
+      public:
+        [[nodiscard]] inline Exp* opt_using_arg() const;
     };
-    inline EnumDotNameExp::EnumDotNameExp(source::Loc loc, Exp* lhs, intern::String rhs_name, std::vector<ast::Exp*>&& args)
+    inline EnumDotNameExp::EnumDotNameExp(source::Loc loc, TypeSpec* lhs, intern::String rhs_name, Exp* opt_using_arg)
     :   DotNameExp(loc, lhs, rhs_name, DotNameExp::RhsHint::LhsEnum),
-        m_args(std::move(args))
+        m_opt_using_arg(opt_using_arg)
     {}
+    inline Exp* EnumDotNameExp::opt_using_arg() const {
+        return m_opt_using_arg;
+    }
 
     class DotIndexExp: public DotExp {
         friend Manager;

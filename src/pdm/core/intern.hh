@@ -32,7 +32,8 @@ namespace pdm::intern {
         String(char const* str);
 
       public:
-        char const* content() const;
+        [[nodiscard]] char const* content() const;
+        [[nodiscard]] inline std::string cpp_str() const;
 
       public:
         inline bool operator== (String const& other) const {
@@ -52,6 +53,10 @@ namespace pdm::intern {
             return m_id >= other.m_id;
         }
     };
+
+    std::string String::cpp_str() const {
+        return content();
+    }
 
 }
 

@@ -100,7 +100,7 @@ namespace pdm::ast {
         BinaryExp* new_binary_exp(source::Loc loc, BinaryOperator binary_operator, Exp* lhs_operand, Exp* rhs_operand);
         ChainExp* new_chain_exp(source::Loc loc, std::vector<Stmt*>&& prefix, Exp* suffix = nullptr);
         StructDotNameExp* new_struct_dot_name_exp(source::Loc loc, Exp* lhs, intern::String rhs_name);
-        EnumDotNameExp* new_enum_dot_name_exp(source::Loc loc, Exp* lhs, intern::String rhs_name, std::vector<ast::Exp*>&& args);
+        EnumDotNameExp* new_enum_dot_name_exp(source::Loc loc, TypeSpec* lhs, intern::String rhs_name, ast::Exp* opt_using_exp);
         ModuleDotExp* new_module_dot_exp(source::Loc loc, std::vector<intern::String>&& module_names, intern::String rhs_name);
         DotIndexExp* new_dot_index_exp(source::Loc loc, Exp* lhs, Exp* rhs_exp, DotIndexExp::RhsHint rhs_hint);
         FloatExp* new_float_exp(source::Loc loc, long double value);
@@ -155,7 +155,7 @@ namespace pdm::ast {
         ModTypeStmt* new_mod_type_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, TypeSpec* rhs_typespec);
         ModEnumStmt* new_mod_enum_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, std::vector<ModEnumStmt::Field*>&& fields);
         ModTypeclassStmt* new_mod_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, ClassSpec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions);
-        ModEnumStmt::Field* new_enum_stmt_field(source::Loc loc, intern::String name, std::vector<ast::TypeSpec*>&& typespecs, bool has_explicit_typespecs);
+        ModEnumStmt::Field* new_enum_stmt_field(source::Loc loc, intern::String name, ast::TypeSpec* opt_type_spec);
         
         DotNameTypeSpec_ModPrefix* new_dot_name_type_spec_with_mod_prefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name);
         FnTypeSpec* new_fn_type_spec(source::Loc loc, VPattern* lhs_vpattern, TypeSpec* rhs_typespec);
