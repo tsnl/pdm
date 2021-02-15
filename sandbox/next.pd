@@ -7,38 +7,38 @@
 #   - can change postfix '[]' call in exp context; only before ':' in modules.
 # - add '=' after 'mod' and 'sub'
 
-mod Greetings = {
+Greetings module = {
 
-    sub Vector [ElementType Any] = {
+    Vector submodule (ElementType Any) = {
         Type = {
-            data  Slice[ElementType]:Type,
+            data  Slice(ElementType):Type,
             count UInt64
         };
-        append = (v Type, elem ElementType) -> Type {
+        append = fn (v Type, elem ElementType) Type {
             # TODO: implement me
         };
     };
 
-    sub Iter [ElementType Any] = {
-        sub Iterable = {
-            cls Cls <IterableType StructCls> = {
+    Iter submodule (ElementType Any) = {
+        Iterable submodule = {
+            Cls contains (IterableType StructCls) if {
                 IterableType :< {
-                    begin Iterator[IterableType]:Cls,
-                    end   Iterator[IterableType]:Cls
-                };
+                    begin Iterator(IterableType):Cls,
+                    end   Iterator(IterableType):Cls
+                }
             };
         };
-        sub Iterator [IterableType Iterable:Cls] = {
-            cls Cls <IteratorType StructCls> = {
+        Iterator submodule (IterableType Iterable:Cls) = {
+            Cls contains (IteratorType StructCls) if {
                 IteratorType :< {
-                    # not feasible in this language
-                    # bc can't store a ref to iterable
+                    getter Fn (IteratorType) ElementType,
+                    setter Fn (inout IteratorType, ElementType) Void
                 }
             };
         };
 
-        sub Impl [IterableType IterableCls, IteratorType IteratorCls] = {
-            cls Impl <ModuleType ModuleCls> = {
+        Impl submodule (IterableType IterableCls, IteratorType IteratorCls) = {
+            Impl contains (ModuleType ModuleCls) if {
                 ModuleType :< {
 
                 };
