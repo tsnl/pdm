@@ -307,7 +307,7 @@ namespace pdm::types {
             // todo: check that this type soln is finite here.
 
             // assert(0 && "NotImplemented: `Var::finish`");
-            std::cout << "NotImplemented: Var::finish for TypeVar " << name() << std::endl;
+            std::cout << "NotImplemented: finite-check for TypeVar " << name() << std::endl;
         }
 
         // all ok!

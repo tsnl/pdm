@@ -10,6 +10,7 @@
 
 #include "var_invariant.hh"
 #include "kind.hh"
+#include "type_trie.hh"
 
 namespace pdm::types {
     class TypeVar;
@@ -20,6 +21,9 @@ namespace pdm::ast {
 
 namespace pdm::types {
 
+    // Type instances are unique representations of algebraic types.
+    // - unique required to efficiently verify compounds not infinite in size.
+    // - use tries to efficiently store and access elements.
     class Type {
       private:
         std::string m_name;
@@ -160,14 +164,22 @@ namespace pdm::types {
     //
 
     class TupleType: public Type {
+     private:
+        static tt::TupleTypeTrie s_type_trie;
+        static TupleType* tt_ctor(tt::TupleTypeTrie::Node* node);
+
       private:
-        std::vector<Type*> m_fields;
+        tt::TupleTypeTrie::Node* m_tt_node;
+
+      protected:
+        explicit TupleType(tt::TupleTypeTrie::Node* tt_node);
+
       public:
-        TupleType(std::string&& name, std::vector<Type*>&& fields);
+        static TupleType* get(std::vector<tt::TupleField> const& fields);
     };
-    inline TupleType::TupleType(std::string&& name, std::vector<Type*>&& fields)
-    :   Type("TupleType:" + std::move(name), Kind::Tuple),
-        m_fields(fields)
+    inline TupleType::TupleType(tt::TupleTypeTrie::Node* tt_node)
+    :   Type("TupleType", Kind::Tuple),
+        m_tt_node(tt_node)
     {}
 
     //
@@ -175,6 +187,10 @@ namespace pdm::types {
     //
 
     class StructType: public Type {
+     private:
+        static tt::StructTypeTrie s_type_trie;
+        static StructType* tt_ctor(tt::StructTypeTrie::Node* node);
+
       public:
         class Field {
           private:
@@ -188,160 +204,107 @@ namespace pdm::types {
         };
 
       private:
-        std::vector<Field> m_fields;
+        tt::StructTypeTrie::Node* m_tt_node;
+
+      protected:
+        explicit StructType(tt::StructTypeTrie::Node* tt_node);
 
       public:
-        StructType(std::string&& name, std::vector<Field>&& fields)
-        : Type("StructType:" + std::move(name), Kind::Struct),
-          m_fields(std::move(fields)) {}
+        static StructType* get(std::vector<tt::StructField> const& fields);
     };
+
+    inline StructType::StructType(tt::StructTypeTrie::Node* tt_node)
+    :   Type("StructType", Kind::Struct),
+        m_tt_node(tt_node)
+    {}
 
     //
     // Enums:
     //
 
     class EnumType: public Type {
-      public:
-        enum class FieldKind {
-            ExplicitTs,
-            DefaultTs
-        };
+     private:
+        static tt::EnumTypeTrie s_type_trie;
+        static EnumType* tt_ctor(tt::EnumTypeTrie::Node* node);
 
       public:
         class Field {
           private:
-            FieldKind      m_kind;
             intern::String m_name;
             Type*          m_type;
 
           public:
             explicit Field(intern::String name)
-            : m_kind(FieldKind::DefaultTs),
-              m_name(name),
+            : m_name(name),
               m_type(nullptr) {}
 
             Field(intern::String name, Type* type_soln)
-            : m_kind(FieldKind::ExplicitTs),
-              m_name(name),
+            : m_name(name),
               m_type(type_soln) {}
         };
 
       private:
-        std::vector<Field> m_fields;
+        tt::EnumTypeTrie::Node* m_tt_node;
+
+      protected:
+        explicit EnumType(tt::EnumTypeTrie::Node* tt_node);
 
       public:
-        EnumType(std::string&& name, std::vector<Field>&& fields)
-        :   Type("EnumType:" + std::move(name), Kind::Enum),
-            m_fields(std::move(fields))
-        {}
+        static EnumType* get(std::vector<tt::EnumField> const& fields);
     };
+
+    inline EnumType::EnumType(tt::EnumTypeTrie::Node* tt_node)
+    :   Type("EnumType", Kind::Enum),
+        m_tt_node(tt_node)
+    {}
 
     //
     // Modules:
     //
 
     class ModuleType: public Type {
-      public:
-        enum class FieldKind {
-            Value,
-            Type,
-            Typeclass
-        };
-
-      public:
-        class Field {
-          private:
-            FieldKind       m_kind;
-            intern::String  m_name;
-            Type*           m_opt_type_soln;
-            bool            m_is_template;
-
-          public:
-            Field(FieldKind kind, intern::String name, Type* opt_type_soln, bool is_template)
-            :   m_kind(kind),
-                m_name(name),
-                m_opt_type_soln(opt_type_soln),
-                m_is_template(is_template)
-            {}
-        };
+     private:
+        static tt::ModuleTypeTrie s_type_trie;
+        static ModuleType* tt_ctor(tt::ModuleTypeTrie::Node* node);
 
       private:
-        std::vector<Field> m_fields;
+        tt::ModuleTypeTrie::Node* m_tt_node;
+
+      protected:
+        explicit ModuleType(tt::ModuleTypeTrie::Node* tt_node);
+
       public:
-        ModuleType(std::string&& name, std::vector<Field>&& fields)
-        : Type("ModuleType:" + std::move(name), Kind::Module),
-          m_fields(std::move(fields)) {}
+        static ModuleType* get(std::vector<tt::ModuleField> const& fields);
     };
+
+    inline ModuleType::ModuleType(tt::ModuleTypeTrie::Node* tt_node)
+    :   Type("ModuleType", Kind::Module),
+        m_tt_node(tt_node)
+    {}
 
     //
     // Functions:
     //
 
-    enum class FuncArgReadWriteSpec {
-        In,
-        OpaquePtr,
-        OutPtr,
-        InOutPtr
-    };
-    class FuncTypeFormalArg {
-      private:
-        ast::VArgAccessSpec m_arg_access_spec;
-        intern::String      m_name;
-        Type*               m_arg_typespec;
-
-      public:
-        FuncTypeFormalArg(ast::VArgAccessSpec arg_access_spec, intern::String name, Type* arg_typespec);
-
-      public:
-        [[nodiscard]] ast::VArgAccessSpec arg_access_spec() const;
-        [[nodiscard]] intern::String name() const;
-        [[nodiscard]] Type* arg_typespec() const;
-    };
-    inline FuncTypeFormalArg::FuncTypeFormalArg(ast::VArgAccessSpec arg_access_spec, intern::String name, Type* arg_typespec)
-    :   m_arg_access_spec(arg_access_spec),
-        m_name(name),
-        m_arg_typespec(arg_typespec)
-    {}
-    inline ast::VArgAccessSpec FuncTypeFormalArg::arg_access_spec() const {
-        return m_arg_access_spec;
-    }
-    inline intern::String FuncTypeFormalArg::name() const {
-        return m_name;
-    }
-    inline Type* FuncTypeFormalArg::arg_typespec() const {
-        return m_arg_typespec;
-    }
-    class FuncTypeActualArg {
-      private:
-        FuncArgReadWriteSpec  m_read_write_spec;
-        Type*                 m_arg_typespec;
-
-      public:
-        FuncTypeActualArg(FuncArgReadWriteSpec read_write_spec, Type* arg_typespec)
-        :   m_read_write_spec(read_write_spec),
-            m_arg_typespec(arg_typespec)
-        {}
-
-      public:
-        [[nodiscard]] FuncArgReadWriteSpec read_write_spec() const {
-            return m_read_write_spec;
-        }
-        [[nodiscard]] Type* arg_typespec() const {
-            return m_arg_typespec;
-        }
-    };
     class FnType: public Type {
+     private:
+        static tt::FnTypeTrie s_type_trie;
+        static FnType* tt_ctor(tt::FnTypeTrie::Node* node);
+
       private:
-        std::vector<FuncTypeFormalArg> m_formal_args;
-        Type* m_typeof_ret;
+        tt::FnTypeTrie::Node* m_tt_node;
+
+      protected:
+        explicit FnType(tt::FnTypeTrie::Node* tt_node);
 
       public:
-        FnType(std::string&& name, std::vector<FuncTypeFormalArg>&& formal_args, Type* typeof_ret)
-        : Type("FnType:" + std::move(name), Kind::Fn),
-          m_formal_args(std::move(formal_args)),
-          m_typeof_ret(typeof_ret)
-        {}
+        static FnType* get(std::vector<tt::FnField> const& fields);
     };
+
+    inline FnType::FnType(tt::FnTypeTrie::Node* tt_node)
+    :   Type("FnType", Kind::Fn),
+        m_tt_node(tt_node)
+    {}
 
 }   // namespace pdm::typer
 

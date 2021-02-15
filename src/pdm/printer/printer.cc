@@ -726,11 +726,9 @@ namespace pdm::printer {
         }
     }
     void Printer::print_lambda_exp(ast::LambdaExp* node) {
-        print_c_str("fn ");
         print_node(node->lhs_vpattern());
         print_c_str(" ");
         if (node->opt_ret_typespec() != nullptr) {
-            print_c_str("-> ");
             print_node(node->opt_ret_typespec());
             print_c_str(" ");
         }
@@ -920,7 +918,7 @@ namespace pdm::printer {
 
     // patterns:
     void Printer::print_vpattern(ast::VPattern* node) {
-        print_u32_char('(');
+        print_u32_char('[');
         int field_count = node->fields().size();
         for (int index = 0; index < field_count; index++) {
             ast::VPattern::Field* field = node->fields()[index];
@@ -950,7 +948,7 @@ namespace pdm::printer {
                 print_u32_char(' ');
             }
         }
-        print_u32_char(')');
+        print_u32_char(']');
     }
     void Printer::print_tpattern(ast::TPattern* node) {
         if (node->is_only_captured()) {

@@ -45,7 +45,7 @@
 #ifndef YY_YY_PARSER_TAB_HH_INCLUDED
 # define YY_YY_PARSER_TAB_HH_INCLUDED
 // "%code requires" blocks.
-#line 29 "parser.yy"
+#line 21 "parser.yy"
 
     #include "pdm/core/config.hh"
 
@@ -211,7 +211,7 @@
 # define YYDEBUG 1
 #endif
 
-#line 19 "parser.yy"
+#line 11 "parser.yy"
 namespace pdm { namespace parser {
 #line 217 "parser.tab.hh"
 
@@ -435,7 +435,6 @@ namespace pdm { namespace parser {
       // expr
       // long_exp
       // bracketed_exp
-      // unit_exp
       // paren_exp
       // vtupleExpr
       // vstructExpr
@@ -519,7 +518,6 @@ namespace pdm { namespace parser {
 
       // type_spec
       // primary_type_spec
-      // paren_type_spec
       // tuple_type_spec
       // mod_prefix_tid
       // fn_type_spec
@@ -838,72 +836,70 @@ namespace pdm { namespace parser {
         S_expr_cl2 = 105,                        // expr_cl2
         S_type_query_exp_sl = 106,               // type_query_exp_sl
         S_bracketed_exp = 107,                   // bracketed_exp
-        S_unit_exp = 108,                        // unit_exp
-        S_paren_exp = 109,                       // paren_exp
-        S_vtupleExpr = 110,                      // vtupleExpr
-        S_vstructExpr = 111,                     // vstructExpr
-        S_primary_exp = 112,                     // primary_exp
-        S_int_expr = 113,                        // int_expr
-        S_stringls = 114,                        // stringls
-        S_if_exp = 115,                          // if_exp
-        S_chain_exp = 116,                       // chain_exp
-        S_chain_prefix = 117,                    // chain_prefix
-        S_lambda_exp = 118,                      // lambda_exp
-        S_postfix_exp = 119,                     // postfix_exp
-        S_tcall_exp = 120,                       // tcall_exp
-        S_vcall_exp = 121,                       // vcall_exp
-        S_dot_name_exp = 122,                    // dot_name_exp
-        S_dot_index_exp = 123,                   // dot_index_exp
-        S_unary_exp = 124,                       // unary_exp
-        S_unary_op = 125,                        // unary_op
-        S_binary_exp = 126,                      // binary_exp
-        S_mul_binary_op = 127,                   // mul_binary_op
-        S_mul_binary_exp = 128,                  // mul_binary_exp
-        S_add_binary_op = 129,                   // add_binary_op
-        S_add_binary_exp = 130,                  // add_binary_exp
-        S_cmp_binary_op = 131,                   // cmp_binary_op
-        S_cmp_binary_exp = 132,                  // cmp_binary_exp
-        S_eq_binary_op = 133,                    // eq_binary_op
-        S_eq_binary_exp = 134,                   // eq_binary_exp
-        S_and_binary_exp = 135,                  // and_binary_exp
-        S_xor_binary_exp = 136,                  // xor_binary_exp
-        S_or_binary_exp = 137,                   // or_binary_exp
-        S_type_query_exp = 138,                  // type_query_exp
-        S_type_query_op = 139,                   // type_query_op
-        S_type_spec = 140,                       // type_spec
-        S_type_spec_cl2 = 141,                   // type_spec_cl2
-        S_struct_type_spec_field = 142,          // struct_type_spec_field
-        S_struct_type_spec_field_cl = 143,       // struct_type_spec_field_cl
-        S_primary_type_spec = 144,               // primary_type_spec
-        S_paren_type_spec = 145,                 // paren_type_spec
-        S_tuple_type_spec = 146,                 // tuple_type_spec
-        S_mod_prefix_tid = 147,                  // mod_prefix_tid
-        S_fn_type_spec = 148,                    // fn_type_spec
-        S_postfix_type_spec = 149,               // postfix_type_spec
-        S_tcall_type_spec = 150,                 // tcall_type_spec
-        S_unary_type_spec = 151,                 // unary_type_spec
-        S_long_type_spec = 152,                  // long_type_spec
-        S_struct_type_spec = 153,                // struct_type_spec
-        S_targ = 154,                            // targ
-        S_targ_cl = 155,                         // targ_cl
-        S_varg = 156,                            // varg
-        S_varg_cl = 157,                         // varg_cl
-        S_class_spec = 158,                      // class_spec
-        S_primary_class_spec = 159,              // primary_class_spec
-        S_postfix_class_spec = 160,              // postfix_class_spec
-        S_struct_exp_field = 161,                // struct_exp_field
-        S_vpattern_field = 162,                  // vpattern_field
-        S_lpattern_field = 163,                  // lpattern_field
-        S_tpattern_field = 164,                  // tpattern_field
-        S_destructured_lpattern = 165,           // destructured_lpattern
-        S_lpattern = 166,                        // lpattern
-        S_vpattern = 167,                        // vpattern
-        S_tpattern = 168,                        // tpattern
-        S_vpattern_field_cl = 169,               // vpattern_field_cl
-        S_lpattern_field_cl = 170,               // lpattern_field_cl
-        S_tpattern_field_cl = 171,               // tpattern_field_cl
-        S_struct_exp_field_cl = 172,             // struct_exp_field_cl
-        S_tpattern_seq = 173                     // tpattern_seq
+        S_paren_exp = 108,                       // paren_exp
+        S_vtupleExpr = 109,                      // vtupleExpr
+        S_vstructExpr = 110,                     // vstructExpr
+        S_primary_exp = 111,                     // primary_exp
+        S_int_expr = 112,                        // int_expr
+        S_stringls = 113,                        // stringls
+        S_if_exp = 114,                          // if_exp
+        S_chain_exp = 115,                       // chain_exp
+        S_chain_prefix = 116,                    // chain_prefix
+        S_lambda_exp = 117,                      // lambda_exp
+        S_postfix_exp = 118,                     // postfix_exp
+        S_tcall_exp = 119,                       // tcall_exp
+        S_vcall_exp = 120,                       // vcall_exp
+        S_dot_name_exp = 121,                    // dot_name_exp
+        S_dot_index_exp = 122,                   // dot_index_exp
+        S_unary_exp = 123,                       // unary_exp
+        S_unary_op = 124,                        // unary_op
+        S_binary_exp = 125,                      // binary_exp
+        S_mul_binary_op = 126,                   // mul_binary_op
+        S_mul_binary_exp = 127,                  // mul_binary_exp
+        S_add_binary_op = 128,                   // add_binary_op
+        S_add_binary_exp = 129,                  // add_binary_exp
+        S_cmp_binary_op = 130,                   // cmp_binary_op
+        S_cmp_binary_exp = 131,                  // cmp_binary_exp
+        S_eq_binary_op = 132,                    // eq_binary_op
+        S_eq_binary_exp = 133,                   // eq_binary_exp
+        S_and_binary_exp = 134,                  // and_binary_exp
+        S_xor_binary_exp = 135,                  // xor_binary_exp
+        S_or_binary_exp = 136,                   // or_binary_exp
+        S_type_query_exp = 137,                  // type_query_exp
+        S_type_query_op = 138,                   // type_query_op
+        S_type_spec = 139,                       // type_spec
+        S_type_spec_cl2 = 140,                   // type_spec_cl2
+        S_struct_type_spec_field = 141,          // struct_type_spec_field
+        S_struct_type_spec_field_cl = 142,       // struct_type_spec_field_cl
+        S_primary_type_spec = 143,               // primary_type_spec
+        S_tuple_type_spec = 144,                 // tuple_type_spec
+        S_mod_prefix_tid = 145,                  // mod_prefix_tid
+        S_fn_type_spec = 146,                    // fn_type_spec
+        S_postfix_type_spec = 147,               // postfix_type_spec
+        S_tcall_type_spec = 148,                 // tcall_type_spec
+        S_unary_type_spec = 149,                 // unary_type_spec
+        S_long_type_spec = 150,                  // long_type_spec
+        S_struct_type_spec = 151,                // struct_type_spec
+        S_targ = 152,                            // targ
+        S_targ_cl = 153,                         // targ_cl
+        S_varg = 154,                            // varg
+        S_varg_cl = 155,                         // varg_cl
+        S_class_spec = 156,                      // class_spec
+        S_primary_class_spec = 157,              // primary_class_spec
+        S_postfix_class_spec = 158,              // postfix_class_spec
+        S_struct_exp_field = 159,                // struct_exp_field
+        S_vpattern_field = 160,                  // vpattern_field
+        S_lpattern_field = 161,                  // lpattern_field
+        S_tpattern_field = 162,                  // tpattern_field
+        S_destructured_lpattern = 163,           // destructured_lpattern
+        S_lpattern = 164,                        // lpattern
+        S_vpattern = 165,                        // vpattern
+        S_tpattern = 166,                        // tpattern
+        S_vpattern_field_cl = 167,               // vpattern_field_cl
+        S_lpattern_field_cl = 168,               // lpattern_field_cl
+        S_tpattern_field_cl = 169,               // tpattern_field_cl
+        S_struct_exp_field_cl = 170,             // struct_exp_field_cl
+        S_tpattern_seq = 171                     // tpattern_seq
       };
     };
 
@@ -973,7 +969,6 @@ namespace pdm { namespace parser {
       case symbol_kind::S_expr: // expr
       case symbol_kind::S_long_exp: // long_exp
       case symbol_kind::S_bracketed_exp: // bracketed_exp
-      case symbol_kind::S_unit_exp: // unit_exp
       case symbol_kind::S_paren_exp: // paren_exp
       case symbol_kind::S_vtupleExpr: // vtupleExpr
       case symbol_kind::S_vstructExpr: // vstructExpr
@@ -1072,7 +1067,6 @@ namespace pdm { namespace parser {
 
       case symbol_kind::S_type_spec: // type_spec
       case symbol_kind::S_primary_type_spec: // primary_type_spec
-      case symbol_kind::S_paren_type_spec: // paren_type_spec
       case symbol_kind::S_tuple_type_spec: // tuple_type_spec
       case symbol_kind::S_mod_prefix_tid: // mod_prefix_tid
       case symbol_kind::S_fn_type_spec: // fn_type_spec
@@ -1768,7 +1762,6 @@ switch (yykind)
       case symbol_kind::S_expr: // expr
       case symbol_kind::S_long_exp: // long_exp
       case symbol_kind::S_bracketed_exp: // bracketed_exp
-      case symbol_kind::S_unit_exp: // unit_exp
       case symbol_kind::S_paren_exp: // paren_exp
       case symbol_kind::S_vtupleExpr: // vtupleExpr
       case symbol_kind::S_vstructExpr: // vstructExpr
@@ -1867,7 +1860,6 @@ switch (yykind)
 
       case symbol_kind::S_type_spec: // type_spec
       case symbol_kind::S_primary_type_spec: // primary_type_spec
-      case symbol_kind::S_paren_type_spec: // paren_type_spec
       case symbol_kind::S_tuple_type_spec: // tuple_type_spec
       case symbol_kind::S_mod_prefix_tid: // mod_prefix_tid
       case symbol_kind::S_fn_type_spec: // fn_type_spec
@@ -3530,8 +3522,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 680,     ///< Last index in yytable_.
-      yynnts_ = 101,  ///< Number of nonterminal symbols.
+      yylast_ = 627,     ///< Last index in yytable_.
+      yynnts_ = 99,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
 
@@ -3545,22 +3537,22 @@ switch (yykind)
   };
 
 
-#line 19 "parser.yy"
+#line 11 "parser.yy"
 } } // pdm::parser
-#line 3551 "parser.tab.hh"
+#line 3543 "parser.tab.hh"
 
 
 // "%code provides" blocks.
-#line 62 "parser.yy"
+#line 54 "parser.yy"
 
     using Tk = pdm::parser::parser::token_kind_type;
-#line 198 "parser.yy"
+#line 190 "parser.yy"
 
     // int yylex(pdm::parser::TokenInfo *lvalp, pdm::source::Loc *llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
     int yylex(pdm::parser::parser::semantic_type* st, pdm::source::Loc* llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
     void yyerror(pdm::source::Loc* llocp, char const* message, pdm::source::Source* source, pdm::parser::Lexer* lexer);
 
-#line 3564 "parser.tab.hh"
+#line 3556 "parser.tab.hh"
 
 
 #endif // !YY_YY_PARSER_TAB_HH_INCLUDED

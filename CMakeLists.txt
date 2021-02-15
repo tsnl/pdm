@@ -208,6 +208,11 @@ add_library(
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/dependency_dispatcher/dependency_dispatcher.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/dependency_dispatcher/dependency_dispatcher.hh
+    
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/llvm_emitter/llvm_emitter.hh 
+    
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type_trie.hh 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type_trie.cc
 )
 
 # link pdm <- llvm

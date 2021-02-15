@@ -9,8 +9,7 @@ mod Greetings {
     hello = fn () -> Vec3f {
         val hello Vec3f = {
             x = 0.0,
-            y = 0.0,
-            z = 0.0
+            y = 0.0
         };
         hello
     };
@@ -18,6 +17,10 @@ mod Greetings {
     howdy = fn () -> Float32 {
         val vector = hello();
         vector.x + vector.y + vector.z
+    };
+
+    random = fn (x Int32) -> Int32 {
+        0
     };
 
 };

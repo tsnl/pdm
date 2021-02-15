@@ -53,10 +53,10 @@ namespace pdm::dependency_dispatcher {
         return TinyVisitor::on_visit(node, visit_order);
     }
 
-    bool DDVisitor::on_visit__import_stmt(ast::ImportStmt* node, VisitOrder visit_order) {
+    bool DDVisitor::on_visit_import_stmt(ast::ImportStmt* node, VisitOrder visit_order) {
         assert(m_this_script != nullptr);
 
-        if (!ast::TinyVisitor::on_visit__import_stmt(node, visit_order)) {
+        if (!ast::TinyVisitor::on_visit_import_stmt(node, visit_order)) {
             return false;
         }
 

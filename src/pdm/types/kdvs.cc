@@ -525,8 +525,7 @@ namespace pdm::types {
         {
             case Kind::Struct:
             {
-                std::string construct_name = "AnonymousStruct";
-                std::vector<StructType::Field> construct_fields;
+                std::vector<tt::StructField> construct_fields;
                 construct_fields.reserve(m_fields.size());
                 {
                     // note that std::map orders by key, i.e. intern::String
@@ -539,18 +538,16 @@ namespace pdm::types {
                         Var* field_var = it.second;
                         Type* field_type = field_var->get_type_soln();
 
-                        construct_fields.emplace_back(field_name, field_type);
+                        tt::StructField tt_field{field_name, field_type};
+                        construct_fields.push_back(tt_field);
                     }
                 }
-                return new StructType(
-                    std::move(construct_name),
-                    std::move(construct_fields)
-                );
+                return StructType::get(construct_fields);
             }
             case Kind::Enum:
             {
                 std::string construct_name = "AnonymousEnum";
-                std::vector<EnumType::Field> construct_fields;
+                std::vector<tt::EnumField> construct_fields;
                 construct_fields.reserve(m_fields.size());
                 {
                     // note that std::map orders by key, i.e. intern::String
@@ -563,20 +560,18 @@ namespace pdm::types {
                         Var* field_var = it.second;
                         Type* field_type = field_var->get_type_soln();
 
-                        construct_fields.emplace_back(field_name, field_type);
+                        tt::EnumField tt_field {field_name, field_type};
+                        construct_fields.push_back(tt_field);
                     }
                 }
-                return new EnumType(
-                    std::move(construct_name),
-                    std::move(construct_fields)
-                );
+                return EnumType::get(construct_fields);
             }
             case Kind::Module:
             {
                 // todo: ensure ModuleType stores fields in an order-independent way (e.g. using std::map)
                 // todo: ensure ModuleType fields include templates correctly.
                 std::string construct_name = "AnonymousModule";
-                std::vector<ModuleType::Field> construct_fields;
+                std::vector<tt::ModuleField> construct_fields;
                 construct_fields.reserve(m_fields.size());
                 {
                     // note that std::map orders by key, i.e. intern::String
@@ -590,7 +585,7 @@ namespace pdm::types {
                         Var* field_var = it.second;
 
                         // deducing field kind from field_var and field_name:
-                        ModuleType::FieldKind field_kind;
+                        tt::ModuleFieldKind field_kind;
                         {
                             bool is_vid = false;
                             bool is_tid = false;
@@ -617,7 +612,7 @@ namespace pdm::types {
                                     field_var->var_archetype() == VarArchetype::Type ||
                                     field_var->var_archetype() == VarArchetype::Template_RetValue
                                 );
-                                field_kind = ModuleType::FieldKind::Value;
+                                field_kind = tt::ModuleFieldKind::Value;
                             } else if (is_tid) {
                                 bool is_mono_type_field = (
                                     field_var->var_archetype() == VarArchetype::Type ||
@@ -629,9 +624,9 @@ namespace pdm::types {
                                 );
 
                                 if (is_mono_type_field) {
-                                    field_kind = ModuleType::FieldKind::Type;
+                                    field_kind = tt::ModuleFieldKind::Type;
                                 } else if (is_type_class_field) {
-                                    field_kind = ModuleType::FieldKind::Typeclass;
+                                    field_kind = tt::ModuleFieldKind::Typeclass;
                                 } else {
                                     assert(0 && "NotImplemented: unknown type field in module.");
                                 }
@@ -649,21 +644,19 @@ namespace pdm::types {
 
                         // reifying the field if a value or type:
                         bool include_type_soln = (
-                            field_kind == ModuleType::FieldKind::Value ||
-                            field_kind == ModuleType::FieldKind::Type
+                            field_kind == tt::ModuleFieldKind::Value ||
+                            field_kind == tt::ModuleFieldKind::Type
                         );
                         Type* field_type = nullptr;
                         if (include_type_soln) {
                             field_type = field_var->get_type_soln();
                         }
 
-                        construct_fields.emplace_back(field_kind, field_name, field_type, field_is_template);
+                        tt::ModuleField tt_field {field_name, field_type, field_kind};
+                        construct_fields.push_back(tt_field);
                     }
                 }
-                return new ModuleType(
-                    std::move(construct_name),
-                    std::move(construct_fields)
-                );
+                return ModuleType::get(construct_fields);
                 // assert(0 && "NotImplemented: FieldCollectionKDVS::reify_impl for Modules");
                 // std::cout << "NotImplemented: FieldCollectionKDVS::reify_impl for Modules" << std::endl;
                 break;
@@ -855,11 +848,13 @@ namespace pdm::types {
     }
 
     Type* FnKDVS::reify_impl(Var* var) {
-        std::vector<FuncTypeFormalArg> formal_args;
-        {
-            size_t args_count = m_args.size();
-            formal_args.reserve(args_count);
+        std::vector<tt::FnField> fn_arg_fields;
 
+        size_t args_count = m_args.size();
+        fn_arg_fields.reserve(args_count + 1);
+
+        // pushing all args:
+        {
             for (size_t i = 0; i < args_count; i++) {
                 VCallArg const& arg = m_args[i];
                 assert(arg.name.has_value());
@@ -872,24 +867,28 @@ namespace pdm::types {
                     // arg type reification failed
                     return nullptr;
                 }
-                formal_args.emplace_back(access_spec, arg_name, arg_type_soln);
+
+                tt::FnField tt_field{access_spec, arg_name, arg_type_soln, false};
+                fn_arg_fields.push_back(tt_field);
             }
         }
-        Type* ret_type_soln = nullptr;
-        if (m_typeof_ret_tv) {
-            ret_type_soln = m_typeof_ret_tv->get_type_soln();
-        }
-        if (ret_type_soln == nullptr) {
-            // return type reification failed.
-            return nullptr;
+
+        // pushing the return type:
+        {
+            Type* ret_type_soln = nullptr;
+            if (m_typeof_ret_tv) {
+                ret_type_soln = m_typeof_ret_tv->get_type_soln();
+            }
+            if (ret_type_soln == nullptr) {
+                // return type reification failed.
+                return nullptr;
+            }
+
+            tt::FnField tt_field{ast::VArgAccessSpec::Out, {}, ret_type_soln, true};
+            fn_arg_fields.push_back(tt_field);
         }
 
-        std::string name = var->name();
-        return new FnType(
-            std::move(name),
-            std::move(formal_args),
-            ret_type_soln
-        );
+        return FnType::get(fn_arg_fields);
     }
 
     void FnKDVS::print(printer::Printer& printer) const {

@@ -30,7 +30,7 @@ namespace pdm::dependency_dispatcher {
         virtual bool on_visit(ast::Node* node, VisitOrder visit_order) override;
 
       protected:
-        virtual bool on_visit__import_stmt(ast::ImportStmt* node, VisitOrder visit_order) override;
+        virtual bool on_visit_import_stmt(ast::ImportStmt* node, VisitOrder visit_order) override;
     };
 
 }

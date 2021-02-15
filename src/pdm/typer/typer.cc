@@ -45,70 +45,70 @@ namespace pdm::types {
       
       protected:
         // script:
-        virtual bool on_visit__script(ast::Script* script, VisitOrder visit_order) override;
+        bool on_visit_script(ast::Script* script, VisitOrder visit_order) override;
 
         // statements:
-        virtual bool on_visit__mod_stmt(ast::ModStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__mod_typeclass_stmt(ast::ModTypeclassStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__mod_type_stmt(ast::ModTypeStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__mod_enum_stmt(ast::ModEnumStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__const_stmt(ast::ConstStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__val_stmt(ast::ValStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__var_stmt(ast::VarStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__set_stmt(ast::SetStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__discard_stmt(ast::DiscardStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__extern_stmt(ast::ExternStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__import_stmt(ast::ImportStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit__using_stmt(ast::UsingStmt* node, VisitOrder visit_order) override;
+        bool on_visit_mod_stmt(ast::ModStmt* node, VisitOrder visit_order) override;
+        bool on_visit_mod_typeclass_stmt(ast::ModTypeclassStmt* node, VisitOrder visit_order) override;
+        bool on_visit_mod_type_stmt(ast::ModTypeStmt* node, VisitOrder visit_order) override;
+        bool on_visit_mod_enum_stmt(ast::ModEnumStmt* node, VisitOrder visit_order) override;
+        bool on_visit_mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) override;
+        bool on_visit_const_stmt(ast::ConstStmt* node, VisitOrder visit_order) override;
+        bool on_visit_val_stmt(ast::ValStmt* node, VisitOrder visit_order) override;
+        bool on_visit_var_stmt(ast::VarStmt* node, VisitOrder visit_order) override;
+        bool on_visit_set_stmt(ast::SetStmt* node, VisitOrder visit_order) override;
+        bool on_visit_discard_stmt(ast::DiscardStmt* node, VisitOrder visit_order) override;
+        bool on_visit_extern_stmt(ast::ExternStmt* node, VisitOrder visit_order) override;
+        bool on_visit_import_stmt(ast::ImportStmt* node, VisitOrder visit_order) override;
+        bool on_visit_using_stmt(ast::UsingStmt* node, VisitOrder visit_order) override;
         
         // expressions:
-        virtual bool on_visit__unit_exp(ast::UnitExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__int_exp(ast::IntExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__float_exp(ast::FloatExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__string_exp(ast::StringExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__id_exp(ast::IdExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__paren_exp(ast::ParenExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__tuple_exp(ast::TupleExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__array_exp(ast::ArrayExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__struct_exp(ast::StructExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__type_query_exp(ast::TypeQueryExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__chain_exp(ast::ChainExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__if_exp(ast::IfExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__dot_index_exp(ast::DotIndexExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__dot_name_exp(ast::DotNameExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__module_dot_exp(ast::ModuleDotExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__unary_exp(ast::UnaryExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__binary_exp(ast::BinaryExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__vcall_exp(ast::VCallExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__tcall_exp(ast::TCallExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit__vpattern(ast::VPattern* node, VisitOrder visit_order) override;
-        virtual bool on_visit__tpattern(ast::TPattern* node, VisitOrder visit_order) override;
-        virtual bool on_visit__lpattern(ast::LPattern* node, VisitOrder visit_order) override;
+        bool on_visit_unit_exp(ast::UnitExp* node, VisitOrder visit_order) override;
+        bool on_visit_int_exp(ast::IntExp* node, VisitOrder visit_order) override;
+        bool on_visit_float_exp(ast::FloatExp* node, VisitOrder visit_order) override;
+        bool on_visit_string_exp(ast::StringExp* node, VisitOrder visit_order) override;
+        bool on_visit_id_exp(ast::IdExp* node, VisitOrder visit_order) override;
+        bool on_visit_paren_exp(ast::ParenExp* node, VisitOrder visit_order) override;
+        bool on_visit_tuple_exp(ast::TupleExp* node, VisitOrder visit_order) override;
+        bool on_visit_array_exp(ast::ArrayExp* node, VisitOrder visit_order) override;
+        bool on_visit_struct_exp(ast::StructExp* node, VisitOrder visit_order) override;
+        bool on_visit_type_query_exp(ast::TypeQueryExp* node, VisitOrder visit_order) override;
+        bool on_visit_chain_exp(ast::ChainExp* node, VisitOrder visit_order) override;
+        bool on_visit_lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) override;
+        bool on_visit_if_exp(ast::IfExp* node, VisitOrder visit_order) override;
+        bool on_visit_dot_index_exp(ast::DotIndexExp* node, VisitOrder visit_order) override;
+        bool on_visit_dot_name_exp(ast::DotNameExp* node, VisitOrder visit_order) override;
+        bool on_visit_module_dot_exp(ast::ModuleDotExp* node, VisitOrder visit_order) override;
+        bool on_visit_unary_exp(ast::UnaryExp* node, VisitOrder visit_order) override;
+        bool on_visit_binary_exp(ast::BinaryExp* node, VisitOrder visit_order) override;
+        bool on_visit_v_call_exp(ast::VCallExp* node, VisitOrder visit_order) override;
+        bool on_visit_t_call_exp(ast::TCallExp* node, VisitOrder visit_order) override;
+        bool on_visit_v_pattern(ast::VPattern* node, VisitOrder visit_order) override;
+        bool on_visit_t_pattern(ast::TPattern* node, VisitOrder visit_order) override;
+        bool on_visit_l_pattern(ast::LPattern* node, VisitOrder visit_order) override;
         
         // typespecs:
-        virtual bool on_visit__id_typespec(ast::IdTypeSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__fn_typespec(ast::FnTypeSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__tcall_typespec(ast::TCallTypeSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__tcall_class_spec(ast::TCallClassSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__tuple_typespec(ast::TupleTypeSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__dot_name_typespec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) override;
-        virtual bool on_visit__struct_type_spec(ast::StructTypeSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit__paren_typespec(ast::ParenTypeSpec* node, VisitOrder visit_order) override;
-        // virtual bool on_visit__dot_name_typespec_type_prefix(ast::DotNameTypeSpec_TypePrefix* node, VisitOrder visit_order) override;
+        bool on_visit_id_type_spec(ast::IdTypeSpec* node, VisitOrder visit_order) override;
+        bool on_visit_id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) override;
+        bool on_visit_fn_type_spec(ast::FnTypeSpec* node, VisitOrder visit_order) override;
+        bool on_visit_t_call_type_spec(ast::TCallTypeSpec* node, VisitOrder visit_order) override;
+        bool on_visit_t_call_class_spec(ast::TCallClassSpec* node, VisitOrder visit_order) override;
+        bool on_visit_tuple_type_spec(ast::TupleTypeSpec* node, VisitOrder visit_order) override;
+        bool on_visit_dot_name_type_spec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) override;
+        bool on_visit_struct_type_spec(ast::StructTypeSpec* node, VisitOrder visit_order) override;
+        bool on_visit_paren_type_spec(ast::ParenTypeSpec* node, VisitOrder visit_order) override;
+        // bool on_visit__dot_name_typespec_type_prefix(ast::DotNameTypeSpec_TypePrefix* node, VisitOrder visit_order) override;
         
         // args:
-        virtual bool on_visit__targ(ast::TArg* node, VisitOrder visit_order) override;
-        virtual bool on_visit__varg(ast::VArg* node, VisitOrder visit_order) override;
+        bool on_visit_targ(ast::TArg* node, VisitOrder visit_order) override;
+        bool on_visit_varg(ast::VArg* node, VisitOrder visit_order) override;
         
         // non-syntactic:
-        virtual bool on_visit__builtin_type_stmt(ast::BuiltinStmt* node, VisitOrder visit_order) override;
+        bool on_visit_builtin_type_stmt(ast::BuiltinStmt* node, VisitOrder visit_order) override;
 
       // helpers:
       protected:
-        bool help_posttype_const_or_val_or_var_stmt(ast::Node* node, ast::LPattern* lhs, ast::Exp* rhs);
+        bool help_post_type_const_or_val_or_var_stmt(ast::Node* node, ast::LPattern* lhs, ast::Exp* rhs);
 
         static TypeVar* expect_type_var(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
         static ClassVar* expect_class_var(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
@@ -151,13 +151,13 @@ namespace pdm::types {
     }
 
     // script:
-    bool TyperVisitor::on_visit__script(ast::Script* script, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_script(ast::Script* script, VisitOrder visit_order) {
         // todo: implement this typer.
         return true;
     }
 
     // statements:
-    bool TyperVisitor::on_visit__mod_stmt(ast::ModStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_mod_stmt(ast::ModStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             TypeVar* module_tv = node->x_module_tv();
         } else {
@@ -213,7 +213,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__mod_typeclass_stmt(ast::ModTypeclassStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_mod_typeclass_stmt(ast::ModTypeclassStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             assert(0 && "NotImplemented: on_visit__mod_type_class_stmt");
         }
@@ -225,14 +225,14 @@ namespace pdm::types {
         // leave typeclasses, templates for last.
         return true;
     }
-    bool TyperVisitor::on_visit__mod_type_stmt(ast::ModTypeStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_mod_type_stmt(ast::ModTypeStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             if (node->lhs_tpatterns().empty()) {
                 // std::string tv_name = "ModTypeStmt:" + node->lhs_name().cpp_str();
                 // auto defn_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
                 // node->x_defn_var(defn_tv);
             } else {
-                assert(0 && "NotImplemented: on_visit__mod_type_stmt (Pre) with template args.");
+                assert(0 && "NotImplemented: on_visit_mod_type_stmt (Pre) with template args.");
             }
         } else {
             if (node->lhs_tpatterns().empty()) {
@@ -264,18 +264,18 @@ namespace pdm::types {
                     )
                 );
             } else {
-                assert(0 && "NotImplemented: on_visit__mod_type_stmt (Post) with template args.");
+                assert(0 && "NotImplemented: on_visit_mod_type_stmt (Post) with template args.");
             }
         }
         return true;
     }
-    bool TyperVisitor::on_visit__mod_enum_stmt(ast::ModEnumStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_mod_enum_stmt(ast::ModEnumStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Post) {
             TypeVar* mod_enum_tv = nullptr;
             if (node->tpatterns().empty()) {
                 mod_enum_tv = dynamic_cast<TypeVar*>(node->x_defn_var());
             } else {
-                assert(0 && "NotImplemented: on_visit__mod_enum_stmt with template args.");
+                assert(0 && "NotImplemented: on_visit_mod_enum_stmt with template args.");
             }
 
             std::map<intern::String, Var*> fields_vars;
@@ -306,7 +306,7 @@ namespace pdm::types {
             return true;
         }
     }
-    bool TyperVisitor::on_visit__mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Post) {
             TypeVar* mod_val_tv = nullptr;
             if (node->tpatterns().empty()) {
@@ -342,47 +342,47 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__const_stmt(ast::ConstStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_const_stmt(ast::ConstStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Post) {
-            return help_posttype_const_or_val_or_var_stmt(node, node->lhs_lpattern(), node->rhs_exp());
+            return help_post_type_const_or_val_or_var_stmt(node, node->lhs_lpattern(), node->rhs_exp());
         }
         return true;
     }
-    bool TyperVisitor::on_visit__val_stmt(ast::ValStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_val_stmt(ast::ValStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Post) {
-            return help_posttype_const_or_val_or_var_stmt(node, node->lhs_lpattern(), node->rhs_exp());
+            return help_post_type_const_or_val_or_var_stmt(node, node->lhs_lpattern(), node->rhs_exp());
         }
         return true;
     }
-    bool TyperVisitor::on_visit__var_stmt(ast::VarStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_var_stmt(ast::VarStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Post) {
-            return help_posttype_const_or_val_or_var_stmt(node, node->lhs_lpattern(), node->rhs_exp());
+            return help_post_type_const_or_val_or_var_stmt(node, node->lhs_lpattern(), node->rhs_exp());
         }
         return true;
     }
-    bool TyperVisitor::on_visit__set_stmt(ast::SetStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_set_stmt(ast::SetStmt* node, VisitOrder visit_order) {
         // todo: implement this typer.
         return true;
     }
-    bool TyperVisitor::on_visit__discard_stmt(ast::DiscardStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_discard_stmt(ast::DiscardStmt* node, VisitOrder visit_order) {
         // todo: implement this typer.
         return true;
     }
-    bool TyperVisitor::on_visit__extern_stmt(ast::ExternStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_extern_stmt(ast::ExternStmt* node, VisitOrder visit_order) {
         // todo: implement this typer.
         return true;
     }
-    bool TyperVisitor::on_visit__import_stmt(ast::ImportStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_import_stmt(ast::ImportStmt* node, VisitOrder visit_order) {
         // todo: implement this typer.
         return true;
     }
-    bool TyperVisitor::on_visit__using_stmt(ast::UsingStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_using_stmt(ast::UsingStmt* node, VisitOrder visit_order) {
         // todo: implement this typer.
         return true;
     }
     
     // expressions:
-    bool TyperVisitor::on_visit__unit_exp(ast::UnitExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_unit_exp(ast::UnitExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string name = "UnitExp";
             TypeVar* type_of_exp_tv = m_types_mgr->new_unknown_type_var(std::move(name), node);
@@ -401,7 +401,7 @@ namespace pdm::types {
             return !result_is_error(result);
         }
     }
-    bool TyperVisitor::on_visit__int_exp(ast::IntExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_int_exp(ast::IntExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name; {
                 if (node->force_unsigned()) {
@@ -432,7 +432,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__float_exp(ast::FloatExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_float_exp(ast::FloatExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "FloatExp";
             TypeVar* float_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
@@ -451,7 +451,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__string_exp(ast::StringExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_string_exp(ast::StringExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             TypeVar* string_tv = m_types_mgr->get_string_tv();
             node->x_type_of_var(string_tv);
@@ -467,7 +467,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__id_exp(ast::IdExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_id_exp(ast::IdExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             auto id_tv = dynamic_cast<TypeVar*>(node->x_defn()->var());
             assert(id_tv != nullptr && "Scoper failed!");
@@ -475,7 +475,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__paren_exp(ast::ParenExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_paren_exp(ast::ParenExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "ParenExp";
             TypeVar* paren_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
@@ -497,7 +497,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__tuple_exp(ast::TupleExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_tuple_exp(ast::TupleExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "TupleExp(" + std::to_string(node->items().size()) + ")";
             TypeVar* tuple_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
@@ -507,7 +507,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__array_exp(ast::ArrayExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_array_exp(ast::ArrayExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "ArrayExp(" + std::to_string(node->items().size()) + ")";
             TypeVar* array_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
@@ -517,7 +517,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__struct_exp(ast::StructExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_struct_exp(ast::StructExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "StructExp(" + std::to_string(node->fields().size()) + ")";
             TypeVar* struct_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
@@ -527,7 +527,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__type_query_exp(ast::TypeQueryExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_type_query_exp(ast::TypeQueryExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "TypeQueryExp";
             TypeVar* type_query_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
@@ -538,7 +538,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__chain_exp(ast::ChainExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_chain_exp(ast::ChainExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "ChainExp";
             TypeVar* chain_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
@@ -559,7 +559,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) {
         bool ok = true;
 
         if (visit_order == VisitOrder::Pre) {
@@ -611,7 +611,7 @@ namespace pdm::types {
 
         return ok;
     }
-    bool TyperVisitor::on_visit__if_exp(ast::IfExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_if_exp(ast::IfExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "IfExp";
             TypeVar* if_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
@@ -668,7 +668,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__dot_index_exp(ast::DotIndexExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_dot_index_exp(ast::DotIndexExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "DotIndexExp";
             TypeVar* dot_index_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
@@ -678,7 +678,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__dot_name_exp(ast::DotNameExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_dot_name_exp(ast::DotNameExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name;
             {
@@ -767,8 +767,8 @@ namespace pdm::types {
             }
         }
     }
-    bool TyperVisitor::on_visit__module_dot_exp(ast::ModuleDotExp* node, VisitOrder visit_order) {
-        assert(0 && "NotImplemented: TypeVisitor::on_visit__module_dot_exp");
+    bool TyperVisitor::on_visit_module_dot_exp(ast::ModuleDotExp* node, VisitOrder visit_order) {
+        assert(0 && "NotImplemented: TypeVisitor::on_visit_module_dot_exp");
         
         if (visit_order == VisitOrder::Pre) {
             
@@ -777,7 +777,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__unary_exp(ast::UnaryExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_unary_exp(ast::UnaryExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "UnaryExp";
             TypeVar* unary_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
@@ -856,7 +856,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__binary_exp(ast::BinaryExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_binary_exp(ast::BinaryExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "BinaryExp";
             TypeVar* binary_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
@@ -987,7 +987,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__vcall_exp(ast::VCallExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_v_call_exp(ast::VCallExp* node, VisitOrder visit_order) {
         bool ok = true;
 
         if (visit_order == VisitOrder::Pre) {
@@ -1045,7 +1045,7 @@ namespace pdm::types {
 
         return ok;
     }
-    bool TyperVisitor::on_visit__tcall_exp(ast::TCallExp* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_t_call_exp(ast::TCallExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string tv_name = "TCallExp";
             TypeVar* tcall_exp_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
@@ -1058,7 +1058,7 @@ namespace pdm::types {
     }
 
     // patterns:
-    bool TyperVisitor::on_visit__vpattern(ast::VPattern* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_v_pattern(ast::VPattern* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // wait for post
             return true;
@@ -1095,7 +1095,7 @@ namespace pdm::types {
             return ok;
         }
     }
-    bool TyperVisitor::on_visit__tpattern(ast::TPattern* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_t_pattern(ast::TPattern* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Post) {
             for (ast::TPattern::Field* field: node->fields()) {
                 Var* field_var = field->x_defn_var();
@@ -1153,7 +1153,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__lpattern(ast::LPattern* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_l_pattern(ast::LPattern* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Post) {
             for (ast::LPattern::Field* field: node->fields()) {
                 TypeVar* tv = field->x_defn_tv();
@@ -1185,19 +1185,26 @@ namespace pdm::types {
     }
     
     // typespecs:
-    bool TyperVisitor::on_visit__id_typespec(ast::IdTypeSpec* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_id_type_spec(ast::IdTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            node->x_spec_var(node->x_defn()->var());
+            auto defn = node->x_defn();
+            assert(defn && "Undefined/uninitialized ID type spec in typer.");
+            node->x_spec_var(defn->var());
         }
         return true;
     }
-    bool TyperVisitor::on_visit__id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) {
+        assert(0 && "NotImplemented: ID class specs for templates.");
         if (visit_order == VisitOrder::Pre) {
-            node->x_spec_var(node->x_defn()->var());
+            auto defn = node->x_defn();
+            auto var = defn->var();
+            // todo: expect a correct var here.
+            node->x_spec_var(var);
+            return true;
         }
         return true;
     }
-    bool TyperVisitor::on_visit__fn_typespec(ast::FnTypeSpec* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_fn_type_spec(ast::FnTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string name = "FnTypeSpec";
             node->x_spec_var(m_types_mgr->new_unknown_type_var(std::move(name), node));
@@ -1245,7 +1252,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__tcall_typespec(ast::TCallTypeSpec* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_t_call_type_spec(ast::TCallTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string name = "TCallTypeSpec";
             
@@ -1263,7 +1270,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__tcall_class_spec(ast::TCallClassSpec* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_t_call_class_spec(ast::TCallClassSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string name = "TCallClassSpec";
             
@@ -1281,7 +1288,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__tuple_typespec(ast::TupleTypeSpec* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_tuple_type_spec(ast::TupleTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string name = "Tuple";
             TypeVar* tuple_tv = m_types_mgr->new_unknown_type_var(std::move(name), node);
@@ -1334,8 +1341,8 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__dot_name_typespec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) {
-        assert(0 && "NotImplemented: TypeVisitor::on_visit__dot_name_typespec_mod_prefix");
+    bool TyperVisitor::on_visit_dot_name_type_spec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) {
+        assert(0 && "NotImplemented: TypeVisitor::on_visit_dot_name_type_spec_mod_prefix");
 
         if (visit_order == VisitOrder::Pre) {
             // todo: lookup mod prefices
@@ -1345,7 +1352,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__struct_type_spec(ast::StructTypeSpec* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_struct_type_spec(ast::StructTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string name = "StructTypeSpec";
             TypeVar* struct_tv = m_types_mgr->new_unknown_type_var(std::move(name), node);
@@ -1419,7 +1426,7 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit__paren_typespec(ast::ParenTypeSpec* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_paren_type_spec(ast::ParenTypeSpec* node, VisitOrder visit_order) {
         assert(0 && 
             "NotImplemented: ParenSetSpec"
             "need to figure out if class or type var"
@@ -1435,17 +1442,17 @@ namespace pdm::types {
     }
     
     // args:
-    bool TyperVisitor::on_visit__targ(ast::TArg* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_targ(ast::TArg* node, VisitOrder visit_order) {
         // todo: implement this typer.
         return true;
     }
-    bool TyperVisitor::on_visit__varg(ast::VArg* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_varg(ast::VArg* node, VisitOrder visit_order) {
         // todo: implement this typer.
         return true;
     }
     
     // non-syntactic:
-    bool TyperVisitor::on_visit__builtin_type_stmt(ast::BuiltinStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_builtin_type_stmt(ast::BuiltinStmt* node, VisitOrder visit_order) {
         return true;
     }
 
@@ -1453,19 +1460,19 @@ namespace pdm::types {
     // Helpers:
     //
 
-    bool TyperVisitor::help_posttype_const_or_val_or_var_stmt(ast::Node* node, ast::LPattern* lpattern, ast::Exp* rhs_exp) {
+    bool TyperVisitor::help_post_type_const_or_val_or_var_stmt(ast::Node* node, ast::LPattern* lhs, ast::Exp* rhs) {
         TypeVar* typeof_rhs_tv = expect_type_var(
-            rhs_exp->x_type_of_var(),
+            rhs->x_type_of_var(),
             std::move(std::string("an expression")),
             std::move(std::string("a 'Let' value-id-binding")),
-            rhs_exp->loc()
+            rhs->loc()
         );
-        if (lpattern->destructure()) {
+        if (lhs->destructure()) {
             // todo: destructure as a tuple
             std::cout << "NotImplemented: tuple-lpattern destructuring" << std::endl;
         } else {
-            assert(lpattern->fields().size() == 1);
-            ast::LPattern::Field* field = lpattern->fields()[0];
+            assert(lhs->fields().size() == 1);
+            ast::LPattern::Field* field = lhs->fields()[0];
             TypeVar* typeof_lhs_tv = field->x_defn_tv();
             
             // "let lhs = rhs" <=> rhs :< lhs

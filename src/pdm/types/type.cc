@@ -1,5 +1,7 @@
 #include "type.hh"
 
+#include "pdm/core/intern.hh"
+
 namespace pdm::types {
 
     void Type::print(printer::Printer& p) const {
@@ -27,4 +29,72 @@ namespace pdm::types {
     FloatType FloatType::s_float16_singleton {"Float16", 16};
     FloatType FloatType::s_float32_singleton {"Float32", 32};
     FloatType FloatType::s_float64_singleton {"Float64", 64};
+
+    tt::TupleTypeTrie TupleType::s_type_trie{TupleType::tt_ctor};
+    tt::StructTypeTrie StructType::s_type_trie{StructType::tt_ctor};
+    tt::EnumTypeTrie EnumType::s_type_trie{EnumType::tt_ctor};
+    tt::ModuleTypeTrie ModuleType::s_type_trie{ModuleType::tt_ctor};
+    tt::FnTypeTrie FnType::s_type_trie{FnType::tt_ctor};
+
+    TupleType* TupleType::tt_ctor(tt::TupleTypeTrie::Node* node) {
+        return new TupleType(node);
+    }
+    StructType* StructType::tt_ctor(tt::StructTypeTrie::Node* node) {
+        return new StructType(node);
+    }
+    EnumType* EnumType::tt_ctor(tt::EnumTypeTrie::Node* node) {
+        return new EnumType(node);
+    }
+    ModuleType* ModuleType::tt_ctor(tt::ModuleTypeTrie::Node *node) {
+        return new ModuleType(node);
+    }
+    FnType* FnType::tt_ctor(tt::FnTypeTrie::Node *node) {
+        return new FnType(node);
+    }
+
+    TupleType* TupleType::get(std::vector<tt::TupleField> const& fields) {
+        tt::TupleTypeTrie::Node* node = s_type_trie.get(fields);
+        if (node) {
+            return node->result;
+        } else {
+            return nullptr;
+        }
+    }
+
+    EnumType* EnumType::get(std::vector<tt::EnumField> const& fields) {
+        tt::EnumTypeTrie::Node* node = s_type_trie.get(fields);
+        if (node) {
+            return node->result;
+        } else {
+            return nullptr;
+        }
+    }
+
+    StructType* StructType::get(std::vector<tt::StructField> const& fields) {
+        tt::StructTypeTrie::Node* node = s_type_trie.get(fields);
+        if (node) {
+            return node->result;
+        } else {
+            return nullptr;
+        }
+    }
+
+    ModuleType* ModuleType::get(std::vector<tt::ModuleField> const& fields) {
+        tt::ModuleTypeTrie::Node* node = s_type_trie.get(fields);
+        if (node) {
+            return node->result;
+        } else {
+            return nullptr;
+        }
+    }
+
+    FnType* FnType::get(std::vector<tt::FnField> const& fields) {
+        tt::FnTypeTrie::Node* node = s_type_trie.get(fields);
+        if (node) {
+            return node->result;
+        } else {
+            return nullptr;
+        }
+    }
+
 };
