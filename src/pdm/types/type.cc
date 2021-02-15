@@ -1,8 +1,104 @@
 #include "type.hh"
 
+#include <algorithm>
+
 #include "pdm/core/intern.hh"
 
 namespace pdm::types {
+
+    bool Type::check_finite() const {
+        return check_finite_impl(nullptr);
+    }
+    bool Type::check_finite_impl(FiniteCheckStackFrame *parent_frame) const {
+        bool is_finite = true;
+
+        // checking if this type has been visited before:
+        if (is_finite) {
+            for (FiniteCheckStackFrame *frame = parent_frame; frame; frame = frame->parent) {
+                if (frame->type == this) {
+                    // not finite since a loop was found => infinite size
+                    is_finite = false;
+                    break;
+                }
+            }
+        }
+
+        // otherwise creating a new frame and checking the contents:
+        if (is_finite) {
+            FiniteCheckStackFrame this_frame{parent_frame, this};
+            bool contents_ok = check_contents_finite(&this_frame);
+            if (!contents_ok) {
+                is_finite = false;
+            }
+        }
+
+        // reporting if found infinite:
+        if (!is_finite) {
+            assert(0 && "NotImplemented: posting error about infinite type.");
+            return false;
+        } else {
+            return true;
+        }
+    }
+    bool Type::check_contents_finite(FiniteCheckStackFrame* top_frame) const {
+        // by default, assume no contents, so obviously finite
+        return true;
+    }
+    bool TupleType::check_contents_finite(Type::FiniteCheckStackFrame* top_frame) const {
+        for (auto node = m_tt_node; node != s_type_trie.root_node(); node = node->parent) {
+            assert(node->parent);
+            tt::TupleTypeTrie::Edge const* parent_edge = &node->parent->edges[node->parent_edge_index];
+            tt::TupleField const& field = parent_edge->field;
+            if (field.type && !field.type->check_finite_impl(top_frame)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    bool StructType::check_contents_finite(Type::FiniteCheckStackFrame* top_frame) const {
+        for (auto node = m_tt_node; node != s_type_trie.root_node(); node = node->parent) {
+            assert(node->parent);
+            tt::StructTypeTrie ::Edge const* parent_edge = &node->parent->edges[node->parent_edge_index];
+            tt::StructField const& field = parent_edge->field;
+            if (field.type && !field.type->check_finite_impl(top_frame)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    bool EnumType::check_contents_finite(Type::FiniteCheckStackFrame* top_frame) const {
+        for (auto node = m_tt_node; node != s_type_trie.root_node(); node = node->parent) {
+            assert(node->parent);
+            tt::EnumTypeTrie::Edge const* parent_edge = &node->parent->edges[node->parent_edge_index];
+            tt::EnumField const& field = parent_edge->field;
+            if (field.type && !field.type->check_finite_impl(top_frame)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    bool ModuleType::check_contents_finite(Type::FiniteCheckStackFrame* top_frame) const {
+        for (auto node = m_tt_node; node != s_type_trie.root_node(); node = node->parent) {
+            assert(node->parent);
+            tt::ModuleTypeTrie::Edge const* parent_edge = &node->parent->edges[node->parent_edge_index];
+            tt::ModuleField const& field = parent_edge->field;
+            if (field.type && !field.type->check_finite_impl(top_frame)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    bool FnType::check_contents_finite(Type::FiniteCheckStackFrame* top_frame) const {
+        for (auto node = m_tt_node; node != s_type_trie.root_node(); node = node->parent) {
+            assert(node->parent);
+            tt::FnTypeTrie::Edge const* parent_edge = &node->parent->edges[node->parent_edge_index];
+            tt::FnField const& field = parent_edge->field;
+            if (field.type && !field.type->check_finite_impl(top_frame)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     void Type::print(printer::Printer& p) const {
         p.print_c_str("Type ");

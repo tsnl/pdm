@@ -304,10 +304,10 @@ namespace pdm::types {
                 return false;
             }
 
-            // todo: check that this type soln is finite here.
-
-            // assert(0 && "NotImplemented: `Var::finish`");
-            std::cout << "NotImplemented: finite-check for TypeVar " << name() << std::endl;
+            if (!m_opt_type_soln->check_finite()) {
+                // infinite type; error already posted.
+                return false;
+            }
         }
 
         // all ok!

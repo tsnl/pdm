@@ -25,14 +25,19 @@ namespace pdm::types {
     // - unique required to efficiently verify compounds not infinite in size.
     // - use tries to efficiently store and access elements.
     class Type {
+      protected:
+        struct FiniteCheckStackFrame {
+            FiniteCheckStackFrame* parent;
+            Type const* type;
+        };
       private:
         std::string m_name;
         Kind m_type_kind;
 
       protected:
         Type(std::string name, Kind type_kind)
-        : m_name(std::move(name)),
-          m_type_kind(type_kind) {}
+        :   m_name(std::move(name)),
+            m_type_kind(type_kind) {}
 
       public:
         [[nodiscard]] std::string const& name() const;
@@ -40,6 +45,12 @@ namespace pdm::types {
 
       public:
         void print(printer::Printer& p) const;
+
+      public:
+        bool check_finite() const;
+        bool check_finite_impl(FiniteCheckStackFrame* parent_frame) const;
+      protected:
+        virtual bool check_contents_finite(FiniteCheckStackFrame* top_frame) const;
     };
     inline std::string const& Type::name() const {
         return m_name;
@@ -65,7 +76,8 @@ namespace pdm::types {
       // protected constructor:
       protected:
         VoidType()
-        : Type("VoidType", Kind::Void) {}
+        :   Type("VoidType", Kind::Void) 
+        {}
     };
 
     //
@@ -160,11 +172,36 @@ namespace pdm::types {
     };
 
     //
+    // Compound types: 
+    //
+    // Compound types rely on TypeTrie nodes to stay unique.
+    // - each Type is turned into a LIST with well-defined order
+    //    - for tuples, just order of fields
+    //    - for structs & enums, ordered by intern::String ID (stable per-compilation)
+    //    - for functions, [args..., return type]
+    // - when a new compound is created, an existing Type Trie node is obtained if possible.
+    //   otherwise, a new node is inserted into the Type Trie.
+    // - like all types, two pointers are equal if *and only if* they represent the same type.
+    //
+
+    class CompoundType: public Type {
+      protected:
+        CompoundType(std::string name, Kind kind);
+
+      protected:
+        bool check_contents_finite(Type::FiniteCheckStackFrame* top_frame) const override = 0;
+    };
+
+    inline CompoundType::CompoundType(std::string name, Kind kind)
+    : Type(std::move(name), kind)
+    {}
+
+    //
     // Tuples:
     //
 
-    class TupleType: public Type {
-     private:
+    class TupleType: public CompoundType {
+      private:
         static tt::TupleTypeTrie s_type_trie;
         static TupleType* tt_ctor(tt::TupleTypeTrie::Node* node);
 
@@ -176,9 +213,12 @@ namespace pdm::types {
 
       public:
         static TupleType* get(std::vector<tt::TupleField> const& fields);
+
+      protected:
+        bool check_contents_finite(Type::FiniteCheckStackFrame* top_frame) const override;
     };
     inline TupleType::TupleType(tt::TupleTypeTrie::Node* tt_node)
-    :   Type("TupleType", Kind::Tuple),
+    :   CompoundType("TupleType", Kind::Tuple),
         m_tt_node(tt_node)
     {}
 
@@ -186,22 +226,10 @@ namespace pdm::types {
     // Structs:
     //
 
-    class StructType: public Type {
-     private:
+    class StructType: public CompoundType {
+      private:
         static tt::StructTypeTrie s_type_trie;
         static StructType* tt_ctor(tt::StructTypeTrie::Node* node);
-
-      public:
-        class Field {
-          private:
-            intern::String m_name;
-            Type*          m_type;
-
-          public:
-            Field(intern::String name, Type* type)
-            :   m_name(name),
-                m_type(type) {}
-        };
 
       private:
         tt::StructTypeTrie::Node* m_tt_node;
@@ -211,10 +239,13 @@ namespace pdm::types {
 
       public:
         static StructType* get(std::vector<tt::StructField> const& fields);
+
+      protected:
+        bool check_contents_finite(Type::FiniteCheckStackFrame* top_frame) const override;
     };
 
     inline StructType::StructType(tt::StructTypeTrie::Node* tt_node)
-    :   Type("StructType", Kind::Struct),
+    :   CompoundType("StructType", Kind::Struct),
         m_tt_node(tt_node)
     {}
 
@@ -222,26 +253,10 @@ namespace pdm::types {
     // Enums:
     //
 
-    class EnumType: public Type {
+    class EnumType: public CompoundType {
      private:
         static tt::EnumTypeTrie s_type_trie;
         static EnumType* tt_ctor(tt::EnumTypeTrie::Node* node);
-
-      public:
-        class Field {
-          private:
-            intern::String m_name;
-            Type*          m_type;
-
-          public:
-            explicit Field(intern::String name)
-            : m_name(name),
-              m_type(nullptr) {}
-
-            Field(intern::String name, Type* type_soln)
-            : m_name(name),
-              m_type(type_soln) {}
-        };
 
       private:
         tt::EnumTypeTrie::Node* m_tt_node;
@@ -251,10 +266,13 @@ namespace pdm::types {
 
       public:
         static EnumType* get(std::vector<tt::EnumField> const& fields);
+
+      protected:
+        bool check_contents_finite(Type::FiniteCheckStackFrame* top_frame) const override;
     };
 
     inline EnumType::EnumType(tt::EnumTypeTrie::Node* tt_node)
-    :   Type("EnumType", Kind::Enum),
+    :   CompoundType("EnumType", Kind::Enum),
         m_tt_node(tt_node)
     {}
 
@@ -262,7 +280,7 @@ namespace pdm::types {
     // Modules:
     //
 
-    class ModuleType: public Type {
+    class ModuleType: public CompoundType {
      private:
         static tt::ModuleTypeTrie s_type_trie;
         static ModuleType* tt_ctor(tt::ModuleTypeTrie::Node* node);
@@ -275,10 +293,13 @@ namespace pdm::types {
 
       public:
         static ModuleType* get(std::vector<tt::ModuleField> const& fields);
+
+      protected:
+        bool check_contents_finite(Type::FiniteCheckStackFrame* top_frame) const override;
     };
 
     inline ModuleType::ModuleType(tt::ModuleTypeTrie::Node* tt_node)
-    :   Type("ModuleType", Kind::Module),
+    :   CompoundType("ModuleType", Kind::Module),
         m_tt_node(tt_node)
     {}
 
@@ -286,7 +307,7 @@ namespace pdm::types {
     // Functions:
     //
 
-    class FnType: public Type {
+    class FnType: public CompoundType {
      private:
         static tt::FnTypeTrie s_type_trie;
         static FnType* tt_ctor(tt::FnTypeTrie::Node* node);
@@ -299,10 +320,13 @@ namespace pdm::types {
 
       public:
         static FnType* get(std::vector<tt::FnField> const& fields);
+
+      protected:
+        bool check_contents_finite(Type::FiniteCheckStackFrame* top_frame) const override;
     };
 
     inline FnType::FnType(tt::FnTypeTrie::Node* tt_node)
-    :   Type("FnType", Kind::Fn),
+    :   CompoundType("FnType", Kind::Fn),
         m_tt_node(tt_node)
     {}
 
