@@ -5,13 +5,16 @@ namespace pdm::ast {
 
     enum class Kind {
         // scripts:
-        Script, 
+        Script, ScriptField,
+
+        // modules:
+        ModExp,
+        ValueModField, TypeModField, ClassModField,
+        ModAddress, TemplateModAddress,
         
         // statements:
         BuiltinStmt,    // non-syntactic
         DiscardStmt, ConstStmt, ValStmt, VarStmt, SetStmt,
-        ModValStmt, ModTypeStmt, ModEnumStmt, ModTypeclassStmt,
-        ModStmt,
         ExternStmt,
         ImportStmt,
         UsingStmt,
@@ -34,14 +37,14 @@ namespace pdm::ast {
         TPattern,       // used in def<>/[], type<>/[], class<>/[]4
         LPattern,       // used in let, lambda, match
 
-        // typespecs:
-        IdTypeSpec, IdClassSpec,
-        ParenTypeSpec,
-        FnTypeSpec, 
-        TCallTypeSpec, TCallClassSpec,
-        DotNameTypeSpec_ModPrefix,
-        TupleTypeSpec, StructTypeSpec,
-        // DotNameTypeSpec_TypePrefix,
+        // type specifiers:
+        IdTypeSpec,
+        FnTypeSpec,
+        DotTypeSpec,
+        TupleTypeSpec, StructTypeSpec, EnumTypeSpec,
+
+        // class specifiers:
+        IdClassSpec, ClassExpClassSpec,
 
         // args:
         TArg, VArg,

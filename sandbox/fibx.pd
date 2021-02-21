@@ -1,6 +1,6 @@
-mod Fibx {
+mod FibHelper {
 
-    register = fn (x Int32, y Int32) {
+    val register: (x Int32, y Int32) -> Void {
         # print, or something?
     };
 

@@ -1,47 +1,41 @@
 mod LinAlg {
 
-    Vector3f = {
+    typ Vector3f: struct {
         x Float32,
         y Float32,
         z Float32
     };
 
-    vec3f = fn (x Float32, y Float32, z Float32) -> Vector3f {
-        x = x,
-        y = y,
-        z = z
+    val vec3f = (x Float32, y Float32, z Float32) -> Vector3f {
+        x: x,
+        y: y,
+        z: z
     };
 
-    add = fn (vec1 Vector3f, vec2 Vector3f) -> Vector3f {
-        x = vec1.x + vec2.x,
-        y = vec1.y + vec2.y,
-        z = vec1.z + vec2.z
+    val add = (vec1 Vector3f, vec2 Vector3f) -> Vector3f {
+        x: vec1.x + vec2.x,
+        y: vec1.y + vec2.y,
+        z: vec1.z + vec2.z
     };
 
-    scale = fn (scalar Float32, vec Vector3f) -> Vector3f {
-        x = scalar * vec.x,
-        y = scalar * vec.y,
-        z = scalar * vec.z
+    val scale = (scalar Float32, vec Vector3f) -> Vector3f {
+        x: scalar * vec.x,
+        y: scalar * vec.y,
+        z: scalar * vec.z
     };
 
-    dot = fn (vec1 Vector3f, vec2 Vector3f) -> Float32 {
+    val dot = (vec1 Vector3f, vec2 Vector3f) -> Float32 {
         vec1.x * vec2.x +
         vec1.y * vec2.y +
         vec1.z * vec2.z
     };
 
-    length_sqr = fn (vec Vector3f) -> Float32 {
+    val length_sqr = (vec Vector3f) -> Float32 {
         dot(vec, vec)
     };
 
-    length = 
-    fn (vec Vector3f) -> Float32 {
+    val length = (vec Vector3f) -> Float32 {
         sqrt(length_sqr(vec))
-    };
-
-    # dummy sqrt implementation
-    sqrt = fn (x Float32) -> Float32 {
-        x / 2.0
     };
 
 };

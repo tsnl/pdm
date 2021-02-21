@@ -18,7 +18,7 @@
 
 // helpers:
 namespace pdm::scoper {
-    static ast::ModStmt* original_stmt_of_module_defn(Defn const* module_defn);
+    static ast::ModExp* original_stmt_of_module_defn(Defn const* module_defn);
 }
 
 namespace pdm::scoper {
@@ -202,8 +202,8 @@ namespace pdm::scoper {
             }
             
             // setting the exported 'defn' and 'stmt' so the typer can equate both Vars:
-            ast::ModStmt* original_mod_stmt = original_stmt_of_module_defn(module_defn);
-            import_stmt->x_origin_mod_stmt(original_mod_stmt);
+            ast::ModExp* original_mod_stmt = original_stmt_of_module_defn(module_defn);
+            import_stmt->x_origin_mod_exp(original_mod_stmt);
         }
 
         // Using
@@ -221,8 +221,8 @@ namespace pdm::scoper {
             }
 
             // linking to an appropriate frame:
-            ast::ModStmt* original_mod_stmt = original_stmt_of_module_defn(module_defn);
-            Frame* module_frame = original_mod_stmt->x_module_frame();
+            ast::ModExp* original_mod_exp = original_stmt_of_module_defn(module_defn);
+            Frame* module_frame = original_mod_exp->x_module_frame();
             using_order.lookup_context->link(module_frame, using_stmt->suffix());
         }
 
@@ -234,7 +234,7 @@ namespace pdm::scoper {
         printer.print_c_str("Scoper dump");
         printer.print_newline_indent();
         m_root_frame->print(printer);
-        printer.print_newline_deindent();
+        printer.print_newline_exdent();
     }
 
     //
@@ -274,8 +274,8 @@ namespace pdm::scoper {
         Scoper::IdExpLookupOrder order {exp, top_frame()->last_context()};
         scoper()->m_id_exp_orders.push_back(order);
     }
-    void ScoperVisitor::place_id_typespec_lookup_order(ast::IdTypeSpec* typespec) {
-        Scoper::IdTypeSpecLookupOrder order {typespec, top_frame()->last_context()};
+    void ScoperVisitor::place_id_type_spec_lookup_order(ast::IdTypeSpec* id_typespec) {
+        Scoper::IdTypeSpecLookupOrder order {id_typespec, top_frame()->last_context()};
         scoper()->m_id_typespec_orders.push_back(order);
     }
     void ScoperVisitor::place_import_lookup_order(ast::ImportStmt* import_stmt) {
@@ -314,20 +314,21 @@ namespace pdm::scoper {
         ));
     }
 
-    ast::ModStmt* original_stmt_of_module_defn(Defn const* module_defn) {
-        ast::ModStmt* original_mod_stmt = nullptr;
-        
-        if (module_defn->kind() == DefnKind::Module) {
-            original_mod_stmt = dynamic_cast<ast::ModStmt*>(module_defn->defn_node());
-        }
-        else if (module_defn->kind() == DefnKind::ImportModule) {
-            ast::ImportStmt* imported_stmt = dynamic_cast<ast::ImportStmt*>(module_defn->defn_node());
-            assert(imported_stmt != nullptr);
-            // from dependency dispatcher:
-            original_mod_stmt = imported_stmt->x_origin_mod_stmt();
-        }
-        assert(original_mod_stmt != nullptr);
-        return original_mod_stmt;
+    ast::ModExp* original_stmt_of_module_defn(Defn const* module_defn) {
+        assert(0 && "Broken: original_stmt_of_module_defn");
+//        ast::ModExp* original_mod_stmt = nullptr;
+//
+//        if (module_defn->kind() == DefnKind::Module) {
+//            original_mod_stmt = dynamic_cast<ast::ModStmt*>(module_defn->defn_node());
+//        }
+//        else if (module_defn->kind() == DefnKind::ImportModule) {
+//            ast::ImportStmt* imported_stmt = dynamic_cast<ast::ImportStmt*>(module_defn->defn_node());
+//            assert(imported_stmt != nullptr);
+//            // from dependency dispatcher:
+//            original_mod_stmt = imported_stmt->x_origin_mod_stmt();
+//        }
+//        assert(original_mod_stmt != nullptr);
+//        return original_mod_stmt;
     }
     
     //
@@ -839,7 +840,7 @@ namespace pdm::scoper {
     bool ScoperVisitor::on_visit_id_type_spec(ast::IdTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // placing an order:
-            place_id_typespec_lookup_order(node);
+            place_id_type_spec_lookup_order(node);
         }
         return true;
     }
@@ -881,10 +882,10 @@ namespace pdm::scoper {
     }
 
     // args:
-    bool ScoperVisitor::on_visit_targ(ast::TArg* targ, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit_t_arg(ast::TArg* t_arg, VisitOrder visit_order) {
         return true;
     }
-    bool ScoperVisitor::on_visit_varg(ast::VArg* varg, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit_v_arg(ast::VArg* v_arg, VisitOrder visit_order) {
         return true;
     }
 

@@ -1,8 +1,8 @@
-#ifndef INCLUDED_PDM_AST_TYPESPEC_TUPLE_HH
-#define INCLUDED_PDM_AST_TYPESPEC_TUPLE_HH
+#ifndef INCLUDED__PDM__AST__TYPE_SPEC__TUPLE_HH
+#define INCLUDED__PDM__AST__TYPE_SPEC__TUPLE_HH
 
 #include "pdm/source/loc.hh"
-#include "pdm/ast/setspec/type_spec.hh"
+#include "pdm/ast/type_spec/type_spec.hh"
 
 namespace pdm::ast {
     class Manager;
@@ -33,4 +33,4 @@ namespace pdm::ast {
 
 }   // namespace pdm::ast
 
-#endif  // INCLUDED_PDM_AST_TYPESPEC_TUPLE_HH
+#endif  // INCLUDED__PDM__AST__TYPE_SPEC__TUPLE_HH

@@ -5,7 +5,7 @@
 
 #include "pdm/core/intern.hh"
 #include "pdm/ast/node.hh"
-#include "pdm/ast/setspec/type_spec.hh"
+#include "pdm/ast/type_spec/type_spec.hh"
 
 #include "base_field.hh"
 
@@ -32,15 +32,15 @@ namespace pdm::ast {
 
           private:
             FieldKind m_field_kind;
-            SetSpec* m_set_spec;
+            Node* m_set_spec;
             types::Var* m_x_defn_var;
 
           protected:
-            Field(source::Loc loc, FieldKind kind, intern::String name, SetSpec* rhs_set_spec);
+            Field(source::Loc loc, FieldKind kind, intern::String name, Node* rhs_set_spec);
           
           public:
             [[nodiscard]] FieldKind field_kind() const;
-            [[nodiscard]] SetSpec* rhs_set_spec() const;
+            [[nodiscard]] Node* rhs_set_spec() const;
           
           public:
             [[nodiscard]] types::Var* x_defn_var() const;
@@ -70,7 +70,12 @@ namespace pdm::ast {
         return m_fields;
     }
 
-    inline TPattern::Field::Field(source::Loc loc, TPattern::FieldKind field_kind, intern::String name, SetSpec *rhs_set_spec)
+    inline TPattern::Field::Field(
+        source::Loc loc,
+        TPattern::FieldKind field_kind,
+        intern::String name,
+        Node *rhs_set_spec
+    )
     :   BaseField(loc, Kind::Aux_TPatternField, name),
         m_field_kind(field_kind),
         m_set_spec(rhs_set_spec),
@@ -81,7 +86,7 @@ namespace pdm::ast {
         return m_field_kind;
     }
 
-    inline SetSpec* TPattern::Field::rhs_set_spec() const {
+    inline Node* TPattern::Field::rhs_set_spec() const {
         return m_set_spec;
     }
 

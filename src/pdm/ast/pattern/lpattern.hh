@@ -6,7 +6,7 @@
 
 #include "pdm/core/intern.hh"
 #include "pdm/ast/node.hh"
-#include "pdm/ast/setspec/type_spec.hh"
+#include "pdm/ast/type_spec/type_spec.hh"
 
 #include "base_field.hh"
 

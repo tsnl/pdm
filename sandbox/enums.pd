@@ -1,0 +1,16 @@
+mod TestModule {
+
+    typ OptionalInt32 = enum {
+        Some Int32,
+        None
+    };
+
+    val divide = (p Int32, q Int32) -> OptionalInt32 {
+        if (q == 0) then {
+            OptionalInt32::None
+        } else {
+            OptionalInt32::Some using (p / q)
+        }
+    };
+
+};

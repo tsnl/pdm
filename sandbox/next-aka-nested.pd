@@ -1,0 +1,109 @@
+# OVERRIDE: (not-implemented, wip)
+# - see parser.yy rules
+#
+# - when code nests, we want **a margin-aligned keyword** to tell us what each block does.
+#   - Otherwise, code gets really hard to skim
+# - so 'mod Id' is better than 'Id: mod'
+# - purpose of 3-letter leading keywords to describe block below
+#
+# - means that we want to revert to 'typ Abc =', 'cls GHE () {}', 'val cocoa =', 'mod id {}' for fields.
+# - 'mod Car {}' and 'cls GHE () {}' do not need ':' since they cannot alias another symbol.
+# - see below example for more
+# - read below 'Changes' for original justification/direction
+#
+# - keep 'struct' type-spec without leading keyword, so only reqd. for 'enum'
+#
+# - beautiful, beautiful lambdas.
+#   - tuple {T1, T2} to accommodate
+#   - postfix {}-calls are an ambiguity death-sentence and look ugly [subj.], so safe bet.
+
+# Changes:
+# - script = top-module, no more 'sub', radical template changes
+#   - allow top-modules to accept tpatterns
+#   - remove 'sub' as a separate pattern
+#   - change 'import' to use file-at-a-time, with all included modules
+#   - remove tpattern from all statements EXCEPT 'mod'.
+#
+# - use '::' for union access, '.' for struct/module access.
+#   - '.' connotes accessing a product-field in an ADT.
+#   - '::' connotes accessing a sum-field in an ADT.
+#   - '::' is much rarer, ':' more frequent for struct fields
+# - use ':' for struct fields instead of '='
+#   - keep `<keyword> ID '='` for 'const', 'val', 'var', 'set'
+#   - so field initialization (in ||el) and sequential assignment separate.
+#   - WHAT ABOUT MODULE FIELDS? ...v
+# - (undone, see above) change 'module ID = {...}' to 'ID: module { ... }' syntax for RHS of module initializer.
+#   - 'mod' rather than 'module' :: 'fn' rather than 'func '-- args more important.
+#   - add ModExp
+# - change type query op equality to '=='
+# - change function type-spec to start with a v-pattern followed by '->'
+#
+# - add 'struct' keyword for struct type specifiers
+# - add 'enum' keyword for enum type specifiers
+# - add 'class' keyword for typeclass specifiers
+# - allow assignment to TID from any of the above OR an alias
+#
+# - mandate all letters uppercase for class ID (in dependency_dispatcher)
+#   - by convention, classes are SCREAMING, while types are not.
+#   - more uppercase => higher order set
+#   - add separate
+# - maybe even make CLASS_ID a separate token?
+#   - would allow unambiguous alias to CLASS and TId
+#
+# - change 'fn'
+#   - use 'func' keyword instead
+#   - remove '->' separator
+#   - mandate return type specifier
+#   - remove 'TFN' keyword for signatures; can reuse 'fn' keyword
+#
+# - add 'size_of' operator
+#
+# - (long-term) add shorter 'lambda' expression with '=>' without type specs
+#   - just pattern and body
+#   - return type inferred from surrounding args
+#   - both 'fn' and 'lambda' return the same kind of func 
+#     - need to figure out closures
+#     - note no mutable captures possible/allowed.
+#
+# - (long-term) add 'module' as a first-class singleton-value/type
+#   - must record type-classes, monomorphic sub-modules, and polymorphic sub-modules
+#     in reified type as fields, or
+#   - at least work with typeclasses
+#   - interface end-game, extremely useful once 'assert' is working, can add refinements to
+#     classes.
+#
+# - use '[...]' for template calls.
+
+mod Next {
+
+    mod LinkedListBase {
+        cls LL_NODE (NodeType STRUCT) {
+            NodeType :< {
+                index UInt32,
+                value UInt32
+            };
+        };
+        typ NodeAllocator = {
+            allocator () -> UInt32
+        };
+    };
+
+    mod LinkedList [Node LinkedListBase.LL_NODE, impl NodeImpl] {
+        cls LL_NODE (NodeType LinkedListBase.LL_NODE) {
+        };
+
+        val add = (node1 Node, node2 Node) -> LinkedListNode {
+            index: impl.allocator(sizeof Node),
+            value: node1.value + node2.value
+        };
+
+        val hello = 24;
+    };
+
+    mod Testing {
+        val square1 = (x {Int32,Int32}) -> Int32 {
+            x * x
+        };
+        val square2 = lambda (x) {x*x};
+    };
+};

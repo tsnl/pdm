@@ -1,11 +1,12 @@
-#ifndef INCLUDED_PDM_AST_TYPESPEC_STRUCT_HH
-#define INCLUDED_PDM_AST_TYPESPEC_STRUCT_HH
+#ifndef INCLUDED__PDM__AST__TYPE_SPEC__STRUCT_HH
+#define INCLUDED__PDM__AST__TYPE_SPEC__STRUCT_HH
 
 #include <vector>
 
+#include "type_spec.hh"
 #include "pdm/source/loc.hh"
 #include "pdm/ast/kind.hh"
-#include "pdm/ast/setspec/type_spec.hh"
+#include "pdm/core/intern.hh"
 
 namespace pdm::ast {
 
@@ -66,4 +67,4 @@ namespace pdm::ast {
 
 }
 
-#endif  // INCLUDED_PDM_AST_TYPESPEC_STRUCT_HH
+#endif  // INCLUDED__PDM__AST__TYPE_SPEC__STRUCT_HH

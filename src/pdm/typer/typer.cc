@@ -14,7 +14,7 @@
 #include "pdm/scoper/defn.hh"
 
 #include "pdm/ast/script/script.hh"
-#include "pdm/ast/setspec/struct.hh"
+#include "pdm/ast/type_spec/struct.hh"
 
 #include "pdm/types/manager.hh"
 #include "pdm/types/var.hh"
@@ -100,8 +100,8 @@ namespace pdm::types {
         // bool on_visit__dot_name_typespec_type_prefix(ast::DotNameTypeSpec_TypePrefix* node, VisitOrder visit_order) override;
         
         // args:
-        bool on_visit_targ(ast::TArg* node, VisitOrder visit_order) override;
-        bool on_visit_varg(ast::VArg* node, VisitOrder visit_order) override;
+        bool on_visit_t_arg(ast::TArg* node, VisitOrder visit_order) override;
+        bool on_visit_v_arg(ast::VArg* node, VisitOrder visit_order) override;
         
         // non-syntactic:
         bool on_visit_builtin_type_stmt(ast::BuiltinStmt* node, VisitOrder visit_order) override;
@@ -181,7 +181,7 @@ namespace pdm::types {
                             fields_tvs[stmt->lhs_name()] = stmt->x_defn_var();
                             break;
                         }
-                        case ast::Kind::ModEnumStmt:
+                        case ast::Kind::EnumTypeSpec:
                         {
                             auto stmt = dynamic_cast<ast::ModEnumStmt*>(mcs);
                             fields_tvs[stmt->name()] = stmt->x_defn_var();
@@ -1223,8 +1223,8 @@ namespace pdm::types {
             }
 
             TypeVar* ret_tv = m_types_mgr->get_void_tv();
-            if (node->opt_ret_typespec() != nullptr) {
-                Var* ret_spectype_var = node->opt_ret_typespec()->x_spec_var();
+            if (node->opt_ret_type_spec() != nullptr) {
+                Var* ret_spectype_var = node->opt_ret_type_spec()->x_spec_var();
                 auto ret_spectype_tv = dynamic_cast<TypeVar*>(ret_spectype_var);
                 if (ret_spectype_tv != nullptr) {
                     ret_tv = ret_spectype_tv;
@@ -1442,11 +1442,11 @@ namespace pdm::types {
     }
     
     // args:
-    bool TyperVisitor::on_visit_targ(ast::TArg* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_t_arg(ast::TArg* node, VisitOrder visit_order) {
         // todo: implement this typer.
         return true;
     }
-    bool TyperVisitor::on_visit_varg(ast::VArg* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_v_arg(ast::VArg* node, VisitOrder visit_order) {
         // todo: implement this typer.
         return true;
     }

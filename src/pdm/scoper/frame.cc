@@ -54,7 +54,7 @@ namespace pdm::scoper {
                     ctx_stack.pop();
                 }
             }
-            p.print_newline_deindent();
+            p.print_newline_exdent();
 
             // newline spacer
             // p.print_newline();
@@ -78,7 +78,7 @@ namespace pdm::scoper {
                 }
             }
         }
-        p.print_newline_deindent();
+        p.print_newline_exdent();
         p.print_c_str("}");
     }
 

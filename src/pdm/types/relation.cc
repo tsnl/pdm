@@ -275,7 +275,7 @@ namespace pdm::types {
         return true;
     }
 
-    bool ConvertableRelation::on_assume_impl(types::Manager* manager) {
+    bool ConvertibleRelation::on_assume_impl(types::Manager* manager) {
         // todo: implement me!
         std::cout << "NotImplemented: ConvertableRelation::on_assume_impl" << std::endl;
         return true;

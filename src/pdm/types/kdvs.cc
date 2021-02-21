@@ -55,7 +55,7 @@ namespace pdm::types {
                     printer.print_c_str("- ");
                     (*it)->print(printer);
                 }
-                printer.print_newline_deindent();
+                printer.print_newline_exdent();
             } else {
                 printer.print_newline();
             }
@@ -136,7 +136,7 @@ namespace pdm::types {
     void SimplestKDVS::print(printer::Printer& printer) const {
         help_print_common_and_start_indented_block(printer, "Simplest");
         {}
-        printer.print_newline_deindent();
+        printer.print_newline_exdent();
         printer.print_c_str("}");
     }
 
@@ -335,7 +335,7 @@ namespace pdm::types {
                 printer.print_c_str("Any");
             }
         }
-        printer.print_newline_deindent();
+        printer.print_newline_exdent();
         printer.print_c_str("}");
     }
 
@@ -422,7 +422,7 @@ namespace pdm::types {
                 }
             }
         }
-        printer.print_newline_deindent();
+        printer.print_newline_exdent();
         printer.print_c_str("}");
     }
 
@@ -609,23 +609,20 @@ namespace pdm::types {
                             assert(is_vid ^ is_tid);
                             if (is_vid) {
                                 assert(
-                                    field_var->var_archetype() == VarArchetype::Type ||
-                                    field_var->var_archetype() == VarArchetype::Template_RetValue
+                                    field_var->var_archetype() == VarArchetype::Type
                                 );
                                 field_kind = tt::ModuleFieldKind::Value;
                             } else if (is_tid) {
-                                bool is_mono_type_field = (
-                                    field_var->var_archetype() == VarArchetype::Type ||
-                                    field_var->var_archetype() == VarArchetype::Template_RetType
+                                bool is_type_field = (
+                                    field_var->var_archetype() == VarArchetype::Type
                                 );
-                                bool is_type_class_field = (
-                                    field_var->var_archetype() == VarArchetype::Class ||
-                                    field_var->var_archetype() == VarArchetype::Template_RetClass
+                                bool is_class_field = (
+                                    field_var->var_archetype() == VarArchetype::Class
                                 );
 
-                                if (is_mono_type_field) {
+                                if (is_type_field) {
                                     field_kind = tt::ModuleFieldKind::Type;
-                                } else if (is_type_class_field) {
+                                } else if (is_class_field) {
                                     field_kind = tt::ModuleFieldKind::Typeclass;
                                 } else {
                                     assert(0 && "NotImplemented: unknown type field in module.");
@@ -634,13 +631,6 @@ namespace pdm::types {
                                 assert(0 && "NotImplemented: unknown field in module.");
                             }
                         }
-
-                        // deducing whether or not template from field_var's archetype:
-                        bool field_is_template = (
-                            field_var->var_archetype() == VarArchetype::Template_RetValue ||
-                            field_var->var_archetype() == VarArchetype::Template_RetType ||
-                            field_var->var_archetype() == VarArchetype::Template_RetClass
-                        );
 
                         // reifying the field if a value or type:
                         bool include_type_soln = (
@@ -657,14 +647,13 @@ namespace pdm::types {
                     }
                 }
                 return ModuleType::get(construct_fields);
-                // assert(0 && "NotImplemented: FieldCollectionKDVS::reify_impl for Modules");
-                // std::cout << "NotImplemented: FieldCollectionKDVS::reify_impl for Modules" << std::endl;
-                break;
             }
             default:
             {
-                assert(0 && "NotImplemented: unknown FieldCollectionKDVS Type Kind.");
-                break;
+                if (pdm::DEBUG) {
+                    assert(0 && "NotImplemented: unknown FieldCollectionKDVS Type Kind.");
+                }
+                return nullptr;
             }
         }
 
@@ -689,7 +678,7 @@ namespace pdm::types {
                 }
             }
         }
-        printer.print_newline_deindent();
+        printer.print_newline_exdent();
         printer.print_c_str("}");
     }
 
@@ -941,7 +930,7 @@ namespace pdm::types {
                         printer.print_newline();
                     }
                 }
-                printer.print_newline_deindent();
+                printer.print_newline_exdent();
             } else {
                 printer.print_newline();
             }
@@ -953,7 +942,7 @@ namespace pdm::types {
                 printer.print_c_str("<Unknown>");
             }
         }
-        printer.print_newline_deindent();
+        printer.print_newline_exdent();
         printer.print_c_str("}");
     }
 
@@ -1015,7 +1004,7 @@ namespace pdm::types {
             printer.print_c_str("- ItemType: ");
             m_opt_typeof_element_tv->print_title(printer);
         }
-        printer.print_newline_deindent();
+        printer.print_newline_exdent();
         printer.print_c_str("}");
     }
 

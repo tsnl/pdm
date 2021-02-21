@@ -534,10 +534,11 @@ namespace pdm::types {
 
       public:
         IfThenRelation(ast::Node* ast_node, TypeVar* output_tv, TypeVar* cond, TypeVar* then)
-        : Relation(ast_node, "IfThenRelation"),
-          m_output_tv(output_tv),
-          m_cond(cond),
-          m_then(then) {}
+        :   Relation(ast_node, "IfThenRelation"),
+            m_output_tv(output_tv),
+            m_cond(cond),
+            m_then(then)
+        {}
 
       protected:
         bool on_assume_impl(types::Manager* manager) override;
@@ -578,131 +579,18 @@ namespace pdm::types {
     };
 
     // convert
-    class ConvertableRelation: public Relation {
+    class ConvertibleRelation: public Relation {
       private:
         TypeVar* m_dst;
         TypeVar* m_src;
 
       public:
-        ConvertableRelation(ast::Node* ast_node, TypeVar* dst_tv, TypeVar* src_tv)
+        ConvertibleRelation(ast::Node* ast_node, TypeVar* dst_tv, TypeVar* src_tv)
         : Relation(ast_node, "ConvertableRelation") {}
 
       protected:
         bool on_assume_impl(types::Manager* manager) override;
     };
-
-    // templates:
-    // rhs_var is a...
-    // - typeof TV if RhsKind = value   [rhs 'Var' is a TypeVar modelling the type of the value]
-    // - type TV if RhsKind = type      [rhs 'Var' is a TypeVar modelling the type itself]
-    // - class CV if RhsKind = class    [rhs 'Var' is a ClassVar modelling the class itself]
-    enum class TemplateRelationStrength {
-        Formal,
-        Actual
-    };
-    enum class TemplateRelationExpectedMonoKind {
-        Value,
-        Type,
-        Class
-    };
-    class TemplateRelation: public Relation {
-      private:
-        TemplateVar*                     m_lhs_template_var;
-        TemplateRelationStrength         m_strength;
-        TemplateRelationExpectedMonoKind m_expected_rhs_kind;
-        Var*                             m_rhs_var;
-
-      protected:
-        TemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, Var* rhs_var, TemplateRelationExpectedMonoKind template_relation_expected_lhs_kind, std::string template_name_suffix, TemplateRelationStrength strength);
-
-      protected:
-        bool on_assume_impl(types::Manager* manager) override;
-    };
-    inline TemplateRelation::TemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, Var* rhs_var, TemplateRelationExpectedMonoKind expected_rhs_kind, std::string template_name_suffix, TemplateRelationStrength strength)
-    :   Relation(ast_node, "Template:" + template_name_suffix),
-        m_lhs_template_var(lhs_template_var),
-        m_strength(strength),
-        m_expected_rhs_kind(expected_rhs_kind),
-        m_rhs_var(rhs_var)
-    {
-        // ensuring TemplateVar matches
-        switch (expected_rhs_kind)
-        {
-            case TemplateRelationExpectedMonoKind::Value:
-            {
-                assert(lhs_template_var->var_archetype() == VarArchetype::Template_RetValue);
-                break;
-            }
-            case TemplateRelationExpectedMonoKind::Type:
-            {
-                assert(lhs_template_var->var_archetype() == VarArchetype::Template_RetType);
-                break;
-            }
-            case TemplateRelationExpectedMonoKind::Class:
-            {
-                assert(lhs_template_var->var_archetype() == VarArchetype::Template_RetClass);
-                break;
-            }
-            default:
-            {
-                assert(0);
-                break;
-            }
-        }
-    }
-
-    // formal tcall:
-    class FormalTemplateRelation: public TemplateRelation {
-      private:
-        std::vector<ast::TPattern*> m_tpatterns;
-
-      protected:
-        FormalTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedMonoKind expected_rhs_kind, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
-
-      public:
-        inline static FormalTemplateRelation* new_formal_value_template_relation(ast::Node* ast_node, TemplateVar_RetValue* lhs_value_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
-        inline static FormalTemplateRelation* new_formal_type_template_relation(ast::Node* ast_node, TemplateVar_RetType* lhs_type_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
-        inline static FormalTemplateRelation* new_formal_class_template_relation(ast::Node* ast_node, TemplateVar_RetClass* lhs_class_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var);
-    };
-    inline FormalTemplateRelation::FormalTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedMonoKind expected_rhs_kind, std::vector<ast::TPattern*> tpatterns, Var* rhs_var)
-    :   TemplateRelation(ast_node, lhs_template_var, rhs_var, expected_rhs_kind, "Formal", TemplateRelationStrength::Formal),
-        m_tpatterns(tpatterns)
-    {}
-    inline FormalTemplateRelation* FormalTemplateRelation::new_formal_value_template_relation(ast::Node* ast_node, TemplateVar_RetValue* lhs_value_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var) {
-        return new FormalTemplateRelation{ast_node, lhs_value_template_var, TemplateRelationExpectedMonoKind::Value, tpatterns, rhs_var};
-    }
-    inline FormalTemplateRelation* FormalTemplateRelation::new_formal_type_template_relation(ast::Node* ast_node, TemplateVar_RetType* lhs_type_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var) {
-        return new FormalTemplateRelation{ast_node, lhs_type_template_var, TemplateRelationExpectedMonoKind::Type, tpatterns, rhs_var};
-    }
-    inline FormalTemplateRelation* FormalTemplateRelation::new_formal_class_template_relation(ast::Node* ast_node, TemplateVar_RetClass* lhs_class_template_var, std::vector<ast::TPattern*> tpatterns, Var* rhs_var) {
-        return new FormalTemplateRelation{ast_node, lhs_class_template_var, TemplateRelationExpectedMonoKind::Class, tpatterns, rhs_var};
-    }
-
-    // actual tcall:
-    class ActualTemplateRelation: public TemplateRelation {
-      private:
-        std::vector<ast::TArg*> m_actual_targs;
-
-      protected:
-        ActualTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedMonoKind expected_rhs_kind, std::vector<ast::TArg*> actual_targs, Var* rhs_var);
-
-      public:
-        inline static ActualTemplateRelation* new_actual_value_template_relation(ast::Node* ast_node, TemplateVar_RetValue* lhs_value_template_var, std::vector<ast::TArg*> targs, Var* rhs_var);
-        inline static ActualTemplateRelation* new_actual_type_template_relation(ast::Node* ast_node, TemplateVar_RetType* lhs_type_template_var, std::vector<ast::TArg*> targs, Var* rhs_var);
-        inline static ActualTemplateRelation* new_actual_class_template_relation(ast::Node* ast_node, TemplateVar_RetClass* lhs_class_template_var, std::vector<ast::TArg*> targs, Var* rhs_var);
-    };
-    inline ActualTemplateRelation::ActualTemplateRelation(ast::Node* ast_node, TemplateVar* lhs_template_var, TemplateRelationExpectedMonoKind expected_rhs_kind, std::vector<ast::TArg*> actual_targs, Var* rhs_var)
-    :   TemplateRelation(ast_node, lhs_template_var, rhs_var, expected_rhs_kind, "Actual", TemplateRelationStrength::Actual)
-    {}
-    inline ActualTemplateRelation* ActualTemplateRelation::new_actual_value_template_relation(ast::Node* ast_node, TemplateVar_RetValue* lhs_value_template_var, std::vector<ast::TArg*> targs, Var* rhs_var) {
-        return new ActualTemplateRelation(ast_node, lhs_value_template_var, TemplateRelationExpectedMonoKind::Value, targs, rhs_var);
-    }
-    inline ActualTemplateRelation* ActualTemplateRelation::new_actual_type_template_relation(ast::Node* ast_node, TemplateVar_RetType* lhs_type_template_var, std::vector<ast::TArg*> targs, Var* rhs_var) {
-        return new ActualTemplateRelation(ast_node, lhs_type_template_var, TemplateRelationExpectedMonoKind::Type, targs, rhs_var);
-    }
-    inline ActualTemplateRelation* ActualTemplateRelation::new_actual_class_template_relation(ast::Node* ast_node, TemplateVar_RetClass* lhs_class_template_var, std::vector<ast::TArg*> targs, Var* rhs_var) {
-        return new ActualTemplateRelation(ast_node, lhs_class_template_var, TemplateRelationExpectedMonoKind::Class, targs, rhs_var);
-    }
 
     // IsNumberRelation used to ensure numeric values resolve to a numeric class only (such that an assembler impl is
     // available)

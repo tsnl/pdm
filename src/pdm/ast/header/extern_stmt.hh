@@ -1,7 +1,8 @@
-#ifndef INCLUDED_PDM_AST_STMT_EXTERN_HH
-#define INCLUDED_PDM_AST_STMT_EXTERN_HH
+#ifndef INCLUDED__PDM__AST__HEADER__EXTERN_STMT_HH
+#define INCLUDED__PDM__AST__HEADER__EXTERN_STMT_HH
 
-#include "stmt.hh"
+#include "header_stmt.hh"
+#include "pdm/source/loc.hh"
 #include "pdm/core/intern.hh"
 
 namespace pdm::ast {
@@ -11,7 +12,7 @@ namespace pdm::ast {
 
 namespace pdm::ast {
 
-    class ExternStmt: public Stmt {
+    class ExternStmt: public HeaderStmt {
         friend Manager;
 
       private:
@@ -27,7 +28,7 @@ namespace pdm::ast {
     };
 
     inline ExternStmt::ExternStmt(source::Loc loc, intern::String ext_mod_name, Exp* link_arg)
-    :   Stmt(loc, Kind::ExternStmt),
+    :   HeaderStmt(loc, Kind::ExternStmt),
         m_ext_mod_name(ext_mod_name),
         m_link_arg(link_arg) {}
 
@@ -41,4 +42,4 @@ namespace pdm::ast {
 
 }
 
-#endif // INCLUDED_PDM_AST_STMT_EXTERN_HH
+#endif // INCLUDED__PDM__AST__HEADER__EXTERN_STMT_HH

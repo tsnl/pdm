@@ -108,12 +108,8 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/builtin.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/const.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/discard.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/extern.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/import.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/import.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/set.hh
+        src/pdm/ast/header/extern_stmt.hh
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/set.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod_val.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod_enum.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod_type.hh
@@ -125,19 +121,22 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/arg/targ.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/arg/varg.hh
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/setspec.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/type_spec.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/type_spec.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/class_spec.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/class_spec.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/dot.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/fn.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/id_type_spec.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/id_class_spec.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/struct.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/setspec/tcall.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/module/mod_exp.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/module/mod_address.hh
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/header/import_stmt.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/header/import_stmt.cc
+
+        src/pdm/ast/type_spec/type_spec.cc
+        src/pdm/ast/type_spec/type_spec.hh
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/class_spec.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/class_spec.hh
+        src/pdm/ast/type_spec/fn.hh
+        src/pdm/ast/type_spec/id.hh
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/id.hh
+        src/pdm/ast/type_spec/struct.hh
+
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/core/bitsets.hh
@@ -213,7 +212,7 @@ add_library(
     
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type_trie.hh 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type_trie.cc
-)
+        src/pdm/ast/type_spec/dot.hh src/pdm/ast/type_spec/enum.hh src/pdm/ast/type_spec/struct.hh src/pdm/ast/class_spec/class_exp.hh)
 
 # link pdm <- llvm
 # - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt

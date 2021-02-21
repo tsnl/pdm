@@ -1,12 +1,13 @@
-#ifndef INCLUDED_PDM_AST_TYPESPEC_ID_HH
-#define INCLUDED_PDM_AST_TYPESPEC_ID_HH
+#ifndef INCLUDED__PDM__AST__TYPE_SPEC__ID_HH
+#define INCLUDED__PDM__AST__TYPE_SPEC__ID_HH
 
 #include <vector>
+
+#include "type_spec.hh"
 
 #include "pdm/core/intern.hh"
 #include "pdm/source/loc.hh"
 #include "pdm/ast/kind.hh"
-#include "type_spec.hh"
 
 namespace pdm::scoper {
     class Manager;
@@ -52,4 +53,4 @@ namespace pdm::ast {
 
 }
 
-#endif  // INCLUDED_PDM_AST_TYPESPEC_ID_HH
+#endif  // INCLUDED__PDM__AST__TYPE_SPEC__ID_HH

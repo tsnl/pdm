@@ -21,15 +21,55 @@ namespace pdm::ast {
             // scripts:
             //
 
-            case Kind::Script:
-            {
+            case Kind::Script: {
                 Script* script = dynamic_cast<Script*>(node);
-                for (ast::Stmt* head_stmt: script->head_stmts()) {
+                for (ast::HeaderStmt* head_stmt: script->header_stmts()) {
                     ok = visit(head_stmt) && ok;
                 }
-                for (ast::ModStmt* body_stmt: script->body_stmts()) {
-                    ok = visit(body_stmt) && ok;
+                for (ast::Script::Field* body_field: script->body_fields()) {
+                    ok = visit(body_field) && ok;
                 }
+                break;
+            }
+            case Kind::ScriptField: {
+                auto field = dynamic_cast<Script::Field*>(node);
+                assert(0 && "NotImplemented: visitor for ScriptField");
+                break;
+            }
+
+            //
+            // Modules:
+            //
+
+            case Kind::ModExp: {
+                auto exp = dynamic_cast<ModExp*>(node);
+                assert(0 && "NotImplemented: visitor for ModExp");
+                break;
+            }
+            case Kind::ValueModField: {
+                auto field = dynamic_cast<ModExp::ValueField*>(node);
+                assert(0 && "NotImplemented: visitor for ValueModField");
+                break;
+            }
+            case Kind::TypeModField: {
+                auto field = dynamic_cast<ModExp::TypeField*>(node);
+                assert(0 && "NotImplemented: visitor for TypeModField");
+                break;
+            }
+            case Kind::ClassModField: {
+                auto field = dynamic_cast<ModExp::ClassField*>(node);
+                assert(0 && "NotImplemented: visitor for ClassModField");
+                break;
+            }
+
+            case Kind::ModAddress: {
+                auto field = dynamic_cast<ModAddress*>(node);
+                assert(0 && "NotImplemented: visitor for ModAddress");
+                break;
+            }
+            case Kind::TemplateModAddress: {
+                auto field = dynamic_cast<TemplateModAddress*>(node);
+                assert(0 && "NotImplemented: visitor for TemplateModAddress");
                 break;
             }
 
@@ -39,84 +79,36 @@ namespace pdm::ast {
 
             case Kind::DiscardStmt:
             {
-                DiscardStmt* discard_stmt = dynamic_cast<DiscardStmt*>(node);
+                auto discard_stmt = dynamic_cast<DiscardStmt*>(node);
                 ok = visit(discard_stmt->discarded_exp()) && ok;
                 break;
             }
             case Kind::ConstStmt:
             {
-                ConstStmt* const_stmt = dynamic_cast<ConstStmt*>(node);
+                auto const_stmt = dynamic_cast<ConstStmt*>(node);
                 ok = visit(const_stmt->lhs_lpattern()) && ok;
                 ok = visit(const_stmt->rhs_exp()) && ok;
                 break;
             } 
             case Kind::ValStmt:
             {
-                ValStmt* val_stmt = dynamic_cast<ValStmt*>(node);
+                auto val_stmt = dynamic_cast<ValStmt*>(node);
                 ok = visit(val_stmt->lhs_lpattern()) && ok;
                 ok = visit(val_stmt->rhs_exp()) && ok;
                 break;
             }
             case Kind::VarStmt:
             {
-                VarStmt* var_stmt = dynamic_cast<VarStmt*>(node);
+                auto var_stmt = dynamic_cast<VarStmt*>(node);
                 ok = visit(var_stmt->lhs_lpattern()) && ok;
                 ok = visit(var_stmt->rhs_exp()) && ok;
                 break;
             }
             case Kind::SetStmt:
             {
-                SetStmt* set_stmt = dynamic_cast<SetStmt*>(node);
+                auto set_stmt = dynamic_cast<SetStmt*>(node);
                 ok = visit(set_stmt->lhs_exp()) && ok;
                 ok = visit(set_stmt->rhs_exp()) && ok;
-                break;
-            }
-            case Kind::ModValStmt:
-            {
-                ModValStmt* mod_val_stmt = dynamic_cast<ModValStmt*>(node);
-                for (TPattern* tpattern: mod_val_stmt->tpatterns()) {
-                    ok = visit(tpattern) && ok;
-                }
-                if (mod_val_stmt->opt_rhs_exp()) {
-                    ok = visit(mod_val_stmt->opt_rhs_exp()) && ok;
-                }
-                break;
-            }
-            case Kind::ModTypeStmt:
-            {
-                auto type_stmt = dynamic_cast<ModTypeStmt*>(node);
-                ok = visit(type_stmt->opt_rhs_typespec()) && ok;
-                break;
-            }
-            case Kind::ModEnumStmt:
-            {
-                auto enum_stmt = dynamic_cast<ModEnumStmt*>(node);
-                for (ast::ModEnumStmt::Field* field: enum_stmt->fields()) {
-                    if (field->opt_type_spec()) {
-                        ok = visit(field->opt_type_spec()) && ok;
-                    }
-                }
-                break;
-            }
-            case Kind::ModTypeclassStmt:
-            {
-                auto typeclass_stmt = dynamic_cast<ModTypeclassStmt*>(node);
-                
-                ok = visit(typeclass_stmt->candidate_class_spec()) && ok;
-                for (TPattern* tpattern: typeclass_stmt->tpatterns()) {
-                    ok = visit(tpattern) && ok;
-                }
-                for (Exp* condition: typeclass_stmt->conditions()) {
-                    ok = visit(condition) && ok;
-                }
-                break;
-            }
-            case Kind::ModStmt:
-            {
-                auto module_stmt = dynamic_cast<ModStmt*>(node);
-                for (Stmt* defn_stmt: module_stmt->defns()) {
-                    ok = visit(defn_stmt) && ok;
-                }
                 break;
             }
             case Kind::ExternStmt:
@@ -128,11 +120,13 @@ namespace pdm::ast {
             case Kind::ImportStmt:
             {
                 auto import_stmt = dynamic_cast<ImportStmt*>(node);
+                // no children
                 break;
             }
             case Kind::UsingStmt:
             {
                 auto using_stmt = dynamic_cast<UsingStmt*>(node);
+                // no children
                 break;
             }
 
@@ -295,14 +289,13 @@ namespace pdm::ast {
                 }
                 break;
             }
-            
+
             //
-            // typespecs:
+            // type specs:
             //
 
             case Kind::IdTypeSpec:
             case Kind::IdClassSpec:
-            case Kind::DotNameTypeSpec_ModPrefix:
             {
                 break;
             }
@@ -310,25 +303,7 @@ namespace pdm::ast {
             {
                 auto fn_typespec = dynamic_cast<FnTypeSpec*>(node);
                 ok = visit(fn_typespec->lhs_vpattern()) && ok;
-                ok = visit(fn_typespec->opt_ret_typespec()) && ok;
-                break;
-            }
-            case Kind::TCallTypeSpec:
-            {
-                auto tcall_typespec = dynamic_cast<TCallTypeSpec*>(node);
-                ok = visit(tcall_typespec->lhs_called()) && ok;
-                for (TArg* arg: tcall_typespec->args()) {
-                    ok = visit(arg) && ok;
-                }
-                break;
-            }
-            case Kind::TCallClassSpec:
-            {
-                auto tcall_class_spec = dynamic_cast<TCallClassSpec*>(node);
-                ok = visit(tcall_class_spec->lhs_called()) && ok;
-                for (TArg* arg: tcall_class_spec->args()) {
-                    ok = visit(arg) && ok;
-                }
+                ok = visit(fn_typespec->opt_ret_type_spec()) && ok;
                 break;
             }
             // case Kind::DotNameTypeSpec_TypePrefix:
@@ -351,12 +326,6 @@ namespace pdm::ast {
                 for (TypeSpec* item_typespec: tuple_typespec->items()) {
                     ok = visit(item_typespec) && ok;
                 }
-                break;
-            }
-            case Kind::ParenTypeSpec:
-            {
-                ParenTypeSpec* paren_typespec = dynamic_cast<ParenTypeSpec*>(node);
-                ok = visit(paren_typespec->nested_typespec()) && ok;
                 break;
             }
 
@@ -403,6 +372,17 @@ namespace pdm::ast {
             {
                 break;
             }
+
+            default:
+                assert(0 && "NotImplemented: see below switch cases.");
+                break;
+
+//            case Kind::DotTypeSpec:
+//                break;
+//            case Kind::EnumTypeSpec:
+//                break;
+//            case Kind::ClassExpClassSpec:
+//                break;
         }
 
         ok = on_visit(node, VisitOrder::Post) && ok;
@@ -414,225 +394,60 @@ namespace pdm::ast {
         switch (node->kind()) {
             
             // script:
-            case Kind::Script: 
-            {
-                return on_visit_script(dynamic_cast<Script *>(node), visit_order);
-            }
+            case Kind::Script: return on_visit_script(dynamic_cast<Script *>(node), visit_order);
 
             // statements:
-            case Kind::DiscardStmt:
-            {
-                return on_visit_discard_stmt(dynamic_cast<DiscardStmt *>(node), visit_order);
-            } 
-            case Kind::ConstStmt:
-            {
-                return on_visit_const_stmt(dynamic_cast<ConstStmt *>(node), visit_order);
-            }
-            case Kind::ValStmt:
-            {
-                return on_visit_val_stmt(dynamic_cast<ValStmt *>(node), visit_order);
-            }
-            case Kind::VarStmt:
-            {
-                return on_visit_var_stmt(dynamic_cast<VarStmt *>(node), visit_order);
-            }
-            case Kind::SetStmt:
-            {
-                return on_visit_set_stmt(dynamic_cast<SetStmt *>(node), visit_order);
-            }
-            case Kind::ModValStmt:
-            {
-                return on_visit_mod_val_stmt(dynamic_cast<ModValStmt *>(node), visit_order);
-            }
-            case Kind::ModTypeStmt:
-            {
-                return on_visit_mod_type_stmt(dynamic_cast<ModTypeStmt *>(node), visit_order);
-            }
-            case Kind::ModEnumStmt:
-            {
-                return on_visit_mod_enum_stmt(dynamic_cast<ModEnumStmt *>(node), visit_order);
-            }
-            case Kind::ModTypeclassStmt:
-            {
-                return on_visit_mod_typeclass_stmt(dynamic_cast<ModTypeclassStmt *>(node), visit_order);
-            }
-            case Kind::ModStmt:
-            {
-                return on_visit_mod_stmt(dynamic_cast<ModStmt *>(node), visit_order);
-            }
-            case Kind::ExternStmt:
-            {
-                return on_visit_extern_stmt(dynamic_cast<ExternStmt *>(node), visit_order);
-            }
-            case Kind::ImportStmt:
-            {
-                return on_visit_import_stmt(dynamic_cast<ImportStmt *>(node), visit_order);
-            }
-            case Kind::UsingStmt:
-            {
-                return on_visit_using_stmt(dynamic_cast<UsingStmt *>(node), visit_order);
-            }
+            case Kind::DiscardStmt: return on_visit_discard_stmt(dynamic_cast<DiscardStmt *>(node), visit_order);
+            case Kind::ConstStmt: return on_visit_const_stmt(dynamic_cast<ConstStmt *>(node), visit_order);
+            case Kind::ValStmt: return on_visit_val_stmt(dynamic_cast<ValStmt *>(node), visit_order);
+            case Kind::VarStmt: return on_visit_var_stmt(dynamic_cast<VarStmt *>(node), visit_order);
+            case Kind::SetStmt: return on_visit_set_stmt(dynamic_cast<SetStmt *>(node), visit_order);
+            case Kind::ExternStmt: return on_visit_extern_stmt(dynamic_cast<ExternStmt *>(node), visit_order);
+            case Kind::ImportStmt: return on_visit_import_stmt(dynamic_cast<ImportStmt *>(node), visit_order);
+            case Kind::UsingStmt: return on_visit_using_stmt(dynamic_cast<UsingStmt *>(node), visit_order);
 
             // expressions:
-            case Kind::UnitExp:
-            {
-                return on_visit_unit_exp(dynamic_cast<UnitExp *>(node), visit_order);
-            } 
-            case Kind::IntExp:
-            {
-                return on_visit_int_exp(dynamic_cast<IntExp *>(node), visit_order);
-            } 
-            case Kind::FloatExp:
-            {
-                return on_visit_float_exp(dynamic_cast<FloatExp *>(node), visit_order);
-            } 
-            case Kind::StringExp:
-            {
-                return on_visit_string_exp(dynamic_cast<StringExp *>(node), visit_order);
-            }
-            case Kind::IdExp:
-            {
-                return on_visit_id_exp(dynamic_cast<IdExp *>(node), visit_order);
-            }
-            case Kind::ParenExp:
-            {
-                return on_visit_paren_exp(dynamic_cast<ParenExp *>(node), visit_order);
-            }
-            case Kind::ArrayExp:
-            {
-                return on_visit_array_exp(dynamic_cast<ArrayExp *>(node), visit_order);
-            } 
-            case Kind::TupleExp:
-            {
-                return on_visit_tuple_exp(dynamic_cast<TupleExp *>(node), visit_order);
-            } 
-            case Kind::StructExp:
-            {
-                return on_visit_struct_exp(dynamic_cast<StructExp *>(node), visit_order);
-            } 
-            case Kind::ChainExp:
-            {
-                return on_visit_chain_exp(dynamic_cast<ChainExp *>(node), visit_order);
-            }
-            case Kind::LambdaExp:
-            {
-                return on_visit_lambda_exp(dynamic_cast<LambdaExp *>(node), visit_order);
-            }
-            case Kind::IfExp:
-            {
-                return on_visit_if_exp(dynamic_cast<IfExp *>(node), visit_order);
-            }
-            case Kind::DotIndexExp:
-            {
-                return on_visit_dot_index_exp(dynamic_cast<DotIndexExp *>(node), visit_order);
-            } 
-            case Kind::DotNameExp:
-            {
-                return on_visit_dot_name_exp(dynamic_cast<DotNameExp *>(node), visit_order);
-            }
-            case Kind::ModuleDotExp:
-            {
-                return on_visit_module_dot_exp(dynamic_cast<ModuleDotExp *>(node), visit_order);
-            }
-            case Kind::UnaryExp:
-            {
-                return on_visit_unary_exp(dynamic_cast<UnaryExp *>(node), visit_order);
-            } 
-            case Kind::BinaryExp:
-            {
-                return on_visit_binary_exp(dynamic_cast<BinaryExp *>(node), visit_order);
-            }
-            case Kind::VCallExp:
-            {
-                return on_visit_v_call_exp(dynamic_cast<VCallExp *>(node), visit_order);
-            } 
-            case Kind::TCallExp:
-            {
-                return on_visit_t_call_exp(dynamic_cast<TCallExp *>(node), visit_order);
-            }
-            case Kind::TypeQueryExp:
-            {
-                return on_visit_type_query_exp(dynamic_cast<TypeQueryExp *>(node), visit_order);
-            }
+            case Kind::UnitExp: return on_visit_unit_exp(dynamic_cast<UnitExp *>(node), visit_order);
+            case Kind::IntExp: return on_visit_int_exp(dynamic_cast<IntExp *>(node), visit_order);
+            case Kind::FloatExp: return on_visit_float_exp(dynamic_cast<FloatExp *>(node), visit_order);
+            case Kind::StringExp: return on_visit_string_exp(dynamic_cast<StringExp *>(node), visit_order);
+            case Kind::IdExp: return on_visit_id_exp(dynamic_cast<IdExp *>(node), visit_order);
+            case Kind::ParenExp: return on_visit_paren_exp(dynamic_cast<ParenExp *>(node), visit_order);
+            case Kind::ArrayExp: return on_visit_array_exp(dynamic_cast<ArrayExp *>(node), visit_order);
+            case Kind::TupleExp: return on_visit_tuple_exp(dynamic_cast<TupleExp *>(node), visit_order);
+            case Kind::StructExp: return on_visit_struct_exp(dynamic_cast<StructExp *>(node), visit_order);
+            case Kind::ChainExp: return on_visit_chain_exp(dynamic_cast<ChainExp *>(node), visit_order);
+            case Kind::LambdaExp: return on_visit_lambda_exp(dynamic_cast<LambdaExp *>(node), visit_order);
+            case Kind::IfExp: return on_visit_if_exp(dynamic_cast<IfExp *>(node), visit_order);
+            case Kind::DotIndexExp: return on_visit_dot_index_exp(dynamic_cast<DotIndexExp *>(node), visit_order);
+            case Kind::DotNameExp: return on_visit_dot_name_exp(dynamic_cast<DotNameExp *>(node), visit_order);
+            case Kind::ModuleDotExp: return on_visit_module_dot_exp(dynamic_cast<ModuleDotExp *>(node), visit_order);
+            case Kind::UnaryExp: return on_visit_unary_exp(dynamic_cast<UnaryExp *>(node), visit_order);
+            case Kind::BinaryExp: return on_visit_binary_exp(dynamic_cast<BinaryExp *>(node), visit_order);
+            case Kind::VCallExp: return on_visit_v_call_exp(dynamic_cast<VCallExp *>(node), visit_order);
+            case Kind::TCallExp: return on_visit_t_call_exp(dynamic_cast<TCallExp *>(node), visit_order);
+            case Kind::TypeQueryExp: return on_visit_type_query_exp(dynamic_cast<TypeQueryExp *>(node), visit_order);
 
             // patterns:
-            case Kind::VPattern:
-            {
-                return on_visit_v_pattern(dynamic_cast<VPattern *>(node), visit_order);
-            }
-            case Kind::TPattern:
-            {
-                return on_visit_t_pattern(dynamic_cast<TPattern *>(node), visit_order);
-            }
-            case Kind::LPattern:
-            {
-                return on_visit_l_pattern(dynamic_cast<LPattern *>(node), visit_order);
-            }
+            case Kind::VPattern: return on_visit_v_pattern(dynamic_cast<VPattern *>(node), visit_order);
+            case Kind::TPattern: return on_visit_t_pattern(dynamic_cast<TPattern *>(node), visit_order);
+            case Kind::LPattern: return on_visit_l_pattern(dynamic_cast<LPattern *>(node), visit_order);
 
-            // typespecs:
-            case Kind::IdClassSpec:
-            {
-                return on_visit_id_class_spec(dynamic_cast<IdClassSpec *>(node), visit_order);
-            }
-            case Kind::IdTypeSpec:
-            {
-                return on_visit_id_type_spec(dynamic_cast<IdTypeSpec *>(node), visit_order);
-            }
-            case Kind::FnTypeSpec:
-            {
-                return on_visit_fn_type_spec(dynamic_cast<FnTypeSpec *>(node), visit_order);
-            }
-            case Kind::TCallTypeSpec:
-            {
-                return on_visit_t_call_type_spec(dynamic_cast<TCallTypeSpec *>(node), visit_order);
-            }
-            case Kind::TCallClassSpec:
-            {
-                return on_visit_t_call_class_spec(dynamic_cast<TCallClassSpec *>(node), visit_order);
-            }
-            case Kind::TupleTypeSpec:
-            {
-                return on_visit_tuple_type_spec(dynamic_cast<TupleTypeSpec *>(node), visit_order);
-            }
-            // case Kind::DotNameTypeSpec_TypePrefix:
-            // {
-            //     return on_visit__dot_name_typespec_type_prefix(dynamic_cast<DotNameTypeSpec_TypePrefix*>(node), visit_order);
-            // }
-            case Kind::DotNameTypeSpec_ModPrefix:
-            {
-                return on_visit_dot_name_type_spec_mod_prefix(dynamic_cast<DotNameTypeSpec_ModPrefix *>(node),
-                                                              visit_order);
-            }
-            case Kind::StructTypeSpec:
-            {
-                return on_visit_struct_type_spec(dynamic_cast<StructTypeSpec *>(node), visit_order);
-            }
-            case Kind::ParenTypeSpec:
-            {
-                return on_visit_paren_type_spec(dynamic_cast<ParenTypeSpec *>(node), visit_order);
-            }
+            // type specs:
+            case Kind::IdClassSpec: return on_visit_id_class_spec(dynamic_cast<IdClassSpec *>(node), visit_order);
+            case Kind::IdTypeSpec: return on_visit_id_type_spec(dynamic_cast<IdTypeSpec *>(node), visit_order);
+            case Kind::FnTypeSpec: return on_visit_fn_type_spec(dynamic_cast<FnTypeSpec *>(node), visit_order);
+            case Kind::StructTypeSpec: return on_visit_struct_type_spec(dynamic_cast<StructTypeSpec *>(node), visit_order);
 
             // templates/shared:
-            case Kind::TArg:
-            {
-                return on_visit_targ(dynamic_cast<TArg *>(node), visit_order);
-            }
-            case Kind::VArg:
-            {
-                return on_visit_varg(dynamic_cast<VArg *>(node), visit_order);
-            }
+            case Kind::TArg: return on_visit_t_arg(dynamic_cast<TArg *>(node), visit_order);
+            case Kind::VArg: return on_visit_v_arg(dynamic_cast<VArg *>(node), visit_order);
 
             // non-syntactic elements:
-            case Kind::BuiltinStmt:
-            {
-                return on_visit_builtin_type_stmt(dynamic_cast<BuiltinStmt *>(node), visit_order);
-            }
+            case Kind::BuiltinStmt: return on_visit_builtin_type_stmt(dynamic_cast<BuiltinStmt *>(node), visit_order);
 
             // meta elements:
-            case Kind::__Count:
-            {
-                return false;
-            }
+            case Kind::__Count: return false;
 
             // ignore:
             case Kind::Aux_LPatternField:
@@ -640,6 +455,11 @@ namespace pdm::ast {
             case Kind::Aux_VPatternField:
             {
                 return true;
+            }
+
+            // todo: generate missing hooks!
+            default: {
+                assert(0 && "NotImplemented: on_visit_?");
             }
         }
     }

@@ -25,11 +25,16 @@ namespace pdm::ast {
         return m_compiler_ptr->types_mgr();
     }
 
-    Script* Manager::new_script(source::Source* source, source::Loc loc, std::vector<Stmt*>&& head_stmts, std::vector<ModStmt*>&& body_mod_stmts) {
+    Script* Manager::new_script(
+        source::Source* source, source::Loc loc,
+        std::vector<HeaderStmt*>&& head_stmts, std::vector<Script::Field*>&& body_mod_stmts
+    ) {
         return emplace<Script>(source, loc, std::move(head_stmts), std::move(body_mod_stmts));
     }
 
-    ArrayExp* Manager::new_array_exp(source::Loc loc, std::vector<Exp*>&& items) {
+    ArrayExp* Manager::new_array_exp(
+        source::Loc loc, std::vector<Exp*>&& items
+    ) {
         return emplace<ArrayExp>(loc, std::move(items));
     }
     BinaryExp* Manager::new_binary_exp(source::Loc loc, BinaryOperator binary_operator, Exp* lhs_operand, Exp* rhs_operand) {
@@ -44,7 +49,7 @@ namespace pdm::ast {
     EnumDotNameExp* Manager::new_enum_dot_name_exp(source::Loc loc, TypeSpec* lhs, intern::String rhs_name, Exp* opt_using_arg) {
         return emplace<EnumDotNameExp>(loc, lhs, rhs_name, opt_using_arg);
     }
-    ModuleDotExp* Manager::new_module_dot_exp(source::Loc loc, std::vector<intern::String>&& module_names, intern::String rhs_name) {
+    ModuleDotExp* Manager::new_module_dot_name_exp(source::Loc loc, std::vector<intern::String>&& module_names, intern::String rhs_name) {
         return emplace<ModuleDotExp>(loc, std::move(module_names), rhs_name);
     }
     DotIndexExp* Manager::new_dot_index_exp(source::Loc loc, Exp* lhs, Exp* rhs_exp, DotIndexExp::RhsHint rhs_hint) {
@@ -77,9 +82,6 @@ namespace pdm::ast {
     StructExp* Manager::new_struct_exp(source::Loc loc, std::vector<StructExp::Field*>&& fields) {
         return emplace<StructExp>(loc, std::move(fields));
     }
-    TCallExp* Manager::new_tcall_exp(source::Loc loc, Exp* lhs_called, std::vector<TArg*>&& args) {
-        return emplace<TCallExp>(loc, lhs_called, std::move(args));
-    }
     TupleExp* Manager::new_tuple_exp(source::Loc loc, std::vector<Exp*>&& items) {
         return emplace<TupleExp>(loc, std::move(items));
     }
@@ -111,9 +113,9 @@ namespace pdm::ast {
     LPattern::Field* Manager::new_lpattern_field(source::Loc loc, LPattern::FieldKind kind, intern::String name, TypeSpec* opt_rhs_typespec) {
         return emplace<LPattern::Field>(loc, kind, name, opt_rhs_typespec);
     }
-    TPattern::Field* Manager::new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, SetSpec* rhs_set_spec) {
-        return emplace<TPattern::Field>(loc, kind, name, rhs_set_spec);
-    }
+//    TPattern::Field* Manager::new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, SetSpec* rhs_set_spec) {
+//        return emplace<TPattern::Field>(loc, kind, name, rhs_set_spec);
+//    }
     VPattern::Field* Manager::new_vpattern_field(source::Loc loc, intern::String name, TypeSpec* rhs_typespec, VArgAccessSpec varg_kind) {
         return emplace<VPattern::Field>(loc, name, rhs_typespec, varg_kind);
     }
@@ -137,51 +139,14 @@ namespace pdm::ast {
         return emplace<SetStmt>(loc, lhs, rhs);
     }
     
-    ImportStmt* Manager::new_import_stmt(source::Loc loc, intern::String imported_name, utf8::String imported_from_exp, utf8::String imported_type_exp) {
-        return emplace<ImportStmt>(loc, imported_name, imported_from_exp, imported_type_exp);
+    ImportStmt* Manager::new_import_stmt(source::Loc loc, utf8::String imported_from_exp, utf8::String imported_type_exp) {
+        return emplace<ImportStmt>(loc, imported_from_exp, imported_type_exp);
     }
     UsingStmt* Manager::new_using_stmt(source::Loc loc, intern::String module_name, std::string suffix) {
         return emplace<UsingStmt>(loc, module_name, suffix);
     }
     ExternStmt* Manager::new_extern_stmt(source::Loc loc, intern::String ext_mod_name, Exp* link_arg) {
         return emplace<ExternStmt>(loc, ext_mod_name, link_arg);
-    }
-    ModStmt* Manager::new_mod_stmt(source::Loc loc, intern::String module_name, std::vector<TPattern*>&& args, std::vector<ModContentStmt*>&& defns) {
-        return emplace<ModStmt>(loc, module_name, std::move(args), std::move(defns), ModStmtKind::TopModule);
-    }
-    ModValStmt* Manager::new_internal_mod_val_stmt(
-        source::Loc loc,
-        intern::String name,
-        std::vector<TPattern*>&& tpatterns,
-        Exp* body
-    ) {
-        return emplace<ModValStmt>(loc, name, std::move(tpatterns), body);
-    }
-    ModValStmt* Manager::new_external_mod_val_stmt(
-        source::Loc loc,
-        intern::String name,
-        std::vector<TPattern*>&& tpatterns,
-        TypeSpec* ext_typespec,
-        intern::String ext_mod_name,
-        utf8::String ext_fn_name
-    ) {
-        return emplace<ModValStmt>(loc, name, std::move(tpatterns), ext_typespec, ext_mod_name, ext_fn_name);
-    }
-    ModTypeStmt* Manager::new_mod_type_stmt(source::Loc loc, intern::String lhs_name, std::vector<TPattern*>&& tpatterns, TypeSpec* rhs_typespec) {
-        return emplace<ModTypeStmt>(loc, lhs_name, std::move(tpatterns), rhs_typespec);
-    }
-    ModEnumStmt* Manager::new_mod_enum_stmt(source::Loc loc, intern::String name, std::vector<TPattern*>&& tpatterns, std::vector<ModEnumStmt::Field*>&& fields) {
-        return emplace<ModEnumStmt>(loc, name, std::move(tpatterns), std::move(fields));
-    }
-    ModTypeclassStmt* Manager::new_mod_typeclass_stmt(source::Loc loc, intern::String lhs_name, intern::String candidate_name, ClassSpec* candidate_typespec, std::vector<TPattern*>&& tpatterns, std::vector<TypeQueryExp*>&& conditions) {
-        return emplace<ModTypeclassStmt>(loc, lhs_name, candidate_name, candidate_typespec, std::move(tpatterns), std::move(conditions));
-    }
-    ModEnumStmt::Field* Manager::new_enum_stmt_field(source::Loc loc, intern::String name, ast::TypeSpec* type_spec) {
-        return emplace<ModEnumStmt::Field>(loc, name, type_spec);
-    }
-    
-    DotNameTypeSpec_ModPrefix* Manager::new_dot_name_type_spec_with_mod_prefix(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name) {
-        return emplace<DotNameTypeSpec_ModPrefix>(loc, std::move(lhs_prefixes), rhs_name);
     }
     FnTypeSpec* Manager::new_fn_type_spec(source::Loc loc, VPattern* lhs_vpattern, TypeSpec* rhs_typespec) {
         return emplace<FnTypeSpec>(loc, lhs_vpattern, rhs_typespec);
@@ -192,23 +157,14 @@ namespace pdm::ast {
     IdClassSpec* Manager::new_id_class_spec(source::Loc loc, intern::String name) {
         return emplace<IdClassSpec>(loc, name);
     }
-    TCallClassSpec* Manager::new_tcall_class_spec(source::Loc loc, ClassSpec* lhs_called, std::vector<TArg*>&& args) {
-        return emplace<TCallClassSpec>(loc, lhs_called, std::move(args));
-    }
-    ParenTypeSpec* Manager::new_paren_type_spec(source::Loc loc, TypeSpec* nested_typespec) {
-        return emplace<ParenTypeSpec>(loc, nested_typespec);
-    }
     StructTypeSpec* Manager::new_struct_type_spec(source::Loc loc, std::vector<StructTypeSpec::Field*>&& fields) {
         return emplace<StructTypeSpec>(loc, std::move(fields));
-    }
-    TCallTypeSpec* Manager::new_tcall_type_spec(source::Loc loc, TypeSpec* lhs_called, std::vector<TArg*>&& args) {
-        return emplace<TCallTypeSpec>(loc, lhs_called, std::move(args));
     }
     TupleTypeSpec* Manager::new_tuple_type_spec(source::Loc loc, std::vector<TypeSpec*>&& items) {
         return emplace<TupleTypeSpec>(loc, std::move(items));
     }
-    StructTypeSpec::Field* Manager::new_struct_type_spec_field(source::Loc loc, intern::String name, TypeSpec* typespec) {
-        return emplace<StructTypeSpec::Field>(loc, name, typespec);
+    StructTypeSpec::Field* Manager::new_struct_type_spec_field(source::Loc loc, intern::String name, TypeSpec* type_spec) {
+        return emplace<StructTypeSpec::Field>(loc, name, type_spec);
     }
 
     TArg* Manager::new_targ_exp(source::Loc loc, Exp* exp) {

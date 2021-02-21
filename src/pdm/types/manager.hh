@@ -43,11 +43,8 @@ namespace pdm::types {
 
         std::deque<MonotypeTypeVar>   m_all_unknown_monotype_tvs;
         std::deque<UnknownClassVar>   m_all_unknown_cvs;
-        std::deque<TemplateVar_RetValue>    m_all_value_template_vars;
-        std::deque<TemplateVar_RetType>     m_all_type_template_vars;
-        std::deque<TemplateVar_RetClass>   m_all_class_template_vars;
-        std::vector<Var*>                   m_all_var_refs;     // stored in creation order for data locality
-        std::vector<Relation*>              m_all_relations;
+        std::vector<Var*>      m_all_var_refs;     // stored in creation order for data locality
+        std::vector<Relation*> m_all_relations;
 
         VoidFixedTypeVar m_void_tv;
         StringFixedTypeVar m_string_tv;

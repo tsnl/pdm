@@ -1,3 +1,4 @@
+/*
 #ifndef INCLUDED_PDM_AST_STMT_FN_HH
 #define INCLUDED_PDM_AST_STMT_FN_HH
 
@@ -148,3 +149,4 @@ namespace pdm::ast {
 }
 
 #endif  // INCLUDED_PDM_AST_STMT_FN_HH
+*/

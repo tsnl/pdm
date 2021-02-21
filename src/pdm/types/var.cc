@@ -592,7 +592,7 @@ namespace pdm::types {
             p.print_newline();
             help_print_soln(p);
         }
-        p.print_newline_deindent();
+        p.print_newline_exdent();
         p.print_c_str("}");
         p.print_newline();
     }
@@ -609,21 +609,6 @@ namespace pdm::types {
             case VarArchetype::Class:
             {
                 p.print_c_str("Class");
-                break;
-            }
-            case VarArchetype::Template_RetValue:
-            {
-                p.print_c_str("ValueTemplate");
-                break;
-            }
-            case VarArchetype::Template_RetType:
-            {
-                p.print_c_str("TypeTemplate");
-                break;
-            }
-            case VarArchetype::Template_RetClass:
-            {
-                p.print_c_str("ClassTemplate");
                 break;
             }
             default:

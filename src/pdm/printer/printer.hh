@@ -27,7 +27,7 @@ namespace pdm::printer {
       public:
         void print_newline();
         void print_newline_indent();
-        void print_newline_deindent();
+        void print_newline_exdent();
         
         void print_u32_char(int ch);
         
@@ -47,13 +47,15 @@ namespace pdm::printer {
 
         // scripts:
         void print_script(ast::Script* script);
+        void print_script_field(ast::Script::Field* field);
+
+        // modules:
+        void print_module(ast::ModExp* mod_exp);
+        void print_value_mod_field(ast::ModExp::ValueField* field);
+        void print_type_mod_field(ast::ModExp::TypeField* field);
+        void print_class_mod_field(ast::ModExp::ClassField* field);
 
         // statements:
-        void print_mod_stmt(ast::ModStmt* node);
-        void print_mod_typeclass_stmt(ast::ModTypeclassStmt* node);
-        void print_mod_type_stmt(ast::ModTypeStmt* node);
-        void print_mod_enum_stmt(ast::ModEnumStmt* node);
-        void print_mod_val_stmt(ast::ModValStmt* node);
         void print_const_stmt(ast::ConstStmt* node);
         void print_val_stmt(ast::ValStmt* node);
         void print_var_stmt(ast::VarStmt* node);
@@ -91,18 +93,18 @@ namespace pdm::printer {
         void print_tpattern(ast::TPattern* node);
         void print_lpattern(ast::LPattern* node);
 
-        // typespecs:
-        void print_id_typespec(ast::IdTypeSpec* node);
+        // type specs:
+        void print_id_type_spec(ast::IdTypeSpec* node);
+        void print_fn_type_spec(ast::FnTypeSpec* node);
+        void print_tuple_type_spec(ast::TupleTypeSpec* node);
+        void print_dot_type_spec(ast::DotTypeSpec* node);
+        void print_struct_type_spec(ast::StructTypeSpec* node);
+        void print_enum_type_spec(ast::EnumTypeSpec* node);
+
+        // class specs:
         void print_id_class_spec(ast::IdClassSpec* node);
-        void print_fn_typespec(ast::FnTypeSpec* node);
-        void print_tcall_typespec(ast::TCallTypeSpec* node);
-        void print_tcall_class_spec(ast::TCallClassSpec* node);
-        void print_tuple_typespec(ast::TupleTypeSpec* node);
-        void print_dot_name_typespec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node);
-        void print_struct_typespec(ast::StructTypeSpec* node);
-        void print_paren_typespec(ast::ParenTypeSpec* node);
-        // void print_dot_name_typespec_type_prefix(ast::DotNameTypeSpec_TypePrefix* node);
-        
+        void print_class_exp_class_spec(ast::ClassExpClassSpec* node);
+
         // args:
         void print_targ(ast::TArg* targ);
         void print_varg(ast::VArg* varg);

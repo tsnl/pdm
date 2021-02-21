@@ -77,7 +77,7 @@ namespace pdm::scoper {
         ScoperVisitor(Scoper* scoper_ref);
 
       private:
-        Scoper* scoper() const {
+        [[nodiscard]] Scoper* scoper() const {
             return m_scoper_ref;
         }
 
@@ -87,7 +87,7 @@ namespace pdm::scoper {
         void dec_overhead_chain_exp_count() { --m_overhead_chain_exp_count; }
 
       private:
-        Frame* top_frame() const { return m_frame_stack.top(); }
+        [[nodiscard]] Frame* top_frame() const { return m_frame_stack.top(); }
       
       private:
         void push_frame(FrameKind frame_kind);
@@ -95,7 +95,7 @@ namespace pdm::scoper {
 
       private:
         void place_id_exp_lookup_order(ast::IdExp* id_exp);
-        void place_id_typespec_lookup_order(ast::IdTypeSpec* id_typespec);
+        void place_id_type_spec_lookup_order(ast::IdTypeSpec* id_typespec);
         void place_import_lookup_order(ast::ImportStmt* import_stmt);
         void place_using_lookup_order(ast::UsingStmt* using_stmt);
 
@@ -106,68 +106,58 @@ namespace pdm::scoper {
 
       protected:
         // scripts:
-        virtual bool on_visit_script(ast::Script* script, VisitOrder visit_order) override;
+        bool on_visit_script(ast::Script* script, VisitOrder visit_order) override;
 
         // statements:
-        virtual bool on_visit_mod_stmt(ast::ModStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit_mod_typeclass_stmt(ast::ModTypeclassStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit_mod_type_stmt(ast::ModTypeStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit_mod_enum_stmt(ast::ModEnumStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit_mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit_const_stmt(ast::ConstStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit_val_stmt(ast::ValStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit_var_stmt(ast::VarStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit_extern_stmt(ast::ExternStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit_import_stmt(ast::ImportStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit_set_stmt(ast::SetStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit_discard_stmt(ast::DiscardStmt* node, VisitOrder visit_order) override;
-        virtual bool on_visit_using_stmt(ast::UsingStmt* node, VisitOrder visit_order) override;
+        bool on_visit_const_stmt(ast::ConstStmt* node, VisitOrder visit_order) override;
+        bool on_visit_val_stmt(ast::ValStmt* node, VisitOrder visit_order) override;
+        bool on_visit_var_stmt(ast::VarStmt* node, VisitOrder visit_order) override;
+        bool on_visit_extern_stmt(ast::ExternStmt* node, VisitOrder visit_order) override;
+        bool on_visit_import_stmt(ast::ImportStmt* node, VisitOrder visit_order) override;
+        bool on_visit_set_stmt(ast::SetStmt* node, VisitOrder visit_order) override;
+        bool on_visit_discard_stmt(ast::DiscardStmt* node, VisitOrder visit_order) override;
+        bool on_visit_using_stmt(ast::UsingStmt* node, VisitOrder visit_order) override;
 
         // expressions:
-        virtual bool on_visit_unit_exp(ast::UnitExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_int_exp(ast::IntExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_float_exp(ast::FloatExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_string_exp(ast::StringExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_id_exp(ast::IdExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_paren_exp(ast::ParenExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_tuple_exp(ast::TupleExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_array_exp(ast::ArrayExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_struct_exp(ast::StructExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_type_query_exp(ast::TypeQueryExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_chain_exp(ast::ChainExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_if_exp(ast::IfExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_dot_index_exp(ast::DotIndexExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_dot_name_exp(ast::DotNameExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_module_dot_exp(ast::ModuleDotExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_unary_exp(ast::UnaryExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_binary_exp(ast::BinaryExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_v_call_exp(ast::VCallExp* node, VisitOrder visit_order) override;
-        virtual bool on_visit_t_call_exp(ast::TCallExp* node, VisitOrder visit_order) override;
+        bool on_visit_unit_exp(ast::UnitExp* node, VisitOrder visit_order) override;
+        bool on_visit_int_exp(ast::IntExp* node, VisitOrder visit_order) override;
+        bool on_visit_float_exp(ast::FloatExp* node, VisitOrder visit_order) override;
+        bool on_visit_string_exp(ast::StringExp* node, VisitOrder visit_order) override;
+        bool on_visit_id_exp(ast::IdExp* node, VisitOrder visit_order) override;
+        bool on_visit_paren_exp(ast::ParenExp* node, VisitOrder visit_order) override;
+        bool on_visit_tuple_exp(ast::TupleExp* node, VisitOrder visit_order) override;
+        bool on_visit_array_exp(ast::ArrayExp* node, VisitOrder visit_order) override;
+        bool on_visit_struct_exp(ast::StructExp* node, VisitOrder visit_order) override;
+        bool on_visit_type_query_exp(ast::TypeQueryExp* node, VisitOrder visit_order) override;
+        bool on_visit_chain_exp(ast::ChainExp* node, VisitOrder visit_order) override;
+        bool on_visit_lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) override;
+        bool on_visit_if_exp(ast::IfExp* node, VisitOrder visit_order) override;
+        bool on_visit_dot_index_exp(ast::DotIndexExp* node, VisitOrder visit_order) override;
+        bool on_visit_dot_name_exp(ast::DotNameExp* node, VisitOrder visit_order) override;
+        bool on_visit_module_dot_exp(ast::ModuleDotExp* node, VisitOrder visit_order) override;
+        bool on_visit_unary_exp(ast::UnaryExp* node, VisitOrder visit_order) override;
+        bool on_visit_binary_exp(ast::BinaryExp* node, VisitOrder visit_order) override;
+        bool on_visit_v_call_exp(ast::VCallExp* node, VisitOrder visit_order) override;
+        bool on_visit_t_call_exp(ast::TCallExp* node, VisitOrder visit_order) override;
 
         // patterns:
-        virtual bool on_visit_v_pattern(ast::VPattern* node, VisitOrder visit_order) override;
-        virtual bool on_visit_t_pattern(ast::TPattern* node, VisitOrder visit_order) override;
-        virtual bool on_visit_l_pattern(ast::LPattern* node, VisitOrder visit_order) override;
+        bool on_visit_v_pattern(ast::VPattern* node, VisitOrder visit_order) override;
+        bool on_visit_t_pattern(ast::TPattern* node, VisitOrder visit_order) override;
+        bool on_visit_l_pattern(ast::LPattern* node, VisitOrder visit_order) override;
 
         // typespecs:
-        virtual bool on_visit_id_type_spec(ast::IdTypeSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit_id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit_fn_type_spec(ast::FnTypeSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit_t_call_type_spec(ast::TCallTypeSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit_t_call_class_spec(ast::TCallClassSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit_paren_type_spec(ast::ParenTypeSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit_tuple_type_spec(ast::TupleTypeSpec* node, VisitOrder visit_order) override;
-        virtual bool on_visit_dot_name_type_spec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) override;
-        virtual bool on_visit_struct_type_spec(ast::StructTypeSpec* node, VisitOrder visit_order) override;
-        // virtual bool on_visit__dot_name_typespec_type_prefix(ast::DotNameTypeSpec_TypePrefix* node, VisitOrder visit_order) override;
+        bool on_visit_id_type_spec(ast::IdTypeSpec* node, VisitOrder visit_order) override;
+        bool on_visit_id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) override;
+        bool on_visit_fn_type_spec(ast::FnTypeSpec* node, VisitOrder visit_order) override;
+        bool on_visit_tuple_type_spec(ast::TupleTypeSpec* node, VisitOrder visit_order) override;
+        bool on_visit_struct_type_spec(ast::StructTypeSpec* node, VisitOrder visit_order) override;
 
         // args:
-        virtual bool on_visit_targ(ast::TArg* targ, VisitOrder visit_order) override;
-        virtual bool on_visit_varg(ast::VArg* varg, VisitOrder visit_order) override;
+        bool on_visit_t_arg(ast::TArg* t_arg, VisitOrder visit_order) override;
+        bool on_visit_v_arg(ast::VArg* v_arg, VisitOrder visit_order) override;
 
         // non-syntax:
-        virtual bool on_visit_builtin_type_stmt(ast::BuiltinStmt* node, VisitOrder visit_order) override;
+        bool on_visit_builtin_type_stmt(ast::BuiltinStmt* node, VisitOrder visit_order) override;
     };
 
 }

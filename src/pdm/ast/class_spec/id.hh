@@ -1,8 +1,12 @@
-#ifndef INCLUDED__PDM__AST__SETSPEC__ID_CLASS_SPEC_HH
-#define INCLUDED__PDM__AST__SETSPEC__ID_CLASS_SPEC_HH
+#ifndef INCLUDED__PDM__AST__CLASS_SPEC__ID_HH
+#define INCLUDED__PDM__AST__CLASS_SPEC__ID_HH
 
 #include "class_spec.hh"
+#include "pdm/core/intern.hh"
 
+namespace pdm::scoper {
+    class Defn;
+}
 namespace pdm::ast {
 
     class IdClassSpec: public ClassSpec {

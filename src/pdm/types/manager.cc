@@ -84,19 +84,10 @@ namespace pdm::types {
             for (ClassVar const& cv: m_all_unknown_cvs) {
                 cv.print(p);
             }
-            for (TemplateVar_RetValue const& vtv: m_all_value_template_vars) {
-                vtv.print(p);
-            }
-            for (TemplateVar_RetType const& ttv: m_all_type_template_vars) {
-                ttv.print(p);
-            }
-            for (TemplateVar_RetClass const& ctv: m_all_class_template_vars) {
-                ctv.print(p);
-            }
 
             // todo: print all Relations with pointers to referenced TVs.
         }
-        p.print_newline_deindent();
+        p.print_newline_exdent();
     }
 
     TypeVar* Manager::new_unknown_type_var(std::string&& name, ast::Node* opt_client_ast_node) {
@@ -108,24 +99,6 @@ namespace pdm::types {
     ClassVar* Manager::new_unknown_class_var(std::string&& name, ast::Node* opt_client_ast_node) {
         m_all_unknown_cvs.emplace_back(std::move(name), opt_client_ast_node);
         auto ref = &m_all_unknown_cvs.back();
-        m_all_var_refs.push_back(ref);
-        return ref;
-    }
-    TemplateVar_RetValue* Manager::new_value_template_var(std::string&& name, ast::Node* opt_client_ast_node) {
-        m_all_value_template_vars.emplace_back(std::move(name), opt_client_ast_node);
-        auto ref = &m_all_value_template_vars.back();
-        m_all_var_refs.push_back(ref);
-        return ref;
-    }
-    TemplateVar_RetType* Manager::new_type_template_var(std::string&& name, ast::Node* opt_client_ast_node) {
-        m_all_type_template_vars.emplace_back(std::move(name), opt_client_ast_node);
-        auto ref = &m_all_type_template_vars.back();
-        m_all_var_refs.push_back(ref);
-        return ref;
-    }
-    TemplateVar_RetClass* Manager::new_class_template_var(std::string&& name, ast::Node* opt_client_ast_node) {
-        m_all_class_template_vars.emplace_back(std::move(name), opt_client_ast_node);
-        auto ref = &m_all_class_template_vars.back();
         m_all_var_refs.push_back(ref);
         return ref;
     }

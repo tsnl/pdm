@@ -1,11 +1,11 @@
-mod Fibonacci {
+mod Fibonacci [NumType SIGNED_INT] {
 
-    fibonacci [N SignedInt] = fn (x N) -> N {
+    val nth: (x NumType) -> NumType {
         if (x == 0 or x == 1) then {
             x
         } else {
-            fibonacci[N](x-1) + fibonacci[N](x-2)
+            nth(x-1) + nth(x-2)
         }
     };
 
-}
+};

@@ -3,13 +3,15 @@
 
 #include <vector>
 
-#include <pdm/ast/node.hh>
-#include <pdm/source/source.hh>
+#include "pdm/core/intern.hh"
+#include "pdm/ast/node.hh"
+#include "pdm/source/source.hh"
+#include "pdm/source/loc.hh"
 
 namespace pdm::ast {
     class Manager;
-    class Stmt;
-    class ModStmt;
+    class HeaderStmt;
+    class ModExp;
 }
 namespace pdm::scoper {
     class Frame;
@@ -20,36 +22,68 @@ namespace pdm::ast {
     class Script: public Node {
         friend Manager;
 
+      public:
+        class Field: public Node {
+          private:
+            intern::String m_name;
+            ModExp*        m_rhs_mod_exp;
+
+          public:
+            Field(source::Loc loc, intern::String name, ModExp* rhs_mod_exp);
+
+          public:
+            [[nodiscard]] intern::String name() const;
+            [[nodiscard]] ModExp* rhs_mod_exp() const;
+        };
+
       private:
         source::Source* m_source;
-        std::vector<Stmt*> m_head_stmts;
-        std::vector<ModStmt*> m_body_mod_stmts;
+        std::vector<HeaderStmt*> m_header_stmts;
+        std::vector<Script::Field*> m_body_fields;
         scoper::Frame* m_x_script_frame;
 
       protected:
         Script(
             source::Source* source,
             source::Loc loc,
-            std::vector<Stmt*>&& head_stmts,
-            std::vector<ModStmt*>&& body_mod_stmts
+            std::vector<HeaderStmt*>&& head_stmts,
+            std::vector<Script::Field*>&& body_fields
         );
 
       public:
         [[nodiscard]] source::Source* source() const;
-        [[nodiscard]] std::vector<Stmt*> const& head_stmts() const;
-        [[nodiscard]] std::vector<ModStmt*> const& body_stmts() const;
+        [[nodiscard]] std::vector<HeaderStmt*> const& header_stmts() const;
+        [[nodiscard]] std::vector<Script::Field*> const& body_fields() const;
 
       public:
         [[nodiscard]] scoper::Frame* x_script_frame() const;
         void x_script_frame(scoper::Frame* frame);
     };
 
-    inline std::vector<ModStmt*> const& Script::body_stmts() const {
-        return m_body_mod_stmts;
+    //
+    // Inline implementations:
+    //
+
+    Script::Field::Field(source::Loc loc, intern::String name, ModExp *rhs_mod_exp)
+    :   Node(loc, ast::Kind::ScriptField),
+        m_name(name),
+        m_rhs_mod_exp(rhs_mod_exp)
+    {}
+
+    intern::String Script::Field::name() const {
+        return m_name;
     }
 
-    inline std::vector<Stmt*> const& Script::head_stmts() const {
-        return m_head_stmts;
+    ModExp* Script::Field::rhs_mod_exp() const {
+        return m_rhs_mod_exp;
+    }
+
+    inline std::vector<HeaderStmt*> const& Script::header_stmts() const {
+        return m_header_stmts;
+    }
+
+    inline std::vector<Script::Field*> const& Script::body_fields() const {
+        return m_body_fields;
     }
 
     inline source::Source* Script::source() const {

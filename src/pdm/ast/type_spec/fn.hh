@@ -1,9 +1,10 @@
-#ifndef INCLUDED_PDM_AST_TYPESPEC_FUNC_HH
-#define INCLUDED_PDM_AST_TYPESPEC_FUNC_HH
+#ifndef INCLUDED__PDM__AST__TYPE_SPEC__FUNC_HH
+#define INCLUDED__PDM__AST__TYPE_SPEC__FUNC_HH
 
 #include "pdm/source/loc.hh"
 #include "pdm/ast/kind.hh"
-#include "pdm/ast/setspec/type_spec.hh"
+#include "pdm/core/intern.hh"
+#include "type_spec.hh"
 #include "pdm/ast/pattern/vpattern.hh"
 
 namespace pdm::ast {
@@ -22,10 +23,10 @@ namespace pdm::ast {
 
       public:
         [[nodiscard]] VPattern* lhs_vpattern() const;
-        [[nodiscard]] TypeSpec* opt_ret_typespec() const;
+        [[nodiscard]] TypeSpec* opt_ret_type_spec() const;
     };
 
-    inline TypeSpec* FnTypeSpec::opt_ret_typespec() const {
+    inline TypeSpec* FnTypeSpec::opt_ret_type_spec() const {
         return m_opt_ret_typespec;
     }
 
@@ -40,4 +41,4 @@ namespace pdm::ast {
 
 }
 
-#endif  // INCLUDED_PDM_AST_TYPESPEC_FUNC_HH
+#endif  // INCLUDED__PDM__AST__TYPE_SPEC__FUNC_HH

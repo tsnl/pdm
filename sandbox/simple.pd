@@ -1,25 +1,25 @@
 mod Greetings {
 
-    Vec3f = {
+    typ Vec3f = {
         x Float32,
         y Float32,
         z Float32
     };
 
-    hello = fn () -> Vec3f {
+    val hello = () -> Vec3f {
         val hello Vec3f = {
-            x = 0.0,
-            y = 0.0
+            x: 0.0,
+            y: 0.0
         };
         hello
     };
 
-    howdy = fn () -> Float32 {
+    val howdy = () -> Float32 {
         val vector = hello();
         vector.x + vector.y + vector.z
     };
 
-    random = fn (x Int32) -> Int32 {
+    val random = (x Int32) -> Int32 {
         0
     };
 
