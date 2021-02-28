@@ -21,6 +21,11 @@
 %code requires {
     #include "pdm/core/config.hh"
 
+    #include "pdm/feedback/feedback.hh"
+    #include "pdm/feedback/severity.hh"
+    #include "pdm/feedback/letter.hh"
+    #include "pdm/feedback/note.hh"
+
     #include "pdm/ast/node.hh"
     #include "pdm/ast/manager.hh"
     #include "pdm/ast/visitor.hh"
@@ -133,7 +138,9 @@
 
 %type <pdm::ast::TypeSpec*> type_spec long_type_spec
 %type <pdm::ast::TypeSpec*> tuple_type_spec struct_type_spec enum_type_spec
-%type <pdm::ast::TypeSpec*> mod_prefix_tid fn_type_spec
+%type <pdm::ast::TypeSpec*> mod_prefix_tid
+%type <pdm::ast::FnTypeSpec*> fn_type_spec
+%type <pdm::ast::TypeSpec*> array_type_spec
 %type <std::vector<pdm::ast::TypeSpec*>> /* type_spec_cl1 */ type_spec_cl2
 %type <pdm::ast::StructTypeSpec::Field*> struct_type_spec_field
 %type <pdm::ast::EnumTypeSpec::Field*> enum_type_spec_field
@@ -160,7 +167,7 @@
 %type <pdm::ast::TPattern::Field*> tpattern_field
 %type <std::vector<pdm::ast::VPattern::Field*>> vpattern_field_cl 
 %type <std::vector<pdm::ast::LPattern::Field*>> lpattern_field_cl
-%type <std::vector<pdm::ast::TPattern::Field*>> tpattern_field_cl
+%type <std::vector<pdm::ast::TPattern::Field*>> tpattern_field_cl1
 %type <pdm::ast::TArg*> targ
 %type <pdm::ast::VArg*> varg
 %type <std::vector<pdm::ast::TArg*>> targ_cl
@@ -179,7 +186,6 @@
 
 %token KW_USING "using"
 %token KW_MOD "mod"
-%token KW_TYP "typ"
 %token KW_STRUCT "struct"
 %token KW_ENUM "enum"
 %token KW_CLS "cls"
@@ -190,7 +196,7 @@
 %token KW_WITH "with"       /* reserved */
 %token KW_IMPORT "import"
 %token KW_EXTERN "extern"
-%token KW_FROM "from"       /* todo: remove 'from' keyword */
+%token KW_FROM "from"
 %token KW_CONST "const"
 %token KW_VAL "val" 
 %token KW_VAR "var"
@@ -258,8 +264,8 @@
  * Scripts:
  */
 
-script: script_header LCYBRK script_field_sl RCYBRK {
-    $$ = mgr->new_script(source, @$, std::move($1), std::move($3));
+script: script_header script_field_sl {
+    $$ = mgr->new_script(source, @$, std::move($1), std::move($2));
 
     // setting the returnp here => this is the node parser returns.  
     *returnp = $$; 
@@ -274,7 +280,7 @@ script_header_stmt
     ;
 
 script_field
-    : KW_MOD tid mod_exp  { $$ = mgr->new_script_field(@$, $2.ID_intstr, $3); }
+    : KW_MOD vid mod_exp  { $$ = mgr->new_script_field(@$, $2.ID_intstr, $3); }
     ;
 script_field_sl
     : script_field SEMICOLON                    { $$.push_back($1); }
@@ -294,10 +300,10 @@ mod_field_sl
     | mod_field_sl mod_field SEMICOLON  { $$ = std::move($1); $$.push_back($2); }
     ;
 mod_field
-    : KW_VAL vid BIND long_exp        { $$ = mgr->new_value_mod_field(@$, $2.ID_intstr, $4); }
-    | KW_TYP tid BIND long_type_spec  { $$ = mgr->new_type_mod_field(@$, $2.ID_intstr, $4); }
-    | KW_CLS cid class_exp_class_spec { $$ = mgr->new_class_mod_field(@$, $2.ID_intstr, $3); }
-    | KW_MOD tid mod_exp              { $$ = mgr->new_mod_mod_field(@$, $2.ID_intstr, $3); }
+    : vid BIND long_exp        { $$ = mgr->new_value_mod_field(@$, $1.ID_intstr, $3); }
+    | tid BIND long_type_spec       { $$ = mgr->new_type_mod_field(@$, $1.ID_intstr, $3); }
+    | cid BIND class_exp_class_spec { $$ = mgr->new_class_mod_field(@$, $1.ID_intstr, $3); }
+    | KW_MOD vid mod_exp            { $$ = mgr->new_mod_mod_field(@$, $2.ID_intstr, $3); }
     ;
 
 /*
@@ -305,7 +311,7 @@ mod_field
  */
 
 import_stmt
-    : KW_IMPORT stringl KW_AS stringl    { $$ = mgr->new_import_stmt(@$, *$2.String_utf8string, *$4.String_utf8string); }
+    : KW_MOD vid KW_FROM stringl KW_AS stringl    { $$ = mgr->new_import_stmt(@$, $2.ID_intstr, *$4.String_utf8string, *$6.String_utf8string); }
     ;
 
 chain_prefix_stmt
@@ -347,10 +353,10 @@ stringl
     | DQSTRING_LIT
     ;
 mod_prefix
-    : tid                                   DOT  { $$ = mgr->new_mod_address(@$, nullptr, $1.ID_intstr); }
-    | tid             LSQBRK targ_cl RSQBRK DOT  { $$ = mgr->new_mod_address(@$, nullptr, $1.ID_intstr, std::move($3)); }
-    | mod_prefix tid                        DOT  { $$ = mgr->new_mod_address(@$, $1, $2.ID_intstr); }
-    | mod_prefix tid  LSQBRK targ_cl RSQBRK DOT  { $$ = mgr->new_mod_address(@$, $1, $2.ID_intstr, std::move($4)); }
+    :            vid                       DBL_COLON  { $$ = mgr->new_mod_address(@$, nullptr, $1.ID_intstr, std::move(std::vector<ast::TArg*>{})); }
+    |            vid LSQBRK targ_cl RSQBRK DBL_COLON  { $$ = mgr->new_mod_address(@$, nullptr, $1.ID_intstr, std::move($3)); }
+    | mod_prefix vid                       DBL_COLON  { $$ = mgr->new_mod_address(@$, $1, $2.ID_intstr, std::move(std::vector<ast::TArg*>{})); }
+    | mod_prefix vid LSQBRK targ_cl RSQBRK DBL_COLON  { $$ = mgr->new_mod_address(@$, $1, $2.ID_intstr, std::move($4)); }
     ;
 
 /*
@@ -413,7 +419,7 @@ primary_exp
     | floatl         { $$ = mgr->new_float_exp(@$, $1.Float); }
     | stringls       { $$ = mgr->new_string_exp(@$, std::move($1)); }
     | if_exp
-    | mod_prefix vid    { $$ = mgr->new_module_dot_name_exp(@$, std::move($1), $2.ID_intstr); }
+    | mod_prefix vid    { $$ = mgr->new_module_dot_name_exp(@$, $1, $2.ID_intstr); }
     ;
 int_expr
     : DINT_LIT  { $$ = mgr->new_int_exp(@$, $1.Int, ast::IntExp::Base::Dec, false); }
@@ -554,20 +560,25 @@ type_spec
     : tid               { $$ = mgr->new_id_type_spec(@$, $1.ID_intstr); }
     | mod_prefix_tid
     | tuple_type_spec
+    | array_type_spec
     ;
 long_type_spec
-    : struct_type_spec
+    : type_spec
+    | struct_type_spec
     | enum_type_spec
-    | fn_type_spec
+    | fn_type_spec  { $$ = dynamic_cast<ast::TypeSpec*>($1); }
     ;
 
 mod_prefix_tid
-    : mod_prefix tid        { $$ = mgr->new_dot_type_spec(@$, std::move($1), $2.ID_intstr); }
+    : mod_prefix tid        { $$ = mgr->new_ma_type_spec(@$, $1, $2.ID_intstr); }
     ;
 
 tuple_type_spec
     : LCYBRK type_spec     RCYBRK  { $$ = mgr->new_tuple_type_spec(@$, std::move(std::vector(1,$2))); }
     | LCYBRK type_spec_cl2 RCYBRK  { $$ = mgr->new_tuple_type_spec(@$, std::move($2)); }
+    ;
+array_type_spec
+    : LSQBRK type_spec FSLASH expr RSQBRK     { $$ = nullptr; }
     ;
 
 struct_type_spec
@@ -582,7 +593,7 @@ struct_type_spec_field
     ;
 
 enum_type_spec_field
-    : tid                   { $$ = mgr->new_enum_type_spec_field(@$, $1.ID_intstr, nullptr); }
+    : tid                    { $$ = mgr->new_enum_type_spec_field(@$, $1.ID_intstr, nullptr); }
     | tid long_type_spec     { $$ = mgr->new_enum_type_spec_field(@$, $1.ID_intstr, $2); }
     ;
 enum_type_spec_field_cl
@@ -629,12 +640,12 @@ primary_class_spec
     | class_exp_class_spec
     ;
 mod_prefix_cid_class_spec
-    : mod_prefix cid    { $$ = mgr->new_dot_name_class_spec(@$, std::move($1), $2.ID_intstr); }
+    : mod_prefix cid    { $$ = mgr->new_ma_class_spec(@$, std::move($1), $2.ID_intstr); }
     ;
 
 /* todo: implement class_exp_class_spec in parser.yy */
 class_exp_class_spec
-    : LPAREN tid class_spec RPAREN LCYBRK type_query_exp_sl RCYBRK     { $$ = nullptr; }
+    : KW_CLS LPAREN tid class_spec RPAREN LCYBRK type_query_exp_sl RCYBRK     { $$ = nullptr; }
     ;
 
 /*
@@ -642,7 +653,7 @@ class_exp_class_spec
  */
 
 struct_exp_field
-    : vid BIND expr { $$ = mgr->new_struct_exp_field(@$, $1.ID_intstr, $3); }
+    : vid COLON expr { $$ = mgr->new_struct_exp_field(@$, $1.ID_intstr, $3); }
     ;
 vpattern_field
     :          vid type_spec { $$ = mgr->new_vpattern_field(@$, $1.ID_intstr, $2, ast::VArgAccessSpec::In); }
@@ -654,8 +665,8 @@ lpattern_field
     | vid           { $$ = mgr->new_lpattern_field(@$, ast::LPattern::FieldKind::IdSingleton, $1.ID_intstr); }
     ;
 tpattern_field
-    : vid type_spec   { $$ = mgr->new_tpattern_field(@$, ast::TPattern::FieldKind::Value, $1.ID_intstr, $2); }
-    | tid class_spec  { $$ = mgr->new_tpattern_field(@$, ast::TPattern::FieldKind::Type, $1.ID_intstr, $2); }
+    : vid type_spec   { $$ = mgr->new_value_tpattern_field(@$, $1.ID_intstr, $2); }
+    | tid class_spec  { $$ = mgr->new_type_tpattern_field(@$, $1.ID_intstr, $2); }
     ;
 
 destructured_lpattern
@@ -670,7 +681,7 @@ vpattern
     | LPAREN RPAREN                    { $$ = mgr->new_vpattern(@$, std::move(std::vector<ast::VPattern::Field*>{})); }
     ;
 tpattern
-    : LSQBRK tpattern_field_cl RSQBRK  { $$ = mgr->new_tpattern(@$, std::move($2), false); }
+    : LSQBRK tpattern_field_cl1 RSQBRK  { $$ = mgr->new_tpattern(@$, std::move($2), false); }
     ;
 
 vpattern_field_cl
@@ -681,9 +692,9 @@ lpattern_field_cl
     : lpattern_field                           { $$.push_back($1); }
     | lpattern_field_cl COMMA lpattern_field   { $$ = std::move($1); $$.push_back($3); }
     ;
-tpattern_field_cl
+tpattern_field_cl1
     : tpattern_field                          { $$.push_back($1); }
-    | tpattern_field_cl COMMA tpattern_field   { $$ = std::move($1); $$.push_back($3); }
+    | tpattern_field_cl1 COMMA tpattern_field   { $$ = std::move($1); $$.push_back($3); }
     ;
 struct_exp_field_cl
     : struct_exp_field                              { $$.push_back($1); }

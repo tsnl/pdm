@@ -281,12 +281,6 @@ namespace pdm::types {
         return true;
     }
 
-    bool TemplateRelation::on_assume_impl(types::Manager* manager) {
-        // todo: implement me!
-        std::cout << "NotImplemented: TemplateRelation::on_assume_impl" << std::endl;
-        return true;       
-    }
-
     bool IsNumberRelation::on_assume_impl(types::Manager* manager) {
         SolveResult result = m_number_tv->assume_invariant_holds(new IsNumberVarInvariant(this));
         return !result_is_error(result);

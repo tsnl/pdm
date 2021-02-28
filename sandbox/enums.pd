@@ -1,11 +1,11 @@
-mod TestModule {
+mod test_module {
 
-    typ OptionalInt32 = enum {
+    OptionalInt32 = enum {
         Some Int32,
         None
     };
 
-    val divide = (p Int32, q Int32) -> OptionalInt32 {
+    divide = (p Int32, q Int32) -> OptionalInt32 {
         if (q == 0) then {
             OptionalInt32::None
         } else {

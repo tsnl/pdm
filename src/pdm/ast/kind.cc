@@ -1,47 +1,64 @@
 #include "kind.hh"
 
 namespace pdm::ast {
-    static char kind_as_cstr_table[][(int)Kind::__Count] = {
+    static char kind_as_cstr_table[][(int)Kind::META_Count] = {
+        // AUDIT: ensure this lines up with Kind order.
+        // generated from 'Kind'-- easily invalidated.
         "Script",
-        
+        "ScriptField",
+        "ModExp",
+        "ValueModField",
+        "TypeModField",
+        "ClassModField",
+        "ModModField",
+        "ModAddress",
+        "TemplateModAddress",
         "BuiltinStmt",
         "DiscardStmt",
         "ConstStmt",
         "ValStmt",
         "VarStmt",
         "SetStmt",
-        "ModValStmt",
-        "ModTypeStmt",
-        "ModEnumStmt",
-        "ModTypeclassStmt",
-        "ModStmt",
         "ExternStmt",
         "ImportStmt",
         "UsingStmt",
-
         "UnitExp",
-        "IntExp", "FloatExp", "StringExp",
+        "IntExp",
+        "FloatExp",
+        "StringExp",
         "IdExp",
         "ParenExp",
-        "ArrayExp", "TupleExp", "StructExp", "ChainExp",
+        "ArrayExp",
+        "TupleExp",
+        "StructExp",
+        "ChainExp",
         "LambdaExp",
         "IfExp",
-        "ModuleDotExp", "DotIndexExp", "DotNameExp",
-        "UnaryExp", "BinaryExp",
-        "VCallExp", "TCallExp",
+        "ModuleDotExp",
+        "DotIndexExp",
+        "DotNameExp",
+        "UnaryExp",
+        "BinaryExp",
+        "VCallExp",
+        "TCallExp",
         "TypeQueryExp",
-
         "VPattern",
         "TPattern",
         "LPattern",
-
-        "IdTypeSpec", "IdClassSpec",
-        "ParenTypeSpec",
+        "IdTypeSpec",
         "FnTypeSpec",
-        "TCallTypeSpec", "TCallClassSpec",
-        "DotNameTypeSpec_ModPrefix",
-        "TupleTypeSpec", "StructTypeSpec"
-        // "DotNameTypeSpec_TypePrefix"
+        "DotTypeSpec",
+        "TupleTypeSpec",
+        "StructTypeSpec",
+        "EnumTypeSpec",
+        "IdClassSpec",
+        "ClassExpClassSpec",
+        "TArg",
+        "VArg",
+        "Aux_VPatternField",
+        "Aux_TPatternField",
+        "Aux_LPatternField",
+        "__Count"
     };
 
     char const* kind_as_text(Kind kind) {

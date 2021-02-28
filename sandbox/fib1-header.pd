@@ -1,8 +1,10 @@
-import "fibx.pd" as "pd-script";
+import {
+    fib_helper from "./fibx.pd";
+};
 
-mod Fibonacci {
+mod fibonacci  {
 
-    val fib: (x Int32) -> Int32 {
+    fib = (x Int32) -> Int32 {
         val result = (
             if (x == 0 or x == 1) then {
                 x
@@ -10,7 +12,7 @@ mod Fibonacci {
                 fib(x-1) + fib(x-2)
             }
         );
-        discard FibHelper.register(x, result);
+        discard fib_helper::register(x, result);
         result
     };
 

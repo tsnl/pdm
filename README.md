@@ -2,6 +2,10 @@
 
 Work in progress.
 
+**LAST 'WORKING' COMMIT:** `25cd0fe1ba74f88e7b3d2a8073114e9b0841ad5c`
+
+**LAST 'WORKING' COMMIT UP-TO-DATE:** NO.
+
 ## Overview
 
 *Why decide between a compromised web experience and a dedicated native one?*
@@ -130,31 +134,39 @@ If you have any questions or would like to contribute, please email me at: [tsnl
 ## A Taste of PDM
 
 ```
-# eg/eg10.pdm
+# from `eg/eg10.pdm`
 
-mod vector {
-    type Vec [T Number, n UInt32] = {
-        data Array[T,n]
+mod vector [Type Number, n UInt32] {
+
+    Vec = {
+        # array syntax:
+        data [Type/n]
     };
 
-    fn increment ![T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) = {
-        help_increment[T,n](inout lt, rt);
+    increment = (inout lt Vec, rt Vec) -> Void {
+        assert len(lt) == len(rt);
+        help_increment(inout lt, rt, len(lt));
     };
-    fn help_increment [T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) = {
+    help_increment = (inout lt Vec, rt Vec) -> Void {
         # for this to work, need Array subtyping to work correctly
         # s.t. Array[T,n] :< Array[T,m] <=> n < m
         if (n > 0) then {
             set lt.data.(n-1) = lt.data.(n-1) + rt.data.(n-1);
-            help_increment[T,n-1](inout lt, rt)
+            vector[Type,n-1]::help_increment(inout lt, rt)
         };
     };
 
-    fn add ![T Number, n UInt32] (lt Vec[T,n], rt Vec[T,n]) -> Vec[T,n] = {
+    add = (lt Vec, rt Vec) -> Vec {
         var sum_vec = lt;
         increment(inout sum_vec, rt);
         sum_vec
     };
-}
+
+    hello = () -> Void  {
+        val x = 0;
+    };
+
+};
 ```
 
 ## Try Me!

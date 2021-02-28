@@ -50,6 +50,7 @@
 
 #include "pdm/ast/class_spec/class_exp.hh"
 #include "pdm/ast/class_spec/id.hh"
+#include "pdm/ast/class_spec/dot.hh"
 
 #include "pdm/ast/type_spec/type_spec.hh"
 #include "pdm/ast/type_spec/dot.hh"
@@ -103,7 +104,8 @@ namespace pdm::ast {
         virtual bool on_visit_value_mod_field(ModExp::ValueField* node, VisitOrder visit_order) = 0;
         virtual bool on_visit_type_mod_field(ModExp::TypeField* node, VisitOrder visit_order) = 0;
         virtual bool on_visit_class_mod_field(ModExp::ClassField* node, VisitOrder visit_order) = 0;
-        virtual bool on_visit_mod_address(ModAddress* node) = 0;
+        virtual bool on_visit_mod_mod_field(ModExp::ModuleField* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit_mod_address(ModAddress* node, VisitOrder visit_order) = 0;
 
         // statements:
         virtual bool on_visit_const_stmt(ConstStmt* node, VisitOrder visit_order) = 0;
@@ -146,13 +148,14 @@ namespace pdm::ast {
         virtual bool on_visit_id_type_spec(IdTypeSpec* node, VisitOrder visit_order) = 0;
         virtual bool on_visit_fn_type_spec(FnTypeSpec* node, VisitOrder visit_order) = 0;
         virtual bool on_visit_tuple_type_spec(TupleTypeSpec* node, VisitOrder visit_order) = 0;
-        virtual bool on_visit_dot_type_spec(DotTypeSpec* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit_ma_type_spec(ModAddressIdTypeSpec* node, VisitOrder visit_order) = 0;
         virtual bool on_visit_struct_type_spec(StructTypeSpec* node, VisitOrder visit_order) = 0;
         virtual bool on_visit_enum_type_spec(EnumTypeSpec* node, VisitOrder visit_order) = 0;
 
         // class specs:
         virtual bool on_visit_id_class_spec(IdClassSpec* node, VisitOrder visit_order) = 0;
         virtual bool on_visit_class_exp_class_spec(ClassExpClassSpec* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit_ma_class_spec(ModAddressIdClassSpec* node, VisitOrder visit_order) = 0;
 
         // templates/shared:
         virtual bool on_visit_t_arg(TArg* node, VisitOrder visit_order) = 0;
@@ -161,6 +164,7 @@ namespace pdm::ast {
         // non-syntactic elements:
         virtual bool on_visit_builtin_type_stmt(BuiltinStmt* node, VisitOrder visit_order) = 0;
     };
+
 
     class TinyVisitor: public Visitor {
       protected:
@@ -185,7 +189,10 @@ namespace pdm::ast {
         bool on_visit_class_mod_field(ModExp::ClassField* node, VisitOrder visit_order) override {
             return true;
         }
-        bool on_visit_mod_address(ModAddress* node) override {
+        bool on_visit_mod_mod_field(ast::ModExp::ModuleField* node, VisitOrder visit_order) override {
+            return true;
+        }
+        bool on_visit_mod_address(ModAddress* node, VisitOrder visit_order) override {
             return true;
         }
 
@@ -298,7 +305,7 @@ namespace pdm::ast {
         bool on_visit_tuple_type_spec(TupleTypeSpec* node, VisitOrder visit_order) override {
             return true;
         }
-        bool on_visit_dot_type_spec(DotTypeSpec* node, VisitOrder visit_order) override {
+        bool on_visit_ma_type_spec(ModAddressIdTypeSpec* node, VisitOrder visit_order) override {
             return true;
         }
         bool on_visit_struct_type_spec(StructTypeSpec* node, VisitOrder visit_order) override {
@@ -313,6 +320,9 @@ namespace pdm::ast {
             return true;
         }
         bool on_visit_class_exp_class_spec(ClassExpClassSpec* node, VisitOrder visit_order) override {
+            return true;
+        }
+        bool on_visit_ma_class_spec(ModAddressIdClassSpec* node, VisitOrder visit_order) override {
             return true;
         }
 

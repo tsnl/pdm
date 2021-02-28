@@ -1,7 +1,5 @@
 #include "scoper.hh"
 
-#include <iostream>
-
 #include <string>
 #include <cassert>
 
@@ -32,7 +30,8 @@ namespace pdm::scoper {
     Scoper::Scoper(Compiler* compiler_ptr)
     : m_compiler_ptr(compiler_ptr),
       m_id_exp_orders(),
-      m_id_typespec_orders(),
+      m_id_type_spec_orders(),
+      m_id_class_spec_orders(),
       m_import_orders(),
       m_using_orders(),
       m_finished(false)
@@ -70,7 +69,7 @@ namespace pdm::scoper {
                 id_exp->x_defn(opt_defn);
             } else {
                 // post feedback about a value ID that was used but not defined.
-                std::string headline = "ID '" + std::string(id_name.content()) + "' used but not defined";
+                std::string headline = "Value ID '" + std::string(id_name.content()) + "' used but not defined";
                 std::string desc = "";
                 std::vector<feedback::Note*> notes(1); {
                     source::Loc defn_loc = id_exp->loc();
@@ -88,18 +87,44 @@ namespace pdm::scoper {
         }
 
         // IdTypeSpec
-        for (IdTypeSpecLookupOrder id_typespec_order: m_id_typespec_orders) {
-            ast::IdTypeSpec* id_typespec = id_typespec_order.id_typespec;
-            intern::String id_name = id_typespec_order.id_typespec->name();
-            Defn const* defn = id_typespec_order.lookup_context->lookup(id_name);
+        for (IdTypeSpecLookupOrder id_type_spec_order: m_id_type_spec_orders) {
+            ast::IdTypeSpec* id_type_spec = id_type_spec_order.type_spec;
+            intern::String id_name = id_type_spec_order.type_spec->name();
+            Defn const* defn = id_type_spec_order.lookup_context->lookup(id_name);
             if (defn != nullptr) {
-                id_typespec_order.id_typespec->x_defn(defn);
+                id_type_spec_order.type_spec->x_defn(defn);
             } else {
                 // post feedback about a type ID that was used but not defined.
-                std::string headline = "ID '" + std::string(id_name.content()) + "' used but not defined";
+                std::string headline = "Type ID '" + std::string(id_name.content()) + "' used but not defined";
                 std::string desc = "";
                 std::vector<feedback::Note*> notes(1); {
-                    source::Loc defn_loc = id_typespec->loc();
+                    source::Loc defn_loc = id_type_spec->loc();
+                    std::string defn_desc = "see here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(defn_desc), defn_loc);
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
+                ok = false;
+            }
+        }
+
+        // IdClassSpec:
+        for (IdClassSpecLookupOrder id_class_spec_order: m_id_class_spec_orders) {
+            ast::IdClassSpec* id_class_spec = id_class_spec_order.class_spec;
+            intern::String id_name = id_class_spec_order.class_spec->name();
+            Defn const* defn = id_class_spec_order.lookup_context->lookup(id_name);
+            if (defn != nullptr) {
+                id_class_spec_order.class_spec->x_defn(defn);
+            } else {
+                // post feedback about a class ID that was used but not defined:
+                std::string headline = "Class ID '" + std::string(id_name.content()) + "' used but not defined";
+                std::string desc = "";
+                std::vector<feedback::Note*> notes(1); {
+                    source::Loc defn_loc = id_class_spec->loc();
                     std::string defn_desc = "see here...";
                     notes[0] = new feedback::SourceLocNote(std::move(defn_desc), defn_loc);
                 }
@@ -123,7 +148,7 @@ namespace pdm::scoper {
             ast::Script* origin_script = import_stmt->x_origin_script();
             if (origin_script == nullptr) {
                 // posting feedback about an import failure:
-                std::string headline = "Import '" + std::string(import_stmt->import_name().content()) + "' could not be resolved.";
+                std::string headline = "Import could not be resolved.";
                 std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
                 std::vector<feedback::Note*> notes{1}; {
                     std::string desc = "at import statement here...";
@@ -141,7 +166,7 @@ namespace pdm::scoper {
             Frame* origin_script_frame = origin_script->x_script_frame();
             if (origin_script_frame == nullptr) {
                 // posting feedback about an import failure:
-                std::string headline = "Import '" + std::string(import_stmt->import_name().content()) + "' could not be resolved.";
+                std::string headline = "Import could not be resolved.";
                 std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
                 std::vector<feedback::Note*> notes{1}; {
                     std::string desc = "at import statement here...";
@@ -163,7 +188,7 @@ namespace pdm::scoper {
             Defn const* module_defn = last_ctx->lookup_until(import_stmt->import_name(), first_ctx);
             if (module_defn == nullptr) {
                 // posting feedback about importing an undefined symbol
-                std::string headline = "Module '" + std::string(import_stmt->import_name().content()) + "' could not be found in the origin script.";
+                std::string headline = "Module '" + import_stmt->import_name().cpp_str() + "' could not be found in the origin script.";
                 std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
                 std::vector<feedback::Note*> notes{1}; {
                     std::string desc = "at import statement here...";
@@ -182,7 +207,7 @@ namespace pdm::scoper {
             // checking the exported symbol's kind:
             if (!module_defn_kind(module_defn->kind())) {
                 // posting feedback about importing an undefined symbol
-                std::string headline = "Symbol '" + std::string(import_stmt->import_name().content()) + "' is not importable.";
+                std::string headline = "Symbol '" + import_stmt->import_name().cpp_str() + "' is not importable.";
                 std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
                 std::vector<feedback::Note*> notes{2}; {
                     std::string desc0 = "at import statement here...";
@@ -225,6 +250,20 @@ namespace pdm::scoper {
             Frame* module_frame = original_mod_exp->x_module_frame();
             using_order.lookup_context->link(module_frame, using_stmt->suffix());
         }
+
+        //
+        //
+        //
+        // TODO: store caller ModAddress on called template module
+        //  - templates only instantiated in ModAddress,
+        //  - so lookup ModAddressLhs, get Rhs, and store args on LHS.
+        //  - with this info, can just use constraints to establish correctness in templates.
+        //    - at first, just map each lookup to a unique soln
+        //    - after solution, can collapse down
+        //    - later, can use each instantiation to compute types if value-dependent
+        //
+        //
+        //
 
         return ok;
     }
@@ -274,9 +313,13 @@ namespace pdm::scoper {
         Scoper::IdExpLookupOrder order {exp, top_frame()->last_context()};
         scoper()->m_id_exp_orders.push_back(order);
     }
-    void ScoperVisitor::place_id_type_spec_lookup_order(ast::IdTypeSpec* id_typespec) {
-        Scoper::IdTypeSpecLookupOrder order {id_typespec, top_frame()->last_context()};
-        scoper()->m_id_typespec_orders.push_back(order);
+    void ScoperVisitor::place_id_type_spec_lookup_order(ast::IdTypeSpec* id_type_spec) {
+        Scoper::IdTypeSpecLookupOrder order {id_type_spec, top_frame()->last_context()};
+        scoper()->m_id_type_spec_orders.push_back(order);
+    }
+    void ScoperVisitor::place_id_class_spec_lookup_order(ast::IdClassSpec* id_class_spec) {
+        Scoper::IdClassSpecLookupOrder order {id_class_spec, top_frame()->last_context()};
+        scoper()->m_id_class_spec_orders.push_back(order);
     }
     void ScoperVisitor::place_import_lookup_order(ast::ImportStmt* import_stmt) {
         Scoper::ImportLookupOrder order {import_stmt, top_frame()->last_context()};
@@ -330,7 +373,7 @@ namespace pdm::scoper {
 //        assert(original_mod_stmt != nullptr);
 //        return original_mod_stmt;
     }
-    
+
     //
     // visitor methods:
     //
@@ -349,62 +392,107 @@ namespace pdm::scoper {
         }
         return true;
     }
+    bool ScoperVisitor::on_visit_script_field(ast::Script::Field* field, VisitOrder visit_order) {
+        assert(0 && "NotImplemented: on_visit_script_field");
+        // if (visit_order == VisitOrder::Pre) {
+        // } else {
+        // }
+    }
 
-    // statements:
-    bool ScoperVisitor::on_visit_mod_stmt(ast::ModStmt* node, VisitOrder visit_order) {
+    //
+    // Modules:
+    //
+
+    bool ScoperVisitor::on_visit_mod_exp(ast::ModExp* node, VisitOrder visit_order) {
+        assert(0 && "NotImplemented: on_visit_mod_exp");
+
+        // if (visit_order == VisitOrder::Pre) {
+        // } else {
+        // }
+
+        // storing the Frame and TV on the module for later:
+        // node->x_module_frame(module_frame);
+        // node->x_module_tv(module_tv);
+    }
+    bool ScoperVisitor::on_visit_value_mod_field(ast::ModExp::ValueField* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            push_frame(FrameKind::Module);
-        } else {
-            // popping the module frame:
-            Frame* module_frame = top_frame();
-            pop_frame();
+            // creating the var:
+            types::Var* type_var = nullptr;
 
-            // creating a new TV:
-            types::TypeVar* module_tv; {
-                std::string tv_prefix = "Defn(Module):";
-                std::string tv_name = tv_prefix + node->module_name().content();
-                module_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
-            }
+            // single type
+            std::string tv_prefix = "ValueModField:";
+            std::string tv_name = tv_prefix + node->name().content();
+            type_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name));
 
-            // defining the new module in the script:
+            // defining the var in the current context:
             Defn new_defn {
-                DefnKind::Module,
-                node->module_name(),
+                DefnKind::Val,
+                node->name(),
                 node,
-                module_tv
+                type_var
             };
             bool defn_ok = top_frame()->define(new_defn);
             if (!defn_ok) {
-                post_overlapping_defn_error("mod statement", new_defn);
+                post_overlapping_defn_error("value module field", new_defn);
                 return false;
             }
 
-            // storing the Frame and TV on the module for later:
-            node->x_module_frame(module_frame);
-            node->x_module_tv(module_tv);
+            // storing the var on the node:
+            node->x_defn_var(type_var);
+
+            // pushing attribs/frames for nested defns:
+            push_frame(FrameKind::TypeModFieldRhs);
+        } else {
+            pop_frame();
         }
         return true;
     }
-    bool ScoperVisitor::on_visit_mod_typeclass_stmt(ast::ModTypeclassStmt* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit_type_mod_field(ast::ModExp::TypeField *node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            // creating the var:
+            types::Var* type_var = nullptr;
+
+            // single type
+            std::string tv_prefix = "TypeModField:";
+            std::string tv_name = tv_prefix + node->name().content();
+            type_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name));
+
+            // defining the var in the current context:
+            Defn new_defn {
+                DefnKind::Type,
+                node->name(),
+                node,
+                type_var
+            };
+            bool defn_ok = top_frame()->define(new_defn);
+            if (!defn_ok) {
+                post_overlapping_defn_error("type module field", new_defn);
+                return false;
+            }
+
+            // storing the var on the node:
+            node->x_defn_var(type_var);
+
+            // pushing attribs/frames for nested defns:
+            push_frame(FrameKind::TypeModFieldRhs);
+        } else {
+            pop_frame();
+        }
+        return true;
+    }
+    bool ScoperVisitor::on_visit_class_mod_field(ast::ModExp::ClassField *node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // creating the typeclass var:
-            types::Var* typeclass_var = nullptr;
-            if (node->tpatterns().empty()) {
-                // single typeclass
-                std::string cv_prefix = "Single(Typeclass):";
-                std::string cv_name = cv_prefix + node->typeclass_name().content();
+            types::Var* typeclass_var; {
+                std::string cv_prefix = "ClassModField:";
+                std::string cv_name = cv_prefix + node->name().content();
                 typeclass_var = scoper()->types_mgr()->new_unknown_class_var(std::move(cv_name), node);
-            } else {
-                // template function
-                std::string var_prefix = "Template(Typeclass):";
-                std::string var_name = var_prefix + node->typeclass_name().content();
-                typeclass_var = scoper()->types_mgr()->new_class_template_var(std::move(var_name), node);
             }
 
             // defining the defn var in the current context:
             Defn new_defn {
                 DefnKind::Typeclass,
-                node->typeclass_name(),
+                node->name(),
                 node,
                 typeclass_var
             };
@@ -418,10 +506,10 @@ namespace pdm::scoper {
             node->x_defn_var(typeclass_var);
 
             // pushing attribs/frames for nested defns:
-            push_frame(FrameKind::ModTypeclassRhs);
+            push_frame(FrameKind::ClassModFieldRhs);
             {
                 // defining the candidate explicitly:
-                std::string candidate_var_name = "TypeclassCandidate:" + std::string(node->candidate_name().content());
+                std::string candidate_var_name = "TypeclassCandidate:" + std::string(node->name().content());
                 types::TypeVar* candidate_var = scoper()->types_mgr()->new_unknown_type_var(
                     std::move(candidate_var_name), node
                 );
@@ -429,7 +517,7 @@ namespace pdm::scoper {
 
                 Defn candidate_defn {
                     DefnKind::TypeclassCandidate,
-                    node->candidate_name(),
+                    node->name(),
                     node,
                     candidate_var
                 };
@@ -438,111 +526,19 @@ namespace pdm::scoper {
                     post_overlapping_defn_error("typeclass candidate", new_defn);
                     return false;
                 }
-
-                // todo: store the candidate var somewhere accessible...
             }
         } else {
             pop_frame();
         }
         return true;
     }
-
-    // type and enum stmts create TVs, not CVs, that are typed as returns from a polymorphic
-    // function.
-    // This function is implicitly defined within the system.
-    // Thus, use TV, not CV, even if targs present.
-    bool ScoperVisitor::on_visit_mod_type_stmt(ast::ModTypeStmt* node, VisitOrder visit_order) {
-        if (visit_order == VisitOrder::Pre) {
-            // creating the var:
-            types::Var* type_var = nullptr;
-            if (node->lhs_tpatterns().empty()) {
-                // single type
-                std::string tv_prefix = "Single(Type):";
-                std::string tv_name = tv_prefix + node->lhs_name().content();
-                type_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name));
-            } else {
-                // actually template function
-                std::string template_prefix = "Template(Type):";
-                std::string template_name = template_prefix + node->lhs_name().content();
-                type_var = scoper()->types_mgr()->new_type_template_var(std::move(template_name));
-            }
-
-            // defining the var in the current context:
-            Defn new_defn {
-                DefnKind::Type,
-                node->lhs_name(),
-                node,
-                type_var
-            };
-            bool defn_ok = top_frame()->define(new_defn);
-            if (!defn_ok) {
-                post_overlapping_defn_error("type ... = statement", new_defn);
-                return false;
-            }
-
-            // storing the var on the node:
-            node->x_defn_var(type_var);
-
-            // pushing attribs/frames for nested defns:
-            push_frame(FrameKind::ModTypeRhs);
-        } else {
-            pop_frame();
-        }
-        return true;
-    }
-    bool ScoperVisitor::on_visit_mod_enum_stmt(ast::ModEnumStmt* node, VisitOrder visit_order) {
-        if (visit_order == VisitOrder::Pre) {
-            // creating a var:
-            types::Var* enum_var = nullptr;
-            if (node->tpatterns().empty()) {
-                // single value
-                std::string tv_prefix = "Single(Enum):";
-                std::string tv_name = tv_prefix + node->name().content();
-                enum_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
-            } else {
-                // template function
-                std::string template_prefix = "Template(Enum):";
-                std::string template_name = template_prefix + node->name().content();
-                enum_var = scoper()->types_mgr()->new_type_template_var(std::move(template_name), node);
-            }
-
-            // defining the result:
-            Defn new_defn {
-                DefnKind::Enum,
-                node->name(),
-                node,
-                enum_var
-            };
-            bool defn_ok = top_frame()->define(new_defn);
-            if (!defn_ok) {
-                post_overlapping_defn_error("enum", new_defn);
-                return false;
-            }
-
-            // storing on the node:
-            node->x_defn_var(enum_var);
-
-            // pushing frames/attribs for nested defns:
-            push_frame(FrameKind::ModEnumRhs);
-        } else {
-            pop_frame();
-        }
-        return true;
-    }
-    bool ScoperVisitor::on_visit_mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit_mod_mod_field(ast::ModExp::ModuleField* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // creating a 'var':
-            types::Var* mod_val_var = nullptr;
-            if (node->tpatterns().empty()) {
-                // single value
-                std::string tv_prefix = "Const:";
+            types::Var* mod_val_var = nullptr; {
+                std::string tv_prefix = "ModModField:";
                 std::string tv_name = tv_prefix + node->name().content();
                 mod_val_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
-            } else {
-                // template function
-                std::string template_prefix = "TemplateConst:";
-                std::string template_name = template_prefix + node->name().content();
-                mod_val_var = scoper()->types_mgr()->new_value_template_var(std::move(template_name), node);
             }
 
             // adding the new defn:
@@ -561,7 +557,69 @@ namespace pdm::scoper {
             // storing result on the node:
             node->x_defn_var(mod_val_var);
 
-            push_frame(FrameKind::ModValRhs);
+            push_frame(FrameKind::ValueModFieldRhs);
+        } else {
+            pop_frame();
+        }
+        return true;
+    }
+    // bool ScoperVisitor::on_visit_mod_mod_field(ast::ModExp::ModuleField *node, VisitOrder visit_order) {
+    //     if (visit_order == VisitOrder::Pre) {
+    //         push_frame(FrameKind::Module);
+    //     } else {
+    //         // popping the module frame:
+    //         Frame* module_frame = top_frame();
+    //         pop_frame();
+    //
+    //         // creating a new TV:
+    //         types::TypeVar* module_tv; {
+    //             std::string tv_prefix = "ModField(Module):";
+    //             std::string tv_name = tv_prefix + node->name().content();
+    //             module_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
+    //         }
+    //
+    //         // defining the new module in the script:
+    //         Defn new_defn {
+    //             DefnKind::Module,
+    //             node->name(),
+    //             node,
+    //             module_tv
+    //         };
+    //         bool defn_ok = top_frame()->define(new_defn);
+    //         if (!defn_ok) {
+    //             post_overlapping_defn_error("mod statement", new_defn);
+    //             return false;
+    //         }
+    //     }
+    //     return true;
+    // }
+    bool ScoperVisitor::on_visit_mod_address(ast::ModAddress* node, VisitOrder visit_order) {
+        // todo: add a deferred lookup order
+        assert(0 && "NotImplemented: on_visit_mod_address");
+        // if (visit_order == VisitOrder::Pre) {
+        // } else {
+        // }
+    }
+
+    // statements:
+
+    // type and enum stmts create TVs, not CVs, that are typed as returns from a polymorphic
+    // function.
+    // This function is implicitly defined within the system.
+    // Thus, use TV, not CV, even if targs present.
+    bool ScoperVisitor::on_visit_enum_type_spec(ast::EnumTypeSpec *node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            // creating a var:
+            types::Var* enum_var = nullptr;
+
+            // single value
+            std::string tv_name = "AnonymousEnum"; {
+                auto tv_name_copy = tv_name;
+                enum_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name_copy), node);
+            }
+
+            // pushing frames/attribs for nested defns:
+            push_frame(FrameKind::EnumTypeSpecBody);
         } else {
             pop_frame();
         }
@@ -846,7 +904,14 @@ namespace pdm::scoper {
     }
     bool ScoperVisitor::on_visit_id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            // todo
+            // placing an order:
+            place_id_class_spec_lookup_order(node);
+        }
+        return true;
+    }
+    bool ScoperVisitor::on_visit_ma_class_spec(ast::ModAddressIdClassSpec* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            assert(0 && "NotImplemented: module-prefix-ed class_spec (DotClassSpec)");
         }
         return true;
     }
@@ -859,26 +924,25 @@ namespace pdm::scoper {
         }
         return true;
     }
-    bool ScoperVisitor::on_visit_t_call_type_spec(ast::TCallTypeSpec* node, VisitOrder visit_order) {
-        return true;
-    }
-    bool ScoperVisitor::on_visit_t_call_class_spec(ast::TCallClassSpec* node, VisitOrder visit_order) {
-        return true;
-    }
     bool ScoperVisitor::on_visit_tuple_type_spec(ast::TupleTypeSpec* node, VisitOrder visit_order) {
-        return true;
-    }
-    // bool ScoperVisitor::on_visit__dot_name_typespec_type_prefix(ast::DotNameTypeSpec_TypePrefix* node, VisitOrder visit_order) {
-    //     return true;
-    // }
-    bool ScoperVisitor::on_visit_dot_name_type_spec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) {
         return true;
     }
     bool ScoperVisitor::on_visit_struct_type_spec(ast::StructTypeSpec* node, VisitOrder visit_order) {
         return true;
     }
-    bool ScoperVisitor::on_visit_paren_type_spec(ast::ParenTypeSpec* node, VisitOrder visit_order) {
+    bool ScoperVisitor::on_visit_ma_type_spec(ast::ModAddressIdTypeSpec* node, VisitOrder visit_order) {
+        // todo: lookup LHS module
+        assert(0 && "NotImplemented: module-prefix-ed class_spec (DotTypeSpec)");
         return true;
+    }
+
+    // class specs:
+    bool ScoperVisitor::on_visit_class_exp_class_spec(ast::ClassExpClassSpec* node, VisitOrder visit_order) {
+        assert(0 && "NotImplemented: on_visit_class_exp_class_spec");
+        return true;
+
+        // todo: store the candidate var somewhere accessible [on the class_exp]...
+        // todo: factor from on_vist_class_mod_field
     }
 
     // args:

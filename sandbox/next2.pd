@@ -1,0 +1,8 @@
+mod optional {
+
+    Optional = enum {
+        Some DataType,
+        None
+    };
+
+};

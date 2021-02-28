@@ -3,16 +3,16 @@
 # - use 'sub -< ... >-' for submodules.
 
 # imports link one module at a time. No fuzzy matching.
-import SDL2 from "https://github.com/tsnl/Fib.pd-package";
+import "https://github.com/tsnl/Fib.pd-package" as "git/pd-package";
 
-mod Shapes {
+mod shapes {
 
     Circle = {
         center Tuple[F32,F32],
         radius Tuple[F32]
     };
 
-    circumference = fn (circle Circle) -> F32 {
+    circumference = (circle Circle) -> F32 {
         val tau = {
             val pi = 3.14159;
             2*pi
@@ -22,7 +22,7 @@ mod Shapes {
 
 };
 
-mod Pixels {
+mod pixels {
 
     Pixel [T Any] = {
         r T,
@@ -48,7 +48,7 @@ mod Pixels {
 
 };
 
-mod Image {
+mod image {
 
     add [T Any] = fn (lt Image[T], rt Image[T]) -> Image[T] {
         assert lt.size == rt.size;
@@ -66,7 +66,7 @@ mod Image {
 
  };
  
- mod Dict {
+ mod dict {
 
     Dict [K,V Any] = {
         # ...
@@ -84,59 +84,58 @@ mod Image {
 
 };
 
-mod Events {
+mod events {
 
-    Color
-    | Rgba Tuple[U8,U8,U8,U8]
-    | Hsva Tuple[U8,U8,U8,U8]
-    | Name String
-    | None
-    ;
+    Color = enum {
+        Rgba {U8,U8,U8,U8},
+        Hsva {U8,U8,U8,U8},
+        Name String,
+        None
+    };
 
-    Fruit 
-    | Apple | Banana | Cherry | Durian | Fig | Grape
-    ; 
+    Fruit = enum {
+        Apple, Banana, Cherry, Durian, Fig, Grape
+    };
 
-    Key
-    | Escape | F1 | F2 | F3 | F4 | F5 | F6 | F7 | F8 | F9 | F10 | F11 | F12
-    | Tilde  | N1 | N2 | N3 | N4 | N5 | N6 | N7 | N8 | N9 | N0 | Minus | Equals | Backspace
-    | Tab       | Q | W | E | R | T | Y | U | I | O | P | LeftSquareBracket | RightSquareBracket | Backslash
-    | CapsLock  | A | S | D | F | G | H | J | K | L | Semicolon | SingleQuote | Return
-    | LeftShift | Z | X | C | V | B | N | M | Comma | Period | ForwardSlash | RightShift
-    | LeftCtrl  | LeftMeta | LeftAlt | RightAlt | RightMeta | RightCtrl |
-    | Up | Down | Left | Right
-    ;
+    Key = enum {
+        Escape, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
+        Tilde, N1, N2, N3, N4, N5, N6, N7, N8, N9, N0, Minus, Equals, Backspace,    | Tab       | Q | W | E | R | T | Y | U | I | O | P | LeftSquareBracket | RightSquareBracket | Backslash
+        CapsLock, A, S, D, F, G, H, J, K, L, Semicolon, SingleQuote, Return,
+        LeftShift, Z, X, C, V, B, N, M, Comma, Period, ForwardSlash, RightShift,
+        LeftCtrl, LeftSuper, LeftAlt, RightAlt, RightSuper, RightCtrl,
+        Up, Down, Left, Right
+    };
 
-    MouseButton
-    | Left
-    | Right
-    | Middle
-    ;
+    MouseButton = enum {
+        Left,
+        Right,
+        Middle
+    };
 
-    ButtonMoveDirection
-    | Down
-    | Up
-    ;
+    ButtonMoveDirection = enum {
+        Down,
+        Up
+    };
 
 };
 
-mod Greeting {
+mod greeting {
 
-    new_cstr = fn () -> CString {
+    new_cstr = () -> CString {
         val len = 12;
         val buf = heap.alloc(Char)[len];
-        set buf->(0) = 'h';
-        set buf->(1) = 'e';
-        set buf->(2) = 'l';
-        set buf->(3) = 'l';
-        set buf->(4) = 'o';
-        set buf->(5) = ' ';
-        set buf->(6) = 'w';
-        set buf->(7) = 'o';
-        set buf->(8) = 'r';
-        set buf->(9) = 'l';
-        set buf->(10) = 'd';
-        set buf->(11) = '\0';
+        set buf.(0) = 'h';
+        set buf.(1) = 'e';
+        set buf.(2) = 'l';
+        set buf.(3) = 'l';
+        set buf.(4) = 'o';
+        set buf.(5) = ' ';
+        set buf.(6) = 'w';
+        set buf.(7) = 'o';
+        set buf.(8) = 'r';
+        set buf.(9) = 'l';
+        set buf.(10) = 'd';
+        set buf.(11) = '\0';
         {ptr=memory, len=len}
     };
 
@@ -144,16 +143,17 @@ mod Greeting {
 
 mod Primes {
 
-    driver = fn () {
+    driver = () -> Void {
         # val prime_limit = console.read_int[Int32]("Enter a number >2 until which to search for primes: ");
         val primes_until = count_primes_until(prime_limit);
         
     }
 
-    count_primes_until = fn (primes_limit Int32) -> Int32 {
+    # proposed feature: for loops:
+    count_primes_until = (primes_limit Int32) -> Int32 {
         var prime_count = 1;
         
-        foreach (i: 3 .. prime_limit step 2) {
+        for (i: 3 .. prime_limit step 2) {
             var i_is_prime = true;
             for (fac = 0; fac*fac < i; fac+2) {
                 if (i % fac == 0) then {
@@ -168,18 +168,18 @@ mod Primes {
 
  };
  
- mod Submodules {
+ mod submodules {
 
-    sub S1 {
+    mod S1 {
         hello = 0;
     };
 
-    sub S2 [UInt UInts] {
-        filter = fn (image Image[UInt]) -> Image {
+    mod S2 [UInt UInts] {
+        filter = (image Image[UInt]) -> Image {
             # ...
         };
 
-        sub DoubleNested {
+        mod DoubleNested {
             hi = 0;
         };
     };

@@ -9,56 +9,56 @@
 # - restore ':' for struct initializers
 # add mandatory return type for 'fn' stmt 
 
-mod Demo {
+mod demo {
 
-    showoff = fn () -> Float32 = {
-        let vec1 = vec.new_2f(0,0);
-        let vec2 = vec.new_2f(1,2);
-        let vec1_length = vec.length_sqr(vec1);
-        let vec2_length = vec.length_sqr(vec2);
-        let dot = vec.dot(vec1,vec2);
-        let sum = vec.add(vec1,vec2);
+    showoff = () -> Float32 {
+        val vec1 = vec::new_2f(0,0);
+        val vec2 = vec::new_2f(1,2);
+        val vec1_length = vec::length_sqr(vec1);
+        val vec2_length = vec::length_sqr(vec2);
+        val dot = vec.dot(vec1, vec2);
+        val sum = vec.add(vec1, vec2);
 
-        let p = printer.new_with(gc.alloc);
+        val p = printer.new_with(gc.alloc);
         print.str(p, "{dot: \(dot), sum: \(sum)}");
     };
 
 };
 
-mod LinAlg {
+mod lin_alg {
 
-    type Vec2f = {
+    Vec2f = {
         x Float32,
         y Float32
     };
 
-    type Norm = Vec2f -> Float32;
+    Norm = Vec2f -> Float32;
 
-    fn new_2f (x Float32, y Float32) -> Vec2f = {
+    new_2f = (x Float32, y Float32) -> Vec2f {
         x: x, 
         y: y
     };
 
-    fn mul (s Float32, v Vec2f) -> Vec2f = {
+    mul = (s Float32, v Vec2f) -> Vec2f {
         x: s * v.x,
         y: s * v.y
     };
 
-    fn add (v Vec2f, w Vec2f) -> Vec2f = {
+    add = (v Vec2f, w Vec2f) -> Vec2f {
         x: v.x + w.x, 
         y: v.y + w.y
     };
 
-    fn dot (v Vec2f, w Vec2f) -> Float32 = {
+    dot = (v Vec2f, w Vec2f) -> Float32 {
         v.x * w.x + 
         v.y * w.y
     };
 
-    fn length_sqr (v Vec2f) -> Float32 = {
+    length_sqr = (v Vec2f) -> Float32 {
         dot(v,v)
     };
 
-    fn subtract (v Vec2f, w Vec2f) -> Float32 = {
+    subtract = (v Vec2f, w Vec2f) -> Float32 {
         vec.add(mul(w,-1))
     };
 

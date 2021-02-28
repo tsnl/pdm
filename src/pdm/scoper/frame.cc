@@ -8,11 +8,12 @@ namespace pdm::scoper {
         {
             case FrameKind::Root: return "Root";
             case FrameKind::Script: return "Script";
-            case FrameKind::Module: return "Module";
-            case FrameKind::ModValRhs: return "FnRhs";
-            case FrameKind::ModTypeRhs: return "TypeRhs";
-            case FrameKind::ModEnumRhs: return "EnumRhs";
-            case FrameKind::ModTypeclassRhs: return "TypeclassRhs";
+            case FrameKind::ScriptFieldRhs: return "ScriptFieldRhs";
+            case FrameKind::ModModFieldRhs: return "ModModFieldRhs";
+            case FrameKind::ValueModFieldRhs: return "ValueModFieldRhs";
+            case FrameKind::TypeModFieldRhs: return "TypeModFieldRhs";
+            case FrameKind::EnumTypeSpecBody: return "EnumTypeSpecBodyRhs";
+            case FrameKind::ClassModFieldRhs: return "ClassModFieldRhs";
             case FrameKind::LPattern: return "LPattern";
             case FrameKind::VPattern: return "VPattern";
             case FrameKind::TPattern: return "TPattern";

@@ -1,40 +1,40 @@
-mod LinAlg {
+mod lin_alg {
 
-    typ Vector3f: struct {
+    Vector3f = {
         x Float32,
         y Float32,
         z Float32
     };
 
-    val vec3f = (x Float32, y Float32, z Float32) -> Vector3f {
+    vec3f = (x Float32, y Float32, z Float32) -> Vector3f {
         x: x,
         y: y,
         z: z
     };
 
-    val add = (vec1 Vector3f, vec2 Vector3f) -> Vector3f {
+    add = (vec1 Vector3f, vec2 Vector3f) -> Vector3f {
         x: vec1.x + vec2.x,
         y: vec1.y + vec2.y,
         z: vec1.z + vec2.z
     };
 
-    val scale = (scalar Float32, vec Vector3f) -> Vector3f {
+    scale = (scalar Float32, vec Vector3f) -> Vector3f {
         x: scalar * vec.x,
         y: scalar * vec.y,
         z: scalar * vec.z
     };
 
-    val dot = (vec1 Vector3f, vec2 Vector3f) -> Float32 {
+    dot = (vec1 Vector3f, vec2 Vector3f) -> Float32 {
         vec1.x * vec2.x +
         vec1.y * vec2.y +
         vec1.z * vec2.z
     };
 
-    val length_sqr = (vec Vector3f) -> Float32 {
+    length_sqr = (vec Vector3f) -> Float32 {
         dot(vec, vec)
     };
 
-    val length = (vec Vector3f) -> Float32 {
+    length = (vec Vector3f) -> Float32 {
         sqrt(length_sqr(vec))
     };
 

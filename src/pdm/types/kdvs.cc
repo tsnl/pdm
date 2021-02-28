@@ -1037,7 +1037,7 @@ namespace pdm::types {
             rv.result = KcResult::InsufficientInfo;
             rv.kdvs = nullptr;
         } 
-        else if (is_type_var_archetype(var_kind)) {
+        else if (var_kind == VarArchetype::Type) {
             rv.result = KcResult::Ok;
             switch (type_kind)
             {

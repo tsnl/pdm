@@ -1,5 +1,5 @@
-mod Classy {
-    cls SHAPE (S STRUCT) {
+mod classy {
+    SHAPE = cls (S STRUCT) {
         # must have Int32 fields 'area' and 'perimeter'
         S :< {area Int32, perimeter Int32};
     };

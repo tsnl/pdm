@@ -36,17 +36,20 @@ namespace pdm::ast {
         };
 
       private:
-        std::vector<Field> m_fields;
+        std::vector<Field*> m_fields;
 
       protected:
-        EnumTypeSpec(source::Loc loc, std::vector<Field>&& fields);
+        EnumTypeSpec(source::Loc loc, std::vector<Field*>&& fields);
+
+      public:
+        [[nodiscard]] std::vector<Field*> const& fields() const;
     };
 
     //
     // Inline implementations:
     //
 
-    inline EnumTypeSpec::EnumTypeSpec(source::Loc loc, std::vector<Field>&& fields)
+    inline EnumTypeSpec::EnumTypeSpec(source::Loc loc, std::vector<Field*>&& fields)
     :   TypeSpec(loc, Kind::EnumTypeSpec),
         m_fields(std::move(fields))
     {}
@@ -79,6 +82,9 @@ namespace pdm::ast {
         return m_opt_type_spec;
     }
 
+    inline std::vector<EnumTypeSpec::Field*> const& EnumTypeSpec::fields() const {
+        return m_fields;
+    }
 }
 
 #endif  // INCLUDED__PDM__AST__TYPE_SPEC__ENUM_HH

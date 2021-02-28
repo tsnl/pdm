@@ -1,6 +1,6 @@
-mod Fibonacci [NumType SIGNED_INT] {
+mod fibonacci [NumType SIGNED_INT] {
 
-    val nth: (x NumType) -> NumType {
+    nth = (x NumType) -> NumType {
         if (x == 0 or x == 1) then {
             x
         } else {

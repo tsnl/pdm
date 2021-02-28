@@ -12,28 +12,31 @@
 # be possible to specify libraries via git/hg URI which the compiler will automatically
 # install and cache.
 
-import Deque from "basic.pd" type "script/fs";
-import Vector from "basic.pd" type "script/fs";
-import Eg3 from "eg3.pd"   type "script/fs";
+import "basic.pd" as "pd-script";
+import "basic.pd" as "pd-script";
+import "eg3.pd" as "pd-script";
 
-mod Vehicle {
+mod vehicle {
 
     Car = {
         name Text,
         price Int32
     };
-    new = fn (name Text, price Int32) -> Car {
+    new = (name Text, price Int32) -> Car {
         (name, price)
     };
 
 }
 
-mod Level1 {
+mod level1 {
 
-    sub damage {
-        wearAndTear = fn (inout car eg3.Car, dsec Float32) {
+    mod damage {
+
+        StringDict = dict[string,Int32]
+
+        wearAndTear = (inout car eg3::Car, delta_sec Float32) -> Void {
             val fancyScoreDamagePerSec = 1.2;
-            set car.fancyScore = car.fancyScore - convert[UInt32](fancyScoreDamagePerSec * dsec);
+            set car.fancyScore = car.fancyScore - convert[UInt32]::from(fancyScoreDamagePerSec * delta_sec);
         };
     };
 

@@ -65,6 +65,7 @@
 
 #include "pdm/ast/class_spec/id.hh"
 #include "pdm/ast/class_spec/class_exp.hh"
+#include "pdm/ast/class_spec/dot.hh"
 
 namespace pdm {
     class Compiler;
@@ -107,10 +108,10 @@ namespace pdm::ast {
         Script::Field* new_script_field(source::Loc loc, intern::String name, ast::ModExp* mod_exp);
 
         ModExp* new_mod_exp(source::Loc loc, ast::TPattern* opt_template_pattern, std::vector<ast::ModExp::Field*>&& fields);
+        ModExp::ModuleField* new_mod_mod_field(source::Loc loc, intern::String lhs_name, ast::ModExp* mod_exp);
         ModExp::ValueField* new_value_mod_field(source::Loc loc, intern::String lhs_name, ast::Exp* rhs_exp);
         ModExp::TypeField* new_type_mod_field(source::Loc loc, intern::String lhs_name, ast::TypeSpec* rhs_type_spec);
         ModExp::ClassField* new_class_mod_field(source::Loc loc, intern::String lhs_name, ast::ClassSpec* rhs_class_spec);
-        ModAddress* new_mod_address(source::Loc loc, ModAddress* opt_lhs, intern::String rhs_name);
         ModAddress* new_mod_address(source::Loc loc, ModAddress* opt_lhs, intern::String rhs_name, std::vector<ast::TArg*>&& template_args);
 
         ArrayExp* new_array_exp(source::Loc loc, std::vector<Exp*>&& items);
@@ -118,13 +119,13 @@ namespace pdm::ast {
         ChainExp* new_chain_exp(source::Loc loc, std::vector<Stmt*>&& prefix, Exp* suffix = nullptr);
         StructDotNameExp* new_struct_dot_name_exp(source::Loc loc, Exp* lhs, intern::String rhs_name);
         EnumDotNameExp* new_enum_dot_name_exp(source::Loc loc, TypeSpec* lhs, intern::String rhs_name, ast::Exp* opt_using_exp);
-        ModuleDotExp* new_module_dot_name_exp(source::Loc loc, std::vector<intern::String>&& module_names, intern::String rhs_name);
+        ModuleDotExp* new_module_dot_name_exp(source::Loc loc, ast::ModAddress* lhs_address, intern::String rhs_name);
         DotIndexExp* new_dot_index_exp(source::Loc loc, Exp* lhs, Exp* rhs_exp, DotIndexExp::RhsHint rhs_hint);
         FloatExp* new_float_exp(source::Loc loc, long double value);
         IdExp* new_id_exp(source::Loc loc, intern::String name);
         IfExp* new_if_exp(source::Loc loc, Exp* cond_exp, Exp* then_exp, Exp* else_exp);
         IntExp* new_int_exp(source::Loc loc, u64 value, IntExp::Base base, bool force_unsigned);
-        LambdaExp* new_lambda_exp(source::Loc loc, VPattern* lhs_lpattern, TypeSpec* opt_ret_typespec, Exp* body);
+        LambdaExp* new_lambda_exp(source::Loc loc, FnTypeSpec* fn_type_spec, Exp* body);
         ParenExp* new_paren_exp(source::Loc loc, Exp* nested);
         StringExp* new_string_exp(source::Loc loc, utf8::String content, StringExp::QuoteKind quote_kind);
         StringExp* new_string_exp(source::Loc loc, std::vector<StringExp::Piece>&& content);
@@ -140,7 +141,8 @@ namespace pdm::ast {
         TPattern* new_tpattern(source::Loc loc, std::vector<TPattern::Field*>&& fields, bool is_only_captured);
         VPattern* new_vpattern(source::Loc loc, std::vector<VPattern::Field*>&& fields);
         LPattern::Field* new_lpattern_field(source::Loc loc, LPattern::FieldKind kind, intern::String name, TypeSpec* opt_rhs_typespec = nullptr);
-        TPattern::Field* new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, SetSpec* rhs_set_spec);
+        TPattern::Field* new_value_tpattern_field(source::Loc loc, intern::String name, TypeSpec* type_spec);
+        TPattern::Field* new_type_tpattern_field(source::Loc loc, intern::String name, ClassSpec* class_spec);
         VPattern::Field* new_vpattern_field(source::Loc loc, intern::String name, TypeSpec* rhs_typespec, VArgAccessSpec varg_kind);
 
         BuiltinStmt* new_builtin_stmt(std::string&& desc);
@@ -150,11 +152,11 @@ namespace pdm::ast {
         VarStmt* new_var_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
         SetStmt* new_set_stmt(source::Loc loc, Exp* lhs, Exp* rhs);
         
-        ImportStmt* new_import_stmt(source::Loc loc, utf8::String imported_from_exp, utf8::String imported_type_exp);
+        ImportStmt* new_import_stmt(source::Loc loc, intern::String import_name, utf8::String imported_from_exp, utf8::String imported_type_exp);
         UsingStmt* new_using_stmt(source::Loc loc, intern::String module_name, std::string suffix);
         ExternStmt* new_extern_stmt(source::Loc loc, intern::String ext_mod_name, Exp* link_arg);
 
-        DotTypeSpec* new_dot_type_spec(source::Loc loc, std::vector<intern::String>&& lhs_prefixes, intern::String rhs_name);
+        ModAddressIdTypeSpec* new_ma_type_spec(source::Loc loc, ast::ModAddress* lhs_mod_address, intern::String rhs_name);
         FnTypeSpec* new_fn_type_spec(source::Loc loc, VPattern* lhs_vpattern, TypeSpec* rhs_typespec);
         IdTypeSpec* new_id_type_spec(source::Loc loc, intern::String name);
         StructTypeSpec* new_struct_type_spec(source::Loc loc, std::vector<StructTypeSpec::Field*>&& fields);
@@ -168,7 +170,12 @@ namespace pdm::ast {
             source::Loc loc,
             intern::String candidate_type_name,
             ClassSpec* candidate_class_name,
-            std::vector<ast::TypeQueryExp*> type_query_exps
+            std::vector<ast::TypeQueryExp*>&& type_query_exps
+        );
+        ModAddressIdClassSpec* new_ma_class_spec(
+            source::Loc loc,
+            ModAddress* lhs_mod_address,
+            intern::String rhs_name
         );
 
         TArg* new_targ_exp(source::Loc loc, Exp* exp);

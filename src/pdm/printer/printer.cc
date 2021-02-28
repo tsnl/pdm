@@ -377,7 +377,7 @@ namespace pdm::printer {
         print_node(es->link_arg());
     }
     void Printer::print_import_stmt(ast::ImportStmt* is) {
-        print_c_str("import ");
+        print_c_str("mod ");
         print_intstr(is->import_name());
         // fixme; incorrect escapes, so hacky, but eh
         print_c_str(" from \"");
@@ -620,9 +620,9 @@ namespace pdm::printer {
         }
     }
     void Printer::print_module_dot_exp(ast::ModuleDotExp* node) {
-        for (intern::String prefix_module_name: node->lhs_prefix_module_names()) {
-            print_intstr(prefix_module_name);
-            print_c_str(":");
+        if (node->lhs_mod_address()) {
+            print_node(node->lhs_mod_address());
+            print_c_str("::");
         }
         print_intstr(node->rhs_name());
     }

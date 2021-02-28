@@ -1,22 +1,22 @@
-mod Vec {
+mod vec {
 
-    typ Vec2 = {
+    Vec2 = {
         x Float32,
         y Float32
     };
 
-    val mul = (v Vec2, s Float32) -> Vec2 {
+    mul = (v Vec2, s Float32) -> Vec2 {
         x: v.x * s,
         y: v.y * s
     };
 
-    val dot = (v Vec2, w Vec2) -> Float32 {
+    dot = (v Vec2, w Vec2) -> Float32 {
         v.x * w.x + v.y * w.y
     };
-    val length_sqr = (v Vec2) -> Float32 {
+    length_sqr = (v Vec2) -> Float32 {
         dot(v, v)
     };
-    val length = (v Vec2) -> Float32 {
+    length = (v Vec2) -> Float32 {
         # TODO: math, sqrt ;-;
         # Math.sqrt(length_sqr(v))
     };
@@ -27,7 +27,7 @@ mod Vec {
     #   - raise this error if user forgets the 'if'
     #   - disable this error when 'if' is present
     #   * the compiler helps check your code
-    val normalize = (v Vec2) -> Vec2 {
+    normalize = (v Vec2) -> Vec2 {
         val v_length = length(v);
         if (v_length == 0) then {
             v

@@ -20,6 +20,7 @@ namespace pdm::ast {
         friend Manager;
 
       private:
+        intern::String  m_import_name;
         utf8::String    m_import_from;
         utf8::String    m_import_type;
         Script*         m_x_origin_script;
@@ -27,7 +28,7 @@ namespace pdm::ast {
         types::TypeVar* m_x_exported_tv;
 
       protected:
-        ImportStmt(source::Loc loc, utf8::String import_from, utf8::String import_type);
+        ImportStmt(source::Loc loc, intern::String import_name, utf8::String import_from, utf8::String import_type);
 
         // getters:
       public:
@@ -48,6 +49,10 @@ namespace pdm::ast {
         [[nodiscard]] ast::ModExp* x_origin_mod_exp() const;
         void x_origin_mod_exp(ast::ModExp* set_mod_stmt);
     };
+
+    inline intern::String ImportStmt::import_name() const {
+        return m_import_name;
+    }
 
     inline utf8::String const &ImportStmt::import_from_str() const {
         return m_import_from;

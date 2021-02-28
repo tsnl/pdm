@@ -108,8 +108,8 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/builtin.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/const.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/discard.hh
-        src/pdm/ast/header/extern_stmt.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/set.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/header/extern_stmt.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/set.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod_val.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod_enum.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/mod_type.hh
@@ -127,16 +127,16 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/header/import_stmt.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/header/import_stmt.cc
 
-        src/pdm/ast/type_spec/type_spec.cc
-        src/pdm/ast/type_spec/type_spec.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/class_spec.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/class_spec.hh
-        src/pdm/ast/type_spec/fn.hh
-        src/pdm/ast/type_spec/id.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/id.hh
-        src/pdm/ast/type_spec/struct.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/type_spec.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/type_spec.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/class_spec.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/class_spec.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/fn.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/id.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/id.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/struct.hh
 
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/core/bitsets.hh
@@ -212,24 +212,32 @@ add_library(
     
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type_trie.hh 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type_trie.cc
-        src/pdm/ast/type_spec/dot.hh src/pdm/ast/type_spec/enum.hh src/pdm/ast/type_spec/struct.hh src/pdm/ast/class_spec/class_exp.hh)
+        
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/dot.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/enum.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/struct.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/class_exp.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/dot.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/array.hh
+)
 
 # link pdm <- llvm
 # - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt
 llvm_map_components_to_libnames(llvm_libs Core ExecutionEngine Interpreter MCJIT Support nativecodegen IRReader)
 add_definitions(${LLVM_DEFINITIONS})
-target_link_libraries(pdm ${llvm_libs})
+target_link_libraries(pdm PUBLIC ${llvm_libs})
 
 # link pdm <- intern :- C lib for interned string support
+set(BUILD_STATIC ON)
 add_subdirectory(dep/intern)
-target_link_libraries(pdm intern)
+target_link_libraries(pdm PRIVATE intern)
 
 # link pdm <- utf8proc :- C lib for Unicode support
 add_library(utf8proc
     dep/utf8proc/utf8proc.c
     dep/utf8proc/utf8proc.h
 )
-target_link_libraries(pdm utf8proc)
+target_link_libraries(pdm PRIVATE utf8proc)
 
 # PDM Sandbox: toy driver for PDM
 add_executable(

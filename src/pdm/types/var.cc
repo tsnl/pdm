@@ -285,7 +285,7 @@ namespace pdm::types {
         }
 
         // solving for an algebraic type if required:
-        if (is_type_var_archetype(var_archetype())) {
+        if (VarArchetype::Type == var_archetype()) {
             bool reify_ok = false;
             {
                 if (m_kdvs) {
@@ -726,7 +726,7 @@ namespace pdm::types {
         p.print_c_str("soln: ");
         if (m_opt_type_soln) {
             m_opt_type_soln->print(p);
-        } else if (!is_type_var_archetype(var_archetype())) {
+        } else if (var_archetype() != VarArchetype::Type) {
             p.print_c_str("N/A (Exempt-archetype)");
         } else {
             p.print_c_str("NULL");

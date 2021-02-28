@@ -1,17 +1,23 @@
 # Values as template parameters:
+# Array is builtin, but short of the contents of Array,
+# everything else is re-creatable in-language:
 
-mod Arrays {
+mod arrays  [ElemType ANY, n Int32] {
 
-    Array [T Any, n Int32] = {
-        # ...
+    Array = {
+        impl [ElemType/n]
     };
 
-    map [T Any, U Any, n Int32] = fn (f, a Array[T,n]) -> Array[U,n] {
-        # ...
-    };
+    mod map [ImgType ANY] {
 
-    nmap [T Any, U Any, n Int32] = fn (f Fn[T,U], a Array[T,n]) -> Array[U,n] {
-        # ...
+        FnType = ElemType -> ImgType;
+
+        ImgArray = Arrays[ImgType,n]::Array;
+
+        map = (f FnType, a Array) -> ImgArray {
+            # ...
+        };
+
     };
 
 };

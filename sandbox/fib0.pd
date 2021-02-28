@@ -1,10 +1,10 @@
-mod Fibonacci0 {
+mod fibonacci0 {
 
-    val fib = (x Int32) -> Int32 {
+    fib = (x Int32) -> Int32 {
         if (x == 0 or x == 1) then {
             x
         } else {
-            fib(x-1) + fib(x-2)
+            fib(x - 1) + fib(x - 2)
         }
     };
 

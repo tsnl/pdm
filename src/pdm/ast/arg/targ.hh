@@ -28,7 +28,6 @@ namespace pdm::ast {
         
       protected:
         TArg(source::Loc loc, ast::Exp* exp);
-
         TArg(source::Loc loc, ast::TypeSpec* typespec);
 
       // getters:  
@@ -39,7 +38,7 @@ namespace pdm::ast {
       // convenience properties:
       public:
         [[nodiscard]] bool is_value() const;
-        [[nodiscard]] bool is_typespec() const;
+        [[nodiscard]] bool is_type_spec() const;
     };
 
     inline TArg::TArg(source::Loc loc, Node* ref_node, TArgKind arg_kind)
@@ -67,7 +66,7 @@ namespace pdm::ast {
         return m_arg_kind == TArgKind::Value;
     }
 
-    inline bool TArg::is_typespec() const {
+    inline bool TArg::is_type_spec() const {
         return m_arg_kind == TArgKind::TypeSpec;
     }
 

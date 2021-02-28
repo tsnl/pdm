@@ -32,11 +32,11 @@ namespace pdm::ast {
         m_x_spec_var(nullptr)
     {}
 
-    types::ClassVar* ClassSpec::x_spec_var() const {
+    inline types::ClassVar* ClassSpec::x_spec_var() const {
         return m_x_spec_var;
     }
 
-    void ClassSpec::x_spec_var(types::ClassVar* spec_var) {
+    inline void ClassSpec::x_spec_var(types::ClassVar* spec_var) {
         m_x_spec_var = spec_var;
     }
 

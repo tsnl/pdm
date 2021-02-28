@@ -25,30 +25,31 @@ namespace pdm::scoper {
         friend ScoperVisitor;
 
       private:
-        struct IdExpLookupOrder      { ast::IdExp* id_exp; Context* lookup_context; };
-        struct IdTypeSpecLookupOrder { ast::IdTypeSpec* id_typespec; Context* lookup_context; };
-        struct ImportLookupOrder     { ast::ImportStmt* import_stmt; Context* lookup_context; };
-        struct UsingLookupOrder      { ast::UsingStmt* using_stmt; Context* lookup_context; };
+        struct IdExpLookupOrder       { ast::IdExp* id_exp; Context* lookup_context; };
+        struct IdTypeSpecLookupOrder  { ast::IdTypeSpec* type_spec; Context* lookup_context; };
+        struct IdClassSpecLookupOrder { ast::IdClassSpec* class_spec; Context* lookup_context; };
+        struct ImportLookupOrder      { ast::ImportStmt* import_stmt; Context* lookup_context; };
+        struct UsingLookupOrder       { ast::UsingStmt* using_stmt; Context* lookup_context; };
 
       private:
-        Compiler*                m_compiler_ptr;
-        Frame*                             m_root_frame;
-        std::vector<IdExpLookupOrder>      m_id_exp_orders;
-        std::vector<IdTypeSpecLookupOrder> m_id_typespec_orders;
-        std::vector<ImportLookupOrder>     m_import_orders;
-        std::vector<UsingLookupOrder>      m_using_orders;
+        Compiler*                           m_compiler_ptr;
+        Frame*                              m_root_frame;
+        std::vector<IdExpLookupOrder>       m_id_exp_orders;
+        std::vector<IdTypeSpecLookupOrder>  m_id_type_spec_orders;
+        std::vector<IdClassSpecLookupOrder> m_id_class_spec_orders;
+        std::vector<ImportLookupOrder>      m_import_orders;
+        std::vector<UsingLookupOrder>       m_using_orders;
 
         bool m_finished;
 
       public:
-        Scoper(Compiler* compiler_ptr);
+        explicit Scoper(Compiler* compiler_ptr);
 
       public:
-        Frame*              root_frame() const { return m_root_frame; }
-        Compiler* compiler()   const { return m_compiler_ptr; }
-        bool                finished()   const { return m_finished; }
-
-        types::Manager* types_mgr() const;
+        [[nodiscard]] Frame* root_frame() const { return m_root_frame; }
+        [[nodiscard]] Compiler* compiler() const { return m_compiler_ptr; }
+        [[nodiscard]] bool finished() const { return m_finished; }
+        [[nodiscard]] types::Manager* types_mgr() const;
 
       public:
         // `scope` creates data structures needed to lookup IDs
@@ -74,7 +75,7 @@ namespace pdm::scoper {
         std::stack<Frame*>   m_frame_stack;
 
       protected:
-        ScoperVisitor(Scoper* scoper_ref);
+        explicit ScoperVisitor(Scoper* scoper_ref);
 
       private:
         [[nodiscard]] Scoper* scoper() const {
@@ -82,7 +83,7 @@ namespace pdm::scoper {
         }
 
       private:
-        bool in_chain_exp()   { return m_overhead_chain_exp_count > 0; }
+        bool in_chain_exp() const { return m_overhead_chain_exp_count > 0; }
         void inc_overhead_chain_exp_count() { ++m_overhead_chain_exp_count; }
         void dec_overhead_chain_exp_count() { --m_overhead_chain_exp_count; }
 
@@ -95,7 +96,8 @@ namespace pdm::scoper {
 
       private:
         void place_id_exp_lookup_order(ast::IdExp* id_exp);
-        void place_id_type_spec_lookup_order(ast::IdTypeSpec* id_typespec);
+        void place_id_type_spec_lookup_order(ast::IdTypeSpec* id_type_spec);
+        void place_id_class_spec_lookup_order(ast::IdClassSpec* id_class_spec);
         void place_import_lookup_order(ast::ImportStmt* import_stmt);
         void place_using_lookup_order(ast::UsingStmt* using_stmt);
 
@@ -107,6 +109,15 @@ namespace pdm::scoper {
       protected:
         // scripts:
         bool on_visit_script(ast::Script* script, VisitOrder visit_order) override;
+        bool on_visit_script_field(ast::Script::Field* field, VisitOrder visit_order) override;
+
+        // modules:
+        bool on_visit_mod_exp(ast::ModExp* node, VisitOrder visit_order) override;
+        bool on_visit_value_mod_field(ast::ModExp::ValueField* node, VisitOrder visit_order) override;
+        bool on_visit_type_mod_field(ast::ModExp::TypeField* node, VisitOrder visit_order) override;
+        bool on_visit_class_mod_field(ast::ModExp::ClassField* node, VisitOrder visit_order) override;
+        bool on_visit_mod_mod_field(ast::ModExp::ModuleField* node, VisitOrder visit_order) override;
+        bool on_visit_mod_address(ast::ModAddress* node, VisitOrder visit_order) override;
 
         // statements:
         bool on_visit_const_stmt(ast::ConstStmt* node, VisitOrder visit_order) override;
@@ -145,12 +156,18 @@ namespace pdm::scoper {
         bool on_visit_t_pattern(ast::TPattern* node, VisitOrder visit_order) override;
         bool on_visit_l_pattern(ast::LPattern* node, VisitOrder visit_order) override;
 
-        // typespecs:
+        // type specs:
         bool on_visit_id_type_spec(ast::IdTypeSpec* node, VisitOrder visit_order) override;
-        bool on_visit_id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) override;
         bool on_visit_fn_type_spec(ast::FnTypeSpec* node, VisitOrder visit_order) override;
         bool on_visit_tuple_type_spec(ast::TupleTypeSpec* node, VisitOrder visit_order) override;
         bool on_visit_struct_type_spec(ast::StructTypeSpec* node, VisitOrder visit_order) override;
+        bool on_visit_ma_type_spec(ast::ModAddressIdTypeSpec* node, VisitOrder visit_order) override;
+        bool on_visit_enum_type_spec(ast::EnumTypeSpec* node, VisitOrder visit_order) override;
+
+        // class specs:
+        bool on_visit_class_exp_class_spec(ast::ClassExpClassSpec* node, VisitOrder visit_order) override;
+        bool on_visit_id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) override;
+        bool on_visit_ma_class_spec(ast::ModAddressIdClassSpec* node, VisitOrder visit_order) override;
 
         // args:
         bool on_visit_t_arg(ast::TArg* t_arg, VisitOrder visit_order) override;

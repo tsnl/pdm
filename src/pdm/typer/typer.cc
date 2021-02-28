@@ -25,6 +25,14 @@
 // TypeVisitor helps apply typing rules for each AST node (without forgetting any).
 //
 
+// TODO:
+// - script fields
+// - module fields:
+//   - module, type, class, value
+// - type specs (enum, dot)
+// - class specs (totally redesigned, class-exp, dot, id)
+// - templates/mod-address
+
 // helper in 'types' namespace:
 namespace pdm::types {
 
@@ -46,13 +54,17 @@ namespace pdm::types {
       protected:
         // script:
         bool on_visit_script(ast::Script* script, VisitOrder visit_order) override;
+        bool on_visit_script_field(ast::Script::Field* script_field, VisitOrder visit_order) override;
+
+        // module:
+        bool on_visit_mod_exp(ast::ModExp* mod_exp, VisitOrder visit_order) override;
+        bool on_visit_mod_mod_field(ast::ModExp::ModuleField* module_field, VisitOrder visit_order) override;
+        bool on_visit_value_mod_field(ast::ModExp::ValueField* value_field, VisitOrder visit_order) override;
+        bool on_visit_type_mod_field(ast::ModExp::TypeField* type_field, VisitOrder visit_order) override;
+        bool on_visit_class_mod_field(ast::ModExp::ClassField* class_field, VisitOrder visit_order) override;
+        bool on_visit_mod_address(ast::ModAddress* mod_address, VisitOrder visit_order) override;
 
         // statements:
-        bool on_visit_mod_stmt(ast::ModStmt* node, VisitOrder visit_order) override;
-        bool on_visit_mod_typeclass_stmt(ast::ModTypeclassStmt* node, VisitOrder visit_order) override;
-        bool on_visit_mod_type_stmt(ast::ModTypeStmt* node, VisitOrder visit_order) override;
-        bool on_visit_mod_enum_stmt(ast::ModEnumStmt* node, VisitOrder visit_order) override;
-        bool on_visit_mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) override;
         bool on_visit_const_stmt(ast::ConstStmt* node, VisitOrder visit_order) override;
         bool on_visit_val_stmt(ast::ValStmt* node, VisitOrder visit_order) override;
         bool on_visit_var_stmt(ast::VarStmt* node, VisitOrder visit_order) override;
@@ -87,18 +99,19 @@ namespace pdm::types {
         bool on_visit_t_pattern(ast::TPattern* node, VisitOrder visit_order) override;
         bool on_visit_l_pattern(ast::LPattern* node, VisitOrder visit_order) override;
         
-        // typespecs:
+        // type specs:
         bool on_visit_id_type_spec(ast::IdTypeSpec* node, VisitOrder visit_order) override;
-        bool on_visit_id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) override;
         bool on_visit_fn_type_spec(ast::FnTypeSpec* node, VisitOrder visit_order) override;
-        bool on_visit_t_call_type_spec(ast::TCallTypeSpec* node, VisitOrder visit_order) override;
-        bool on_visit_t_call_class_spec(ast::TCallClassSpec* node, VisitOrder visit_order) override;
         bool on_visit_tuple_type_spec(ast::TupleTypeSpec* node, VisitOrder visit_order) override;
-        bool on_visit_dot_name_type_spec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) override;
         bool on_visit_struct_type_spec(ast::StructTypeSpec* node, VisitOrder visit_order) override;
-        bool on_visit_paren_type_spec(ast::ParenTypeSpec* node, VisitOrder visit_order) override;
-        // bool on_visit__dot_name_typespec_type_prefix(ast::DotNameTypeSpec_TypePrefix* node, VisitOrder visit_order) override;
-        
+        bool on_visit_ma_type_spec(ast::ModAddressIdTypeSpec* node, VisitOrder visit_order) override;
+        bool on_visit_enum_type_spec(ast::EnumTypeSpec* node, VisitOrder visit_order) override;
+
+        // class specs:
+        bool on_visit_class_exp_class_spec(ast::ClassExpClassSpec* class_exp, VisitOrder visit_order) override;
+        bool on_visit_id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) override;
+        bool on_visit_ma_class_spec(ast::ModAddressIdClassSpec* node, VisitOrder visit_order) override;
+
         // args:
         bool on_visit_t_arg(ast::TArg* node, VisitOrder visit_order) override;
         bool on_visit_v_arg(ast::VArg* node, VisitOrder visit_order) override;
@@ -112,9 +125,6 @@ namespace pdm::types {
 
         static TypeVar* expect_type_var(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
         static ClassVar* expect_class_var(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
-        static TemplateVar_RetValue* expect_template_ret_value(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
-        static TemplateVar_RetType* expect_template_ret_type(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
-        static TemplateVar_RetClass* expect_template_ret_class(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
         static Var* expect_var_check(Var* var, std::string&& expected_desc, std::string&& in_desc, VarArchetype expected_var_kind, source::Loc loc);
     };
 
@@ -155,193 +165,201 @@ namespace pdm::types {
         // todo: implement this typer.
         return true;
     }
+    bool TyperVisitor::on_visit_script_field(ast::Script::Field* script_field, VisitOrder visit_order) {
+        // todo: implement this typer-- 
+        // - ensure `defn_var`from scoper
+        // - just bind type to RHS
+        return true;
+    }
 
-    // statements:
-    bool TyperVisitor::on_visit_mod_stmt(ast::ModStmt* node, VisitOrder visit_order) {
+    // modules:
+    bool TyperVisitor::on_visit_mod_exp(ast::ModExp* mod_exp, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            TypeVar* module_tv = node->x_module_tv();
-        } else {
-            assert(visit_order == VisitOrder::Post);
+            // TODO: implement typing for templates.
+            if (mod_exp->opt_template_pattern()) {
+                assert(0 && "NotImplemented: 'TyperVisitor::on_visit_mod_exp' with template args.");
+            }
 
-            auto module_tv = dynamic_cast<TypeVar*>(node->x_module_tv());
+            // creating a new TV for the module:
+            std::string new_module_var_name = "AnonymousModExp";
+            types::TypeVar* new_module_var = m_types_mgr->new_unknown_type_var(
+                std::move(new_module_var_name),
+                mod_exp
+            );
+            mod_exp->x_module_var(new_module_var);
+            
+            // all ok:
+            return true;
+        } else {
+            // retrieving and typing the TV:
+            assert(visit_order == VisitOrder::Post && "Invalid visit order.");
+            auto module_tv = dynamic_cast<TypeVar*>(mod_exp->x_module_var());
 
             std::map<intern::String, Var*> fields_tvs; {
-                for (ast::ModContentStmt* mcs: node->defns()) {
-                    switch (mcs->kind())
-                    {
-                        case ast::Kind::ModValStmt:
-                        {
-                            auto stmt = dynamic_cast<ast::ModValStmt*>(mcs);
-                            fields_tvs[stmt->name()] = stmt->x_defn_var();
-                            break;
-                        }
-                        case ast::Kind::ModTypeStmt:
-                        {
-                            auto stmt = dynamic_cast<ast::ModTypeStmt*>(mcs);
-                            fields_tvs[stmt->lhs_name()] = stmt->x_defn_var();
-                            break;
-                        }
-                        case ast::Kind::EnumTypeSpec:
-                        {
-                            auto stmt = dynamic_cast<ast::ModEnumStmt*>(mcs);
-                            fields_tvs[stmt->name()] = stmt->x_defn_var();
-                            break;
-                        }
-                        case ast::Kind::ModTypeclassStmt:
-                        {
-                            auto stmt = dynamic_cast<ast::ModTypeclassStmt*>(mcs);
-                            fields_tvs[stmt->typeclass_name()] = stmt->x_defn_var();
-                            break;
-                        }
-                        default:
-                        {
-                            assert(0 && "NotImplementedError: Unknown module field stmt kind in typer.");
-                            break;
-                        }
-                    }
+                for (ast::ModExp::Field* field: mod_exp->fields()) {
+                    fields_tvs[field->name()] = field->x_defn_var();
                 }
             }
 
-            std::string relation_why = "IsModule:" + node->module_name().cpp_str();
+            std::string relation_why = "IsModuleWithFields";
             auto relation = new IsModuleRelation(
                 std::move(relation_why),
-                node,
+                mod_exp,
                 module_tv,
                 fields_tvs
             );
-            return !result_is_error(m_types_mgr->assume_relation_holds(relation));
+            auto assume_relation_result = m_types_mgr->assume_relation_holds(relation);
+            return !result_is_error(assume_relation_result);
         }
-        return true;
     }
-    bool TyperVisitor::on_visit_mod_typeclass_stmt(ast::ModTypeclassStmt* node, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_mod_mod_field(ast::ModExp::ModuleField* mod_field, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            assert(0 && "NotImplemented: on_visit__mod_type_class_stmt");
-        }
-        // todo: implement this typer.
-        // - if template, set up formal args, use return for following steps.
-        // - otherwise,
-        //   - require is_kind(typeclass)
-        //   - require eqconstraint (fixed) with those provided.
-        // leave typeclasses, templates for last.
-        return true;
-    }
-    bool TyperVisitor::on_visit_mod_type_stmt(ast::ModTypeStmt* node, VisitOrder visit_order) {
-        if (visit_order == VisitOrder::Pre) {
-            if (node->lhs_tpatterns().empty()) {
-                // std::string tv_name = "ModTypeStmt:" + node->lhs_name().cpp_str();
-                // auto defn_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
-                // node->x_defn_var(defn_tv);
-            } else {
-                assert(0 && "NotImplemented: on_visit_mod_type_stmt (Pre) with template args.");
-            }
-        } else {
-            if (node->lhs_tpatterns().empty()) {
-                assert(visit_order == VisitOrder::Post);
-                auto defn_tv = dynamic_cast<TypeVar*>(node->x_defn_var());
-                assert(defn_tv);
-
-                TypeVar* rhs_tv = nullptr;
-                {
-                    if (node->opt_rhs_typespec()) {
-                        std::string expected_desc = "a type specifier";
-                        std::string in_desc = "a `TypeID = <TypeSpec>` module statement";
-                        rhs_tv = expect_type_var(
-                            node->opt_rhs_typespec()->x_spec_var(),
-                            std::move(expected_desc),
-                            std::move(in_desc),
-                            node->loc()
-                        );
-                    }
-                    else {
-                        assert(0 && "NotImplemented: `TypeID from (...)`");
-                    }
-                }
-                assert(rhs_tv);
-
-                return !result_is_error(
-                    m_types_mgr->assume_relation_holds(
-                        new TypeEqualsRelation(node, defn_tv, rhs_tv)
-                    )
-                );
-            } else {
-                assert(0 && "NotImplemented: on_visit_mod_type_stmt (Post) with template args.");
-            }
-        }
-        return true;
-    }
-    bool TyperVisitor::on_visit_mod_enum_stmt(ast::ModEnumStmt* node, VisitOrder visit_order) {
-        if (visit_order == VisitOrder::Post) {
-            TypeVar* mod_enum_tv = nullptr;
-            if (node->tpatterns().empty()) {
-                mod_enum_tv = dynamic_cast<TypeVar*>(node->x_defn_var());
-            } else {
-                assert(0 && "NotImplemented: on_visit_mod_enum_stmt with template args.");
-            }
-
-            std::map<intern::String, Var*> fields_vars;
-            for (ast::ModEnumStmt::Field const* field: node->fields()) {
-                intern::String field_name = field->name();
-                Var* field_var = nullptr;
-                // todo: replace with struct: 'tag' and 'data' fields.
-                if (field->opt_type_spec()) {
-                    field_var = field->opt_type_spec()->x_spec_var();
-                    if (!field_var) {
-                        std::cout << "Whoops" << std::endl;
-                    }
-                } else {
-                    field_var = m_types_mgr->get_void_tv();
-                }
-                assert(field_var);
-
-                fields_vars[field_name] = field_var;
-            }
-
-            auto relation = new IsEnumRelation(
-                std::move(std::string{"IsEnumRelation"}),
-                node, mod_enum_tv,
-                std::move(fields_vars)
-            );
-            return !result_is_error(m_types_mgr->assume_relation_holds(relation));
-        } else {
             return true;
+        } else if (visit_order == VisitOrder::Post) {
+            // retrieving the TV defined in the scoper/pre-typer:
+            auto lhs_tv = dynamic_cast<TypeVar*>(mod_field->x_defn_var());
+            auto rhs_tv = dynamic_cast<TypeVar*>(mod_field->rhs_mod_exp()->x_module_var());
+            assert(lhs_tv && rhs_tv && "TyperVisitor::on_visit_mod_mod_field: arg TVs were nullptr");
+
+            // equating the LHS type to the RHS type:
+            auto relation = new TypeEqualsRelation(mod_field, lhs_tv, rhs_tv);
+            auto assume_relation_result = m_types_mgr->assume_relation_holds(relation);
+            return !result_is_error(assume_relation_result);
+        } else {
+            if (pdm::DEBUG) {
+                assert(0 && "Invalid VisitOrder");
+            }
+            return false;
         }
     }
-    bool TyperVisitor::on_visit_mod_val_stmt(ast::ModValStmt* node, VisitOrder visit_order) {
-        if (visit_order == VisitOrder::Post) {
-            TypeVar* mod_val_tv = nullptr;
-            if (node->tpatterns().empty()) {
-                mod_val_tv = dynamic_cast<TypeVar*>(node->x_defn_var());
-            } else {
-                assert(0 && "NotImplemented: mod_val statements with template args.");
+    bool TyperVisitor::on_visit_value_mod_field(ast::ModExp::ValueField* mod_field, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            return true;
+        } else if (visit_order == VisitOrder::Post) {
+            // retrieving the TV defined in the scoper/pre-typer:
+            auto value_tv = dynamic_cast<TypeVar*>(mod_field->x_defn_var());
+            auto rhs_tv = dynamic_cast<TypeVar*>(mod_field->rhs_exp()->x_type_of_var());
+            assert(value_tv && rhs_tv && "TyperVisitor::on_visit_value_mod_field: arg TVs were nullptr");
+
+            // equating the type to the RHS:
+            auto relation = new TypeEqualsRelation(mod_field, value_tv, rhs_tv);
+            auto assume_relation_result = m_types_mgr->assume_relation_holds(relation);
+            return !result_is_error(assume_relation_result);
+        } else {
+            if (pdm::DEBUG) {
+                assert(0 && "Invalid VisitOrder");
             }
-            
-            TypeVar* rhs_tv = nullptr;
-            if (node->rhs_kind() == ast::ModValStmt::RhsKind::Internal) {
-                rhs_tv = expect_type_var(
-                    node->opt_rhs_exp()->x_type_of_var(),
-                    std::move(std::string("an expression")),
-                    std::move(std::string("a `val_id = <exp>` module statement")),
-                    node->loc()
-                );
-            } else if (node->rhs_kind() == ast::ModValStmt::RhsKind::External) {
-                assert(0 && "NotImplemented: mod_val statements with external RHS");
+            return false;
+        }
+    }
+    bool TyperVisitor::on_visit_type_mod_field(ast::ModExp::TypeField* mod_field, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            return true;
+        } else if (visit_order == VisitOrder::Post) {
+            // retrieving the TV defined in the scoper/pre-typer:
+            auto lhs_tv = dynamic_cast<TypeVar*>(mod_field->x_defn_var());
+            std::string expected_rhs_desc = "a type specifier";
+            std::string expected_in_desc = "a 'Type' module-field binding (" + mod_field->name().cpp_str() + ")";
+            auto rhs_tv = expect_type_var(
+                mod_field->rhs_type_spec()->x_spec_var(),
+                std::move(expected_rhs_desc),
+                std::move(expected_in_desc),
+                mod_field->loc()
+            );
+            if (!rhs_tv) {
                 return false;
             }
-            assert(rhs_tv != nullptr);
-            
-            // rhs_tv :: mod_val_tv
-            auto relation = new TypeEqualsRelation(
-                node,
-                rhs_tv,
-                mod_val_tv
-            );
-            SolveResult res = m_types_mgr->assume_relation_holds(relation);
+            assert(lhs_tv && rhs_tv && "TyperVisitor::on_visit_type_mod_field: arg TVs were nullptr");
 
-            std::string source_desc = "see value field of module here...";
-            return post_feedback_from_first_kd_res(res, std::move(source_desc), node->loc());
+            // equating the LHS and RHS types:
+            auto relation = new TypeEqualsRelation(mod_field, lhs_tv, rhs_tv);
+            auto assume_relation_result = m_types_mgr->assume_relation_holds(relation);
+            return !result_is_error(assume_relation_result);
+        } else {
+            if (pdm::DEBUG) {
+                assert(0 && "Invalid VisitOrder");
+            }
+            return false;
         }
-        return true;
     }
+    bool TyperVisitor::on_visit_class_mod_field(ast::ModExp::ClassField* mod_field, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            return true;
+        } else if (visit_order == VisitOrder::Post) {
+            // retrieving the TV defined in the scoper/pre-typer:
+            auto lhs_tv = dynamic_cast<TypeVar*>(mod_field->x_defn_var());
+            std::string expected_rhs_desc = "a class specifier";
+            std::string expected_in_desc = "a 'CLASS' module-field binding (" + mod_field->name().cpp_str() + ")";
+            auto rhs_tv = expect_type_var(
+                mod_field->rhs_class_spec()->x_spec_var(),
+                std::move(expected_rhs_desc),
+                std::move(expected_in_desc),
+                mod_field->loc()
+            );
+            if (!rhs_tv) {
+                return false;
+            }
+            assert(lhs_tv && rhs_tv && "TyperVisitor::on_visit_class_mod_field: arg TVs were nullptr");
+
+            // equating the LHS and RHS types:
+            auto relation = new TypeEqualsRelation(mod_field, lhs_tv, rhs_tv);
+            auto assume_relation_result = m_types_mgr->assume_relation_holds(relation);
+            return !result_is_error(assume_relation_result);
+        } else {
+            if (pdm::DEBUG) {
+                assert(0 && "Invalid VisitOrder");
+            }
+            return false;
+        }
+    }
+    bool TyperVisitor::on_visit_mod_address(ast::ModAddress* mod_address, VisitOrder visit_order) {
+        if (!mod_address->template_args().empty()) {
+            assert(0 && "NotImplemented: TyperVisitor::on_visit_mod_address for >0 actual template args!");
+        }
+        
+        if (visit_order == VisitOrder::Pre) {
+            // creating a place-holder TV
+            // todo: need to create/resolve as early as scoper, other-wise need to know if value/type/class or
+            //       treat module as first-class value with class/type fields.
+            assert(0 && "NotImplemented: on_visit_mod_address");
+        } else {
+            assert(visit_order == VisitOrder::Post && "Invalid VisitOrder.");
+
+            // todo: consider moving to scoper, as soon as origin_mod_exp is acquired?
+            
+            // retrieving the TV defined in the scoper/pre-typer:
+            auto origin_mod_exp = mod_address->x_origin_mod_exp();
+            assert(origin_mod_exp && "nullptr origin_mod_exp");
+            ast::ModExp::Field* ref_field = nullptr;
+            for (auto field: origin_mod_exp->fields()) {
+                if (field->name() == mod_address->rhs_name()) {
+                    ref_field = field;
+                    break;
+                }
+            }
+            if (ref_field) {
+                // lookup succeeded
+                return true;
+            } else {
+                // lookup failed
+                std::string headline = "Invalid module address";
+                std::string desc = "";
+                std::vector<feedback::Note*> notes{1}; {
+                    std::string desc0 = "See usage here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(desc0), mod_address->loc());
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
+                return false;
+            }
+        }
+    }
+
+    // statements:
     bool TyperVisitor::on_visit_const_stmt(ast::ConstStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Post) {
             return help_post_type_const_or_val_or_var_stmt(node, node->lhs_lpattern(), node->rhs_exp());
@@ -362,22 +380,27 @@ namespace pdm::types {
     }
     bool TyperVisitor::on_visit_set_stmt(ast::SetStmt* node, VisitOrder visit_order) {
         // todo: implement this typer.
+        assert(0 && "NotImplemented: TyperVisitor::on_visit_set_stmt");
         return true;
     }
     bool TyperVisitor::on_visit_discard_stmt(ast::DiscardStmt* node, VisitOrder visit_order) {
         // todo: implement this typer.
+        assert(0 && "NotImplemented: TyperVisitor::on_visit_discard_stmt");
         return true;
     }
     bool TyperVisitor::on_visit_extern_stmt(ast::ExternStmt* node, VisitOrder visit_order) {
         // todo: implement this typer.
+        assert(0 && "NotImplemented: TyperVisitor::on_visit_extern_stmt");
         return true;
     }
     bool TyperVisitor::on_visit_import_stmt(ast::ImportStmt* node, VisitOrder visit_order) {
         // todo: implement this typer.
+        assert(0 && "NotImplemented: TyperVisitor::on_visit_import_stmt");
         return true;
     }
     bool TyperVisitor::on_visit_using_stmt(ast::UsingStmt* node, VisitOrder visit_order) {
         // todo: implement this typer.
+        assert(0 && "NotImplemented: TyperVisitor::on_visit_using_stmt");
         return true;
     }
     
@@ -1102,7 +1125,16 @@ namespace pdm::types {
                 auto field_tv = dynamic_cast<TypeVar*>(field_var);
                 assert(field_tv != nullptr);
 
-                Var* field_spec_var = field->rhs_set_spec()->x_spec_var();
+                Var* field_spec_var = nullptr; {
+                    switch (field->field_kind()) {
+                        case ast::TPattern::FieldKind::Type:
+                            field_spec_var = dynamic_cast<ast::ClassSpec*>(field->rhs_set_spec())->x_spec_var();
+                            break;
+                        case ast::TPattern::FieldKind::Value:
+                            field_spec_var = dynamic_cast<ast::TypeSpec*>(field->rhs_set_spec())->x_spec_var();
+                            break;
+                    }
+                }
                 assert(field_spec_var != nullptr);
 
                 if (field->field_kind() == ast::TPattern::FieldKind::Value) {
@@ -1189,18 +1221,8 @@ namespace pdm::types {
         if (visit_order == VisitOrder::Pre) {
             auto defn = node->x_defn();
             assert(defn && "Undefined/uninitialized ID type spec in typer.");
-            node->x_spec_var(defn->var());
-        }
-        return true;
-    }
-    bool TyperVisitor::on_visit_id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) {
-        assert(0 && "NotImplemented: ID class specs for templates.");
-        if (visit_order == VisitOrder::Pre) {
-            auto defn = node->x_defn();
-            auto var = defn->var();
-            // todo: expect a correct var here.
-            node->x_spec_var(var);
-            return true;
+            auto defn_var = dynamic_cast<TypeVar*>(defn->var());
+            node->x_spec_var(defn_var);
         }
         return true;
     }
@@ -1249,42 +1271,6 @@ namespace pdm::types {
             ));
             
             // todo: post
-        }
-        return true;
-    }
-    bool TyperVisitor::on_visit_t_call_type_spec(ast::TCallTypeSpec* node, VisitOrder visit_order) {
-        if (visit_order == VisitOrder::Pre) {
-            std::string name = "TCallTypeSpec";
-            
-            // todo: we do not know if a class tcall or type tcall.
-            //       should be able to tell from grammar, by implementing a separate 'ClassSpec'
-            //       branch of rules.
-            assert(0 && 
-                "NotImplemented: TCallTypeSpec."
-            );
-
-            Var* new_var = m_types_mgr->new_class_template_var(std::move(name), node);
-            // node->x_spec_var();
-        } else {
-            assert(visit_order == VisitOrder::Post);
-        }
-        return true;
-    }
-    bool TyperVisitor::on_visit_t_call_class_spec(ast::TCallClassSpec* node, VisitOrder visit_order) {
-        if (visit_order == VisitOrder::Pre) {
-            std::string name = "TCallClassSpec";
-            
-            // todo: we do not know if a class tcall or type tcall.
-            //       should be able to tell from grammar, by implementing a separate 'ClassSpec'
-            //       branch of rules.
-            assert(0 && 
-                "NotImplemented: TCallClassSpec"
-            );
-
-            Var* new_var = m_types_mgr->new_class_template_var(std::move(name), node);
-            // node->x_spec_var();
-        } else {
-            assert(visit_order == VisitOrder::Post);
         }
         return true;
     }
@@ -1341,8 +1327,8 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit_dot_name_type_spec_mod_prefix(ast::DotNameTypeSpec_ModPrefix* node, VisitOrder visit_order) {
-        assert(0 && "NotImplemented: TypeVisitor::on_visit_dot_name_type_spec_mod_prefix");
+    bool TyperVisitor::on_visit_ma_type_spec(ast::ModAddressIdTypeSpec* node, VisitOrder visit_order) {
+        assert(0 && "NotImplemented: TypeVisitor::on_visit_ma_type_spec");
 
         if (visit_order == VisitOrder::Pre) {
             // todo: lookup mod prefices
@@ -1352,11 +1338,76 @@ namespace pdm::types {
         }
         return true;
     }
+    bool TyperVisitor::on_visit_enum_type_spec(ast::EnumTypeSpec* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            std::string enum_type_spec_name = "AnonymousEnumTypeSpec";
+            auto enum_tv = m_types_mgr->new_unknown_type_var(std::move(enum_type_spec_name), node);
+            node->x_spec_var(enum_tv);
+            
+            return true;
+        } else {
+            assert(visit_order == VisitOrder::Post && "Invalid visit order.");
+
+            // obtaining the enum type:
+            auto enum_tv = node->x_spec_var();
+            assert(enum_tv && "Un-initialized enum_tv (expected in typer pre-pass)");
+
+            // obtaining the field types:
+            std::map<intern::String, Var*> fields;
+            bool fields_ok = true;
+            for (ast::EnumTypeSpec::Field* field: node->fields()) {
+                // checking for & reporting duplicate fields:
+                auto found_it_by_same_name = fields.find(field->name());
+                if (found_it_by_same_name == fields.end()) {
+                    fields_ok = false;
+                    std::string headline = (
+                        "Field '" + std::string(field->name().cpp_str()) + "' repeated in enum type specifier"
+                    );
+                    std::string desc = "Each field in an enum must have a unique name.";
+                    std::vector<feedback::Note*> notes{2}; {
+                        std::string note_desc0 = "first definition here...";
+                        source::Loc loc0 = found_it_by_same_name->second->opt_client_ast_node()->loc();
+                        notes[0] = new feedback::SourceLocNote(std::move(note_desc0), loc0);
+
+                        std::string note_desc1 = "subsequent definition here...";
+                        source::Loc loc1 = field->loc();
+                        notes[1] = new feedback::SourceLocNote(std::move(note_desc1), loc1);
+                    }
+                    feedback::post(new feedback::Letter(
+                        feedback::Severity::Error,
+                        std::move(headline),
+                        std::move(desc)
+                    ));
+                    continue;
+                }
+                
+                // inserting the appropriate field as specified:
+                TypeVar* rhs_tv = nullptr; {
+                    if (field->opt_type_spec()) {
+                        rhs_tv = field->opt_type_spec()->x_spec_var();
+                    } else {
+                        rhs_tv = m_types_mgr->get_void_tv();
+                    }
+                }
+                assert(rhs_tv && "Could not obtain field type in enum type-spec");
+            }
+            if (!fields_ok) {
+                return false;
+            }
+
+            // relating field types with enum type:
+            std::string relation_why = "EnumTypeSpec";
+            auto relation = new IsEnumRelation(std::move(relation_why), node, enum_tv, fields);
+            auto assume_relation_result = m_types_mgr->assume_relation_holds(relation);
+            return result_is_error(assume_relation_result);
+        }
+    }
     bool TyperVisitor::on_visit_struct_type_spec(ast::StructTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             std::string name = "StructTypeSpec";
             TypeVar* struct_tv = m_types_mgr->new_unknown_type_var(std::move(name), node);
             node->x_spec_var(struct_tv);
+            return true;
         } else {
             assert(visit_order == VisitOrder::Post);
             auto struct_tv = dynamic_cast<TypeVar*>(node->x_spec_var());
@@ -1374,7 +1425,7 @@ namespace pdm::types {
                 if (found_it_by_same_name != fields_tvs.end()) {
                     fields_ok = false;
                     std::string headline = (
-                        "Name '" + std::string(field->lhs_name().content()) + "' repeated in struct type specifier"
+                        "Field '" + std::string(field->lhs_name().content()) + "' repeated in struct type specifier"
                     );
                     std::string desc = "Each field in a struct must have a unique name.";
                     std::vector<feedback::Note*> notes{2}; {
@@ -1426,15 +1477,36 @@ namespace pdm::types {
         }
         return true;
     }
-    bool TyperVisitor::on_visit_paren_type_spec(ast::ParenTypeSpec* node, VisitOrder visit_order) {
-        assert(0 && 
-            "NotImplemented: ParenSetSpec"
-            "need to figure out if class or type var"
-        );
-        
+
+    // class specs:
+    bool TyperVisitor::on_visit_class_exp_class_spec(ast::ClassExpClassSpec* node, VisitOrder visit_order) {
+        assert(0 && "NotImplemented: TyperVisitor::on_visit_class_exp_class_spec");
+        return true;
+    }
+    bool TyperVisitor::on_visit_id_class_spec(ast::IdClassSpec* node, VisitOrder visit_order) {
+        // assert(0 && "NotImplemented: ID class specs for templates.");
         if (visit_order == VisitOrder::Pre) {
-            std::string name = "ParenSetSpec";
-            // todo: need to figure out if class or type var
+            auto defn = node->x_defn();
+            auto var = defn->var();
+            std::string expected_desc = "a CLASS specifier";
+            std::string expected_in_desc = "a CLASS ID";
+            auto class_var = expect_class_var(
+                var,
+                std::move(expected_desc),
+                std::move(expected_in_desc),
+                node->loc()
+            );
+            node->x_spec_var(class_var);
+            return true;
+        }
+        return true;
+    }
+    bool TyperVisitor::on_visit_ma_class_spec(ast::ModAddressIdClassSpec* node, VisitOrder visit_order) {
+        assert(0 && "NotImplemented: TypeVisitor::on_visit_ma_class_spec");
+
+        if (visit_order == VisitOrder::Pre) {
+            // todo: lookup mod prefices
+            // node->x_spec_var(spectype_var);
         } else {
             assert(visit_order == VisitOrder::Post);
         }
@@ -1563,45 +1635,6 @@ namespace pdm::types {
             return nullptr;
         } else {
             return dynamic_cast<ClassVar*>(checked_var);
-        }
-    }
-
-    TemplateVar_RetValue* TyperVisitor::expect_template_ret_value(
-        Var* var,
-        std::string&& expected_desc, std::string&& in_desc,
-        source::Loc loc
-    ) {
-        Var* checked_var = expect_var_check(var, std::move(expected_desc), std::move(in_desc), VarArchetype::Template_RetValue, loc);
-        if (checked_var == nullptr) {
-            return nullptr;
-        } else {
-            return dynamic_cast<TemplateVar_RetValue*>(checked_var);
-        }
-    }
-
-    TemplateVar_RetType* TyperVisitor::expect_template_ret_type(
-        Var* var,
-        std::string&& expected_desc, std::string&& in_desc,
-        source::Loc loc
-    ) {
-        Var* checked_var = expect_var_check(var, std::move(expected_desc), std::move(in_desc), VarArchetype::Template_RetType, loc);
-        if (checked_var == nullptr) {
-            return nullptr;
-        } else {
-            return dynamic_cast<TemplateVar_RetType*>(checked_var);
-        }
-    }
-
-    TemplateVar_RetClass* TyperVisitor::expect_template_ret_class(
-        Var* var,
-        std::string&& expected_desc, std::string&& in_desc,
-        source::Loc loc
-    ) {
-        Var* checked_var = expect_var_check(var, std::move(expected_desc), std::move(in_desc), VarArchetype::Template_RetClass, loc);
-        if (checked_var == nullptr) {
-            return nullptr;
-        } else {
-            return dynamic_cast<TemplateVar_RetClass*>(checked_var);
         }
     }
 

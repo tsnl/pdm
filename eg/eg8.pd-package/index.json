@@ -1,3 +1,25 @@
+{
+    "name": "SDL2",
+    "wrapped-version": "2.1.0",
+    "wrapped-language":  {
+        "name": "c",
+        "version": "99"
+    },
+    "wrapper-version": "0.0.0",
+    "wrapper-author": "Nikhil Tony Idiculla",
+
+    "static-libs": [
+        "./dep/lib/SDL2/SDL2_main.lib",
+        "./dep/lib/SDL2/SDL2.lib"
+    ],
+    "copy-to-output-dir": [
+        "./dep/bin/SDL2.dll"
+    ],
+    "compile-include-paths": [
+        "./dep/include/"
+    ],
+    "compile-source-files": []
+}
 
 # PACKAGES:
 # a package is a directory that...

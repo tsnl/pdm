@@ -64,17 +64,17 @@ namespace pdm::ast {
     // Inline implementations:
     //
 
-    Script::Field::Field(source::Loc loc, intern::String name, ModExp *rhs_mod_exp)
+    inline Script::Field::Field(source::Loc loc, intern::String name, ModExp *rhs_mod_exp)
     :   Node(loc, ast::Kind::ScriptField),
         m_name(name),
         m_rhs_mod_exp(rhs_mod_exp)
     {}
 
-    intern::String Script::Field::name() const {
+    inline intern::String Script::Field::name() const {
         return m_name;
     }
 
-    ModExp* Script::Field::rhs_mod_exp() const {
+    inline ModExp* Script::Field::rhs_mod_exp() const {
         return m_rhs_mod_exp;
     }
 

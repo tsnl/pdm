@@ -31,6 +31,48 @@ namespace pdm::ast {
     ) {
         return emplace<Script>(source, loc, std::move(head_stmts), std::move(body_mod_stmts));
     }
+    Script::Field* Manager::new_script_field(source::Loc loc, intern::String name, ast::ModExp* mod_exp) {
+        return emplace<Script::Field>(loc, name, mod_exp);
+    }
+
+    ModExp* Manager::new_mod_exp(
+        source::Loc loc,
+        ast::TPattern* opt_template_pattern, std::vector<ast::ModExp::Field*>&& fields
+    ) {
+        return emplace<ModExp>(loc, std::move(fields), opt_template_pattern);
+    }
+    ModExp::ModuleField* Manager::new_mod_mod_field(
+        source::Loc loc,
+        intern::String lhs_name, ast::ModExp* mod_exp
+    ) {
+        return emplace<ModExp::ModuleField>(loc, lhs_name, mod_exp);
+    }
+    ModExp::ValueField* Manager::new_value_mod_field(
+        source::Loc loc,
+        intern::String lhs_name, ast::Exp* rhs_exp
+    ) {
+        return emplace<ModExp::ValueField>(loc, lhs_name, rhs_exp);
+    }
+    ModExp::TypeField* Manager::new_type_mod_field(
+        source::Loc loc,
+        intern::String lhs_name, ast::TypeSpec* rhs_type_spec
+    ) {
+        return emplace<ModExp::TypeField>(loc, lhs_name, rhs_type_spec);
+    }
+    ModExp::ClassField* Manager::new_class_mod_field(
+        source::Loc loc,
+        intern::String lhs_name, ast::ClassSpec* rhs_class_spec
+    ) {
+        return emplace<ModExp::ClassField>(loc, lhs_name, rhs_class_spec);
+    }
+    ModAddress* Manager::new_mod_address(
+        source::Loc loc,
+        ModAddress* opt_lhs, intern::String rhs_name,
+        std::vector<ast::TArg*>&& template_args
+    ) {
+        return emplace<ModAddress>(loc, opt_lhs, rhs_name, std::move(template_args));
+    }
+
 
     ArrayExp* Manager::new_array_exp(
         source::Loc loc, std::vector<Exp*>&& items
@@ -49,8 +91,8 @@ namespace pdm::ast {
     EnumDotNameExp* Manager::new_enum_dot_name_exp(source::Loc loc, TypeSpec* lhs, intern::String rhs_name, Exp* opt_using_arg) {
         return emplace<EnumDotNameExp>(loc, lhs, rhs_name, opt_using_arg);
     }
-    ModuleDotExp* Manager::new_module_dot_name_exp(source::Loc loc, std::vector<intern::String>&& module_names, intern::String rhs_name) {
-        return emplace<ModuleDotExp>(loc, std::move(module_names), rhs_name);
+    ModuleDotExp* Manager::new_module_dot_name_exp(source::Loc loc, ast::ModAddress* lhs_address, intern::String rhs_name) {
+        return emplace<ModuleDotExp>(loc, lhs_address, rhs_name);
     }
     DotIndexExp* Manager::new_dot_index_exp(source::Loc loc, Exp* lhs, Exp* rhs_exp, DotIndexExp::RhsHint rhs_hint) {
         return emplace<DotIndexExp>(loc, lhs, rhs_exp, rhs_hint);
@@ -67,8 +109,8 @@ namespace pdm::ast {
     IntExp* Manager::new_int_exp(source::Loc loc, u64 value, IntExp::Base base, bool force_unsigned) {
         return emplace<IntExp>(loc, value, base, force_unsigned);
     }
-    LambdaExp* Manager::new_lambda_exp(source::Loc loc, VPattern* lhs_lpattern, TypeSpec* opt_ret_typespec, Exp* body) {
-        return emplace<LambdaExp>(loc, lhs_lpattern, opt_ret_typespec, body);
+    LambdaExp* Manager::new_lambda_exp(source::Loc loc, FnTypeSpec* fn_type_spec, Exp* body) {
+        return emplace<LambdaExp>(loc, fn_type_spec, body);
     }
     ParenExp* Manager::new_paren_exp(source::Loc loc, Exp* nested) {
         return emplace<ParenExp>(loc, nested);
@@ -113,9 +155,15 @@ namespace pdm::ast {
     LPattern::Field* Manager::new_lpattern_field(source::Loc loc, LPattern::FieldKind kind, intern::String name, TypeSpec* opt_rhs_typespec) {
         return emplace<LPattern::Field>(loc, kind, name, opt_rhs_typespec);
     }
-//    TPattern::Field* Manager::new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, SetSpec* rhs_set_spec) {
-//        return emplace<TPattern::Field>(loc, kind, name, rhs_set_spec);
-//    }
+    // TPattern::Field* Manager::new_tpattern_field(source::Loc loc, TPattern::FieldKind kind, intern::String name, SetSpec* rhs_set_spec) {
+    //     return emplace<TPattern::Field>(loc, kind, name, rhs_set_spec);
+    // }
+    TPattern::Field* Manager::new_value_tpattern_field(source::Loc loc, intern::String name, TypeSpec* type_spec) {
+        return emplace<TPattern::Field>(loc, TPattern::FieldKind::Value, name, type_spec);
+    }
+    TPattern::Field* Manager::new_type_tpattern_field(source::Loc loc, intern::String name, ClassSpec* class_spec) {
+        return emplace<TPattern::Field>(loc, TPattern::FieldKind::Type, name, class_spec);
+    }
     VPattern::Field* Manager::new_vpattern_field(source::Loc loc, intern::String name, TypeSpec* rhs_typespec, VArgAccessSpec varg_kind) {
         return emplace<VPattern::Field>(loc, name, rhs_typespec, varg_kind);
     }
@@ -139,8 +187,8 @@ namespace pdm::ast {
         return emplace<SetStmt>(loc, lhs, rhs);
     }
     
-    ImportStmt* Manager::new_import_stmt(source::Loc loc, utf8::String imported_from_exp, utf8::String imported_type_exp) {
-        return emplace<ImportStmt>(loc, imported_from_exp, imported_type_exp);
+    ImportStmt* Manager::new_import_stmt(source::Loc loc, intern::String import_name, utf8::String imported_from_exp, utf8::String imported_type_exp) {
+        return emplace<ImportStmt>(loc, import_name, imported_from_exp, imported_type_exp);
     }
     UsingStmt* Manager::new_using_stmt(source::Loc loc, intern::String module_name, std::string suffix) {
         return emplace<UsingStmt>(loc, module_name, suffix);
@@ -148,23 +196,48 @@ namespace pdm::ast {
     ExternStmt* Manager::new_extern_stmt(source::Loc loc, intern::String ext_mod_name, Exp* link_arg) {
         return emplace<ExternStmt>(loc, ext_mod_name, link_arg);
     }
+    ModAddressIdTypeSpec* Manager::new_ma_type_spec(source::Loc loc, ast::ModAddress* lhs_mod_address, intern::String rhs_name) {
+        return emplace<ModAddressIdTypeSpec>(loc, lhs_mod_address, rhs_name);
+    }
     FnTypeSpec* Manager::new_fn_type_spec(source::Loc loc, VPattern* lhs_vpattern, TypeSpec* rhs_typespec) {
         return emplace<FnTypeSpec>(loc, lhs_vpattern, rhs_typespec);
     }
     IdTypeSpec* Manager::new_id_type_spec(source::Loc loc, intern::String name) {
         return emplace<IdTypeSpec>(loc, name);
     }
-    IdClassSpec* Manager::new_id_class_spec(source::Loc loc, intern::String name) {
-        return emplace<IdClassSpec>(loc, name);
-    }
     StructTypeSpec* Manager::new_struct_type_spec(source::Loc loc, std::vector<StructTypeSpec::Field*>&& fields) {
         return emplace<StructTypeSpec>(loc, std::move(fields));
+    }
+    EnumTypeSpec* Manager::new_enum_type_spec(source::Loc loc, std::vector<EnumTypeSpec::Field*>&& fields) {
+        return emplace<EnumTypeSpec>(loc, std::move(fields));
     }
     TupleTypeSpec* Manager::new_tuple_type_spec(source::Loc loc, std::vector<TypeSpec*>&& items) {
         return emplace<TupleTypeSpec>(loc, std::move(items));
     }
     StructTypeSpec::Field* Manager::new_struct_type_spec_field(source::Loc loc, intern::String name, TypeSpec* type_spec) {
         return emplace<StructTypeSpec::Field>(loc, name, type_spec);
+    }
+    EnumTypeSpec::Field* Manager::new_enum_type_spec_field(source::Loc loc, intern::String name, TypeSpec* opt_type_spec) {
+        return emplace<EnumTypeSpec::Field>(loc, name, opt_type_spec);
+    }
+
+    IdClassSpec* Manager::new_id_class_spec(source::Loc loc, intern::String name) {
+        return emplace<IdClassSpec>(loc, name);
+    }
+    ClassExpClassSpec* Manager::new_class_exp_class_spec(
+        source::Loc loc,
+        intern::String candidate_type_name,
+        ClassSpec* candidate_class_name,
+        std::vector<ast::TypeQueryExp*>&& type_query_exps
+    ) {
+        return emplace<ClassExpClassSpec>(loc, candidate_type_name, candidate_class_name, std::move(type_query_exps));
+    }
+    ModAddressIdClassSpec* Manager::new_ma_class_spec(
+        source::Loc loc,
+        ModAddress* lhs_mod_address,
+        intern::String rhs_name
+    ) {
+        return emplace<ModAddressIdClassSpec>(loc, lhs_mod_address, rhs_name);
     }
 
     TArg* Manager::new_targ_exp(source::Loc loc, Exp* exp) {

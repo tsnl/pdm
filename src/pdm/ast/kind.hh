@@ -9,8 +9,8 @@ namespace pdm::ast {
 
         // modules:
         ModExp,
-        ValueModField, TypeModField, ClassModField,
-        ModAddress, TemplateModAddress,
+        ValueModField, TypeModField, ClassModField, ModModField,
+        ModAddress,
         
         // statements:
         BuiltinStmt,    // non-syntactic
@@ -44,7 +44,7 @@ namespace pdm::ast {
         TupleTypeSpec, StructTypeSpec, EnumTypeSpec,
 
         // class specifiers:
-        IdClassSpec, ClassExpClassSpec,
+        IdClassSpec, ClassExpClassSpec, DotClassSpec,
 
         // args:
         TArg, VArg,
@@ -55,7 +55,7 @@ namespace pdm::ast {
         Aux_LPatternField,
 
         // total count:
-        __Count
+        META_Count
     };
 
     // dependencies (updated when 'Kind' changed)

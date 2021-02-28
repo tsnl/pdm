@@ -4,6 +4,7 @@
 #include "pdm/ast/kind.hh"
 #include "pdm/source/loc.hh"
 #include "pdm/ast/exp/exp.hh"
+#include "pdm/ast/type_spec/fn.hh"
 
 namespace pdm::ast {
     class Manager;
@@ -17,29 +18,32 @@ namespace pdm::ast {
         friend Manager;
 
       private:
-        VPattern* m_lhs_vpattern;
-        TypeSpec* m_opt_ret_typespec;
-        Exp*      m_body;
+        FnTypeSpec* m_fn_type_spec;
+        Exp* m_body;
     
       protected:
-        LambdaExp(source::Loc loc, VPattern* lhs_vpattern, TypeSpec* opt_ret_typespec, Exp* body)
-        : Exp(loc, Kind::LambdaExp),
-          m_lhs_vpattern(lhs_vpattern),
-          m_opt_ret_typespec(opt_ret_typespec),
-          m_body(body) {}
+        LambdaExp(source::Loc loc, FnTypeSpec* fn_type_spec, Exp* body)
+        :   Exp(loc, Kind::LambdaExp),
+            m_fn_type_spec(fn_type_spec),
+            m_body(body) {}
       
       public:
+        [[nodiscard]] FnTypeSpec* fn_type_spec() const;
         [[nodiscard]] VPattern* lhs_vpattern() const;
         [[nodiscard]] TypeSpec* opt_ret_typespec() const;
         [[nodiscard]] Exp* rhs_body() const;
     };
 
+    inline FnTypeSpec* LambdaExp::fn_type_spec() const {
+        return m_fn_type_spec;
+    }
+
     inline VPattern* LambdaExp::lhs_vpattern() const {
-        return m_lhs_vpattern;
+        return fn_type_spec()->lhs_vpattern();
     }
 
     inline TypeSpec* LambdaExp::opt_ret_typespec() const {
-        return m_opt_ret_typespec;
+        return fn_type_spec()->opt_ret_type_spec();
     }
 
     inline Exp* LambdaExp::rhs_body() const {

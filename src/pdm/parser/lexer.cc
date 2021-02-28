@@ -42,6 +42,7 @@ namespace pdm::parser::aux {
     
     struct Keywords {
         intern::String using_intstr;
+        intern::String cls_intstr;
         intern::String import_intstr;
         intern::String export_intstr;
         intern::String if_intstr;
@@ -64,9 +65,7 @@ namespace pdm::parser::aux {
         intern::String set_intstr;
         intern::String type_intstr;
         intern::String mod_intstr;
-        intern::String sub_intstr;
         intern::String from_intstr;
-        intern::String typeclass_intstr;
         intern::String out_intstr;
         intern::String inout_intstr;
 
@@ -74,6 +73,7 @@ namespace pdm::parser::aux {
             intern::String::ensure_init();
 
             using_intstr = "using";
+            cls_intstr = "cls";
             import_intstr = "import";
             export_intstr = "export";
             if_intstr = "if";
@@ -96,9 +96,7 @@ namespace pdm::parser::aux {
             set_intstr = "set";
             type_intstr = "type";
             mod_intstr = "mod";
-            sub_intstr = "sub";
             from_intstr = "from";
-            typeclass_intstr = "typeclass";
             out_intstr = "out";
             inout_intstr = "inout";
         }
@@ -361,9 +359,6 @@ namespace pdm::parser::aux {
                     if (source->read_head() == ':' && source->advance_head()) {
                         return Tk::DBL_COLON;
                     }
-                    else if (source->read_head() == '-' && source->advance_head()) {
-                        return Tk::COLON_DASH;
-                    }
                     else if (source->read_head() == '<' && source->advance_head()) {
                         return Tk::COLON_LTHAN;
                     }
@@ -561,13 +556,13 @@ namespace pdm::parser::aux {
         // Looking up charBuf as a keyword or symbol:
         intern::String intstr = charBuf;
         if (intstr == keywords.using_intstr) { return Tk::KW_USING; }
+        if (intstr == keywords.cls_intstr) { return Tk::KW_CLS; }
         if (intstr == keywords.import_intstr) { return Tk::KW_IMPORT; }
         if (intstr == keywords.if_intstr) { return Tk::KW_IF; }
         if (intstr == keywords.then_intstr) { return Tk::KW_THEN; }
         if (intstr == keywords.else_intstr) { return Tk::KW_ELSE; }
         if (intstr == keywords.match_intstr) { return Tk::KW_MATCH; }
         if (intstr == keywords.with_intstr) { return Tk::KW_WITH; }
-        if (intstr == keywords.fn_intstr) { return Tk::KW_FN; }
         if (intstr == keywords.lambda_intstr) { return Tk::KW_LAMBDA; }
         if (intstr == keywords.const_intstr) { return Tk::KW_CONST; }
         if (intstr == keywords.val_intstr) { return Tk::KW_VAL; }
@@ -577,10 +572,7 @@ namespace pdm::parser::aux {
         if (intstr == keywords.or_intstr) { return Tk::KW_OR; }
         if (intstr == keywords.not_intstr) { return Tk::KW_NOT; }
         if (intstr == keywords.set_intstr) { return Tk::KW_SET; }
-        if (intstr == keywords.type_intstr) { return Tk::KW_TYPE; }
-        if (intstr == keywords.typeclass_intstr) { return Tk::KW_TYPECLASS; }
         if (intstr == keywords.mod_intstr) { return Tk::KW_MOD; }
-        if (intstr == keywords.sub_intstr) { return Tk::KW_SUB; }
         if (intstr == keywords.from_intstr) { return Tk::KW_FROM; }
         if (intstr == keywords.out_intstr) { return Tk::KW_OUT; }
         if (intstr == keywords.inout_intstr) { return Tk::KW_INOUT; }
@@ -873,19 +865,14 @@ namespace pdm::parser::aux {
                 name = "using";
                 break;
             }
+            case Tk::KW_CLS:
+            {
+                name = "cls";
+                break;
+            }
             case Tk::KW_MOD:
             {
                 name = "mod";
-                break;
-            }
-            case Tk::KW_SUB:
-            {
-                name = "sub";
-                break;
-            }
-            case Tk::KW_FN:
-            {
-                name = "fn";
                 break;
             }
             case Tk::KW_IMPORT:
@@ -956,11 +943,6 @@ namespace pdm::parser::aux {
             case Tk::KW_FROM:
             {
                 name = "from";
-                break;
-            }
-            case Tk::KW_TYPE:
-            {
-                name = "type";
                 break;
             }
             case Tk::KW_DISCARD:

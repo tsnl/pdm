@@ -1,52 +1,58 @@
 # Enums: simple enough.
 
-mod Optional {
+mod optional [T ANY] {
 
-    O [T AnyType]
-    | Some (T)
-    | None
-    ;
+    Opt = enum {
+        Some T,
+        None
+    };
 
 };
 
-mod Rational {
+mod rational {
 
-    Q = opt.Opt[{
-        numerator Int32,
-        denominator Int32
-    }];
+    RationalData = {
+       numerator Int32,
+       denominator Int32
+    };
 
-    rational = fn (numerator Int32, denominator Int32) -> Rational {
-        if (denominator == 0) then {
-            Rational.Some({
+    Rational = optional[RationalData]::Opt;
+
+    rational = (numerator Int32, denominator Int32) -> Rational {
+        if (denominator != 0) then {
+            Rational::Some using {
                 numerator = numerator,
                 denominator = denominator
-            })
+            };
         } else {
-            Rational.None
+            Rational::None
         }
     };
 
-    RationalBinOp = Fn (Float32, Float32) -> F32;
+    RationalBinOp = (Rational, Rational) -> Rational;
 
-    apply = fn (x Q, y Q, f RationalBinOp) -> Q {
+    apply = (x Rational, y Rational, f RationalBinOp) -> Rational {
         match (x) with {
-            Some (vx) then {
+            Some (vx) -> {
                 match (y) with {
-                    Some (vy) then { Q.Some(f(vx,vy)) },
-                    None      then { Q.None }
+                    Some (vy) -> {
+                        Rational::Some using f(vx,vy)
+                    },
+                    None -> {
+                        Rational::None
+                    }
                 }
             },
-            None then {
-                Q.None
+            None -> {
+                Rational::None
             }
         }
-    }
+    };
 
-    add_incorrectly = fn (x Q, y Q) -> Q {
-        apply(x, y, lambda (x,y) {
-            numerator = (x.numerator + y.numerator),
-            denominator = (x.denominator + y.denominator)
+    add_incorrectly = (x Q, y Q) -> Q {
+        apply(x, y, (x Q, y Q) -> {
+            numerator: (x.numerator + y.numerator),
+            denominator: (x.denominator + y.denominator)
         })
     };
 

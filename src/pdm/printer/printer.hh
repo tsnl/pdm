@@ -20,9 +20,9 @@ namespace pdm::printer {
       // constructor:
       public:
         Printer(std::ostream& ostream_ref, char const* indent_text = "    ")
-        : m_ostream_ref(ostream_ref),
-          m_indent_count(0),
-          m_indent_text(indent_text) {}
+        :   m_ostream_ref(ostream_ref),
+            m_indent_count(0),
+            m_indent_text(indent_text) {}
 
       public:
         void print_newline();
@@ -97,7 +97,7 @@ namespace pdm::printer {
         void print_id_type_spec(ast::IdTypeSpec* node);
         void print_fn_type_spec(ast::FnTypeSpec* node);
         void print_tuple_type_spec(ast::TupleTypeSpec* node);
-        void print_dot_type_spec(ast::DotTypeSpec* node);
+        void print_dot_type_spec(ast::ModAddressIdTypeSpec* node);
         void print_struct_type_spec(ast::StructTypeSpec* node);
         void print_enum_type_spec(ast::EnumTypeSpec* node);
 

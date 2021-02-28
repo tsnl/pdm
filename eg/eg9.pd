@@ -1,15 +1,16 @@
 mod TypeQueries {
 
-    hello = fn (x Float32) -> Float32 {
+    hello = (x Float32) -> Float32 {
         x
     };
 
-    # disabled/not allowed
+    # hello = Float32 :< Float64;
+    # ^---- disabled/not allowed
     # - since type-dependent expressions are never evaluated, no if is ever type-dependent
     # - hence, easier to type
-    # const hello = Float32 :< Float64;
 
-    world = fn (x Float32) -> Float32 {
+
+    world = (x Float32) -> Float32 {
         hello(x)
     };
 

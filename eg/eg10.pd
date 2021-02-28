@@ -7,63 +7,59 @@
 # ...etc
 # instead of vague 'Any'
 
-mod Vector {
+mod vector [Type Number, n UInt32] {
 
-    Vec [T Number, n UInt32] = {
-        data Array[T,n]
+    Vec = {
+        # array syntax:
+        data [Type/n]
     };
 
-    increment ![T Number, n UInt32] = fn (inout lt Vec[T,n], rt Vec[T,n]) {
-        help_increment[T,n](inout lt, rt);
+    increment = (inout lt Vec, rt Vec) -> Void {
+        assert len(lt) == len(rt);
+        help_increment(inout lt, rt, len(lt));
     };
-    help_increment = fn [T Number, n UInt32] (inout lt Vec[T,n], rt Vec[T,n]) {
+    help_increment = (inout lt Vec, rt Vec) -> Void {
         # for this to work, need Array subtyping to work correctly
         # s.t. Array[T,n] :< Array[T,m] <=> n < m
         if (n > 0) then {
             set lt.data.(n-1) = lt.data.(n-1) + rt.data.(n-1);
-            help_increment[T,n-1](inout lt, rt)
+            vector[Type,n-1]::help_increment(inout lt, rt)
         };
     };
 
-    add ![T Number, n UInt32] = fn (lt Vec[T,n], rt Vec[T,n]) -> Vec[T,n] {
+    add = (lt Vec, rt Vec) -> Vec {
         var sum_vec = lt;
         increment(inout sum_vec, rt);
         sum_vec
     };
 
-    hello = fn () {
+    hello = () -> Void  {
         val x = 0;
     };
 
 };
 
-mod Fibonacci {
+mod fibonacci {
 
-    demo = fn () -> Int32 {
+    demo = () -> Int32 {
         0
     };
 
-
-    # Note: 
-    # _can_ pass 'inout' param to 'out' pattern without error, but using 'out' spec.
-    # thus, out[T] :< inout[T] (and in[T] :< inout[T])
-    # i.e.
-
 };
 
-mod InOutAndEverybout {
+# Note: 
+# _can_ pass 'inout' param to 'out' pattern without error, but using 'out' spec.
+# thus, out[T] :< inout[T] (and in[T] :< inout[T])
+# i.e.
 
-    hello_out = fn (out x F32) = {
+mod inOutAndEverybout {
+
+    hello_out = (out x F32) -> Void {
         set x = 42.0;
     };
-    hello_inout = fn (inout x F32) = {
+    hello_inout = (inout x F32) -> Void {
         # 'out' from 'hello_out' defn, not from vpattern decl.
         hello_out(out x);
-    };
-
-    # also supported: 'opaque' for a pointer without read or write access.
-    hello_opaque = fn (opaque y Float32) {
-        print(ptr(y));
     };
 
 };
