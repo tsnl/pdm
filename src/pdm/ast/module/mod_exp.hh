@@ -99,6 +99,7 @@ namespace pdm::ast {
 
     inline ModExp::ModExp(source::Loc loc, std::vector<ModExp::Field*>&& fields, ast::TPattern* opt_template_pattern)
     :   Node(loc, ast::Kind::ModExp),
+        m_fields(std::move(fields)),
         m_opt_template_pattern(opt_template_pattern),
         m_x_module_frame(nullptr),
         m_x_module_var(nullptr)

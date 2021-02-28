@@ -163,12 +163,22 @@ namespace pdm::types {
     // script:
     bool TyperVisitor::on_visit_script(ast::Script* script, VisitOrder visit_order) {
         // todo: implement this typer.
+        // assert(0 && "NotImplemented: typing Script");
         return true;
     }
     bool TyperVisitor::on_visit_script_field(ast::Script::Field* script_field, VisitOrder visit_order) {
-        // todo: implement this typer-- 
-        // - ensure `defn_var`from scoper
-        // - just bind type to RHS
+        if (visit_order == VisitOrder::Post) {
+            TypeVar* lhs_defn_tv = script_field->x_defn_var();
+            TypeVar* rhs_module_tv = script_field->rhs_mod_exp()->x_module_var();
+
+            auto relation = new TypeEqualsRelation(
+                script_field,
+                lhs_defn_tv,
+                rhs_module_tv
+            );
+            auto assume_relation_result = m_types_mgr->assume_relation_holds(relation);
+            return !result_is_error(assume_relation_result);
+        }
         return true;
     }
 
@@ -180,14 +190,6 @@ namespace pdm::types {
                 assert(0 && "NotImplemented: 'TyperVisitor::on_visit_mod_exp' with template args.");
             }
 
-            // creating a new TV for the module:
-            std::string new_module_var_name = "AnonymousModExp";
-            types::TypeVar* new_module_var = m_types_mgr->new_unknown_type_var(
-                std::move(new_module_var_name),
-                mod_exp
-            );
-            mod_exp->x_module_var(new_module_var);
-            
             // all ok:
             return true;
         } else {
@@ -755,6 +757,7 @@ namespace pdm::types {
                         "a struct-dot-name expression",
                         node->loc()
                     );
+                    assert(lhs_struct_tv && "Invalid lhs_struct_tv in `TyperVisitor::on_visit_dot_name_exp`");
 
                     // subtype of single-field struct:
                     TypeVar* min_struct_super_tv = nullptr;

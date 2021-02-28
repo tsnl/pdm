@@ -393,10 +393,35 @@ namespace pdm::scoper {
         return true;
     }
     bool ScoperVisitor::on_visit_script_field(ast::Script::Field* field, VisitOrder visit_order) {
-        assert(0 && "NotImplemented: on_visit_script_field");
-        // if (visit_order == VisitOrder::Pre) {
-        // } else {
-        // }
+        if (visit_order == VisitOrder::Pre) {
+            // defining the script field symbol for a module:
+            types::TypeVar* script_field_tv = nullptr; {
+                std::string tv_name = "ScriptField(akaMod)";
+                script_field_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name));
+            }
+            Defn new_defn {
+                DefnKind::Module,
+                field->name(),
+                field,
+                script_field_tv
+            };
+            bool defn_ok = top_frame()->define(new_defn);
+            if (!defn_ok) {
+                post_overlapping_defn_error("module field in a script", new_defn);
+                return false;
+            }
+
+            // storing result on the node:
+            field->x_defn_var(script_field_tv);
+
+            // pushing a frame for RHS content:
+            push_frame(FrameKind::ScriptFieldRhs);
+        } else {
+            // popping the script RHS frame:
+            // Frame* script_field_frame = top_frame();
+            pop_frame();
+        }
+        return true;
     }
 
     //
@@ -404,15 +429,54 @@ namespace pdm::scoper {
     //
 
     bool ScoperVisitor::on_visit_mod_exp(ast::ModExp* node, VisitOrder visit_order) {
-        assert(0 && "NotImplemented: on_visit_mod_exp");
+        if (visit_order == VisitOrder::Pre) {
+            // storing the Frame and TV on the module for later:
+            // node->x_module_frame(module_frame);
+            // node->x_module_tv(module_tv);
 
-        // if (visit_order == VisitOrder::Pre) {
-        // } else {
-        // }
+            types::TypeVar* module_tv = nullptr; {
+                std::string tv_name = "AnonymousModuleExp";
+                module_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
+            }
+            node->x_module_var(module_tv);
 
-        // storing the Frame and TV on the module for later:
-        // node->x_module_frame(module_frame);
-        // node->x_module_tv(module_tv);
+            push_frame(FrameKind::ModuleBody);
+        } else {
+            node->x_module_frame(top_frame());
+            pop_frame();
+        }
+        return true;
+    }
+    bool ScoperVisitor::on_visit_mod_mod_field(ast::ModExp::ModuleField* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            // creating a 'var':
+            types::Var* mod_val_var = nullptr; {
+                std::string tv_prefix = "ModModField:";
+                std::string tv_name = tv_prefix + node->name().content();
+                mod_val_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
+            }
+
+            // adding the new defn:
+            Defn new_defn {
+                DefnKind::Const,
+                node->name(),
+                node,
+                mod_val_var
+            };
+            bool defn_ok = top_frame()->define(new_defn);
+            if (!defn_ok) {
+                post_overlapping_defn_error("module field in a module", new_defn);
+                return false;
+            }
+
+            // storing result on the node:
+            node->x_defn_var(mod_val_var);
+
+            push_frame(FrameKind::ValueModFieldRhs);
+        } else {
+            pop_frame();
+        }
+        return true;
     }
     bool ScoperVisitor::on_visit_value_mod_field(ast::ModExp::ValueField* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
@@ -433,7 +497,7 @@ namespace pdm::scoper {
             };
             bool defn_ok = top_frame()->define(new_defn);
             if (!defn_ok) {
-                post_overlapping_defn_error("value module field", new_defn);
+                post_overlapping_defn_error("value field in a module", new_defn);
                 return false;
             }
 
@@ -466,7 +530,7 @@ namespace pdm::scoper {
             };
             bool defn_ok = top_frame()->define(new_defn);
             if (!defn_ok) {
-                post_overlapping_defn_error("type module field", new_defn);
+                post_overlapping_defn_error("type field in a module", new_defn);
                 return false;
             }
 
@@ -532,67 +596,6 @@ namespace pdm::scoper {
         }
         return true;
     }
-    bool ScoperVisitor::on_visit_mod_mod_field(ast::ModExp::ModuleField* node, VisitOrder visit_order) {
-        if (visit_order == VisitOrder::Pre) {
-            // creating a 'var':
-            types::Var* mod_val_var = nullptr; {
-                std::string tv_prefix = "ModModField:";
-                std::string tv_name = tv_prefix + node->name().content();
-                mod_val_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
-            }
-
-            // adding the new defn:
-            Defn new_defn {
-                DefnKind::Const,
-                node->name(),
-                node,
-                mod_val_var
-            };
-            bool defn_ok = top_frame()->define(new_defn);
-            if (!defn_ok) {
-                post_overlapping_defn_error("function", new_defn);
-                return false;
-            }
-
-            // storing result on the node:
-            node->x_defn_var(mod_val_var);
-
-            push_frame(FrameKind::ValueModFieldRhs);
-        } else {
-            pop_frame();
-        }
-        return true;
-    }
-    // bool ScoperVisitor::on_visit_mod_mod_field(ast::ModExp::ModuleField *node, VisitOrder visit_order) {
-    //     if (visit_order == VisitOrder::Pre) {
-    //         push_frame(FrameKind::Module);
-    //     } else {
-    //         // popping the module frame:
-    //         Frame* module_frame = top_frame();
-    //         pop_frame();
-    //
-    //         // creating a new TV:
-    //         types::TypeVar* module_tv; {
-    //             std::string tv_prefix = "ModField(Module):";
-    //             std::string tv_name = tv_prefix + node->name().content();
-    //             module_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
-    //         }
-    //
-    //         // defining the new module in the script:
-    //         Defn new_defn {
-    //             DefnKind::Module,
-    //             node->name(),
-    //             node,
-    //             module_tv
-    //         };
-    //         bool defn_ok = top_frame()->define(new_defn);
-    //         if (!defn_ok) {
-    //             post_overlapping_defn_error("mod statement", new_defn);
-    //             return false;
-    //         }
-    //     }
-    //     return true;
-    // }
     bool ScoperVisitor::on_visit_mod_address(ast::ModAddress* node, VisitOrder visit_order) {
         // todo: add a deferred lookup order
         assert(0 && "NotImplemented: on_visit_mod_address");

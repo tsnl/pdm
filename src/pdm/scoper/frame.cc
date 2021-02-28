@@ -10,6 +10,7 @@ namespace pdm::scoper {
             case FrameKind::Script: return "Script";
             case FrameKind::ScriptFieldRhs: return "ScriptFieldRhs";
             case FrameKind::ModModFieldRhs: return "ModModFieldRhs";
+            case FrameKind::ModuleBody: return "ModuleBody";
             case FrameKind::ValueModFieldRhs: return "ValueModFieldRhs";
             case FrameKind::TypeModFieldRhs: return "TypeModFieldRhs";
             case FrameKind::EnumTypeSpecBody: return "EnumTypeSpecBodyRhs";

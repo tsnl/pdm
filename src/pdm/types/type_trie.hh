@@ -73,6 +73,9 @@ namespace pdm::types {
                 NodeType* result;
                 Node* parent;
                 size_t parent_edge_index;
+                int hops_to_root;
+
+                Node();
             };
             struct Edge {
                 FieldType field;
@@ -109,6 +112,15 @@ namespace pdm::types {
         //
 
         template <typename FieldType, typename NodeType>
+        GenericTypeTrie<FieldType, NodeType>::Node::Node()
+        :   edges{}, 
+            result(nullptr),
+            parent(nullptr),
+            parent_edge_index(-1),
+            hops_to_root(0) 
+        {}
+
+        template <typename FieldType, typename NodeType>
         typename GenericTypeTrie<FieldType, NodeType>::Node*
         GenericTypeTrie<FieldType, NodeType>::root_node() const {
             return m_root;
@@ -116,7 +128,7 @@ namespace pdm::types {
 
         template <typename FieldType, typename NodeType>
         GenericTypeTrie<FieldType, NodeType>::GenericTypeTrie(TypeCtor ctor)
-        :   m_root(new Node{{}, nullptr, nullptr, 0}),
+        :   m_root(new Node),
             m_ctor(ctor)
         {
             m_root->result = m_ctor(m_root);
@@ -151,11 +163,11 @@ namespace pdm::types {
                 }
 
                 // fall-through, need to create a new edge with new destination node:
-                auto new_node = new GenericTypeTrie::Node {
-                    {}, nullptr,
-                    root_node, root_node->edges.size()
-                };
+                auto new_node = new GenericTypeTrie::Node{};
                 new_node->result = m_ctor(new_node);
+                new_node->parent = root_node;
+                new_node->parent_edge_index = root_node->edges.size();
+                new_node->hops_to_root = 1 + new_node->parent->hops_to_root;
 
                 Edge new_edge{first_field, new_node};
                 root_node->edges.push_back(new_edge);

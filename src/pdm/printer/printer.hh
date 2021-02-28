@@ -50,10 +50,12 @@ namespace pdm::printer {
         void print_script_field(ast::Script::Field* field);
 
         // modules:
-        void print_module(ast::ModExp* mod_exp);
+        void print_mod_exp(ast::ModExp* mod_exp);
+        void print_mod_mod_field(ast::ModExp::ModuleField* field);
         void print_value_mod_field(ast::ModExp::ValueField* field);
         void print_type_mod_field(ast::ModExp::TypeField* field);
         void print_class_mod_field(ast::ModExp::ClassField* field);
+        void print_mod_address(ast::ModAddress* mod_address);
 
         // statements:
         void print_const_stmt(ast::ConstStmt* node);

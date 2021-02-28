@@ -5,7 +5,7 @@
 mod arrays  [ElemType ANY, n Int32] {
 
     Array = {
-        impl [ElemType/n]
+        impl [ElemType * n]
     };
 
     mod map [ImgType ANY] {

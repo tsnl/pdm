@@ -47,6 +47,10 @@
 // "%code requires" blocks.
 #line 21 "parser.yy"
 
+    // DEBUG only:
+    // @nocheckin
+    #include <iostream>
+
     #include "pdm/core/config.hh"
 
     #include "pdm/feedback/feedback.hh"
@@ -60,7 +64,7 @@
 
     #include "pdm/parser/lexer.hh"
 
-#line 64 "parser.tab.hh"
+#line 68 "parser.tab.hh"
 
 
 # include <cstdlib> // std::abort
@@ -195,7 +199,7 @@
 
 #line 11 "parser.yy"
 namespace pdm { namespace parser {
-#line 199 "parser.tab.hh"
+#line 203 "parser.tab.hh"
 
 
 
@@ -3534,7 +3538,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 641,     ///< Last index in yytable_.
+      yylast_ = 668,     ///< Last index in yytable_.
       yynnts_ = 90,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
@@ -3551,20 +3555,20 @@ switch (yykind)
 
 #line 11 "parser.yy"
 } } // pdm::parser
-#line 3555 "parser.tab.hh"
+#line 3559 "parser.tab.hh"
 
 
 // "%code provides" blocks.
-#line 36 "parser.yy"
+#line 40 "parser.yy"
 
     using Tk = pdm::parser::parser::token_kind_type;
-#line 176 "parser.yy"
+#line 180 "parser.yy"
 
     // int yylex(pdm::parser::TokenInfo *lvalp, pdm::source::Loc *llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
     int yylex(pdm::parser::parser::semantic_type* st, pdm::source::Loc* llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
     void yyerror(pdm::source::Loc* llocp, char const* message, pdm::source::Source* source, pdm::parser::Lexer* lexer);
 
-#line 3568 "parser.tab.hh"
+#line 3572 "parser.tab.hh"
 
 
 #endif // !YY_YY_PARSER_TAB_HH_INCLUDED

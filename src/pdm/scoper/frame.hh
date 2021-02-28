@@ -15,7 +15,8 @@ namespace pdm::scoper {
     enum class FrameKind {
         Root,
         Script, ScriptFieldRhs,
-        ModModFieldRhs, ValueModFieldRhs, TypeModFieldRhs, EnumTypeSpecBody, ClassModFieldRhs,
+        ModModFieldRhs, ValueModFieldRhs, TypeModFieldRhs, ClassModFieldRhs,
+        EnumTypeSpecBody, ModuleBody,
         LPattern, VPattern, TPattern,
         Chain
     };
@@ -88,8 +89,7 @@ namespace pdm::scoper {
             switch (m_kind) {
                 case FrameKind::Root: return ContextKind::RootDefs;
                 case FrameKind::Script: return ContextKind::ScriptDefs;
-                case FrameKind::ScriptFieldRhs: return ContextKind::ModuleDefs;
-                case FrameKind::ModModFieldRhs: return ContextKind::ModuleDefs;
+                case FrameKind::ModuleBody: return ContextKind::ModuleDefs;
                 case FrameKind::ValueModFieldRhs: return ContextKind::ChainStart;
                 case FrameKind::Chain: return ContextKind::ChainStart;
                 case FrameKind::LPattern: return ContextKind::LPatternDefs;
@@ -97,6 +97,8 @@ namespace pdm::scoper {
                 case FrameKind::TPattern: return ContextKind::TPatternDefs;
 
                 // unclear if actually useful:
+                case FrameKind::ScriptFieldRhs: return ContextKind::ModuleDefs;
+                case FrameKind::ModModFieldRhs: return ContextKind::ModuleDefs;
                 case FrameKind::TypeModFieldRhs: return ContextKind::TypeRhsStart;
                 case FrameKind::EnumTypeSpecBody: return ContextKind::EnumRhsStart;
                 case FrameKind::ClassModFieldRhs: return ContextKind::TypeclassRhsStart;

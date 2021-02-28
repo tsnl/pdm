@@ -542,6 +542,7 @@ namespace pdm::types {
                         construct_fields.push_back(tt_field);
                     }
                 }
+                std::cout << "Emitting struct solution with " << construct_fields.size() << " fields" << std::endl;
                 return StructType::get(construct_fields);
             }
             case Kind::Enum:

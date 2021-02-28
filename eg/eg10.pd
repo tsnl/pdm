@@ -11,7 +11,7 @@ mod vector [Type Number, n UInt32] {
 
     Vec = {
         # array syntax:
-        data [Type/n]
+        data [Type * n]
     };
 
     increment = (inout lt Vec, rt Vec) -> Void {
@@ -20,7 +20,7 @@ mod vector [Type Number, n UInt32] {
     };
     help_increment = (inout lt Vec, rt Vec) -> Void {
         # for this to work, need Array subtyping to work correctly
-        # s.t. Array[T,n] :< Array[T,m] <=> n < m
+        # s.t. Array[T,n] :< Array[T,m] <=> n <= m
         if (n > 0) then {
             set lt.data.(n-1) = lt.data.(n-1) + rt.data.(n-1);
             vector[Type,n-1]::help_increment(inout lt, rt)

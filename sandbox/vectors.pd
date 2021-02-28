@@ -34,8 +34,4 @@ mod lin_alg {
         dot(vec, vec)
     };
 
-    length = (vec Vector3f) -> Float32 {
-        sqrt(length_sqr(vec))
-    };
-
 };

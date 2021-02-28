@@ -245,7 +245,7 @@ namespace pdm::types {
     };
 
     inline StructType::StructType(tt::StructTypeTrie::Node* tt_node)
-    :   CompoundType("StructType", Kind::Struct),
+    :   CompoundType("StructType(" + std::to_string(tt_node->hops_to_root) + ")", Kind::Struct),
         m_tt_node(tt_node)
     {}
 
@@ -272,7 +272,7 @@ namespace pdm::types {
     };
 
     inline EnumType::EnumType(tt::EnumTypeTrie::Node* tt_node)
-    :   CompoundType("EnumType", Kind::Enum),
+    :   CompoundType("EnumType(" + std::to_string(tt_node->hops_to_root) + ")", Kind::Enum),
         m_tt_node(tt_node)
     {}
 

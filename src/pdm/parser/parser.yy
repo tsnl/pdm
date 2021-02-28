@@ -19,6 +19,10 @@
 
 // including headers:
 %code requires {
+    // DEBUG only:
+    // @nocheckin
+    #include <iostream>
+
     #include "pdm/core/config.hh"
 
     #include "pdm/feedback/feedback.hh"
@@ -294,9 +298,11 @@ script_field_sl
 mod_exp
     :          LCYBRK mod_field_sl RCYBRK     { $$ = mgr->new_mod_exp(@$, nullptr, std::move($2)); }
     | tpattern LCYBRK mod_field_sl RCYBRK     { $$ = mgr->new_mod_exp(@$, $1, std::move($3)); }
+    |          LCYBRK              RCYBRK     { $$ = mgr->new_mod_exp(@$, nullptr, std::move(std::vector<ast::ModExp::Field*>{})); }
+    | tpattern LCYBRK              RCYBRK     { $$ = mgr->new_mod_exp(@$, $1, std::move(std::vector<ast::ModExp::Field*>{})); }
     ;
 mod_field_sl
-    : %empty {}
+    : mod_field SEMICOLON               { $$.push_back($1); }
     | mod_field_sl mod_field SEMICOLON  { $$ = std::move($1); $$.push_back($2); }
     ;
 mod_field
@@ -578,7 +584,7 @@ tuple_type_spec
     | LCYBRK type_spec_cl2 RCYBRK  { $$ = mgr->new_tuple_type_spec(@$, std::move($2)); }
     ;
 array_type_spec
-    : LSQBRK type_spec FSLASH expr RSQBRK     { $$ = nullptr; }
+    : LSQBRK type_spec ASTERISK expr RSQBRK     { $$ = nullptr; }
     ;
 
 struct_type_spec

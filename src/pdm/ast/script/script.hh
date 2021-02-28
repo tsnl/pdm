@@ -16,6 +16,9 @@ namespace pdm::ast {
 namespace pdm::scoper {
     class Frame;
 }
+namespace pdm::types {
+    class TypeVar;
+}
 
 namespace pdm::ast {
 
@@ -25,8 +28,9 @@ namespace pdm::ast {
       public:
         class Field: public Node {
           private:
-            intern::String m_name;
-            ModExp*        m_rhs_mod_exp;
+            intern::String  m_name;
+            ModExp*         m_rhs_mod_exp;
+            types::TypeVar* m_x_defn_var;
 
           public:
             Field(source::Loc loc, intern::String name, ModExp* rhs_mod_exp);
@@ -34,6 +38,10 @@ namespace pdm::ast {
           public:
             [[nodiscard]] intern::String name() const;
             [[nodiscard]] ModExp* rhs_mod_exp() const;
+          
+          public:
+            [[nodiscard]] types::TypeVar* x_defn_var() const;
+            void x_defn_var(types::TypeVar* defn_tv);
         };
 
       private:
@@ -76,6 +84,14 @@ namespace pdm::ast {
 
     inline ModExp* Script::Field::rhs_mod_exp() const {
         return m_rhs_mod_exp;
+    }
+
+    inline types::TypeVar* Script::Field::x_defn_var() const {
+        return m_x_defn_var;
+    }
+
+    inline void Script::Field::x_defn_var(types::TypeVar* defn_tv) {
+        m_x_defn_var = defn_tv;
     }
 
     inline std::vector<HeaderStmt*> const& Script::header_stmts() const {

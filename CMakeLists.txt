@@ -211,7 +211,6 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/llvm_emitter/llvm_emitter.hh 
     
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type_trie.hh 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type_trie.cc
         
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/dot.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/enum.hh

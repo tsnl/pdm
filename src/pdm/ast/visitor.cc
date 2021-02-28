@@ -27,7 +27,7 @@ namespace pdm::ast {
                     ok = visit(head_stmt) && ok;
                 }
                 for (ast::Script::Field* body_field: script->body_fields()) {
-                    ok = visit(body_field) && ok;
+                    ok = visit(body_field) && ok; 
                 }
                 break;
             }

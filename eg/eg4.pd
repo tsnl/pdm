@@ -12,9 +12,8 @@
 # be possible to specify libraries via git/hg URI which the compiler will automatically
 # install and cache.
 
-import "basic.pd" as "pd-script";
-import "basic.pd" as "pd-script";
-import "eg3.pd" as "pd-script";
+mod basic from "basic.pd" as "pd-script";
+mod eg3 from "eg3.pd" as "pd-script";
 
 mod vehicle {
 

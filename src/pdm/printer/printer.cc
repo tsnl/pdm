@@ -102,11 +102,51 @@ namespace pdm::printer {
 
     void Printer::print_node(ast::Node* node) {
         switch (node->kind()) {
+            // scripts:
             case ast::Kind::Script:
             {
                 print_script(dynamic_cast<ast::Script*>(node));
                 break;
             }
+            case ast::Kind::ScriptField:
+            {
+                print_script_field(dynamic_cast<ast::Script::Field*>(node));
+                break;
+            }
+
+            // modules:
+            case ast::Kind::ModExp:
+            {
+                print_mod_exp(dynamic_cast<ast::ModExp*>(node));
+                break;
+            }
+            case ast::Kind::ModModField:
+            {
+                print_mod_mod_field(dynamic_cast<ast::ModExp::ModuleField*>(node));
+                break;
+            }
+            case ast::Kind::ValueModField:
+            {
+                print_value_mod_field(dynamic_cast<ast::ModExp::ValueField*>(node));
+                break;
+            }
+            case ast::Kind::TypeModField:
+            {
+                print_type_mod_field(dynamic_cast<ast::ModExp::TypeField*>(node));
+                break;
+            }
+            case ast::Kind::ClassModField:
+            {
+                print_class_mod_field(dynamic_cast<ast::ModExp::ClassField*>(node));
+                break;
+            }
+            case ast::Kind::ModAddress:
+            {
+                print_mod_address(dynamic_cast<ast::ModAddress*>(node));
+                break;
+            }
+
+            // statements:
             case ast::Kind::ConstStmt:
             {
                 print_const_stmt(dynamic_cast<ast::ConstStmt*>(node));
@@ -313,6 +353,7 @@ namespace pdm::printer {
             // illegal elements:
             default:
             {
+                assert(0 && "NotImplemented: Printer::print_node for unknown AST kind.");
                 break;
             }
         }
@@ -352,6 +393,59 @@ namespace pdm::printer {
         // scripts are the only nodes followed by a newline.
         print_newline();
     }
+    void Printer::print_script_field(ast::Script::Field* node) {
+        print_c_str("mod ");
+        print_intstr(node->name());
+        print_c_str(" ");
+        print_node(node->rhs_mod_exp());
+    }
+
+    // modules:
+    void Printer::print_mod_exp(ast::ModExp* node) {
+        if (node->opt_template_pattern()) {
+            print_node(node->opt_template_pattern());
+            print_c_str(" ");
+        }
+        print_c_str("{");
+        print_newline_indent();
+        {   
+            for (auto field: node->fields()) {
+                print_node(field);
+                print_c_str(";");
+                print_newline();
+            }
+        }
+        print_newline_exdent();
+        print_c_str("}");
+    }
+    void Printer::print_mod_mod_field(ast::ModExp::ModuleField* node) {
+        print_c_str("mod ");
+        print_intstr(node->name());
+        print_c_str(" ");
+        print_node(node->rhs_mod_exp());
+    }
+    void Printer::print_value_mod_field(ast::ModExp::ValueField* node) {
+        print_intstr(node->name());
+        print_c_str(" = ");
+        print_node(node->rhs_exp());
+    }
+    void Printer::print_type_mod_field(ast::ModExp::TypeField* node) {
+        print_intstr(node->name());
+        print_c_str(" = ");
+        print_node(node->rhs_type_spec());
+    }
+    void Printer::print_class_mod_field(ast::ModExp::ClassField* node) {
+        print_intstr(node->name());
+        print_c_str(" = ");
+        print_node(node->rhs_class_spec());
+    }
+    void Printer::print_mod_address(ast::ModAddress* mod_address) {
+        if (mod_address->opt_parent_address()) {
+            print_node(mod_address->opt_parent_address());
+            print_c_str("::");
+        }
+        print_intstr(mod_address->rhs_name());
+    }
 
     // statements:
     void Printer::print_const_stmt(ast::ConstStmt* node) {
@@ -382,7 +476,7 @@ namespace pdm::printer {
         // fixme; incorrect escapes, so hacky, but eh
         print_c_str(" from \"");
         print_u8_str(is->import_from_str());
-        print_c_str("\" type \"");
+        print_c_str("\" as \"");
         print_u8_str(is->import_type_str());
         print_u32_char('"');
     }
