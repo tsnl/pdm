@@ -1,19 +1,19 @@
 mod scene1 {
-    Scene = {
+    Scene :: {
         name String,
-        impl fancy_engine[impl]::Engine
+        impl fancy_engine[impl]~>Engine
     };
 
-    new = () -> Scene {
+    new :: () -> Scene {
         name: "Scene1",
         impl: impl
     };
 };
 
 mod impl {
-    x = 0;
+    x :: 0;
 
-    hello = () -> Int32 {
+    hello :: () -> Int32 {
         x
     };
 };

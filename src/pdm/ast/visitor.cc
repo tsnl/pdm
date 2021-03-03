@@ -74,7 +74,6 @@ namespace pdm::ast {
                 for (ast::TArg* template_arg: address->template_args()) {
                     ok = visit(template_arg) && ok;
                 }
-                ok = visit(address) && ok;
                 break;
             }
 
@@ -200,6 +199,8 @@ namespace pdm::ast {
                 break;
             }
             case Kind::ModuleDotExp: {
+                auto mod_dot_exp = dynamic_cast<ModuleDotExp*>(node);
+                ok = visit(mod_dot_exp->lhs_mod_address()) && ok;
                 break;
             }
             case Kind::UnaryExp: {
@@ -279,9 +280,9 @@ namespace pdm::ast {
                 ok = visit(fn_type_spec->opt_ret_type_spec()) && ok;
                 break;
             }
-            case Kind::DotTypeSpec: {
-                auto dot_type_spec = dynamic_cast<ModAddressIdTypeSpec*>(node);
-                ok = visit(dot_type_spec->lhs_mod_address());
+            case Kind::ModAddressIdTypeSpec: {
+                auto mai_type_spec = dynamic_cast<ModAddressIdTypeSpec*>(node);
+                ok = visit(mai_type_spec->lhs_mod_address());
                 break;
             }
             case Kind::StructTypeSpec: {
@@ -312,8 +313,9 @@ namespace pdm::ast {
             // class specs:
             //
 
-            case Kind::IdClassSpec: {
-                // no children
+            case Kind::ModAddressIdClassSpec: {
+                auto mai_class_spec = dynamic_cast<ModAddressIdClassSpec*>(node);
+                ok = visit(mai_class_spec->lhs_mod_address()) && ok;
                 break;
             }
             case Kind::ClassExpClassSpec: {
@@ -565,7 +567,7 @@ namespace pdm::ast {
                 dynamic_cast<TupleTypeSpec*>(node),
                 visit_order
             );
-            case Kind::DotTypeSpec: return on_visit_ma_type_spec(
+            case Kind::ModAddressIdTypeSpec: return on_visit_ma_type_spec(
                 dynamic_cast<ModAddressIdTypeSpec*>(node),
                 visit_order
             );
@@ -575,7 +577,7 @@ namespace pdm::ast {
             );
 
             // class specs:
-            case Kind::IdClassSpec: return on_visit_id_class_spec(
+            case Kind::ModAddressIdClassSpec: return on_visit_id_class_spec(
                 dynamic_cast<IdClassSpec*>(node),
                 visit_order
             );

@@ -12,7 +12,6 @@ namespace pdm::ast {
         "ClassModField",
         "ModModField",
         "ModAddress",
-        "TemplateModAddress",
         "BuiltinStmt",
         "DiscardStmt",
         "ConstStmt",
@@ -53,12 +52,13 @@ namespace pdm::ast {
         "EnumTypeSpec",
         "IdClassSpec",
         "ClassExpClassSpec",
+        "DotClassSpec",
         "TArg",
         "VArg",
         "Aux_VPatternField",
         "Aux_TPatternField",
         "Aux_LPatternField",
-        "__Count"
+        "(META: Count)"
     };
 
     char const* kind_as_text(Kind kind) {

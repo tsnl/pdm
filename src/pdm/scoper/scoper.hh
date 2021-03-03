@@ -30,15 +30,18 @@ namespace pdm::scoper {
         struct IdClassSpecLookupOrder { ast::IdClassSpec* class_spec; Context* lookup_context; };
         struct ImportLookupOrder      { ast::ImportStmt* import_stmt; Context* lookup_context; };
         struct UsingLookupOrder       { ast::UsingStmt* using_stmt; Context* lookup_context; };
+        struct ModAddressLookupOrder  { ast::ModAddress* mod_address; Context* lookup_context; };
 
       private:
-        Compiler*                           m_compiler_ptr;
-        Frame*                              m_root_frame;
-        std::vector<IdExpLookupOrder>       m_id_exp_orders;
-        std::vector<IdTypeSpecLookupOrder>  m_id_type_spec_orders;
+        Compiler* m_compiler_ptr;
+        Frame* m_root_frame;
+
+        std::vector<IdExpLookupOrder> m_id_exp_orders;
+        std::vector<IdTypeSpecLookupOrder> m_id_type_spec_orders;
         std::vector<IdClassSpecLookupOrder> m_id_class_spec_orders;
-        std::vector<ImportLookupOrder>      m_import_orders;
-        std::vector<UsingLookupOrder>       m_using_orders;
+        std::vector<ImportLookupOrder> m_import_orders;
+        std::vector<UsingLookupOrder> m_using_orders;
+        std::vector<ModAddressLookupOrder> m_mod_address_orders;
 
         bool m_finished;
 
@@ -100,11 +103,12 @@ namespace pdm::scoper {
         void place_id_class_spec_lookup_order(ast::IdClassSpec* id_class_spec);
         void place_import_lookup_order(ast::ImportStmt* import_stmt);
         void place_using_lookup_order(ast::UsingStmt* using_stmt);
+        void place_mod_address_lookup_order(ast::ModAddress* mod_address);
 
       private:
         void post_overlapping_defn_error(std::string defn_kind, Defn const& failed_defn);
-        void post_overlapping_defn_error(std::string defn_kind, Defn const& failed_defn, Context* tried_context) const;
-        void help_post_defn_failure(std::string defn_kind, Defn const& failed_new_defn, Defn const& old_defn) const;
+        static void post_overlapping_defn_error(std::string defn_kind, Defn const& failed_defn, Context* tried_context) ;
+        static void help_post_defn_failure(std::string defn_kind, Defn const& failed_new_defn, Defn const& old_defn) ;
 
       protected:
         // scripts:

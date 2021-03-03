@@ -193,9 +193,12 @@ namespace pdm::types {
     }
 
     bool IsTupleRelation::on_assume_impl(types::Manager* types_mgr) {
-        // todo: implement me!
-        std::cout << "NotImplemented: TupleOfRelation::on_assume_impl" << std::endl;
-        return true;
+        auto typeof_items_tvs = m_fields_tvs;
+        auto invariant = new IsTupleInvariant(
+            this, VarArchetype::Type,
+            std::move(typeof_items_tvs)
+        );
+        return !result_is_error(m_tuple_tv->assume_invariant_holds(invariant));
     }
 
     bool DotIndexRelation::on_assume_impl(types::Manager* manager) {

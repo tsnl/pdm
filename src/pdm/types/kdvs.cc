@@ -398,7 +398,15 @@ namespace pdm::types {
     }
 
     Type* TupleKDVS::reify_impl(Var* var) {
-        assert(0 && "NotImplemented: TupleKDVS::reify_impl");
+        // assert(0 && "NotImplemented: TupleKDVS::reify_impl");
+        std::vector<tt::TupleField> construct_fields;
+        {
+            construct_fields.reserve(m_typeof_items_tvs.size());
+            for (auto item_tv: m_typeof_items_tvs) {
+                construct_fields.push_back({item_tv->get_type_soln()});
+            }
+        }
+        return TupleType::get(construct_fields);
     }
 
     void TupleKDVS::print(printer::Printer& printer) const {

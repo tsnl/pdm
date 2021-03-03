@@ -306,9 +306,9 @@ mod_field_sl
     | mod_field_sl mod_field SEMICOLON  { $$ = std::move($1); $$.push_back($2); }
     ;
 mod_field
-    : vid BIND long_exp        { $$ = mgr->new_value_mod_field(@$, $1.ID_intstr, $3); }
-    | tid BIND long_type_spec       { $$ = mgr->new_type_mod_field(@$, $1.ID_intstr, $3); }
-    | cid BIND class_exp_class_spec { $$ = mgr->new_class_mod_field(@$, $1.ID_intstr, $3); }
+    : vid DBL_COLON long_exp        { $$ = mgr->new_value_mod_field(@$, $1.ID_intstr, $3); }
+    | tid DBL_COLON long_type_spec       { $$ = mgr->new_type_mod_field(@$, $1.ID_intstr, $3); }
+    | cid DBL_COLON class_exp_class_spec { $$ = mgr->new_class_mod_field(@$, $1.ID_intstr, $3); }
     | KW_MOD vid mod_exp            { $$ = mgr->new_mod_mod_field(@$, $2.ID_intstr, $3); }
     ;
 

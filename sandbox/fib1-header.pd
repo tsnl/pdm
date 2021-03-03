@@ -2,9 +2,9 @@ import {
     fib_helper from "./fibx.pd";
 };
 
-mod fibonacci  {
+mod fibonacci {
 
-    fib = (x Int32) -> Int32 {
+    fib :: (x Int32) -> Int32 {
         val result = (
             if (x == 0 or x == 1) then {
                 x

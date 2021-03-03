@@ -338,7 +338,7 @@ namespace pdm::types {
       public:
         inline EnumDotNameRelation(ast::Node* ast_node, TypeVar* lhs, TypeVar* eval_type, intern::String rhs_name, std::vector<TypeVar*>&& typeof_args_tvs);
       public:
-        std::vector<TypeVar*> const& args() const {
+        [[nodiscard]] std::vector<TypeVar*> const& args() const {
             return m_args;
         }
     };

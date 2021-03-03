@@ -29,7 +29,7 @@ namespace pdm::ast {
     //
 
     inline ModAddressIdTypeSpec::ModAddressIdTypeSpec(source::Loc loc, ModAddress *lhs_mod_address, intern::String rhs_type_name)
-    :   TypeSpec(loc, Kind::DotTypeSpec),
+    :   TypeSpec(loc, Kind::ModAddressIdTypeSpec),
         m_lhs_mod_address(lhs_mod_address),
         m_rhs_type_name(rhs_type_name)
     {}

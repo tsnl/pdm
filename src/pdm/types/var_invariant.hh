@@ -303,7 +303,7 @@ namespace pdm::types {
         inline IsTupleInvariant(Relation* parent_relation, VarArchetype domain_var_kind, std::vector<TypeVar*>&& typeof_items_tvs);
 
       public:
-        inline std::vector<TypeVar*> const& typeof_items_tvs() const;
+        [[nodiscard]] inline std::vector<TypeVar*> const& typeof_items_tvs() const;
 
       public:
         void print(printer::Printer& printer) const override;

@@ -126,6 +126,8 @@ namespace pdm::types {
         static TypeVar* expect_type_var(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
         static ClassVar* expect_class_var(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
         static Var* expect_var_check(Var* var, std::string&& expected_desc, std::string&& in_desc, VarArchetype expected_var_kind, source::Loc loc);
+
+        static ast::ModExp::Field* get_mod_field_from_addr(ast::ModAddress* lhs_mod_address, intern::String rhs_name);
     };
 
     //
@@ -162,8 +164,7 @@ namespace pdm::types {
 
     // script:
     bool TyperVisitor::on_visit_script(ast::Script* script, VisitOrder visit_order) {
-        // todo: implement this typer.
-        // assert(0 && "NotImplemented: typing Script");
+        // do nothing
         return true;
     }
     bool TyperVisitor::on_visit_script_field(ast::Script::Field* script_field, VisitOrder visit_order) {
@@ -246,7 +247,8 @@ namespace pdm::types {
             // equating the type to the RHS:
             auto relation = new TypeEqualsRelation(mod_field, value_tv, rhs_tv);
             auto assume_relation_result = m_types_mgr->assume_relation_holds(relation);
-            return !result_is_error(assume_relation_result);
+            auto result = !result_is_error(assume_relation_result);
+            return result;
         } else {
             if (pdm::DEBUG) {
                 assert(0 && "Invalid VisitOrder");
@@ -320,26 +322,17 @@ namespace pdm::types {
         }
         
         if (visit_order == VisitOrder::Pre) {
-            // creating a place-holder TV
-            // todo: need to create/resolve as early as scoper, other-wise need to know if value/type/class or
-            //       treat module as first-class value with class/type fields.
-            assert(0 && "NotImplemented: on_visit_mod_address");
-        } else {
-            assert(visit_order == VisitOrder::Post && "Invalid VisitOrder.");
-
-            // todo: consider moving to scoper, as soon as origin_mod_exp is acquired?
-            
             // retrieving the TV defined in the scoper/pre-typer:
             auto origin_mod_exp = mod_address->x_origin_mod_exp();
             assert(origin_mod_exp && "nullptr origin_mod_exp");
-            ast::ModExp::Field* ref_field = nullptr;
-            for (auto field: origin_mod_exp->fields()) {
-                if (field->name() == mod_address->rhs_name()) {
-                    ref_field = field;
-                    break;
-                }
-            }
-            if (ref_field) {
+            // ast::ModExp::Field* ref_field = nullptr;
+            // for (auto field: origin_mod_exp->fields()) {
+            //     if (field->name() == mod_address->rhs_name() && field->kind() == ast::Kind::ModModField) {
+            //         ref_field = field;
+            //         break;
+            //     }
+            // }
+            if (origin_mod_exp) {
                 // lookup succeeded
                 return true;
             } else {
@@ -358,6 +351,13 @@ namespace pdm::types {
                 ));
                 return false;
             }
+        } else if (visit_order == VisitOrder::Post) {
+            return true;
+        } else {
+            if (DEBUG) {
+                assert(0 && "Invalid VisitOrder.");
+            }
+            return false;
         }
     }
 
@@ -527,10 +527,54 @@ namespace pdm::types {
             std::string tv_name = "TupleExp(" + std::to_string(node->items().size()) + ")";
             TypeVar* tuple_tv = m_types_mgr->new_unknown_type_var(std::move(tv_name), node);
             node->x_type_of_var(tuple_tv);
+            return true;
+        } else if (visit_order == VisitOrder::Post) {
+            auto tuple_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
+            assert(tuple_tv && "Uninitialized Tuple-TV");
+
+            // assembling + checking field tvs:
+            std::vector<TypeVar*> fields_tvs{node->items().size()};
+            bool fields_ok = true;
+            {
+                size_t fields_count = fields_tvs.size();
+                auto fields_count_str = std::to_string(fields_count);
+
+                for (size_t i = 0; i < fields_count; i++) {
+                    types::Var* field_var = node->items()[i]->x_type_of_var();
+                    assert(field_var && "NULL tuple field var");
+
+                    std::string expected_desc = "an expression";
+                    std::string in_desc = "a " + fields_count_str + "-tuple expression";
+                    types::TypeVar* field_tv = expect_type_var(
+                        field_var,
+                        std::move(expected_desc), std::move(in_desc),
+                        node->items()[i]->loc()
+                    );
+                    if (field_tv == nullptr) {
+                        fields_ok = false;
+                    }
+
+                    fields_tvs[i] = field_tv;
+                }
+            }
+            if (!fields_ok) {
+                return false;
+            }
+
+            // applying relation on all fields & tuple:
+            std::string relation_why = "IsTupleExp";
+            auto relation = new IsTupleRelation(
+                std::move(relation_why),
+                node, tuple_tv, std::move(fields_tvs)
+            );
+            auto assume_relation_result = m_types_mgr->assume_relation_holds(relation);
+            return !result_is_error(assume_relation_result);
         } else {
-            // todo: set tuple field requirements here by equating to a TupleTV
+            if (DEBUG) {
+                assert(0 && "Invalid visit-order");
+            }
+            return false;
         }
-        return true;
     }
     bool TyperVisitor::on_visit_array_exp(ast::ArrayExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
@@ -794,14 +838,20 @@ namespace pdm::types {
         }
     }
     bool TyperVisitor::on_visit_module_dot_exp(ast::ModuleDotExp* node, VisitOrder visit_order) {
-        assert(0 && "NotImplemented: TypeVisitor::on_visit_module_dot_exp");
-        
         if (visit_order == VisitOrder::Pre) {
-            
+            ast::ModExp::Field* field = get_mod_field_from_addr(node->lhs_mod_address(), node->rhs_name());
+            auto defn_tv = dynamic_cast<TypeVar*>(field->x_defn_var());
+            assert(defn_tv && "Invalid/malformed ma_type_spec => error in scoper.");
+            node->x_type_of_var(defn_tv);
+            return true;
+        } else if (visit_order == VisitOrder::Post) {
+            return true;
         } else {
-            // todo
+            if (DEBUG) {
+                assert(0 && "NotImplemented: invalid VisitOrder.");
+            }
+            return false;
         }
-        return true;
     }
     bool TyperVisitor::on_visit_unary_exp(ast::UnaryExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
@@ -1331,11 +1381,11 @@ namespace pdm::types {
         return true;
     }
     bool TyperVisitor::on_visit_ma_type_spec(ast::ModAddressIdTypeSpec* node, VisitOrder visit_order) {
-        assert(0 && "NotImplemented: TypeVisitor::on_visit_ma_type_spec");
-
         if (visit_order == VisitOrder::Pre) {
-            // todo: lookup mod prefices
-            // node->x_spec_var(spectype_var);
+            ast::ModExp::Field* field = get_mod_field_from_addr(node->lhs_mod_address(), node->rhs_type_name());
+            auto defn_tv = dynamic_cast<TypeVar*>(field->x_defn_var());
+            assert(defn_tv && "Invalid/malformed ma_type_spec => error in scoper.");
+            node->x_spec_var(defn_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
         }
@@ -1505,11 +1555,11 @@ namespace pdm::types {
         return true;
     }
     bool TyperVisitor::on_visit_ma_class_spec(ast::ModAddressIdClassSpec* node, VisitOrder visit_order) {
-        assert(0 && "NotImplemented: TypeVisitor::on_visit_ma_class_spec");
-
         if (visit_order == VisitOrder::Pre) {
-            // todo: lookup mod prefices
-            // node->x_spec_var(spectype_var);
+            ast::ModExp::Field* field = get_mod_field_from_addr(node->lhs_mod_address(), node->rhs_type_name());
+            auto defn_tv = dynamic_cast<ClassVar*>(field->x_defn_var());
+            assert(defn_tv && "Invalid/malformed ma_class_spec => error in scoper.");
+            node->x_spec_var(defn_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
         }
@@ -1614,7 +1664,6 @@ namespace pdm::types {
             return nullptr;
         }
     }
-
     TypeVar* TyperVisitor::expect_type_var(
         Var* var,
         std::string&& expected_desc, std::string&& in_desc,
@@ -1641,6 +1690,24 @@ namespace pdm::types {
         }
     }
 
+    ast::ModExp::Field* TyperVisitor::get_mod_field_from_addr(
+        ast::ModAddress* lhs_mod_address,
+        intern::String rhs_name
+    ) {
+        auto lhs_mod_exp = lhs_mod_address->x_origin_mod_exp();
+        assert(lhs_mod_exp && "Scoper error: expected lhs mod exp to be non-nullptr");
+
+        // note: consider a more efficient field lookup mechanism if required
+        // currently just using a linear scan.
+        ast::ModExp::Field* found_field = nullptr;
+        for (ast::ModExp::Field* field: lhs_mod_exp->fields()) {
+            if (rhs_name == field->name()) {
+                found_field = field;
+                break;
+            }
+        }
+        return found_field;
+    }
 }
 
 //

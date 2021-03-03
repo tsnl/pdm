@@ -305,7 +305,7 @@ namespace pdm::printer {
                 break;
             }
 
-            case ast::Kind::IdClassSpec:
+            case ast::Kind::ModAddressIdClassSpec:
             {
                 print_id_class_spec(dynamic_cast<ast::IdClassSpec*>(node));
                 break;
@@ -426,17 +426,17 @@ namespace pdm::printer {
     }
     void Printer::print_value_mod_field(ast::ModExp::ValueField* node) {
         print_intstr(node->name());
-        print_c_str(" = ");
+        print_c_str(" :: ");
         print_node(node->rhs_exp());
     }
     void Printer::print_type_mod_field(ast::ModExp::TypeField* node) {
         print_intstr(node->name());
-        print_c_str(" = ");
+        print_c_str(" :: ");
         print_node(node->rhs_type_spec());
     }
     void Printer::print_class_mod_field(ast::ModExp::ClassField* node) {
         print_intstr(node->name());
-        print_c_str(" = ");
+        print_c_str(" :: ");
         print_node(node->rhs_class_spec());
     }
     void Printer::print_mod_address(ast::ModAddress* mod_address) {

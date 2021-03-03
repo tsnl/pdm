@@ -85,33 +85,34 @@
 # - use '[...]' for template calls.
 
 mod next {
-
     mod ll_base {
-        LL_NODE = cls (NodeType STRUCT) {
+        LL_NODE :: cls (NodeType STRUCT) {
             NodeType :< {
                 index UInt32,
                 value UInt32
             };
         };
-        NodeAllocator = {
+        NodeAllocator :: {
             allocator () -> UInt32
         };
     };
 
     mod linked_list [Node ll_base::LL_NODE, impl NodeImpl] {
-        LL_NODE = cls (NodeType ll_base::LL_NODE) {
+        LL_NODE :: cls (NodeType ll_base::LL_NODE) {
         };
 
-        add = (node1 Node, node2 Node) -> Node {
+        add :: (node1 Node, node2 Node) -> Node {
             index: impl.allocator(sizeof Node),
             value: node1.value + node2.value
         };
 
-        hello = 24;
+        hello :: 24;
     };
 
     mod testing {
-        square1 = (x {Int32,Int32}) -> {Int32, Int32} {
+        Rectangle :: {Int32,Int32};
+
+        rectangle :: (dim Rectangle) -> Rectangle {
             x * x
         };
     };

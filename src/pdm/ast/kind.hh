@@ -40,11 +40,11 @@ namespace pdm::ast {
         // type specifiers:
         IdTypeSpec,
         FnTypeSpec,
-        DotTypeSpec,
+        ModAddressIdTypeSpec,
         TupleTypeSpec, StructTypeSpec, EnumTypeSpec,
 
         // class specifiers:
-        IdClassSpec, ClassExpClassSpec, DotClassSpec,
+        ModAddressIdClassSpec, ClassExpClassSpec, DotClassSpec,
 
         // args:
         TArg, VArg,

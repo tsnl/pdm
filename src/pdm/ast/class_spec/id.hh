@@ -26,7 +26,7 @@ namespace pdm::ast {
     };
 
     inline IdClassSpec::IdClassSpec(source::Loc loc, intern::String name)
-    :   ClassSpec(loc, Kind::IdClassSpec),
+    :   ClassSpec(loc, Kind::ModAddressIdClassSpec),
         m_name(name),
         m_x_defn(nullptr)
     {}

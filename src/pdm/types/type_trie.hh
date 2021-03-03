@@ -164,10 +164,15 @@ namespace pdm::types {
 
                 // fall-through, need to create a new edge with new destination node:
                 auto new_node = new GenericTypeTrie::Node{};
-                new_node->result = m_ctor(new_node);
+
+                // first initializing 'new_node':
                 new_node->parent = root_node;
                 new_node->parent_edge_index = root_node->edges.size();
-                new_node->hops_to_root = 1 + new_node->parent->hops_to_root;
+                new_node->hops_to_root = fields_start_index;
+                new_node->result = nullptr;
+
+                // then, initializing 'result' using fields in 'new_node':
+                new_node->result = m_ctor(new_node);
 
                 Edge new_edge{first_field, new_node};
                 root_node->edges.push_back(new_edge);

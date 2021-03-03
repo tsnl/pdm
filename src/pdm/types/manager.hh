@@ -78,9 +78,9 @@ namespace pdm::types {
         TypeVar* new_unknown_type_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
         ClassVar* new_unknown_class_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
 
-        TemplateVar_RetValue* new_value_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
-        TemplateVar_RetType*  new_type_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
-        TemplateVar_RetClass* new_class_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        // TemplateVar_RetValue* new_value_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        // TemplateVar_RetType*  new_type_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
+        // TemplateVar_RetClass* new_class_template_var(std::string&& name, ast::Node* opt_client_ast_node = nullptr);
 
       // get core TVs:
       public:

@@ -1,6 +1,6 @@
 mod optional {
 
-    Optional = enum {
+    Optional :: enum {
         Some DataType,
         None
     };

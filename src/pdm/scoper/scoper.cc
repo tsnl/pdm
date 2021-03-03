@@ -16,7 +16,7 @@
 
 // helpers:
 namespace pdm::scoper {
-    static ast::ModExp* original_stmt_of_module_defn(Defn const* module_defn);
+    static ast::ModExp* original_mod_exp_of_import(Defn const* module_defn);
 }
 
 namespace pdm::scoper {
@@ -151,8 +151,8 @@ namespace pdm::scoper {
                 std::string headline = "Import could not be resolved.";
                 std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
                 std::vector<feedback::Note*> notes{1}; {
-                    std::string desc = "at import statement here...";
-                    notes[0] = new feedback::SourceLocNote(std::move(desc), import_stmt->loc());
+                    std::string note_desc0 = "at import statement here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_stmt->loc());
                 }
                 feedback::post(new feedback::Letter(
                     feedback::Severity::Error,
@@ -169,8 +169,8 @@ namespace pdm::scoper {
                 std::string headline = "Import could not be resolved.";
                 std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
                 std::vector<feedback::Note*> notes{1}; {
-                    std::string desc = "at import statement here...";
-                    notes[0] = new feedback::SourceLocNote(std::move(desc), import_stmt->loc());
+                    std::string note_desc0 = "at import statement here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_stmt->loc());
                 }
                 feedback::post(new feedback::Letter(
                     feedback::Severity::Error,
@@ -191,8 +191,8 @@ namespace pdm::scoper {
                 std::string headline = "Module '" + import_stmt->import_name().cpp_str() + "' could not be found in the origin script.";
                 std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
                 std::vector<feedback::Note*> notes{1}; {
-                    std::string desc = "at import statement here...";
-                    notes[0] = new feedback::SourceLocNote(std::move(desc), import_stmt->loc());
+                    std::string note_desc0 = "at import statement here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_stmt->loc());
                 }
                 feedback::post(new feedback::Letter(
                     feedback::Severity::Error,
@@ -210,11 +210,11 @@ namespace pdm::scoper {
                 std::string headline = "Symbol '" + import_stmt->import_name().cpp_str() + "' is not importable.";
                 std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
                 std::vector<feedback::Note*> notes{2}; {
-                    std::string desc0 = "at import statement here...";
-                    notes[0] = new feedback::SourceLocNote(std::move(desc0), import_stmt->loc());
+                    std::string note_desc0 = "at import statement here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_stmt->loc());
                     
-                    std::string desc1 = "non-importable node here (expected module or imported module)...";
-                    notes[1] = new feedback::SourceLocNote(std::move(desc1), module_defn->defn_node()->loc());
+                    std::string note_desc1 = "non-importable node here (expected module or imported module)...";
+                    notes[1] = new feedback::SourceLocNote(std::move(note_desc1), module_defn->defn_node()->loc());
                 }
                 feedback::post(new feedback::Letter(
                     feedback::Severity::Error,
@@ -227,11 +227,12 @@ namespace pdm::scoper {
             }
             
             // setting the exported 'defn' and 'stmt' so the typer can equate both Vars:
-            ast::ModExp* original_mod_stmt = original_stmt_of_module_defn(module_defn);
-            import_stmt->x_origin_mod_exp(original_mod_stmt);
+            ast::ModExp* original_mod_exp = original_mod_exp_of_import(module_defn);
+            import_stmt->x_origin_mod_exp(original_mod_exp);
         }
 
         // Using
+        // todo: rename to 'extend' such that a module may extend another
         for (UsingLookupOrder using_order: m_using_orders) {
             ast::UsingStmt* using_stmt = using_order.using_stmt;
 
@@ -241,29 +242,49 @@ namespace pdm::scoper {
             // check that 'using' not applied to an 'extern' module, only 'importable' ones
             if (!module_defn_kind(module_defn->kind())) {
                 // todo: post feedback about using a non-module.
+                assert(0 && "NotImplemented: error reporting on 'using/extend'-ing a non-module");
                 ok = false;
                 continue;
             }
 
             // linking to an appropriate frame:
-            ast::ModExp* original_mod_exp = original_stmt_of_module_defn(module_defn);
+            ast::ModExp* original_mod_exp = original_mod_exp_of_import(module_defn);
             Frame* module_frame = original_mod_exp->x_module_frame();
             using_order.lookup_context->link(module_frame, using_stmt->suffix());
         }
 
-        //
-        //
-        //
-        // TODO: store caller ModAddress on called template module
-        //  - templates only instantiated in ModAddress,
-        //  - so lookup ModAddressLhs, get Rhs, and store args on LHS.
-        //  - with this info, can just use constraints to establish correctness in templates.
-        //    - at first, just map each lookup to a unique soln
-        //    - after solution, can collapse down
-        //    - later, can use each instantiation to compute types if value-dependent
-        //
-        //
-        //
+        // ModAddressLookupOrders:
+        // Each 'ModAddress' (i.e. a::b::c::, multiple 'residents' can share a module) requires a sequence of successive
+        // queries.
+        // - using grammar, recursive queries encoded as nested nodes
+        // - so, important to traverse in reverse order such that we go from last-visited (original parent) to
+        //   first-visited
+        // - provides module targets to type ModAddressId{TypeSpec|ClassSpec} using `x_defn_var`
+        // NOTE: ModAddress-X gets resolved in Typer module.
+        for (auto order_it = m_mod_address_orders.rbegin(); order_it != m_mod_address_orders.rend(); order_it++) {
+            ModAddressLookupOrder order = *order_it;
+            ast::ModAddress* mod_address = order.mod_address;
+            assert(mod_address->template_args().empty() && "NotImplemented: template calls in mod addresses");
+
+            Defn const* module_defn = nullptr;
+            if (mod_address->opt_parent_address()) {
+                // parent address provided: lookup in lhs module
+                auto lhs_origin_mod_exp = mod_address->opt_parent_address()->x_origin_mod_exp();
+                // if traversing in reverse order and visit-order correct, LHS' origin should already be known:
+                if (lhs_origin_mod_exp) {
+                    // looking up in LHS:
+                    module_defn = lhs_origin_mod_exp->x_module_frame()->last_context()->lookup(mod_address->rhs_name());
+                } else {
+                    assert(lhs_origin_mod_exp && "Iterating/appending 'ModAddressLookupOrder's incorrectly-- order error.");
+                }
+            } else {
+                // parent address not provided: lookup in the context where this address was used:
+                module_defn = order.lookup_context->lookup(mod_address->rhs_name());
+            }
+            ast::ModExp* origin_mod_exp = original_mod_exp_of_import(module_defn);
+            assert(origin_mod_exp && "error in Scoper::finish: could not find original_mod_exp_of_import");
+            mod_address->x_origin_mod_exp(origin_mod_exp);
+        }
 
         return ok;
     }
@@ -329,16 +350,21 @@ namespace pdm::scoper {
         Scoper::UsingLookupOrder order {using_stmt, top_frame()->last_context()};
         scoper()->m_using_orders.push_back(order);
     }
+    void ScoperVisitor::place_mod_address_lookup_order(ast::ModAddress* mod_address) {
+        assert(mod_address && "Cannot place lookup order with nullptr mod address.");
+        Scoper::ModAddressLookupOrder order {mod_address, top_frame()->last_context()};
+        scoper()->m_mod_address_orders.push_back(order);
+    }
 
     void ScoperVisitor::post_overlapping_defn_error(std::string defn_kind, Defn const& new_defn) {
         Context* tried_context = top_frame()->last_context();
-        post_overlapping_defn_error(defn_kind, new_defn, tried_context);
+        post_overlapping_defn_error(std::move(defn_kind), new_defn, tried_context);
     }
-    void ScoperVisitor::post_overlapping_defn_error(std::string defn_kind, Defn const& new_defn, Context* tried_context) const {
+    void ScoperVisitor::post_overlapping_defn_error(std::string defn_kind, Defn const& new_defn, Context* tried_context) {
         Defn const& old_defn = *tried_context->lookup_until(new_defn.name(), tried_context);
-        help_post_defn_failure(defn_kind, new_defn, old_defn);
+        help_post_defn_failure(std::move(defn_kind), new_defn, old_defn);
     }
-    void ScoperVisitor::help_post_defn_failure(std::string defn_kind, Defn const& new_defn, Defn const& old_defn) const {
+    void ScoperVisitor::help_post_defn_failure(std::string defn_kind, Defn const& new_defn, Defn const& old_defn) {
         std::string headline = "Symbol '" + std::string(new_defn.name().content()) + "' conflicts with an existing definition in the same context.";
         std::string more = (
             "Note that symbols in the same " + defn_kind + " cannot shadow."
@@ -357,21 +383,28 @@ namespace pdm::scoper {
         ));
     }
 
-    ast::ModExp* original_stmt_of_module_defn(Defn const* module_defn) {
-        assert(0 && "Broken: original_stmt_of_module_defn");
-//        ast::ModExp* original_mod_stmt = nullptr;
-//
-//        if (module_defn->kind() == DefnKind::Module) {
-//            original_mod_stmt = dynamic_cast<ast::ModStmt*>(module_defn->defn_node());
-//        }
-//        else if (module_defn->kind() == DefnKind::ImportModule) {
-//            ast::ImportStmt* imported_stmt = dynamic_cast<ast::ImportStmt*>(module_defn->defn_node());
-//            assert(imported_stmt != nullptr);
-//            // from dependency dispatcher:
-//            original_mod_stmt = imported_stmt->x_origin_mod_stmt();
-//        }
-//        assert(original_mod_stmt != nullptr);
-//        return original_mod_stmt;
+    ast::ModExp* original_mod_exp_of_import(Defn const* module_defn) {
+        ast::ModExp* original_mod_exp = nullptr;
+        if (module_defn->kind() == DefnKind::Module) {
+            auto node = dynamic_cast<ast::Node*>(module_defn->defn_node());
+
+            auto script_field = dynamic_cast<ast::Script::Field*>(node);
+            if (script_field) {
+                original_mod_exp = script_field->rhs_mod_exp();
+            }
+            auto mod_field = dynamic_cast<ast::ModExp::ModuleField*>(node);
+            if (mod_field) {
+                original_mod_exp = mod_field->rhs_mod_exp();
+            }
+        }
+        else if (module_defn->kind() == DefnKind::ImportModule) {
+            auto imported_stmt = dynamic_cast<ast::ImportStmt*>(module_defn->defn_node());
+            assert(imported_stmt != nullptr);
+            // from dependency dispatcher:
+            original_mod_exp = imported_stmt->x_origin_mod_exp();
+        }
+        assert(original_mod_exp && "Mod expression lookup failed");
+        return original_mod_exp;
     }
 
     //
@@ -458,7 +491,7 @@ namespace pdm::scoper {
 
             // adding the new defn:
             Defn new_defn {
-                DefnKind::Const,
+                DefnKind::Module,
                 node->name(),
                 node,
                 mod_val_var
@@ -486,7 +519,7 @@ namespace pdm::scoper {
             // single type
             std::string tv_prefix = "ValueModField:";
             std::string tv_name = tv_prefix + node->name().content();
-            type_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name));
+            type_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
 
             // defining the var in the current context:
             Defn new_defn {
@@ -597,11 +630,10 @@ namespace pdm::scoper {
         return true;
     }
     bool ScoperVisitor::on_visit_mod_address(ast::ModAddress* node, VisitOrder visit_order) {
-        // todo: add a deferred lookup order
-        assert(0 && "NotImplemented: on_visit_mod_address");
-        // if (visit_order == VisitOrder::Pre) {
-        // } else {
-        // }
+        if (visit_order == VisitOrder::Pre) {
+            place_mod_address_lookup_order(node);
+        }
+        return true;
     }
 
     // statements:
@@ -934,8 +966,6 @@ namespace pdm::scoper {
         return true;
     }
     bool ScoperVisitor::on_visit_ma_type_spec(ast::ModAddressIdTypeSpec* node, VisitOrder visit_order) {
-        // todo: lookup LHS module
-        assert(0 && "NotImplemented: module-prefix-ed class_spec (DotTypeSpec)");
         return true;
     }
 
@@ -943,9 +973,6 @@ namespace pdm::scoper {
     bool ScoperVisitor::on_visit_class_exp_class_spec(ast::ClassExpClassSpec* node, VisitOrder visit_order) {
         assert(0 && "NotImplemented: on_visit_class_exp_class_spec");
         return true;
-
-        // todo: store the candidate var somewhere accessible [on the class_exp]...
-        // todo: factor from on_vist_class_mod_field
     }
 
     // args:
