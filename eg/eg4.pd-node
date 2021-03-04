@@ -12,8 +12,10 @@
 # be possible to specify libraries via git/hg URI which the compiler will automatically
 # install and cache.
 
-mod basic from "basic.pd" as "pd-script";
-mod eg3 from "eg3.pd" as "pd-script";
+import {
+    basic from "./basic.pd-node";
+    eg3 from "./eg3.pd-node";
+};
 
 mod vehicle {
 
@@ -25,7 +27,7 @@ mod vehicle {
         (name, price)
     };
 
-}
+};
 
 mod level1 {
 
@@ -39,4 +41,4 @@ mod level1 {
         };
     };
 
-}
+};

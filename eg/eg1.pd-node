@@ -1,18 +1,15 @@
-# Changes:
-# - change top module syntax: --- mod <Name> ---
-# - use 'sub -< ... >-' for submodules.
-
-# imports link one module at a time. No fuzzy matching.
-import "https://github.com/tsnl/Fib.pd-package" as "git/pd-package";
+import {
+    * from "./eg8.pdp";
+}
 
 mod shapes {
 
     Circle = {
-        center Tuple[F32,F32],
-        radius Tuple[F32]
+        center Tuple[Float32, Float32],
+        radius Tuple[Float32]
     };
 
-    circumference = (circle Circle) -> F32 {
+    circumference = fn (circle Circle) Float32 {
         val tau = {
             val pi = 3.14159;
             2*pi
@@ -22,25 +19,25 @@ mod shapes {
 
 };
 
-mod pixels {
+mod pixels [Type ANY] {
 
-    Pixel [T Any] = {
-        r T,
-        g T,
-        b T
+    Pixel = {
+        r Type,
+        g Type,
+        b Type
     };
-    Image [T Any] = {
+    Image = {
         name String,
-        size Tuple[U32,U32],
-        data Buffer[Pixel[T]]
+        size Tuple[UInt32, UInt32],
+        data buffer[Pixel]::Buf
     };
 
-    add [T Any] = fn (p Pixel[T], q Pixel[T]) -> Pixel[T] {
+    add = fn (p Pixel, q Pixel) Pixel {
         r: p.r + q.r,
         g: p.g + q.g, 
         b: p.b + q.b
     };
-    multiply [T Any] = fn (p Pixel[T], s T) -> Pixel[T] {
+    multiply [T Any] = fn (p Pixel, s T) Pixel {
         r: s * p.r, 
         g: s * p.g, 
         b: s * p.b
@@ -50,7 +47,7 @@ mod pixels {
 
 mod image {
 
-    add [T Any] = fn (lt Image[T], rt Image[T]) -> Image[T] {
+    add [T Any] = fn (lt Image[T], rt Image[T]) Image[T] {
         assert lt.size == rt.size;
         {
             name: fmt("({lt.name}+{rt.name})"),
@@ -72,7 +69,7 @@ mod image {
         # ...
     };
 
-    new [K,V Any] = fn () -> Dict[K,V] {
+    new [K,V Any] = fn () Dict[K,V] {
         # ...
     };
 
@@ -99,7 +96,8 @@ mod events {
 
     Key = enum {
         Escape, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12,
-        Tilde, N1, N2, N3, N4, N5, N6, N7, N8, N9, N0, Minus, Equals, Backspace,    | Tab       | Q | W | E | R | T | Y | U | I | O | P | LeftSquareBracket | RightSquareBracket | Backslash
+        Tilde, N1, N2, N3, N4, N5, N6, N7, N8, N9, N0, Minus, Equals, Backspace,
+        Tab, Q, W, E, R, T, Y, U, I, O, P, LeftSquareBracket, RightSquareBracket, Backslash,
         CapsLock, A, S, D, F, G, H, J, K, L, Semicolon, SingleQuote, Return,
         LeftShift, Z, X, C, V, B, N, M, Comma, Period, ForwardSlash, RightShift,
         LeftCtrl, LeftSuper, LeftAlt, RightAlt, RightSuper, RightCtrl,
@@ -121,7 +119,7 @@ mod events {
 
 mod greeting {
 
-    new_cstr = () -> CString {
+    new_cstr = fn () CString {
         val len = 12;
         val buf = heap.alloc(Char)[len];
         set buf.(0) = 'h';
@@ -143,14 +141,14 @@ mod greeting {
 
 mod Primes {
 
-    driver = () -> Void {
+    driver = fn () Void {
         # val prime_limit = console.read_int[Int32]("Enter a number >2 until which to search for primes: ");
         val primes_until = count_primes_until(prime_limit);
         
     }
 
     # proposed feature: for loops:
-    count_primes_until = (primes_limit Int32) -> Int32 {
+    count_primes_until = fn (primes_limit Int32) Int32 {
         var prime_count = 1;
         
         for (i: 3 .. prime_limit step 2) {
@@ -175,7 +173,7 @@ mod Primes {
     };
 
     mod S2 [UInt UInts] {
-        filter = (image Image[UInt]) -> Image {
+        filter = fn (image Image[UInt]) Image {
             # ...
         };
 

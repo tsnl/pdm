@@ -1,0 +1,8 @@
+#ifndef INCLUDED__PDM__LLVM_EMITTER__LLVM_EMITTER_HH
+#define INCLUDED__PDM__LLVM_EMITTER__LLVM_EMITTER_HH
+
+namespace pdm::llvm_emitter {
+
+}
+
+#endif  // INCLUDED__PDM__LLVM_EMITTER__LLVM_EMITTER_HH
