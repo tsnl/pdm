@@ -11,7 +11,7 @@ namespace pdm::source {
 
       public:
         Source(std::string&& abs_path)
-        : m_abs_path(std::move(abs_path)) {}
+        :   m_abs_path(std::move(abs_path)) {}
 
       public:
         std::string const& abs_path() const {

@@ -1,10 +1,10 @@
-import {
-    fib_helper from "./fibx.pd";
-};
+# import {
+#     fib_helper from "./fibx.pd";
+# };
 
 mod fibonacci {
 
-    fib :: (x Int32) -> Int32 {
+    fib = fn (x Int32) -> Int32 {
         val result = (
             if (x == 0 or x == 1) then {
                 x
@@ -12,7 +12,7 @@ mod fibonacci {
                 fib(x-1) + fib(x-2)
             }
         );
-        discard fib_helper::register(x, result);
+        # discard fib_helper::register(x, result);
         result
     };
 

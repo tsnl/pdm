@@ -1,12 +1,12 @@
 mod greetings {
 
-    Vec3f :: {
+    Vec3f = {
         x Float32,
         y Float32,
         z Float32
     };
 
-    hello :: () -> Vec3f {
+    hello = fn () -> Vec3f {
         val hello = {
             x: 0.0,
             y: 0.0
@@ -14,12 +14,12 @@ mod greetings {
         hello
     };
 
-    howdy :: () -> Float32 {
+    howdy = fn () -> Float32 {
         val vector = hello();
         vector.x + vector.y + vector.z
     };
 
-    random :: (x Int32) -> Int32 {
+    random = fn (x Int32) -> Int32 {
         0
     };
 

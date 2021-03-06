@@ -1,25 +1,25 @@
 mod vec {
 
-    Vec2 :: {
+    Vec2 = {
         x Float32,
         y Float32
     };
 
-    mul :: (v Vec2, s Float32) -> Vec2 {
+    mul = fn (v Vec2, s Float32) -> Vec2 {
         x: v.x * s,
         y: v.y * s
     };
 
-    dot :: (v Vec2, w Vec2) -> Float32 {
+    dot = fn (v Vec2, w Vec2) -> Float32 {
         v.x * w.x + v.y * w.y
     };
-    length_sqr :: (v Vec2) -> Float32 {
+    length_sqr = fn (v Vec2) -> Float32 {
         dot(v, v)
     };
-    length :: (v Vec2) -> Float32 {
-        # TODO: math, sqrt ;-;
-        # Math.sqrt(length_sqr(v))
-    };
+    # length = fn (v Vec2) -> Float32 {
+    #     # TODO: math, sqrt ;-;
+    #     # Math.sqrt(length_sqr(v))
+    # };
 
     # returns a vector pointing in the same direction of unit length
     # * ensure the output is of unit length
@@ -27,12 +27,14 @@ mod vec {
     #   - raise this error if user forgets the 'if'
     #   - disable this error when 'if' is present
     #   * the compiler helps check your code
-    normalize :: (v Vec2) -> Vec2 {
-        val v_length = length(v);
-        if (v_length == 0) then {
+    normalize = fn (v Vec2) -> Vec2 {
+        val v_length_sqr = length_sqr(v);
+        if (v_length_sqr == 0.0) then {
             v
         } else {
-            mul(v, 1/v_length)
+            # almost normalization... don't have sqrt yet
+            # mul(v, 1/v_length)
+            mul(v, 1.0 / v_length_sqr)
         }
     };
 

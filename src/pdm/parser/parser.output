@@ -40,9 +40,9 @@ Grammar
    12 mod_field_sl: mod_field ";"
    13             | mod_field_sl mod_field ";"
 
-   14 mod_field: vid "::" long_exp
-   15          | tid "::" long_type_spec
-   16          | cid "::" class_exp_class_spec
+   14 mod_field: vid ":" long_exp
+   15          | tid ":" long_type_spec
+   16          | cid ":" class_exp_class_spec
    17          | "mod" vid mod_exp
 
    18 import_stmt: "mod" vid "from" stringl "as" stringl
@@ -337,10 +337,10 @@ Terminals, with rules where they appear
     "\"dq-string-literal\"" <TokenInfo> (294) 34 67 69
     "'sq-string-literal'" <TokenInfo> (295) 33 66 68
     "." (296) 84 87 88
-    ":" (297) 163
+    ":" (297) 14 15 16 163
     "," (298) 42 43 52 124 125 140 145 151 156 178 180 182 184
     ";" (299) 3 6 7 12 13 44 45 75 76
-    "::" (300) 14 15 16 35 36 37 38 85 86
+    "::" (300) 35 36 37 38 85 86
     "(" (301) 50 51 52 53 82 83 162 174 175
     ")" (302) 50 51 52 53 82 83 162 174 175
     "[" (303) 36 38 137 176
@@ -975,23 +975,23 @@ State 34
 
 State 35
 
-   15 mod_field: tid • "::" long_type_spec
+   15 mod_field: tid • ":" long_type_spec
 
-    "::"  shift, and go to state 62
+    ":"  shift, and go to state 62
 
 
 State 36
 
-   14 mod_field: vid • "::" long_exp
+   14 mod_field: vid • ":" long_exp
 
-    "::"  shift, and go to state 63
+    ":"  shift, and go to state 63
 
 
 State 37
 
-   16 mod_field: cid • "::" class_exp_class_spec
+   16 mod_field: cid • ":" class_exp_class_spec
 
-    "::"  shift, and go to state 64
+    ":"  shift, and go to state 64
 
 
 State 38
@@ -1225,7 +1225,7 @@ State 61
 
 State 62
 
-   15 mod_field: tid "::" • long_type_spec
+   15 mod_field: tid ":" • long_type_spec
 
     "val_id"  shift, and go to state 9
     "TypeId"  shift, and go to state 25
@@ -1250,7 +1250,7 @@ State 62
 
 State 63
 
-   14 mod_field: vid "::" • long_exp
+   14 mod_field: vid ":" • long_exp
 
     "val_id"                 shift, and go to state 9
     "TypeId"                 shift, and go to state 25
@@ -1309,7 +1309,7 @@ State 63
 
 State 64
 
-   16 mod_field: cid "::" • class_exp_class_spec
+   16 mod_field: cid ":" • class_exp_class_spec
 
     "cls"  shift, and go to state 40
 
@@ -1543,7 +1543,7 @@ State 83
 
 State 84
 
-   15 mod_field: tid "::" long_type_spec •
+   15 mod_field: tid ":" long_type_spec •
 
     $default  reduce using rule 15 (mod_field)
 
@@ -1852,7 +1852,7 @@ State 105
 
 State 106
 
-   14 mod_field: vid "::" long_exp •
+   14 mod_field: vid ":" long_exp •
 
     $default  reduce using rule 14 (mod_field)
 
@@ -2137,7 +2137,7 @@ State 132
 
 State 133
 
-   16 mod_field: cid "::" class_exp_class_spec •
+   16 mod_field: cid ":" class_exp_class_spec •
 
     $default  reduce using rule 16 (mod_field)
 

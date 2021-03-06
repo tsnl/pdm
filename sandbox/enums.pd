@@ -1,11 +1,11 @@
 mod test_module {
 
-    OptionalInt32 :: enum {
+    OptionalInt32 = enum {
         Some Int32,
         None
     };
 
-    divide :: (p Int32, q Int32) -> OptionalInt32 {
+    divide = fn (p Int32, q Int32) -> OptionalInt32 {
         if (q == 0) then {
             OptionalInt32::None
         } else {

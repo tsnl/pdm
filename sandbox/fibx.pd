@@ -1,6 +1,6 @@
 mod fib_helper {
 
-    register :: (x Int32, y Int32) -> Void {
+    register = fn (x Int32, y Int32) -> Void {
         # print, or something?
     };
 

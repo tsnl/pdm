@@ -16,3 +16,6 @@
 [submodule "dev/vcpkg"]
 	path = dev/vcpkg
 	url = https://github.com/Microsoft/vcpkg
+[submodule "dep/json"]
+	path = dep/json
+	url = https://github.com/nlohmann/json

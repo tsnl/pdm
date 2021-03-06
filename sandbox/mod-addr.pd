@@ -1,10 +1,10 @@
 mod mumbo {
-    name :: "Mumbo";
+    name = "Mumbo";
 };
 mod jumbo {
-    name :: "Jumbo";
+    name = "Jumbo";
 };
 
 mod entry {
-    names :: (mumbo::name, jumbo::name, 42);
+    names = (mumbo::name, jumbo::name, 42);
 };
