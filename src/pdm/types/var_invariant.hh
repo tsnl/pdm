@@ -109,9 +109,11 @@ namespace pdm::types {
     };
 
     inline SubtypeOfInvariant::SubtypeOfInvariant(Relation* parent_relation, TypeVar* supertype_tv)
-    : KindIndependentVarInvariant(parent_relation, VarArchetype::Type, "SubtypeOfInvariant"),
-      m_supertype_tv(supertype_tv)
-    {}
+    :   KindIndependentVarInvariant(parent_relation, VarArchetype::Type, "SubtypeOfInvariant"),
+        m_supertype_tv(supertype_tv)
+    {
+        assert(supertype_tv && "Cannot subtype a nullptr");
+    }
     inline TypeVar* SubtypeOfInvariant::supertype_tv() const {
         return m_supertype_tv;
     }

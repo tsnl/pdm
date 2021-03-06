@@ -29,7 +29,7 @@ namespace pdm::parser {
         Lexer(): m_reader() {}
 
       public:
-        bool setup(source::Source* source);
+        bool setup(source::ISource* source);
 
       public:
         TokenKind lex_one_token(TokenInfo* out_info, source::Loc* out_loc);

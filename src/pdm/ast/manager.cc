@@ -26,7 +26,7 @@ namespace pdm::ast {
     }
 
     Script* Manager::new_script(
-        source::Source* source, source::Loc loc,
+        source::ISource* source, source::Loc loc,
         std::vector<HeaderStmt*>&& head_stmts, std::vector<Script::Field*>&& body_mod_stmts
     ) {
         return emplace<Script>(source, loc, std::move(head_stmts), std::move(body_mod_stmts));

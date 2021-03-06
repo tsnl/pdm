@@ -9,7 +9,7 @@
 #include "pdm/core/intern.hh"
 #include "pdm/core/config.hh"
 
-#include "pdm/ast/script/script.hh"
+#include "pdm/ast/source-node/script.hh"
 
 #include "pdm/feedback/feedback.hh"
 #include "pdm/feedback/letter.hh"
@@ -25,16 +25,36 @@
 #include "pdm/types/manager.hh"
 #include "pdm/typer/typer.hh"
 
+#include "pdm/source/script_source.hh"
+#include "pdm/source/package_source.hh"
+
+
 namespace pdm {
 
-    Compiler::Compiler(std::string&& cwd, std::string&& entry_point_path, u64 print_flags)
+    Compiler::Compiler(std::string&& cwd, std::string const& entry_point_path, u64 print_flags)
     :   m_cwd(std::move(cwd)),
-        m_entry_point_path(abspath(std::move(entry_point_path))),
+        m_entry_point_path(abspath(entry_point_path)),
         m_cached_imports(),
         m_all_scripts(),
         m_types_mgr(this),
         m_ast_mgr(this),
-        m_print_flags(print_flags)
+        m_print_flags(print_flags),
+        m_void_tv_client_astn(nullptr),
+        m_string_tv_client_astn(nullptr),
+        m_i8_tv_client_astn(nullptr),
+        m_i16_tv_client_astn(nullptr),
+        m_i32_tv_client_astn(nullptr),
+        m_i64_tv_client_astn(nullptr),
+        m_i128_tv_client_astn(nullptr),
+        m_u1_tv_client_astn(nullptr),
+        m_u8_tv_client_astn(nullptr),
+        m_u16_tv_client_astn(nullptr),
+        m_u32_tv_client_astn(nullptr),
+        m_u64_tv_client_astn(nullptr),
+        m_u128_tv_client_astn(nullptr),
+        m_f16_tv_client_astn(nullptr),
+        m_f32_tv_client_astn(nullptr),
+        m_f64_tv_client_astn(nullptr)
     {
         m_all_scripts.reserve(8);
     }
@@ -72,14 +92,14 @@ namespace pdm {
     ast::Script* Compiler::help_import_script_1(std::string const& from_path, std::string const& type) {
         aux::Key key {abspath(from_path), type};
 
-        aux::ImportMap::iterator script_it = m_cached_imports.find(key);
+        auto script_it = m_cached_imports.find(key);
         if (script_it != m_cached_imports.end()) {
             return script_it->second;
         }
  
         if (type == dependency_dispatcher::PD_SCRIPT_IMPORT_TYPE_STRING) {
             std::string abs_from_path = key.import_from_path.native();
-            source::Source* source = new source::Source(std::move(abs_from_path));
+            source::ISource* source = new source::ScriptSource(std::move(abs_from_path));
             ast::Script* script = parser::parse_script(&m_ast_mgr, source);
             if (script == nullptr) {
                 return nullptr;
@@ -159,9 +179,14 @@ namespace pdm {
             all_scripts_ok = all_scripts_ok && script_ok;
         }
         if (!all_scripts_ok) {
+            feedback::post(new feedback::Letter(
+                feedback::Severity::FatalError,
+                "Typer Failed!",
+                "The compiler could not construct a meaningful type system from the given input, "
+                "so either vital type/class specifiers are missing or type/class specifiers are incongruent."
+            ));
             return false;
         }
-
         return m_types_mgr.typecheck();
     }
     bool Compiler::pass3_emit_all() {

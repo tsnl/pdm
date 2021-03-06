@@ -3,21 +3,36 @@
 
 #include <string>
 
+#include "source_kind.hh"
+
 namespace pdm::source {
 
-    class Source {
+    class ISource {
       private:
         std::string m_abs_path;
+        SourceKind m_source_kind;
+
+      protected:
+        explicit ISource(std::string&& abs_path, SourceKind source_kind);
 
       public:
-        Source(std::string&& abs_path)
-        :   m_abs_path(std::move(abs_path)) {}
-
-      public:
-        std::string const& abs_path() const {
-            return m_abs_path;
-        }
+        [[nodiscard]] std::string const& abs_path() const;
+        [[nodiscard]] SourceKind source_kind() const;
     };
+
+    inline ISource::ISource(std::string&& abs_path, SourceKind source_kind)
+    :   m_abs_path(std::move(abs_path)),
+        m_source_kind(source_kind)
+    {}
+
+    inline std::string const& ISource::abs_path() const {
+        return m_abs_path;
+    }
+
+    inline SourceKind ISource::source_kind() const {
+        return m_source_kind;
+    }
+
 
 }   // namespace pdm::source
 

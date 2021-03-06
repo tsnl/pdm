@@ -212,8 +212,6 @@ namespace pdm::types {
 
         // Checking stabilized kinds:
         {
-            bool sp1_pass = true;
-
             // todo: use a deferred error reporting system, compare failed vars against Relations
             //       and report failed Relations.
             //       for now, just printing errors per-var-- easier to debug.
@@ -227,7 +225,7 @@ namespace pdm::types {
             }
             if (!finished_ok) {
                 std::string headline = "Typing Error";
-                std::string desc = "(Var::finish did not return true for all Vars)";
+                std::string desc = "Var::finish did not return true for all Vars";
                 std::vector<feedback::Note*> notes;
                 feedback::post(new feedback::Letter(
                     feedback::Severity::FatalError,

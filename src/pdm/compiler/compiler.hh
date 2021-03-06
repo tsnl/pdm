@@ -9,7 +9,7 @@
 
 #include "pdm/core/intern.hh"
 #include "pdm/ast/manager.hh"
-#include "pdm/ast/script/script.hh"
+#include "pdm/ast/source-node/script.hh"
 
 #include "pdm/types/manager.hh"
 #include "pdm/scoper/scoper.hh"
@@ -87,7 +87,7 @@ namespace pdm {
         ast::BuiltinStmt* m_f64_tv_client_astn;
 
       public:
-        Compiler(std::string&& cwd, std::string&& entry_point_path, u64 print_flags = 0);
+        Compiler(std::string&& cwd, std::string const& entry_point_path, u64 print_flags = 0);
         
       public:
         ast::Script* import(std::string const& from_path, std::string const& type, std::string const& reason);

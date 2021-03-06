@@ -25,7 +25,7 @@
 #include "pdm/ast/pattern/tpattern.hh"
 #include "pdm/ast/pattern/vpattern.hh"
 
-#include "pdm/ast/script/script.hh"
+#include "pdm/ast/source-node/script.hh"
 
 #include "pdm/ast/stmt/stmt.hh"
 #include "pdm/ast/stmt/const.hh"
@@ -50,10 +50,10 @@
 
 #include "pdm/ast/class_spec/class_exp.hh"
 #include "pdm/ast/class_spec/id.hh"
-#include "pdm/ast/class_spec/dot.hh"
+#include "pdm/ast/class_spec/mai.hh"
 
 #include "pdm/ast/type_spec/type_spec.hh"
-#include "pdm/ast/type_spec/dot.hh"
+#include "pdm/ast/type_spec/mai.hh"
 #include "pdm/ast/type_spec/id.hh"
 #include "pdm/ast/type_spec/struct.hh"
 #include "pdm/ast/type_spec/enum.hh"

@@ -327,7 +327,12 @@ namespace pdm::printer {
             }
             case ast::Kind::StructTypeSpec:
             {
-                print_struct_type_spec(dynamic_cast<ast::StructTypeSpec *>(node));
+                print_struct_type_spec(dynamic_cast<ast::StructTypeSpec*>(node));
+                break;
+            }
+            case ast::Kind::EnumTypeSpec:
+            {
+                print_enum_type_spec(dynamic_cast<ast::EnumTypeSpec*>(node));
                 break;
             }
 
@@ -408,11 +413,15 @@ namespace pdm::printer {
         }
         print_c_str("{");
         print_newline_indent();
-        {   
-            for (auto field: node->fields()) {
+        {
+            size_t fields_count = node->fields().size();
+            for (size_t field_index = 0; field_index < fields_count; field_index++) {
+                ast::ModExp::Field* field = node->fields()[field_index];
                 print_node(field);
                 print_c_str(";");
-                print_newline();
+                if (1+field_index < fields_count) {
+                    print_newline();
+                }
             }
         }
         print_newline_exdent();
@@ -426,17 +435,17 @@ namespace pdm::printer {
     }
     void Printer::print_value_mod_field(ast::ModExp::ValueField* node) {
         print_intstr(node->name());
-        print_c_str(" :: ");
+        print_c_str(" = ");
         print_node(node->rhs_exp());
     }
     void Printer::print_type_mod_field(ast::ModExp::TypeField* node) {
         print_intstr(node->name());
-        print_c_str(" :: ");
+        print_c_str(" = ");
         print_node(node->rhs_type_spec());
     }
     void Printer::print_class_mod_field(ast::ModExp::ClassField* node) {
         print_intstr(node->name());
-        print_c_str(" :: ");
+        print_c_str(" = ");
         print_node(node->rhs_class_spec());
     }
     void Printer::print_mod_address(ast::ModAddress* mod_address) {
@@ -975,15 +984,37 @@ namespace pdm::printer {
         print_u32_char('{');
         print_newline_indent();
         {
-            int field_count = node->fields().size();
-            for (int index = 0; index < field_count; index++) {
+            size_t field_count = node->fields().size();
+            for (size_t index = 0; index < field_count; index++) {
                 ast::StructTypeSpec::Field* field = node->fields()[index];
                 print_intstr(field->lhs_name());
                 print_u32_char(' ');
                 print_node(field->rhs_typespec());
-                if (index+1 != field_count) {
+                if (index+1 < field_count) {
                     print_u32_char(',');
                     print_u32_char(' ');
+                }
+            }
+        }
+        print_newline_exdent();
+        print_u32_char('}');
+    }
+    void Printer::print_enum_type_spec(ast::EnumTypeSpec *node) {
+        print_c_str("enum ");
+        print_u32_char('{');
+        print_newline_indent();
+        {
+            size_t field_count = node->fields().size();
+            for (size_t index = 0; index < field_count; index++) {
+                ast::EnumTypeSpec::Field* field = node->fields()[index];
+                print_intstr(field->name());
+                if (field->opt_type_spec()) {
+                    print_u32_char(' ');
+                    print_node(field->opt_type_spec());
+                }
+                if (index+1 < field_count) {
+                    print_u32_char(',');
+                    print_newline();
                 }
             }
         }

@@ -19,11 +19,11 @@ import {
 
 mod vehicle {
 
-    Car = {
+    Car: {
         name Text,
         price Int32
     };
-    new = (name Text, price Int32) -> Car {
+    new: (name Text, price Int32) -> Car {
         (name, price)
     };
 
@@ -33,9 +33,9 @@ mod level1 {
 
     mod damage {
 
-        StringDict = dict[string,Int32]
+        StringDict: dict[string,Int32]::Dict;
 
-        wearAndTear = (inout car eg3::Car, delta_sec Float32) -> Void {
+        wearAndTear: (inout car eg3::Car, delta_sec Float32) -> Void {
             val fancyScoreDamagePerSec = 1.2;
             set car.fancyScore = car.fancyScore - convert[UInt32]::from(fancyScoreDamagePerSec * delta_sec);
         };

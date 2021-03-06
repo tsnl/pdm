@@ -4,12 +4,12 @@ import {
 
 mod shapes {
 
-    Circle = {
+    Circle: {
         center Tuple[Float32, Float32],
         radius Tuple[Float32]
     };
 
-    circumference = fn (circle Circle) Float32 {
+    circumference: fn (circle Circle) Float32 {
         val tau = {
             val pi = 3.14159;
             2*pi
@@ -21,23 +21,18 @@ mod shapes {
 
 mod pixels [Type ANY] {
 
-    Pixel = {
+    Pixel: {
         r Type,
         g Type,
         b Type
     };
-    Image = {
-        name String,
-        size Tuple[UInt32, UInt32],
-        data buffer[Pixel]::Buf
-    };
 
-    add = fn (p Pixel, q Pixel) Pixel {
+    add: (p Pixel, q Pixel) -> Pixel {
         r: p.r + q.r,
         g: p.g + q.g, 
         b: p.b + q.b
     };
-    multiply [T Any] = fn (p Pixel, s T) Pixel {
+    multiply[T Any]: (p Pixel, s T) -> Pixel {
         r: s * p.r, 
         g: s * p.g, 
         b: s * p.b
@@ -45,9 +40,15 @@ mod pixels [Type ANY] {
 
 };
 
-mod image {
+mod image [T Any] {
 
-    add [T Any] = fn (lt Image[T], rt Image[T]) Image[T] {
+    Image: {
+        name String,
+        size {UInt32, UInt32},
+        data buffer[Pixel]::Buf
+    };
+
+    add: (lt Image, rt Image) -> Image {
         assert lt.size == rt.size;
         {
             name: fmt("({lt.name}+{rt.name})"),
@@ -55,7 +56,7 @@ mod image {
             data: map(addPixel, zip(lt.data,rt.data))
         }
     };
-    multiply [T Any] = fn (i Image[T], x U8) -> Image[T] {
+    multiply: (i Image[T], x U8) -> Image[T] {
         name: fmt("({x}*{i.name})"),
         size: i.size,
         data: map(i.data, lambda (p Pixel[T]) {multiply(pixel,x)})
@@ -63,13 +64,13 @@ mod image {
 
  };
  
- mod dict {
+ mod dict [Key ANY, Val ANY] {
 
-    Dict [K,V Any] = {
+    Dict: {
         # ...
     };
 
-    new [K,V Any] = fn () Dict[K,V] {
+    new: () -> Dict {
         # ...
     };
 
@@ -119,7 +120,7 @@ mod events {
 
 mod greeting {
 
-    new_cstr = fn () CString {
+    new_cstr = () -> CString {
         val len = 12;
         val buf = heap.alloc(Char)[len];
         set buf.(0) = 'h';
@@ -141,14 +142,14 @@ mod greeting {
 
 mod Primes {
 
-    driver = fn () Void {
+    driver = () -> Void {
         # val prime_limit = console.read_int[Int32]("Enter a number >2 until which to search for primes: ");
         val primes_until = count_primes_until(prime_limit);
         
     }
 
     # proposed feature: for loops:
-    count_primes_until = fn (primes_limit Int32) Int32 {
+    count_primes_until = (primes_limit Int32) -> Int32 {
         var prime_count = 1;
         
         for (i: 3 .. prime_limit step 2) {
@@ -173,7 +174,7 @@ mod Primes {
     };
 
     mod S2 [UInt UInts] {
-        filter = fn (image Image[UInt]) Image {
+        filter = (image Image[UInt]) -> Image {
             # ...
         };
 

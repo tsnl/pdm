@@ -4,17 +4,17 @@
 
 mod arrays  [ElemType ANY, n Int32] {
 
-    Array = {
+    Array: {
         impl [ElemType * n]
     };
 
     mod map [ImgType ANY] {
 
-        FnType = ElemType -> ImgType;
+        FnType: ElemType -> ImgType;
 
-        ImgArray = Arrays[ImgType,n]::Array;
+        ImgArray: Arrays[ImgType,n]::Array;
 
-        map = (f FnType, a Array) -> ImgArray {
+        map: (f FnType, a Array) -> ImgArray {
             # ...
         };
 

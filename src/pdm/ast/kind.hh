@@ -44,7 +44,7 @@ namespace pdm::ast {
         TupleTypeSpec, StructTypeSpec, EnumTypeSpec,
 
         // class specifiers:
-        ModAddressIdClassSpec, ClassExpClassSpec, DotClassSpec,
+        IdClassSpec, ClassExpClassSpec, ModAddressIdClassSpec,
 
         // args:
         TArg, VArg,

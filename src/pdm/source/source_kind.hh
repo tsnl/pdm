@@ -1,8 +1,12 @@
-//
-// Created by Nikhil Tony Idiculla on 3/6/21.
-//
+#ifndef INCLUDED__PDM__SOURCE__SOURCE_KIND_HH
+#define INCLUDED__PDM__SOURCE__SOURCE_KIND_HH
 
-#ifndef PANDEMONIUM_SOURCE_KIND_HH
-#define PANDEMONIUM_SOURCE_KIND_HH
+namespace pdm::source {
+    enum class SourceKind {
+        Script,
+        Package,
+        META_Count
+    };
+}
 
-#endif //PANDEMONIUM_SOURCE_KIND_HH
+#endif  // INCLUDED__PDM__SOURCE__SOURCE_KIND_HH

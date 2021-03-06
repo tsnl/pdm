@@ -1,8 +1,10 @@
 #include "loc.hh"
 
+#include "i_source.hh"
+
 namespace pdm::source {
 
-    Loc Loc::none {NULL, -1, -1, -1, -1};
+    Loc Loc::none {nullptr, -1, -1, -1, -1};
 
     void Loc::print(std::ostream& out) const {
         if (this->source()) {

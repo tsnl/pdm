@@ -3,9 +3,9 @@
 
 #include <vector>
 
+#include "./i_source_node.hh"
 #include "pdm/core/intern.hh"
-#include "pdm/ast/node.hh"
-#include "pdm/source/source.hh"
+#include "pdm/source/i_source.hh"
 #include "pdm/source/loc.hh"
 
 namespace pdm::ast {
@@ -22,7 +22,7 @@ namespace pdm::types {
 
 namespace pdm::ast {
 
-    class Script: public Node {
+    class Script: public ISourceNode {
         friend Manager;
 
       public:
@@ -45,21 +45,19 @@ namespace pdm::ast {
         };
 
       private:
-        source::Source* m_source;
         std::vector<HeaderStmt*> m_header_stmts;
         std::vector<Script::Field*> m_body_fields;
         scoper::Frame* m_x_script_frame;
 
       protected:
         Script(
-            source::Source* source,
+            source::ISource* source,
             source::Loc loc,
             std::vector<HeaderStmt*>&& head_stmts,
             std::vector<Script::Field*>&& body_fields
         );
 
       public:
-        [[nodiscard]] source::Source* source() const;
         [[nodiscard]] std::vector<HeaderStmt*> const& header_stmts() const;
         [[nodiscard]] std::vector<Script::Field*> const& body_fields() const;
 
@@ -100,10 +98,6 @@ namespace pdm::ast {
 
     inline std::vector<Script::Field*> const& Script::body_fields() const {
         return m_body_fields;
-    }
-
-    inline source::Source* Script::source() const {
-        return m_source;
     }
 
     inline scoper::Frame* Script::x_script_frame() const {

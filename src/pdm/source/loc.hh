@@ -7,14 +7,14 @@
 #include "pos.hh"
 
 namespace pdm::source {
-    class Source;
+    class ISource;
 }
 
 namespace pdm::source {
 
     class Loc {
       private:
-        Source* m_source;
+        ISource* m_source;
       
       // BISON interface:
       // https://www.gnu.org/software/bison/manual/html_node/User-Defined-Location-Type.html
@@ -33,13 +33,13 @@ namespace pdm::source {
         explicit Loc(Pos const& only_pos)
         : Loc(only_pos, only_pos) {}
     
-        Loc(Source* source, int first_line, int first_column, int last_line, int last_column)
+        Loc(ISource* source, int first_line, int first_column, int last_line, int last_column)
         : Loc({first_line, first_column}, {last_line, last_column}) {
             this->source(source);
         }
 
       public:
-        Source* source() const {
+        ISource* source() const {
             return m_source;
         }
         int first_line() const {
@@ -56,7 +56,7 @@ namespace pdm::source {
         }
 
       public:
-        void source(Source* source) { 
+        void source(ISource* source) {
             m_source = source;
         }
         void first_line(int first_line) { 

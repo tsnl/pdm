@@ -39,70 +39,88 @@ namespace pdm::parser::aux {
     static int const MAX_INFO_LEN = MAX_ID_LEN + 1;
 
     static TokenKind LexOneToken(Reader* reader, TokenInfo* out_info, source::Loc* out_loc);
-    
-    struct Keywords {
-        intern::String using_intstr;
-        intern::String cls_intstr;
-        intern::String import_intstr;
-        intern::String export_intstr;
-        intern::String if_intstr;
-        intern::String then_intstr;
-        intern::String else_intstr;
-        intern::String operator_intstr;
-        intern::String match_intstr;
-        intern::String with_intstr;
-        intern::String return_intstr;
-        intern::String discard_intstr;
-        intern::String fn_intstr;
-        intern::String lambda_intstr;
-        intern::String val_intstr;
-        intern::String var_intstr;
-        intern::String const_intstr;
-        intern::String and_intstr;
-        intern::String xor_intstr;
-        intern::String or_intstr;
-        intern::String not_intstr;
-        intern::String set_intstr;
-        intern::String type_intstr;
-        intern::String mod_intstr;
-        intern::String from_intstr;
-        intern::String out_intstr;
-        intern::String inout_intstr;
 
-        Keywords() {
+    static int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength);
+
+    struct Keywords {
+        intern::String using_int_str;
+        intern::String cls_int_str;
+        intern::String import_int_str;
+        intern::String if_int_str;
+        intern::String then_int_str;
+        intern::String else_int_str;
+        intern::String match_int_str;
+        intern::String with_int_str;
+        intern::String discard_int_str;
+        intern::String fn_int_str;
+        intern::String val_int_str;
+        intern::String var_int_str;
+        intern::String const_int_str;
+        intern::String and_int_str;
+        intern::String xor_int_str;
+        intern::String or_int_str;
+        intern::String not_int_str;
+        intern::String set_int_str;
+        intern::String mod_int_str;
+        intern::String from_int_str;
+        intern::String out_int_str;
+        intern::String inout_int_str;
+        intern::String enum_int_str;
+
+        Keywords()
+        :   using_int_str{},
+            cls_int_str{},
+            import_int_str{},
+            if_int_str{},
+            then_int_str{},
+            else_int_str{},
+            match_int_str{},
+            with_int_str{},
+            discard_int_str{},
+            fn_int_str{},
+            val_int_str{},
+            var_int_str{},
+            const_int_str{},
+            and_int_str{},
+            xor_int_str{},
+            or_int_str{},
+            not_int_str{},
+            set_int_str{},
+            mod_int_str{},
+            from_int_str{},
+            out_int_str{},
+            inout_int_str{},
+            enum_int_str{}
+        {
             intern::String::ensure_init();
 
-            using_intstr = "using";
-            cls_intstr = "cls";
-            import_intstr = "import";
-            export_intstr = "export";
-            if_intstr = "if";
-            then_intstr = "then";
-            else_intstr = "else";
-            operator_intstr = "operator";
-            match_intstr = "match";
-            with_intstr = "with";
-            return_intstr = "return";
-            discard_intstr = "discard";
-            fn_intstr = "fn";
-            lambda_intstr = "lambda";
-            val_intstr = "val";
-            var_intstr = "var";
-            const_intstr = "const";
-            and_intstr = "and";
-            xor_intstr = "xor";
-            or_intstr = "or";
-            not_intstr = "not";
-            set_intstr = "set";
-            type_intstr = "type";
-            mod_intstr = "mod";
-            from_intstr = "from";
-            out_intstr = "out";
-            inout_intstr = "inout";
+            using_int_str = "using";
+            cls_int_str = "cls";
+            import_int_str = "import";
+            if_int_str = "if";
+            then_int_str = "then";
+            else_int_str = "else";
+            match_int_str = "match";
+            with_int_str = "with";
+            discard_int_str = "discard";
+            fn_int_str = "fn";
+            val_int_str = "val";
+            var_int_str = "var";
+            const_int_str = "const";
+            and_int_str = "and";
+            xor_int_str = "xor";
+            or_int_str = "or";
+            not_int_str = "not";
+            set_int_str = "set";
+            mod_int_str = "mod";
+            from_int_str = "from";
+            out_int_str = "out";
+            inout_int_str = "inout";
+            enum_int_str = "enum";
         }
     };
 
-    static Keywords keywords;
+    static Keywords keywords{};
 
 }
 
@@ -416,14 +434,14 @@ namespace pdm::parser::aux {
         return Tk::NONE;
     }
     TokenKind lexOneNumber(Reader* source, TokenInfo* infoP) {
-        TokenInfo prefixTokenInfo;
+        TokenInfo prefixTokenInfo{};
         TokenKind prefixTokenKind = lexOneIntChunk(source, &prefixTokenInfo, 0);
         
         TokenKind outTokenKind;
-        TokenInfo outTokenInfo;
+        TokenInfo outTokenInfo{};
         if (prefixTokenKind == Tk::DINT_LIT && source->read_head() == '.' && source->advance_head()) {
             // float
-            TokenInfo suffixTokenInfo;
+            TokenInfo suffixTokenInfo{};
             lexOneIntChunk(source, &suffixTokenInfo, true);
 
             // converting prefix and suffix ints into a double value:
@@ -520,7 +538,7 @@ namespace pdm::parser::aux {
         char charBuf[MAX_ID_LEN+1];
         for (index = 0; index < MAX_ID_LEN; index++) {
             // reading the next character:
-            char ch = source->read_head();
+            char ch = static_cast<char>(source->read_head());
             
             // adding the character to the charBuf:
             if (isIdChar(ch) && source->advance_head()) {
@@ -531,7 +549,7 @@ namespace pdm::parser::aux {
         }
         int length = index;
         charBuf[length] = '\0';
-        if (isIdChar(source->read_head()) && length == MAX_ID_LEN) {
+        if (isIdChar(static_cast<char>(source->read_head())) && length == MAX_ID_LEN) {
             // ID too long, so ID char after end of ID, so error.
             std::vector<feedback::Note*> notes(1); {
                 std::string desc0 = "Starting here...";
@@ -555,28 +573,29 @@ namespace pdm::parser::aux {
 
         // Looking up charBuf as a keyword or symbol:
         intern::String intstr = charBuf;
-        if (intstr == keywords.using_intstr) { return Tk::KW_USING; }
-        if (intstr == keywords.cls_intstr) { return Tk::KW_CLS; }
-        if (intstr == keywords.import_intstr) { return Tk::KW_IMPORT; }
-        if (intstr == keywords.if_intstr) { return Tk::KW_IF; }
-        if (intstr == keywords.then_intstr) { return Tk::KW_THEN; }
-        if (intstr == keywords.else_intstr) { return Tk::KW_ELSE; }
-        if (intstr == keywords.match_intstr) { return Tk::KW_MATCH; }
-        if (intstr == keywords.with_intstr) { return Tk::KW_WITH; }
-        if (intstr == keywords.lambda_intstr) { return Tk::KW_LAMBDA; }
-        if (intstr == keywords.const_intstr) { return Tk::KW_CONST; }
-        if (intstr == keywords.val_intstr) { return Tk::KW_VAL; }
-        if (intstr == keywords.var_intstr) { return Tk::KW_VAR; }
-        if (intstr == keywords.and_intstr) { return Tk::KW_AND; }
-        if (intstr == keywords.xor_intstr) { return Tk::KW_XOR; }
-        if (intstr == keywords.or_intstr) { return Tk::KW_OR; }
-        if (intstr == keywords.not_intstr) { return Tk::KW_NOT; }
-        if (intstr == keywords.set_intstr) { return Tk::KW_SET; }
-        if (intstr == keywords.mod_intstr) { return Tk::KW_MOD; }
-        if (intstr == keywords.from_intstr) { return Tk::KW_FROM; }
-        if (intstr == keywords.out_intstr) { return Tk::KW_OUT; }
-        if (intstr == keywords.inout_intstr) { return Tk::KW_INOUT; }
-        if (intstr == keywords.discard_intstr) { return Tk::KW_DISCARD; }
+        if (intstr == keywords.using_int_str) { return Tk::KW_USING; }
+        if (intstr == keywords.cls_int_str) { return Tk::KW_CLS; }
+        if (intstr == keywords.import_int_str) { return Tk::KW_IMPORT; }
+        if (intstr == keywords.if_int_str) { return Tk::KW_IF; }
+        if (intstr == keywords.then_int_str) { return Tk::KW_THEN; }
+        if (intstr == keywords.else_int_str) { return Tk::KW_ELSE; }
+        if (intstr == keywords.match_int_str) { return Tk::KW_MATCH; }
+        if (intstr == keywords.with_int_str) { return Tk::KW_WITH; }
+        if (intstr == keywords.const_int_str) { return Tk::KW_CONST; }
+        if (intstr == keywords.val_int_str) { return Tk::KW_VAL; }
+        if (intstr == keywords.var_int_str) { return Tk::KW_VAR; }
+        if (intstr == keywords.and_int_str) { return Tk::KW_AND; }
+        if (intstr == keywords.xor_int_str) { return Tk::KW_XOR; }
+        if (intstr == keywords.or_int_str) { return Tk::KW_OR; }
+        if (intstr == keywords.not_int_str) { return Tk::KW_NOT; }
+        if (intstr == keywords.set_int_str) { return Tk::KW_SET; }
+        if (intstr == keywords.fn_int_str) { return Tk::KW_FN; }
+        if (intstr == keywords.mod_int_str) { return Tk::KW_MOD; }
+        if (intstr == keywords.from_int_str) { return Tk::KW_FROM; }
+        if (intstr == keywords.out_int_str) { return Tk::KW_OUT; }
+        if (intstr == keywords.inout_int_str) { return Tk::KW_INOUT; }
+        if (intstr == keywords.discard_int_str) { return Tk::KW_DISCARD; }
+        if (intstr == keywords.enum_int_str) { return Tk::KW_ENUM; }
         else {
             infoP->ID_intstr = intstr;
             return getIdTextKind(charBuf);
@@ -665,7 +684,7 @@ namespace pdm::parser::aux {
             }
             feedback::post(new feedback::Letter(
                 feedback::Severity::FatalError,
-                std::move("Invalid string literal"),
+                std::move(std::string("Invalid string literal")),
                 std::move("Before EOF, expected quotechar: <" + std::string(1,quoteChar) + ">"),
                 std::move(notes)
             ));
@@ -704,22 +723,45 @@ namespace pdm::parser::aux {
     }
 
     int getIdTextKind(char const* idText) {
-        if (*idText == '\0') {
-            return Tk::HOLE;
-        } else if (isupper(*idText)) {
-            return Tk::TID;
-        } else if (islower(*idText)) {
-            return Tk::VID;
+        bool contains_letters_before_cp = false;
+        bool contains_lowercase_letters = false;
+        for (char const* cp = idText; *cp; cp++) {
+            if (isalpha(*cp)) {
+                // if the first letter is lowercase, this must be a value ID
+                if (!contains_letters_before_cp && islower(*cp)) {
+                    return Tk::VID;
+                }
+
+                // if a letter that is not the first letter is lowercase, must be a TID
+                if (islower(*cp)) {
+                    contains_lowercase_letters = true;
+                }
+
+                // updating variables outside the loop for the next iter:
+                contains_letters_before_cp = true;
+            }
+        }
+        if (contains_letters_before_cp) {
+            if (contains_lowercase_letters) {
+                return Tk::TID;
+            } else {
+                return Tk::CID;
+            }
         } else {
-            return getIdTextKind(idText+1);
+            return Tk::HOLE;
         }
     }
 
     TokenKind LexOneToken(Reader* source, TokenInfo* infoP, source::Loc* span) {
         TokenKind tk = lexOneToken(source, infoP, span);
-        // char buffer[512];
-        // TokenAsText(tk, infoP, buffer, 512);
-        // printf("%s\n", buffer);
+
+        bool const print_tokens_in_debug_mode = false;
+        if (DEBUG && print_tokens_in_debug_mode) {
+            char buffer[512];
+            aux::TokenToText(tk, infoP, buffer, 512);
+            printf("%s\n", buffer);
+        }
+
         return tk;
     }
 }
@@ -736,7 +778,7 @@ namespace pdm::parser::aux {
     int TokenToText(TokenKind tk, TokenInfo* ti, char* buf, int bufLength);
 
     void DebugLexer(Reader* source) {
-        TokenInfo tok_info;
+        TokenInfo tok_info{};
         source::Loc tok_loc = source::Loc::none;
         for (;;) {
             TokenKind kind = aux::LexOneToken(source, &tok_info, &tok_loc);
@@ -1051,7 +1093,7 @@ namespace pdm::parser::aux {
 
 namespace pdm::parser {
 
-    bool Lexer::setup(source::Source* source) {
+    bool Lexer::setup(source::ISource* source) {
         return m_reader.setup(source);
     }
 

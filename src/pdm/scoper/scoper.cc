@@ -270,6 +270,10 @@ namespace pdm::scoper {
             if (mod_address->opt_parent_address()) {
                 // parent address provided: lookup in lhs module
                 auto lhs_origin_mod_exp = mod_address->opt_parent_address()->x_origin_mod_exp();
+
+                // if the parent origin is unknown, an error has already been reported. ignore and move on.
+                continue;
+
                 // if traversing in reverse order and visit-order correct, LHS' origin should already be known:
                 if (lhs_origin_mod_exp) {
                     // looking up in LHS:
@@ -281,9 +285,28 @@ namespace pdm::scoper {
                 // parent address not provided: lookup in the context where this address was used:
                 module_defn = order.lookup_context->lookup(mod_address->rhs_name());
             }
-            ast::ModExp* origin_mod_exp = original_mod_exp_of_import(module_defn);
-            assert(origin_mod_exp && "error in Scoper::finish: could not find original_mod_exp_of_import");
-            mod_address->x_origin_mod_exp(origin_mod_exp);
+            if (module_defn) {
+                // lookup succeeded!
+                ast::ModExp *origin_mod_exp = original_mod_exp_of_import(module_defn);
+                assert(origin_mod_exp && "error in Scoper::finish: could not find original_mod_exp_of_import");
+                mod_address->x_origin_mod_exp(origin_mod_exp);
+            } else {
+                // lookup failed... fail & post feedback.
+                ok = false;
+                std::string headline; {
+                    if (mod_address->opt_parent_address()) {
+                        headline = "Field '<...>::" + mod_address->rhs_name().cpp_str() + "' used, but not defined.";
+                    } else {
+                        headline = "Symbol '" + mod_address->rhs_name().cpp_str() + "' used, but not defined.";
+                    }
+                }
+                std::string desc = "Are you sure the module and its field is imported/defined?";
+                std::vector<feedback::Note*> notes{1};
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline), std::move(desc), std::move(notes)
+                ));
+            }
         }
 
         return ok;
@@ -644,15 +667,6 @@ namespace pdm::scoper {
     // Thus, use TV, not CV, even if targs present.
     bool ScoperVisitor::on_visit_enum_type_spec(ast::EnumTypeSpec *node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            // creating a var:
-            types::Var* enum_var = nullptr;
-
-            // single value
-            std::string tv_name = "AnonymousEnum"; {
-                auto tv_name_copy = tv_name;
-                enum_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name_copy), node);
-            }
-
             // pushing frames/attribs for nested defns:
             push_frame(FrameKind::EnumTypeSpecBody);
         } else {

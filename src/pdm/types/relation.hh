@@ -5,7 +5,7 @@
 #include <string>
 #include <map>
 
-#include "pdm/source/source.hh"
+#include "pdm/source/i_source.hh"
 #include "pdm/ast/node.hh"
 #include "pdm/ast/exp/id.hh"
 #include "pdm/ast/arg/targ.hh"

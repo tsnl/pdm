@@ -51,7 +51,7 @@
 %define api.location.type {pdm::source::Loc}
 
 // adding 'Source*' 'Lexer*' params to the lexer and parser:
-%param {pdm::source::Source* source}
+%param {pdm::source::ISource* source}
 %param {pdm::parser::Lexer* lexer}
 
 // adding an AST manager ptr param to the parser:
@@ -130,7 +130,7 @@
 %type <pdm::ast::BinaryOperator> mul_binary_op add_binary_op cmp_binary_op eq_binary_op
 
 %type <pdm::ast::TypeQueryExp*> type_query_exp
-%type <std::vector<pdm::ast::TypeQueryExp*>> type_query_exp_sl
+%type <std::vector<pdm::ast::TypeQueryExp*>> type_query_exp_sl0
 %type <pdm::ast::TypeQueryKind> type_query_op
 
 %type <pdm::ast::StructExp::Field*> struct_exp_field
@@ -140,7 +140,7 @@
 // TypeSpec Nonterminals:
 //
 
-%type <pdm::ast::TypeSpec*> type_spec long_type_spec
+%type <pdm::ast::TypeSpec*> type_spec
 %type <pdm::ast::TypeSpec*> tuple_type_spec struct_type_spec enum_type_spec
 %type <pdm::ast::TypeSpec*> mod_prefix_tid
 %type <pdm::ast::FnTypeSpec*> fn_type_spec
@@ -178,9 +178,9 @@
 %type <std::vector<pdm::ast::VArg*>> varg_cl
 
 %code provides {
-    // int yylex(pdm::parser::TokenInfo *lvalp, pdm::source::Loc *llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
-    int yylex(pdm::parser::parser::semantic_type* st, pdm::source::Loc* llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer);
-    void yyerror(pdm::source::Loc* llocp, char const* message, pdm::source::Source* source, pdm::parser::Lexer* lexer);
+    // int yylex(pdm::parser::TokenInfo *lvalp, pdm::source::Loc *llocp, pdm::source::ISource* source, pdm::parser::Lexer* lexer);
+    int yylex(pdm::parser::parser::semantic_type* st, pdm::source::Loc* llocp, pdm::source::ISource* source, pdm::parser::Lexer* lexer);
+    void yyerror(pdm::source::Loc* llocp, char const* message, pdm::source::ISource* source, pdm::parser::Lexer* lexer);
 }
 
 %token <TokenInfo> VID   "val_id"
@@ -202,11 +202,10 @@
 %token KW_EXTERN "extern"
 %token KW_FROM "from"
 %token KW_CONST "const"
-%token KW_VAL "val" 
+%token KW_VAL "val"
 %token KW_VAR "var"
-%token KW_SET "set" 
-%token KW_FUNC "func"
-%token KW_LAMBDA "lambda"   /* reserved */
+%token KW_SET "set"
+%token KW_FN "fn"
 %token KW_AND "and"
 %token KW_XOR "xor" 
 %token KW_OR "or" 
@@ -215,6 +214,9 @@
 %token KW_INOUT "inout"
 %token KW_DISCARD "discard"
 %token KW_AS "as"
+%token KW_CORE_PROFILE "CORE_PROFILE"           /* todo: add to lexer */
+%token KW_BROWSER_PROFILE "BROWSER_PROFILE"     /* todo: add to lexer */
+%token KW_NATIVE_PROFILE "NATIVE_PROFILE"       /* todo: add to lexer */
 
 %token <TokenInfo> DINT_LIT "42"
 %token <TokenInfo> XINT_LIT "0x2a"
@@ -306,10 +308,10 @@ mod_field_sl
     | mod_field_sl mod_field SEMICOLON  { $$ = std::move($1); $$.push_back($2); }
     ;
 mod_field
-    : vid COLON long_exp        { $$ = mgr->new_value_mod_field(@$, $1.ID_intstr, $3); }
-    | tid COLON long_type_spec       { $$ = mgr->new_type_mod_field(@$, $1.ID_intstr, $3); }
-    | cid COLON class_exp_class_spec { $$ = mgr->new_class_mod_field(@$, $1.ID_intstr, $3); }
-    | KW_MOD vid mod_exp            { $$ = mgr->new_mod_mod_field(@$, $2.ID_intstr, $3); }
+    : vid BIND long_exp    { $$ = mgr->new_value_mod_field(@$, $1.ID_intstr, $3); }
+    | tid BIND type_spec   { $$ = mgr->new_type_mod_field(@$, $1.ID_intstr, $3); }
+    | cid BIND class_spec  { $$ = mgr->new_class_mod_field(@$, $1.ID_intstr, $3); }
+    | KW_MOD vid mod_exp   { $$ = mgr->new_mod_mod_field(@$, $2.ID_intstr, $3); }
     ;
 
 /*
@@ -388,9 +390,9 @@ expr_cl2
     : expr COMMA expr        { $$.reserve(2); $$.push_back($1); $$.push_back($3); }
     | expr_cl2 COMMA expr    { $$ = std::move($1); $$.push_back($3); }
     ;
-type_query_exp_sl
-    : type_query_exp SEMICOLON         { $$.push_back($1); }
-    | type_query_exp_sl type_query_exp SEMICOLON { $$ = std::move($1); $$.push_back($2); }
+type_query_exp_sl0
+    : %empty                                      {}
+    | type_query_exp_sl0 type_query_exp SEMICOLON { $$ = std::move($1); $$.push_back($2); }
     ;
 
 bracketed_exp
@@ -444,7 +446,8 @@ if_exp
     | KW_IF bracketed_exp KW_THEN bracketed_exp KW_ELSE primary_exp     { $$ = mgr->new_if_exp(@$, $2, $4, $6); }
     ;
 chain_exp
-    : LCYBRK long_exp              RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move(std::vector<ast::Stmt*>{}), $2); }
+    : LCYBRK                       RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move(std::vector<ast::Stmt*>{}), nullptr); }
+    | LCYBRK long_exp              RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move(std::vector<ast::Stmt*>{}), $2); }
     | LCYBRK chain_prefix          RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move($2), nullptr); }
     | LCYBRK chain_prefix long_exp RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move($2), $3); }
     ;
@@ -567,9 +570,6 @@ type_spec
     | mod_prefix_tid
     | tuple_type_spec
     | array_type_spec
-    ;
-long_type_spec
-    : type_spec
     | struct_type_spec
     | enum_type_spec
     | fn_type_spec  { $$ = dynamic_cast<ast::TypeSpec*>($1); }
@@ -595,12 +595,12 @@ struct_type_spec_field_cl
     | struct_type_spec_field_cl COMMA struct_type_spec_field  { $$ = std::move($1); $$.push_back($3); }
     ;
 struct_type_spec_field
-    : vid long_type_spec                 { $$ = mgr->new_struct_type_spec_field(@$, $1.ID_intstr, $2); }
+    : vid type_spec                 { $$ = mgr->new_struct_type_spec_field(@$, $1.ID_intstr, $2); }
     ;
 
 enum_type_spec_field
-    : tid                    { $$ = mgr->new_enum_type_spec_field(@$, $1.ID_intstr, nullptr); }
-    | tid long_type_spec     { $$ = mgr->new_enum_type_spec_field(@$, $1.ID_intstr, $2); }
+    : tid               { $$ = mgr->new_enum_type_spec_field(@$, $1.ID_intstr, nullptr); }
+    | tid type_spec     { $$ = mgr->new_enum_type_spec_field(@$, $1.ID_intstr, $2); }
     ;
 enum_type_spec_field_cl
     : enum_type_spec_field                                  { $$.push_back($1); }
@@ -611,7 +611,7 @@ enum_type_spec
     ;
 
 fn_type_spec
-    : vpattern ARROW type_spec { $$ = mgr->new_fn_type_spec(@$, std::move($1), $3); }
+    : KW_FN vpattern ARROW type_spec { $$ = mgr->new_fn_type_spec(@$, std::move($2), $4); }
     ;
 
 
@@ -651,7 +651,9 @@ mod_prefix_cid_class_spec
 
 /* todo: implement class_exp_class_spec in parser.yy */
 class_exp_class_spec
-    : KW_CLS LPAREN tid class_spec RPAREN LCYBRK type_query_exp_sl RCYBRK     { $$ = nullptr; }
+    : KW_CLS LSQBRK tid class_spec RSQBRK LCYBRK type_query_exp_sl0 RCYBRK {
+            $$ = mgr->new_class_exp_class_spec(@$, $3.ID_intstr, $4, std::move($7));
+        }
     ;
 
 /*
@@ -731,7 +733,7 @@ struct_exp_field_cl
 
 namespace pdm::parser {
 
-    ast::Script* parse_script(ast::Manager* manager, source::Source* source) {
+    ast::Script* parse_script(ast::Manager* manager, source::ISource* source) {
         Lexer lexer;
         if (!lexer.setup(source)) {
             return nullptr;
@@ -770,7 +772,7 @@ namespace pdm::parser {
 
 }
 
-int yylex(pdm::parser::parser::semantic_type* semval, pdm::source::Loc* llocp, pdm::source::Source* source, pdm::parser::Lexer* lexer) {
+int yylex(pdm::parser::parser::semantic_type* semval, pdm::source::Loc* llocp, pdm::source::ISource* source, pdm::parser::Lexer* lexer) {
     // see:
     // https://www.gnu.org/software/bison/manual/html_node/Calling-Convention.html
     

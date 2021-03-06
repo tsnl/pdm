@@ -3,7 +3,7 @@
 
 #include <cstdio>
 
-#include "pdm/source/source.hh"
+#include "pdm/source/i_source.hh"
 #include "pdm/source/pos.hh"
 
 namespace pdm::parser {
@@ -11,7 +11,7 @@ namespace pdm::parser {
     class Reader {
       private:
         FILE*           m_fp;
-        source::Source* m_opt_source;
+        source::ISource* m_opt_source;
         source::Pos     m_peek_pos;
         int             m_peek_char;
         int             m_promised_char;
@@ -23,15 +23,15 @@ namespace pdm::parser {
       public:
         // setup can be called multiple times to reuse the reader.
         // returns (1) if successfully opened, else (0)
-        bool setup(source::Source* source);
+        bool setup(source::ISource* source);
 
       public:
-        source::Source* opt_source() const {
+        source::ISource* opt_source() const {
             return m_opt_source;
         }
 
       // reader API:
-      // WARNING: ensure you call 'setup' on a source::Source* instance first!
+      // WARNING: ensure you call 'setup' on a source::ISource* instance first!
       public:
         // advances the reading head by one character.
         // must be called before peeking the first character.

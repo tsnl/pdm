@@ -1,7 +1,7 @@
 #ifndef INCLUDED_PDM_SOURCE_POS_HH
 #define INCLUDED_PDM_SOURCE_POS_HH
 
-#include "source.hh"
+#include "i_source.hh"
 
 namespace pdm::source {
     // todo: implement bison interface

@@ -27,7 +27,7 @@ namespace pdm::ast {
     //
 
     inline ModAddressIdClassSpec::ModAddressIdClassSpec(source::Loc loc, ast::ModAddress* lhs_mod_address, intern::String rhs_name)
-    :   ClassSpec(loc, Kind::DotClassSpec),
+    :   ClassSpec(loc, Kind::ModAddressIdClassSpec),
         m_lhs_mod_address(lhs_mod_address),
         m_rhs_type_name(rhs_name)
     {}

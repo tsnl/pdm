@@ -137,6 +137,11 @@ namespace pdm::ast {
         m_rhs_class_spec(rhs_class_spec)
     {}
 
+    inline ModExp::ModuleField::ModuleField(source::Loc field_loc, intern::String field_name, ModExp* rhs_mod_exp)
+    :   ModExp::Field(field_loc, Kind::ModModField, field_name),
+        m_rhs_mod_exp(rhs_mod_exp)
+    {}
+
     inline Exp* ModExp::ValueField::rhs_exp() const {
         return m_rhs_exp;
     }
@@ -167,10 +172,6 @@ namespace pdm::ast {
     inline void ModExp::x_module_var(types::TypeVar* module_tv) {
         m_x_module_var = module_tv;
     }
-
-    inline ModExp::ModuleField::ModuleField(source::Loc field_loc, intern::String field_name, ModExp* rhs_mod_exp)
-    :   ModExp::Field(field_loc, Kind::ModModField, field_name)
-    {}
 
     inline ModExp* ModExp::ModuleField::rhs_mod_exp() const {
         return m_rhs_mod_exp;

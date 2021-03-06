@@ -56,19 +56,19 @@ namespace pdm::scoper {
           m_container_context(nullptr) {}
 
       public:
-        DefnKind kind() const {
+        [[nodiscard]] DefnKind kind() const {
             return m_kind;
         }
-        intern::String name() const {
+        [[nodiscard]] intern::String name() const {
             return m_name;
         }
-        ast::Node* defn_node() const {
+        [[nodiscard]] ast::Node* defn_node() const {
             return m_defn_node;
         }
-        types::Var* var() const {
+        [[nodiscard]] types::Var* var() const {
             return m_var;
         }
-        Context* container_context() const {
+        [[nodiscard]] Context* container_context() const {
             return m_container_context;
         }
 

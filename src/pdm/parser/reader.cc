@@ -18,7 +18,7 @@ namespace pdm::parser {
       m_promised_char(),
       m_at_eof() {}
 
-    bool Reader::setup(source::Source* source) {
+    bool Reader::setup(source::ISource* source) {
         // disposing if already in use.
         if (m_opt_source != nullptr) {
             fclose(m_fp);

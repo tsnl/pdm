@@ -13,7 +13,7 @@
 
 #include "pdm/scoper/defn.hh"
 
-#include "pdm/ast/script/script.hh"
+#include "pdm/ast/source-node/script.hh"
 #include "pdm/ast/type_spec/struct.hh"
 
 #include "pdm/types/manager.hh"
@@ -386,8 +386,7 @@ namespace pdm::types {
         return true;
     }
     bool TyperVisitor::on_visit_discard_stmt(ast::DiscardStmt* node, VisitOrder visit_order) {
-        // todo: implement this typer.
-        assert(0 && "NotImplemented: TyperVisitor::on_visit_discard_stmt");
+        // do nothing...
         return true;
     }
     bool TyperVisitor::on_visit_extern_stmt(ast::ExternStmt* node, VisitOrder visit_order) {
@@ -614,13 +613,20 @@ namespace pdm::types {
             node->x_type_of_var(chain_exp_tv);
         } else {
             auto chain_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
-            TypeVar* nested_tv = expect_type_var(
-                node->suffix()->x_type_of_var(),
-                std::move(std::string("an expression suffix")),
-                std::move(std::string("a chain-expression")),
-                node->loc()
-            );
-            auto relation = new TypeEqualsRelation(node, chain_tv, nested_tv);
+            TypeVar* suffix_tv = nullptr;
+            if (node->suffix()) {
+                suffix_tv = expect_type_var(
+                    node->suffix()->x_type_of_var(),
+                    std::move(std::string("an expression suffix")),
+                    std::move(std::string("a chain-expression")),
+                    node->loc()
+                );
+            } else {
+                suffix_tv = m_types_mgr->get_void_tv();
+            }
+            assert(suffix_tv && "Expected non-nullptr suffix_tv while typing ChainExp");
+
+            auto relation = new TypeEqualsRelation(node, chain_tv, suffix_tv);
             SolveResult kd_res = m_types_mgr->assume_relation_holds(relation);
 
             std::string source_desc = "see chain expression here...";
@@ -1407,19 +1413,17 @@ namespace pdm::types {
 
             // obtaining the field types:
             std::map<intern::String, Var*> fields;
-            bool fields_ok = true;
             for (ast::EnumTypeSpec::Field* field: node->fields()) {
                 // checking for & reporting duplicate fields:
-                auto found_it_by_same_name = fields.find(field->name());
-                if (found_it_by_same_name == fields.end()) {
-                    fields_ok = false;
+                auto found_it = fields.find(field->name());
+                if (found_it != fields.end()) {
                     std::string headline = (
                         "Field '" + std::string(field->name().cpp_str()) + "' repeated in enum type specifier"
                     );
                     std::string desc = "Each field in an enum must have a unique name.";
                     std::vector<feedback::Note*> notes{2}; {
                         std::string note_desc0 = "first definition here...";
-                        source::Loc loc0 = found_it_by_same_name->second->opt_client_ast_node()->loc();
+                        source::Loc loc0 = found_it->second->opt_client_ast_node()->loc();
                         notes[0] = new feedback::SourceLocNote(std::move(note_desc0), loc0);
 
                         std::string note_desc1 = "subsequent definition here...";
@@ -1431,28 +1435,43 @@ namespace pdm::types {
                         std::move(headline),
                         std::move(desc)
                     ));
-                    continue;
-                }
-                
-                // inserting the appropriate field as specified:
-                TypeVar* rhs_tv = nullptr; {
-                    if (field->opt_type_spec()) {
-                        rhs_tv = field->opt_type_spec()->x_spec_var();
-                    } else {
-                        rhs_tv = m_types_mgr->get_void_tv();
+                } else {
+                    // inserting the appropriate field as specified:
+                    TypeVar* rhs_tv = nullptr; {
+                        if (field->opt_type_spec()) {
+                            rhs_tv = field->opt_type_spec()->x_spec_var();
+                        } else {
+                            rhs_tv = m_types_mgr->get_void_tv();
+                        }
                     }
+                    assert(rhs_tv && "Could not obtain field type in enum type specifier");
+                    fields[field->name()] = rhs_tv;
                 }
-                assert(rhs_tv && "Could not obtain field type in enum type-spec");
             }
-            if (!fields_ok) {
+            if (fields.size() != node->fields().size()) {
+                std::string headline = "Invalid enum type specifier fields";
+                std::string more = (
+                    "The provided fields in an enum type specifier cannot be used to construct a real "
+                    "enum since doing so would violate typing rules."
+                );
+                std::vector<feedback::Note*> notes{1}; {
+                    std::string desc0 = "See enum type specifier here...";
+                    notes[0] = new feedback::AstNodeNote(std::move(desc0), node);
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline), std::move(more), std::move(notes)
+                ));
                 return false;
+            } else {
+                // relating field types with enum type:
+                std::string relation_why = "EnumTypeSpec";
+                auto relation = new IsEnumRelation(std::move(relation_why), node, enum_tv, fields);
+                auto assume_relation_result = m_types_mgr->assume_relation_holds(relation);
+                bool ok = !result_is_error(assume_relation_result);
+                assert(ok && "Failed to assume validated relation on EnumTypeSpec");
+                return true;
             }
-
-            // relating field types with enum type:
-            std::string relation_why = "EnumTypeSpec";
-            auto relation = new IsEnumRelation(std::move(relation_why), node, enum_tv, fields);
-            auto assume_relation_result = m_types_mgr->assume_relation_holds(relation);
-            return result_is_error(assume_relation_result);
         }
     }
     bool TyperVisitor::on_visit_struct_type_spec(ast::StructTypeSpec* node, VisitOrder visit_order) {
@@ -1474,8 +1493,8 @@ namespace pdm::types {
                 assert(field_var != nullptr);
 
                 // verifying the name is unique:
-                auto found_it_by_same_name = fields_tvs.find(field->lhs_name());
-                if (found_it_by_same_name != fields_tvs.end()) {
+                auto found_it = fields_tvs.find(field->lhs_name());
+                if (found_it != fields_tvs.end()) {
                     fields_ok = false;
                     std::string headline = (
                         "Field '" + std::string(field->lhs_name().content()) + "' repeated in struct type specifier"
@@ -1483,7 +1502,7 @@ namespace pdm::types {
                     std::string desc = "Each field in a struct must have a unique name.";
                     std::vector<feedback::Note*> notes{2}; {
                         std::string note_desc0 = "first definition here...";
-                        source::Loc loc0 = found_it_by_same_name->second->opt_client_ast_node()->loc();
+                        source::Loc loc0 = found_it->second->opt_client_ast_node()->loc();
                         notes[0] = new feedback::SourceLocNote(std::move(note_desc0), loc0);
 
                         std::string note_desc1 = "subsequent definition here...";
@@ -1521,14 +1540,32 @@ namespace pdm::types {
                 fields_tvs[field->lhs_name()] = field_tv;
             }
 
+            if (!fields_ok) {
+                std::string headline = "Invalid struct type specifier fields";
+                std::string more = (
+                    "The provided fields in an struct type specifier cannot be used to construct a real "
+                    "struct since doing so would violate typing rules."
+                );
+                std::vector<feedback::Note*> notes{1}; {
+                    std::string desc0 = "See struct type specifier here...";
+                    notes[0] = new feedback::AstNodeNote(std::move(desc0), node);
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline), std::move(more), std::move(notes)
+                ));
+                return false;
+            }
+
             // assuming a StructOf relation to bind struct_tv to fields:
             std::string name = "StructTypeSpec";
             SolveResult kd_res = m_types_mgr->assume_relation_holds(new IsStructRelation(
                 std::move(name), node,
                 struct_tv, std::move(fields_tvs)
             ));
+            assert(!result_is_error(kd_res));
+            return true;
         }
-        return true;
     }
 
     // class specs:

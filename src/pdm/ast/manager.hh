@@ -7,7 +7,7 @@
 #include "pdm/core/integer.hh"
 #include "pdm/core/units.hh"
 
-#include "script/script.hh"
+#include "source-node/script.hh"
 
 #include "exp/exp.hh"
 #include "exp/array.hh"
@@ -57,7 +57,7 @@
 #include "arg/varg.hh"
 
 #include "pdm/ast/type_spec/type_spec.hh"
-#include "pdm/ast/type_spec/dot.hh"
+#include "pdm/ast/type_spec/mai.hh"
 #include "pdm/ast/type_spec/fn.hh"
 #include "pdm/ast/type_spec/id.hh"
 #include "pdm/ast/type_spec/struct.hh"
@@ -65,7 +65,7 @@
 
 #include "pdm/ast/class_spec/id.hh"
 #include "pdm/ast/class_spec/class_exp.hh"
-#include "pdm/ast/class_spec/dot.hh"
+#include "pdm/ast/class_spec/mai.hh"
 
 namespace pdm {
     class Compiler;
@@ -102,7 +102,7 @@ namespace pdm::ast {
 
       public:
         Script* new_script(
-            source::Source* source, source::Loc loc,
+            source::ISource* source, source::Loc loc,
             std::vector<HeaderStmt*>&& header_stmts, std::vector<Script::Field*>&& fields
         );
         Script::Field* new_script_field(source::Loc loc, intern::String name, ast::ModExp* mod_exp);

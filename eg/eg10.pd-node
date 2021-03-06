@@ -9,16 +9,16 @@
 
 mod vector [Type Number, n UInt32] {
 
-    Vec = {
+    Vec: {
         # array syntax:
         data [Type * n]
     };
 
-    increment = (inout lt Vec, rt Vec) -> Void {
+    increment: (inout lt Vec, rt Vec) -> Void {
         assert len(lt) == len(rt);
         help_increment(inout lt, rt, len(lt));
     };
-    help_increment = (inout lt Vec, rt Vec) -> Void {
+    help_increment: (inout lt Vec, rt Vec) -> Void {
         # for this to work, need Array subtyping to work correctly
         # s.t. Array[T,n] :< Array[T,m] <=> n <= m
         if (n > 0) then {
@@ -27,13 +27,13 @@ mod vector [Type Number, n UInt32] {
         };
     };
 
-    add = (lt Vec, rt Vec) -> Vec {
+    add: (lt Vec, rt Vec) -> Vec {
         var sum_vec = lt;
         increment(inout sum_vec, rt);
         sum_vec
     };
 
-    hello = () -> Void  {
+    hello: () -> Void  {
         val x = 0;
     };
 
@@ -41,7 +41,7 @@ mod vector [Type Number, n UInt32] {
 
 mod fibonacci {
 
-    demo = () -> Int32 {
+    demo: () -> Int32 {
         0
     };
 
@@ -52,12 +52,12 @@ mod fibonacci {
 # thus, out[T] :< inout[T] (and in[T] :< inout[T])
 # i.e.
 
-mod inOutAndEverybout {
+mod inOutAndEveryBout {
 
-    hello_out = (out x F32) -> Void {
+    hello_out: (out x F32) -> Void {
         set x = 42.0;
     };
-    hello_inout = (inout x F32) -> Void {
+    hello_inout: (inout x F32) -> Void {
         # 'out' from 'hello_out' defn, not from vpattern decl.
         hello_out(out x);
     };

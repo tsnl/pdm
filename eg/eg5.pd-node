@@ -2,7 +2,7 @@
 
 mod optional [T ANY] {
 
-    Opt = enum {
+    Opt: enum {
         Some T,
         None
     };
@@ -11,14 +11,14 @@ mod optional [T ANY] {
 
 mod rational {
 
-    RationalData = {
+    RationalData: {
        numerator Int32,
        denominator Int32
     };
 
-    Rational = optional[RationalData]::Opt;
+    Rational: optional[RationalData]::Opt;
 
-    rational = (numerator Int32, denominator Int32) -> Rational {
+    rational: (numerator Int32, denominator Int32) -> Rational {
         if (denominator != 0) then {
             Rational::Some using {
                 numerator = numerator,
@@ -29,9 +29,9 @@ mod rational {
         }
     };
 
-    RationalBinOp = (Rational, Rational) -> Rational;
+    RationalBinOp: (Rational, Rational) -> Rational;
 
-    apply = (x Rational, y Rational, f RationalBinOp) -> Rational {
+    apply: (x Rational, y Rational, f RationalBinOp) -> Rational {
         match (x) with {
             Some (vx) -> {
                 match (y) with {
@@ -49,7 +49,7 @@ mod rational {
         }
     };
 
-    add_incorrectly = (x Q, y Q) -> Q {
+    add_incorrectly: (x Q, y Q) -> Q {
         apply(x, y, (x Q, y Q) -> {
             numerator: (x.numerator + y.numerator),
             denominator: (x.denominator + y.denominator)

@@ -68,7 +68,9 @@ namespace pdm::ast {
     :   m_loc(loc),
         m_name(name),
         m_opt_type_spec(opt_type_spec)
-    {}
+    {
+        assert(m_name != intern::String{} && "Invalid Enum Field name");
+    }
 
     inline source::Loc EnumTypeSpec::Field::loc() const {
         return m_loc;

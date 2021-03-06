@@ -11,7 +11,7 @@
 
 mod demo {
 
-    showoff = () -> Float32 {
+    showoff: () -> Float32 {
         val vec1 = vec::new_2f(0,0);
         val vec2 = vec::new_2f(1,2);
         val vec1_length = vec::length_sqr(vec1);
@@ -20,45 +20,45 @@ mod demo {
         val sum = vec.add(vec1, vec2);
 
         val p = printer.new_with(gc.alloc);
-        print.str(p, "{dot: \(dot), sum: \(sum)}");
+        print.str(p, fmt("{dot: %, sum: %}", dot, sum));
     };
 
 };
 
 mod lin_alg {
 
-    Vec2f = {
+    Vec2f: {
         x Float32,
         y Float32
     };
 
-    Norm = Vec2f -> Float32;
+    Norm: Vec2f -> Float32;
 
-    new_2f = (x Float32, y Float32) -> Vec2f {
+    new_2f: (x Float32, y Float32) -> Vec2f {
         x: x, 
         y: y
     };
 
-    mul = (s Float32, v Vec2f) -> Vec2f {
+    mul: (s Float32, v Vec2f) -> Vec2f {
         x: s * v.x,
         y: s * v.y
     };
 
-    add = (v Vec2f, w Vec2f) -> Vec2f {
+    add: (v Vec2f, w Vec2f) -> Vec2f {
         x: v.x + w.x, 
         y: v.y + w.y
     };
 
-    dot = (v Vec2f, w Vec2f) -> Float32 {
+    dot: (v Vec2f, w Vec2f) -> Float32 {
         v.x * w.x + 
         v.y * w.y
     };
 
-    length_sqr = (v Vec2f) -> Float32 {
+    length_sqr: (v Vec2f) -> Float32 {
         dot(v,v)
     };
 
-    subtract = (v Vec2f, w Vec2f) -> Float32 {
+    subtract: (v Vec2f, w Vec2f) -> Float32 {
         vec.add(mul(w,-1))
     };
 
