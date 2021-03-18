@@ -25,8 +25,8 @@
 #include "pdm/types/manager.hh"
 #include "pdm/typer/typer.hh"
 
-#include "pdm/source/script_source.hh"
-#include "pdm/source/package_source.hh"
+#include "pdm/source/local-script-source.hh"
+#include "pdm/source/local-package-source.hh"
 
 
 namespace pdm {
@@ -67,17 +67,17 @@ namespace pdm {
         | static_cast<PrintFlagBitset>(PrintFlag::Wasm)
     );
 
-    ast::Script* Compiler::import(std::string const& from_path, std::string const& type, std::string const& reason) {
-        ast::Script* script = help_import_script_1(from_path, type);
-        if (script == nullptr) {
+    ast::ISourceNode* Compiler::import(std::string const& from_path, std::string const& reason) {
+        ast::ISourceNode* source_node = check_cache_or_import(from_path);
+        if (source_node == nullptr) {
             feedback::post(new feedback::Letter(
                 feedback::Severity::Error,
-                "Failed to load source file \"" + from_path + "\" of type \"" + type + "\"",
+                "Failed to load source file \"" + from_path + "\"",
                 "Required for import '" + reason + "'"
             ));
             return nullptr;
         } else {
-            return script;
+            return source_node;
         }
     }
 
@@ -89,50 +89,62 @@ namespace pdm {
         return stmt;
     }
 
-    ast::Script* Compiler::help_import_script_1(std::string const& from_path, std::string const& type) {
-        aux::Key key {abspath(from_path), type};
+    ast::ISourceNode* Compiler::check_cache_or_import(std::string const& from_path_string, std::string const& reason) {
+        std::string abs_from_path_string = abspath(from_path_string);
+        aux::Key key{abs_from_path_string};
 
         auto script_it = m_cached_imports.find(key);
         if (script_it != m_cached_imports.end()) {
             return script_it->second;
-        }
- 
-        if (type == dependency_dispatcher::PD_SCRIPT_IMPORT_TYPE_STRING) {
-            std::string abs_from_path = key.import_from_path.native();
-            source::ISource* source = new source::ScriptSource(std::move(abs_from_path));
-            ast::Script* script = parser::parse_script(&m_ast_mgr, source);
-            if (script == nullptr) {
-                return nullptr;
-            } else {
-                help_import_script_2(script);
-                return m_cached_imports[key] = script;
-            }
         } else {
-            // posting feedback: invalid 'type'
+            return m_cached_imports[key] = import_new(abs_from_path_string, reason);
+        }
+    }
+
+    ast::ISourceNode* Compiler::import_new(std::string const& abs_from_path_string, std::string const& reason) {        // todo: determine whether this is a package or script and handle appropriately.
+        std::filesystem::path from_path{abs_from_path_string};
+        if (std::filesystem::is_regular_file(from_path)) {
+            return import_new_script(abs_from_path_string, reason);
+        } else if (std::filesystem::is_directory(from_path)) {
+            // todo: check if valid package
+        }
+
+        // verifying
+        if (!std::filesystem::exists(from_path)) {
             feedback::post(new feedback::Letter(
                 feedback::Severity::Error, 
-                "Invalid type: " + type, 
-                "abspath: \"" + key.import_from_path.native() + "\""
+                "Cannot import from non-existent",
+                "abspath: \"" + abs_from_path_string + "\""
             ));
             return nullptr;
         }
     }
 
-    void Compiler::help_import_script_2(ast::Script* script) {
-        std::cout << "Dispatching: " << script->source()->abs_path() << std::endl;
-        
-        // adding to the 'all_scripts' list BEFORE adding more scripts
-        // <=> entry_point is always the first script, leaves farther out.
-        m_all_scripts.push_back(script);
+    ast::Script* Compiler::import_new_script(const std::string &abs_from_path_string, const std::string &reason) {
+        std::string abs_from_path_string_copy = abs_from_path_string;
+        source::ISource* source = new source::LocalScriptSource(std::move(abs_from_path_string_copy));
+        ast::Script* script = parser::parse_script(&m_ast_mgr, source);
+        if (script == nullptr) {
+            return nullptr;
+        } else {
+            std::cout << "Dispatching: " << script->source()->abs_path() << std::endl;
 
-        // dispatching all subsequent imports:
-        dependency_dispatcher::DDVisitor dd_visitor{this, script};
-        dd_visitor.visit(script);
+            // adding to the 'all_scripts' list BEFORE adding more scripts
+            // <=> entry_point is always the first script, leaves farther out.
+            m_all_scripts.push_back(script);
+
+            // dispatching all subsequent imports:
+            dependency_dispatcher::DDVisitor dd_visitor{this, script};
+            dd_visitor.visit(script);
+
+            return script;
+        }
     }
 
     bool Compiler::pass1_import_all(scoper::Scoper& scoper) {
         // importing the entry point, and all dependencies recursively via DependencyDispatcher:
-        ast::Script* entry_point_script = import(m_entry_point_path, dependency_dispatcher::PD_SCRIPT_IMPORT_TYPE_STRING, "entry point");
+        ast::ISourceNode* entry_point_source_node = import(m_entry_point_path, "entry point");
+        assert(0 && "NotImplemented: checking entry_point_source_node is a script.")
         if (entry_point_script == nullptr) {
             return false;            
         }
@@ -172,7 +184,7 @@ namespace pdm {
         // all ok
         return true;
     }
-    bool Compiler::pass2_typecheck_all() {
+    bool Compiler::pass2_type_check_all() {
         bool all_scripts_ok = true;
         for (ast::Script* script: m_all_scripts) {
             bool script_ok = typer::type(&m_types_mgr, script);
@@ -247,7 +259,7 @@ namespace pdm {
         // Pass 2: typechecking
         //
         
-        bool pass2_ok = pass2_typecheck_all();
+        bool pass2_ok = pass2_type_check_all();
         if (!pass2_ok) {
             std::string headline = "Typechecking Error-- Compilation Terminated";
             std::string desc = (

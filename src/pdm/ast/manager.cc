@@ -11,8 +11,9 @@ namespace pdm::ast {
       m_pool_used_in_bytes(0) {}
     
     Manager::~Manager() {
-        if (m_pool != nullptr) {
+        if (m_pool) {
             delete[] m_pool;
+            m_pool = nullptr;
         }
         m_pool_size_in_bytes = 0;
         m_pool_used_in_bytes = 0;
@@ -187,8 +188,14 @@ namespace pdm::ast {
         return emplace<SetStmt>(loc, lhs, rhs);
     }
     
-    ImportStmt* Manager::new_import_stmt(source::Loc loc, intern::String import_name, utf8::String imported_from_exp, utf8::String imported_type_exp) {
-        return emplace<ImportStmt>(loc, import_name, imported_from_exp, imported_type_exp);
+    ImportStmt* Manager::new_import_stmt(source::Loc loc, std::vector<ast::ImportStmt::FieldGroup*> import_field_groups) {
+        return emplace<ImportStmt>(loc, std::move(import_field_groups));
+    }
+    ImportStmt::FieldGroup* Manager::new_import_field_group(source::Loc loc, std::vector<ImportStmt::Field*> fields, utf8::String from_str) {
+        return emplace<ImportStmt::FieldGroup>(loc, std::move(fields), std::move(from_str));
+    }
+    ImportStmt::Field* Manager::new_import_field(source::Loc loc, intern::String field_name) {
+        return emplace<ImportStmt::Field>(loc, field_name);
     }
     UsingStmt* Manager::new_using_stmt(source::Loc loc, intern::String module_name, std::string suffix) {
         return emplace<UsingStmt>(loc, module_name, suffix);

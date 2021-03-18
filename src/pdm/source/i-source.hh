@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "source_kind.hh"
+#include "source-kind.hh"
 
 namespace pdm::source {
 

@@ -94,6 +94,10 @@
 
 %type <pdm::ast::Stmt*> chain_prefix_stmt const_stmt val_stmt var_stmt set_stmt discard_stmt
 %type <pdm::ast::HeaderStmt*> import_stmt
+%type <std::vector<ast::ImportStmt::FieldGroup*>> import_field_group_sl0;
+%type <ast::ImportStmt::FieldGroup*> import_field_group;
+%type <std::vector<ast::ImportStmt::Field*>> import_field_cl1;
+
 
 /* %type <pdm::ast::Stmt*> linkStmt linkStmtItem */
 /* %type <std::vector<pdm::ast::Stmt*>> linkStmtContent */
@@ -319,7 +323,20 @@ mod_field
  */
 
 import_stmt
-    : KW_MOD vid KW_FROM stringl KW_AS stringl    { $$ = mgr->new_import_stmt(@$, $2.ID_intstr, *$4.String_utf8string, *$6.String_utf8string); }
+    : KW_IMPORT LCYBRK import_field_group_sl0 RCYBRK {
+        $$ = mgr->new_import_stmt(@$, std::move($3));
+      }
+    ;
+import_field_group_sl0
+    : %empty {}
+    | import_field_group_sl0 import_field_group SEMICOLON  { $$ = std::move($1); $$.push_back($2); }
+    ;
+import_field_group
+    : import_field_cl1 KW_FROM stringl   { $$ = mgr->new_import_field_group(@$, std::move($1), *$3.String_utf8string); };
+    ;
+import_field_cl1
+    : vid                           { $$.push_back(mgr->new_import_field(@1, $1.ID_intstr)); }
+    | import_field_cl1 COMMA vid    { $$ = std::move($1); $$.push_back(mgr->new_import_field(@3, $3.ID_intstr)); }
     ;
 
 chain_prefix_stmt

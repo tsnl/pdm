@@ -152,7 +152,9 @@ namespace pdm::ast {
         VarStmt* new_var_stmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
         SetStmt* new_set_stmt(source::Loc loc, Exp* lhs, Exp* rhs);
         
-        ImportStmt* new_import_stmt(source::Loc loc, intern::String import_name, utf8::String imported_from_exp, utf8::String imported_type_exp);
+        ImportStmt* new_import_stmt(source::Loc loc, std::vector<ast::ImportStmt::FieldGroup*> import_field_groups);
+        ImportStmt::FieldGroup* new_import_field_group(source::Loc loc, std::vector<ImportStmt::Field*> pull_names, utf8::String from_str);
+        ImportStmt::Field* new_import_field(source::Loc loc, intern::String field_name);
         UsingStmt* new_using_stmt(source::Loc loc, intern::String module_name, std::string suffix);
         ExternStmt* new_extern_stmt(source::Loc loc, intern::String ext_mod_name, Exp* link_arg);
 

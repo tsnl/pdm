@@ -2,7 +2,7 @@
 #define INCLUDED__PDM__AST__SOURCE_NODE__I_SOURCE_NODE_HH
 
 #include "pdm/ast/node.hh"
-#include "pdm/source/i_source.hh"
+#include "pdm/source/i-source.hh"
 #include "pdm/source/loc.hh"
 
 namespace pdm::ast {

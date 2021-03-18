@@ -1,6 +1,6 @@
 #include "loc.hh"
 
-#include "i_source.hh"
+#include "i-source.hh"
 
 namespace pdm::source {
 

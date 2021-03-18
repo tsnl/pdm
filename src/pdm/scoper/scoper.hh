@@ -28,7 +28,7 @@ namespace pdm::scoper {
         struct IdExpLookupOrder       { ast::IdExp* id_exp; Context* lookup_context; };
         struct IdTypeSpecLookupOrder  { ast::IdTypeSpec* type_spec; Context* lookup_context; };
         struct IdClassSpecLookupOrder { ast::IdClassSpec* class_spec; Context* lookup_context; };
-        struct ImportLookupOrder      { ast::ImportStmt* import_stmt; Context* lookup_context; };
+        struct ImportLookupOrder      { ast::ImportStmt::Field* import_field; Context* lookup_context; };
         struct UsingLookupOrder       { ast::UsingStmt* using_stmt; Context* lookup_context; };
         struct ModAddressLookupOrder  { ast::ModAddress* mod_address; Context* lookup_context; };
 
@@ -101,7 +101,7 @@ namespace pdm::scoper {
         void place_id_exp_lookup_order(ast::IdExp* id_exp);
         void place_id_type_spec_lookup_order(ast::IdTypeSpec* id_type_spec);
         void place_id_class_spec_lookup_order(ast::IdClassSpec* id_class_spec);
-        void place_import_lookup_order(ast::ImportStmt* import_stmt);
+        void place_import_lookup_order(ast::ImportStmt::Field* import_stmt_field);
         void place_using_lookup_order(ast::UsingStmt* using_stmt);
         void place_mod_address_lookup_order(ast::ModAddress* mod_address);
 

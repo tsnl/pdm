@@ -193,6 +193,10 @@ namespace pdm { namespace parser {
         value.copy< TokenInfo > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_import_field_group: // import_field_group
+        value.copy< ast::ImportStmt::FieldGroup* > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_mul_binary_op: // mul_binary_op
       case symbol_kind::S_add_binary_op: // add_binary_op
       case symbol_kind::S_cmp_binary_op: // cmp_binary_op
@@ -338,6 +342,14 @@ namespace pdm { namespace parser {
         value.copy< pdm::ast::VPattern::Field* > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_import_field_cl1: // import_field_cl1
+        value.copy< std::vector<ast::ImportStmt::Field*> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_import_field_group_sl0: // import_field_group_sl0
+        value.copy< std::vector<ast::ImportStmt::FieldGroup*> > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_enum_type_spec_field_cl: // enum_type_spec_field_cl
         value.copy< std::vector<pdm::ast::EnumTypeSpec::Field*> > (YY_MOVE (that.value));
         break;
@@ -448,6 +460,10 @@ namespace pdm { namespace parser {
       case symbol_kind::S_floatl: // floatl
       case symbol_kind::S_stringl: // stringl
         value.move< TokenInfo > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_import_field_group: // import_field_group
+        value.move< ast::ImportStmt::FieldGroup* > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_mul_binary_op: // mul_binary_op
@@ -593,6 +609,14 @@ namespace pdm { namespace parser {
 
       case symbol_kind::S_vpattern_field: // vpattern_field
         value.move< pdm::ast::VPattern::Field* > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_import_field_cl1: // import_field_cl1
+        value.move< std::vector<ast::ImportStmt::Field*> > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_import_field_group_sl0: // import_field_group_sl0
+        value.move< std::vector<ast::ImportStmt::FieldGroup*> > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_enum_type_spec_field_cl: // enum_type_spec_field_cl
@@ -775,6 +799,10 @@ namespace pdm { namespace parser {
         value.YY_MOVE_OR_COPY< TokenInfo > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_import_field_group: // import_field_group
+        value.YY_MOVE_OR_COPY< ast::ImportStmt::FieldGroup* > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_mul_binary_op: // mul_binary_op
       case symbol_kind::S_add_binary_op: // add_binary_op
       case symbol_kind::S_cmp_binary_op: // cmp_binary_op
@@ -920,6 +948,14 @@ namespace pdm { namespace parser {
         value.YY_MOVE_OR_COPY< pdm::ast::VPattern::Field* > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_import_field_cl1: // import_field_cl1
+        value.YY_MOVE_OR_COPY< std::vector<ast::ImportStmt::Field*> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_import_field_group_sl0: // import_field_group_sl0
+        value.YY_MOVE_OR_COPY< std::vector<ast::ImportStmt::FieldGroup*> > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_enum_type_spec_field_cl: // enum_type_spec_field_cl
         value.YY_MOVE_OR_COPY< std::vector<pdm::ast::EnumTypeSpec::Field*> > (YY_MOVE (that.value));
         break;
@@ -1016,6 +1052,10 @@ namespace pdm { namespace parser {
       case symbol_kind::S_floatl: // floatl
       case symbol_kind::S_stringl: // stringl
         value.move< TokenInfo > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_import_field_group: // import_field_group
+        value.move< ast::ImportStmt::FieldGroup* > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_mul_binary_op: // mul_binary_op
@@ -1163,6 +1203,14 @@ namespace pdm { namespace parser {
         value.move< pdm::ast::VPattern::Field* > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_import_field_cl1: // import_field_cl1
+        value.move< std::vector<ast::ImportStmt::Field*> > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_import_field_group_sl0: // import_field_group_sl0
+        value.move< std::vector<ast::ImportStmt::FieldGroup*> > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_enum_type_spec_field_cl: // enum_type_spec_field_cl
         value.move< std::vector<pdm::ast::EnumTypeSpec::Field*> > (YY_MOVE (that.value));
         break;
@@ -1259,6 +1307,10 @@ namespace pdm { namespace parser {
       case symbol_kind::S_floatl: // floatl
       case symbol_kind::S_stringl: // stringl
         value.copy< TokenInfo > (that.value);
+        break;
+
+      case symbol_kind::S_import_field_group: // import_field_group
+        value.copy< ast::ImportStmt::FieldGroup* > (that.value);
         break;
 
       case symbol_kind::S_mul_binary_op: // mul_binary_op
@@ -1406,6 +1458,14 @@ namespace pdm { namespace parser {
         value.copy< pdm::ast::VPattern::Field* > (that.value);
         break;
 
+      case symbol_kind::S_import_field_cl1: // import_field_cl1
+        value.copy< std::vector<ast::ImportStmt::Field*> > (that.value);
+        break;
+
+      case symbol_kind::S_import_field_group_sl0: // import_field_group_sl0
+        value.copy< std::vector<ast::ImportStmt::FieldGroup*> > (that.value);
+        break;
+
       case symbol_kind::S_enum_type_spec_field_cl: // enum_type_spec_field_cl
         value.copy< std::vector<pdm::ast::EnumTypeSpec::Field*> > (that.value);
         break;
@@ -1501,6 +1561,10 @@ namespace pdm { namespace parser {
       case symbol_kind::S_floatl: // floatl
       case symbol_kind::S_stringl: // stringl
         value.move< TokenInfo > (that.value);
+        break;
+
+      case symbol_kind::S_import_field_group: // import_field_group
+        value.move< ast::ImportStmt::FieldGroup* > (that.value);
         break;
 
       case symbol_kind::S_mul_binary_op: // mul_binary_op
@@ -1646,6 +1710,14 @@ namespace pdm { namespace parser {
 
       case symbol_kind::S_vpattern_field: // vpattern_field
         value.move< pdm::ast::VPattern::Field* > (that.value);
+        break;
+
+      case symbol_kind::S_import_field_cl1: // import_field_cl1
+        value.move< std::vector<ast::ImportStmt::Field*> > (that.value);
+        break;
+
+      case symbol_kind::S_import_field_group_sl0: // import_field_group_sl0
+        value.move< std::vector<ast::ImportStmt::FieldGroup*> > (that.value);
         break;
 
       case symbol_kind::S_enum_type_spec_field_cl: // enum_type_spec_field_cl
@@ -1989,6 +2061,10 @@ namespace pdm { namespace parser {
         yylhs.value.emplace< TokenInfo > ();
         break;
 
+      case symbol_kind::S_import_field_group: // import_field_group
+        yylhs.value.emplace< ast::ImportStmt::FieldGroup* > ();
+        break;
+
       case symbol_kind::S_mul_binary_op: // mul_binary_op
       case symbol_kind::S_add_binary_op: // add_binary_op
       case symbol_kind::S_cmp_binary_op: // cmp_binary_op
@@ -2134,6 +2210,14 @@ namespace pdm { namespace parser {
         yylhs.value.emplace< pdm::ast::VPattern::Field* > ();
         break;
 
+      case symbol_kind::S_import_field_cl1: // import_field_cl1
+        yylhs.value.emplace< std::vector<ast::ImportStmt::Field*> > ();
+        break;
+
+      case symbol_kind::S_import_field_group_sl0: // import_field_group_sl0
+        yylhs.value.emplace< std::vector<ast::ImportStmt::FieldGroup*> > ();
+        break;
+
       case symbol_kind::S_enum_type_spec_field_cl: // enum_type_spec_field_cl
         yylhs.value.emplace< std::vector<pdm::ast::EnumTypeSpec::Field*> > ();
         break;
@@ -2219,1118 +2303,1150 @@ namespace pdm { namespace parser {
           switch (yyn)
             {
   case 2: // script: script_header script_field_sl
-#line 273 "parser.yy"
+#line 277 "parser.yy"
                                       {
     yylhs.value.as < pdm::ast::Script* > () = mgr->new_script(source, yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::HeaderStmt*> > ()), std::move(yystack_[0].value.as < std::vector<pdm::ast::Script::Field*> > ()));
 
     // setting the returnp here => this is the node parser returns.  
     *returnp = yylhs.value.as < pdm::ast::Script* > (); 
 }
-#line 2230 "parser.tab.cc"
-    break;
-
-  case 3: // script_header: %empty
-#line 281 "parser.yy"
-                                                    { yylhs.value.as < std::vector<pdm::ast::HeaderStmt*> > ().reserve(16); }
-#line 2236 "parser.tab.cc"
-    break;
-
-  case 4: // script_header: script_header script_header_stmt ";"
-#line 282 "parser.yy"
-                                                    { yylhs.value.as < std::vector<pdm::ast::HeaderStmt*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::HeaderStmt*> > ()); yylhs.value.as < std::vector<pdm::ast::HeaderStmt*> > ().push_back(yystack_[1].value.as < pdm::ast::HeaderStmt* > ()); }
-#line 2242 "parser.tab.cc"
-    break;
-
-  case 5: // script_header_stmt: import_stmt
-#line 285 "parser.yy"
-      { yylhs.value.as < pdm::ast::HeaderStmt* > () = yystack_[0].value.as < pdm::ast::HeaderStmt* > (); }
-#line 2248 "parser.tab.cc"
-    break;
-
-  case 6: // script_field: "mod" vid mod_exp
-#line 289 "parser.yy"
-                          { yylhs.value.as < pdm::ast::Script::Field* > () = mgr->new_script_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::ModExp* > ()); }
-#line 2254 "parser.tab.cc"
-    break;
-
-  case 7: // script_field_sl: script_field ";"
-#line 292 "parser.yy"
-                                                { yylhs.value.as < std::vector<pdm::ast::Script::Field*> > ().push_back(yystack_[1].value.as < pdm::ast::Script::Field* > ()); }
-#line 2260 "parser.tab.cc"
-    break;
-
-  case 8: // script_field_sl: script_field_sl script_field ";"
-#line 293 "parser.yy"
-                                                { yylhs.value.as < std::vector<pdm::ast::Script::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::Script::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::Script::Field*> > ().push_back(yystack_[1].value.as < pdm::ast::Script::Field* > ()); }
-#line 2266 "parser.tab.cc"
-    break;
-
-  case 9: // mod_exp: "{" mod_field_sl "}"
-#line 301 "parser.yy"
-                                              { yylhs.value.as < pdm::ast::ModExp* > () = mgr->new_mod_exp(yylhs.location, nullptr, std::move(yystack_[1].value.as < std::vector<pdm::ast::ModExp::Field*> > ())); }
-#line 2272 "parser.tab.cc"
-    break;
-
-  case 10: // mod_exp: tpattern "{" mod_field_sl "}"
-#line 302 "parser.yy"
-                                              { yylhs.value.as < pdm::ast::ModExp* > () = mgr->new_mod_exp(yylhs.location, yystack_[3].value.as < pdm::ast::TPattern* > (), std::move(yystack_[1].value.as < std::vector<pdm::ast::ModExp::Field*> > ())); }
-#line 2278 "parser.tab.cc"
-    break;
-
-  case 11: // mod_exp: "{" "}"
-#line 303 "parser.yy"
-                                              { yylhs.value.as < pdm::ast::ModExp* > () = mgr->new_mod_exp(yylhs.location, nullptr, std::move(std::vector<ast::ModExp::Field*>{})); }
-#line 2284 "parser.tab.cc"
-    break;
-
-  case 12: // mod_exp: tpattern "{" "}"
-#line 304 "parser.yy"
-                                              { yylhs.value.as < pdm::ast::ModExp* > () = mgr->new_mod_exp(yylhs.location, yystack_[2].value.as < pdm::ast::TPattern* > (), std::move(std::vector<ast::ModExp::Field*>{})); }
-#line 2290 "parser.tab.cc"
-    break;
-
-  case 13: // mod_field_sl: mod_field ";"
-#line 307 "parser.yy"
-                                        { yylhs.value.as < std::vector<pdm::ast::ModExp::Field*> > ().push_back(yystack_[1].value.as < pdm::ast::ModExp::Field* > ()); }
-#line 2296 "parser.tab.cc"
-    break;
-
-  case 14: // mod_field_sl: mod_field_sl mod_field ";"
-#line 308 "parser.yy"
-                                        { yylhs.value.as < std::vector<pdm::ast::ModExp::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::ModExp::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::ModExp::Field*> > ().push_back(yystack_[1].value.as < pdm::ast::ModExp::Field* > ()); }
-#line 2302 "parser.tab.cc"
-    break;
-
-  case 15: // mod_field: vid "=" long_exp
-#line 311 "parser.yy"
-                           { yylhs.value.as < pdm::ast::ModExp::Field* > () = mgr->new_value_mod_field(yylhs.location, yystack_[2].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2308 "parser.tab.cc"
-    break;
-
-  case 16: // mod_field: tid "=" type_spec
-#line 312 "parser.yy"
-                           { yylhs.value.as < pdm::ast::ModExp::Field* > () = mgr->new_type_mod_field(yylhs.location, yystack_[2].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 2314 "parser.tab.cc"
     break;
 
-  case 17: // mod_field: cid "=" class_spec
-#line 313 "parser.yy"
-                           { yylhs.value.as < pdm::ast::ModExp::Field* > () = mgr->new_class_mod_field(yylhs.location, yystack_[2].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::ClassSpec* > ()); }
+  case 3: // script_header: %empty
+#line 285 "parser.yy"
+                                                    { yylhs.value.as < std::vector<pdm::ast::HeaderStmt*> > ().reserve(16); }
 #line 2320 "parser.tab.cc"
     break;
 
-  case 18: // mod_field: "mod" vid mod_exp
-#line 314 "parser.yy"
-                           { yylhs.value.as < pdm::ast::ModExp::Field* > () = mgr->new_mod_mod_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::ModExp* > ()); }
+  case 4: // script_header: script_header script_header_stmt ";"
+#line 286 "parser.yy"
+                                                    { yylhs.value.as < std::vector<pdm::ast::HeaderStmt*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::HeaderStmt*> > ()); yylhs.value.as < std::vector<pdm::ast::HeaderStmt*> > ().push_back(yystack_[1].value.as < pdm::ast::HeaderStmt* > ()); }
 #line 2326 "parser.tab.cc"
     break;
 
-  case 19: // import_stmt: "mod" vid "from" stringl "as" stringl
-#line 322 "parser.yy"
-                                                  { yylhs.value.as < pdm::ast::HeaderStmt* > () = mgr->new_import_stmt(yylhs.location, yystack_[4].value.as < TokenInfo > ().ID_intstr, *yystack_[2].value.as < TokenInfo > ().String_utf8string, *yystack_[0].value.as < TokenInfo > ().String_utf8string); }
+  case 5: // script_header_stmt: import_stmt
+#line 289 "parser.yy"
+      { yylhs.value.as < pdm::ast::HeaderStmt* > () = yystack_[0].value.as < pdm::ast::HeaderStmt* > (); }
 #line 2332 "parser.tab.cc"
     break;
 
-  case 20: // chain_prefix_stmt: const_stmt
-#line 326 "parser.yy"
-      { yylhs.value.as < pdm::ast::Stmt* > () = yystack_[0].value.as < pdm::ast::Stmt* > (); }
+  case 6: // script_field: "mod" vid mod_exp
+#line 293 "parser.yy"
+                          { yylhs.value.as < pdm::ast::Script::Field* > () = mgr->new_script_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::ModExp* > ()); }
 #line 2338 "parser.tab.cc"
     break;
 
-  case 21: // chain_prefix_stmt: val_stmt
-#line 327 "parser.yy"
-      { yylhs.value.as < pdm::ast::Stmt* > () = yystack_[0].value.as < pdm::ast::Stmt* > (); }
+  case 7: // script_field_sl: script_field ";"
+#line 296 "parser.yy"
+                                                { yylhs.value.as < std::vector<pdm::ast::Script::Field*> > ().push_back(yystack_[1].value.as < pdm::ast::Script::Field* > ()); }
 #line 2344 "parser.tab.cc"
     break;
 
-  case 22: // chain_prefix_stmt: var_stmt
-#line 328 "parser.yy"
-      { yylhs.value.as < pdm::ast::Stmt* > () = yystack_[0].value.as < pdm::ast::Stmt* > (); }
+  case 8: // script_field_sl: script_field_sl script_field ";"
+#line 297 "parser.yy"
+                                                { yylhs.value.as < std::vector<pdm::ast::Script::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::Script::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::Script::Field*> > ().push_back(yystack_[1].value.as < pdm::ast::Script::Field* > ()); }
 #line 2350 "parser.tab.cc"
     break;
 
-  case 23: // chain_prefix_stmt: set_stmt
-#line 329 "parser.yy"
-      { yylhs.value.as < pdm::ast::Stmt* > () = yystack_[0].value.as < pdm::ast::Stmt* > (); }
+  case 9: // mod_exp: "{" mod_field_sl "}"
+#line 305 "parser.yy"
+                                              { yylhs.value.as < pdm::ast::ModExp* > () = mgr->new_mod_exp(yylhs.location, nullptr, std::move(yystack_[1].value.as < std::vector<pdm::ast::ModExp::Field*> > ())); }
 #line 2356 "parser.tab.cc"
     break;
 
-  case 24: // chain_prefix_stmt: discard_stmt
-#line 330 "parser.yy"
-      { yylhs.value.as < pdm::ast::Stmt* > () = yystack_[0].value.as < pdm::ast::Stmt* > (); }
+  case 10: // mod_exp: tpattern "{" mod_field_sl "}"
+#line 306 "parser.yy"
+                                              { yylhs.value.as < pdm::ast::ModExp* > () = mgr->new_mod_exp(yylhs.location, yystack_[3].value.as < pdm::ast::TPattern* > (), std::move(yystack_[1].value.as < std::vector<pdm::ast::ModExp::Field*> > ())); }
 #line 2362 "parser.tab.cc"
     break;
 
-  case 25: // const_stmt: "const" lpattern "=" expr
-#line 333 "parser.yy"
-                                  { yylhs.value.as < pdm::ast::Stmt* > () = mgr->new_const_stmt(yylhs.location, yystack_[2].value.as < pdm::ast::LPattern* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+  case 11: // mod_exp: "{" "}"
+#line 307 "parser.yy"
+                                              { yylhs.value.as < pdm::ast::ModExp* > () = mgr->new_mod_exp(yylhs.location, nullptr, std::move(std::vector<ast::ModExp::Field*>{})); }
 #line 2368 "parser.tab.cc"
     break;
 
-  case 26: // val_stmt: "val" lpattern "=" expr
-#line 336 "parser.yy"
-                                  { yylhs.value.as < pdm::ast::Stmt* > () = mgr->new_val_stmt(yylhs.location, yystack_[2].value.as < pdm::ast::LPattern* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+  case 12: // mod_exp: tpattern "{" "}"
+#line 308 "parser.yy"
+                                              { yylhs.value.as < pdm::ast::ModExp* > () = mgr->new_mod_exp(yylhs.location, yystack_[2].value.as < pdm::ast::TPattern* > (), std::move(std::vector<ast::ModExp::Field*>{})); }
 #line 2374 "parser.tab.cc"
     break;
 
-  case 27: // var_stmt: "var" lpattern "=" expr
-#line 339 "parser.yy"
-                                  { yylhs.value.as < pdm::ast::Stmt* > () = mgr->new_var_stmt(yylhs.location, yystack_[2].value.as < pdm::ast::LPattern* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+  case 13: // mod_field_sl: mod_field ";"
+#line 311 "parser.yy"
+                                        { yylhs.value.as < std::vector<pdm::ast::ModExp::Field*> > ().push_back(yystack_[1].value.as < pdm::ast::ModExp::Field* > ()); }
 #line 2380 "parser.tab.cc"
     break;
 
-  case 28: // set_stmt: "set" expr "=" expr
-#line 342 "parser.yy"
-                              { yylhs.value.as < pdm::ast::Stmt* > () = mgr->new_set_stmt(yylhs.location, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+  case 14: // mod_field_sl: mod_field_sl mod_field ";"
+#line 312 "parser.yy"
+                                        { yylhs.value.as < std::vector<pdm::ast::ModExp::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::ModExp::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::ModExp::Field*> > ().push_back(yystack_[1].value.as < pdm::ast::ModExp::Field* > ()); }
 #line 2386 "parser.tab.cc"
     break;
 
-  case 29: // discard_stmt: "discard" expr
-#line 345 "parser.yy"
-                        { yylhs.value.as < pdm::ast::Stmt* > () = mgr->new_discard_stmt(yylhs.location, yystack_[0].value.as < pdm::ast::Exp* > ()); }
+  case 15: // mod_field: vid "=" long_exp
+#line 315 "parser.yy"
+                           { yylhs.value.as < pdm::ast::ModExp::Field* > () = mgr->new_value_mod_field(yylhs.location, yystack_[2].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::Exp* > ()); }
 #line 2392 "parser.tab.cc"
     break;
 
-  case 30: // tid: "TypeId"
-#line 352 "parser.yy"
-     { yylhs.value.as < TokenInfo > () = yystack_[0].value.as < TokenInfo > (); }
+  case 16: // mod_field: tid "=" type_spec
+#line 316 "parser.yy"
+                           { yylhs.value.as < pdm::ast::ModExp::Field* > () = mgr->new_type_mod_field(yylhs.location, yystack_[2].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 2398 "parser.tab.cc"
     break;
 
-  case 31: // vid: "val_id"
-#line 353 "parser.yy"
-     { yylhs.value.as < TokenInfo > () = yystack_[0].value.as < TokenInfo > (); }
+  case 17: // mod_field: cid "=" class_spec
+#line 317 "parser.yy"
+                           { yylhs.value.as < pdm::ast::ModExp::Field* > () = mgr->new_class_mod_field(yylhs.location, yystack_[2].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::ClassSpec* > ()); }
 #line 2404 "parser.tab.cc"
     break;
 
-  case 32: // cid: "CLS_ID"
-#line 354 "parser.yy"
-     { yylhs.value.as < TokenInfo > () = yystack_[0].value.as < TokenInfo > (); }
+  case 18: // mod_field: "mod" vid mod_exp
+#line 318 "parser.yy"
+                           { yylhs.value.as < pdm::ast::ModExp::Field* > () = mgr->new_mod_mod_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::ModExp* > ()); }
 #line 2410 "parser.tab.cc"
     break;
 
-  case 33: // floatl: "4.2"
-#line 357 "parser.yy"
-      { yylhs.value.as < TokenInfo > () = yystack_[0].value.as < TokenInfo > (); }
-#line 2416 "parser.tab.cc"
+  case 19: // import_stmt: "import" "{" import_field_group_sl0 "}"
+#line 326 "parser.yy"
+                                                     {
+        yylhs.value.as < pdm::ast::HeaderStmt* > () = mgr->new_import_stmt(yylhs.location, std::move(yystack_[1].value.as < std::vector<ast::ImportStmt::FieldGroup*> > ()));
+      }
+#line 2418 "parser.tab.cc"
     break;
 
-  case 34: // stringl: "'sq-string-literal'"
-#line 360 "parser.yy"
-      { yylhs.value.as < TokenInfo > () = yystack_[0].value.as < TokenInfo > (); }
-#line 2422 "parser.tab.cc"
+  case 20: // import_field_group_sl0: %empty
+#line 331 "parser.yy"
+             {}
+#line 2424 "parser.tab.cc"
     break;
 
-  case 35: // stringl: "\"dq-string-literal\""
-#line 361 "parser.yy"
-      { yylhs.value.as < TokenInfo > () = yystack_[0].value.as < TokenInfo > (); }
-#line 2428 "parser.tab.cc"
+  case 21: // import_field_group_sl0: import_field_group_sl0 import_field_group ";"
+#line 332 "parser.yy"
+                                                           { yylhs.value.as < std::vector<ast::ImportStmt::FieldGroup*> > () = std::move(yystack_[2].value.as < std::vector<ast::ImportStmt::FieldGroup*> > ()); yylhs.value.as < std::vector<ast::ImportStmt::FieldGroup*> > ().push_back(yystack_[1].value.as < ast::ImportStmt::FieldGroup* > ()); }
+#line 2430 "parser.tab.cc"
     break;
 
-  case 36: // mod_prefix: vid "::"
-#line 364 "parser.yy"
-                                                      { yylhs.value.as < pdm::ast::ModAddress* > () = mgr->new_mod_address(yylhs.location, nullptr, yystack_[1].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::TArg*>{})); }
-#line 2434 "parser.tab.cc"
+  case 22: // import_field_group: import_field_cl1 "from" stringl
+#line 335 "parser.yy"
+                                         { yylhs.value.as < ast::ImportStmt::FieldGroup* > () = mgr->new_import_field_group(yylhs.location, std::move(yystack_[2].value.as < std::vector<ast::ImportStmt::Field*> > ()), *yystack_[0].value.as < TokenInfo > ().String_utf8string); }
+#line 2436 "parser.tab.cc"
     break;
 
-  case 37: // mod_prefix: vid "[" targ_cl "]" "::"
-#line 365 "parser.yy"
-                                                      { yylhs.value.as < pdm::ast::ModAddress* > () = mgr->new_mod_address(yylhs.location, nullptr, yystack_[4].value.as < TokenInfo > ().ID_intstr, std::move(yystack_[2].value.as < std::vector<pdm::ast::TArg*> > ())); }
-#line 2440 "parser.tab.cc"
+  case 23: // import_field_cl1: vid
+#line 338 "parser.yy"
+                                    { yylhs.value.as < std::vector<ast::ImportStmt::Field*> > ().push_back(mgr->new_import_field(yystack_[0].location, yystack_[0].value.as < TokenInfo > ().ID_intstr)); }
+#line 2442 "parser.tab.cc"
     break;
 
-  case 38: // mod_prefix: mod_prefix vid "::"
-#line 366 "parser.yy"
-                                                      { yylhs.value.as < pdm::ast::ModAddress* > () = mgr->new_mod_address(yylhs.location, yystack_[2].value.as < pdm::ast::ModAddress* > (), yystack_[1].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::TArg*>{})); }
-#line 2446 "parser.tab.cc"
+  case 24: // import_field_cl1: import_field_cl1 "," vid
+#line 339 "parser.yy"
+                                    { yylhs.value.as < std::vector<ast::ImportStmt::Field*> > () = std::move(yystack_[2].value.as < std::vector<ast::ImportStmt::Field*> > ()); yylhs.value.as < std::vector<ast::ImportStmt::Field*> > ().push_back(mgr->new_import_field(yystack_[0].location, yystack_[0].value.as < TokenInfo > ().ID_intstr)); }
+#line 2448 "parser.tab.cc"
     break;
 
-  case 39: // mod_prefix: mod_prefix vid "[" targ_cl "]" "::"
-#line 367 "parser.yy"
-                                                      { yylhs.value.as < pdm::ast::ModAddress* > () = mgr->new_mod_address(yylhs.location, yystack_[5].value.as < pdm::ast::ModAddress* > (), yystack_[4].value.as < TokenInfo > ().ID_intstr, std::move(yystack_[2].value.as < std::vector<pdm::ast::TArg*> > ())); }
-#line 2452 "parser.tab.cc"
+  case 25: // chain_prefix_stmt: const_stmt
+#line 343 "parser.yy"
+      { yylhs.value.as < pdm::ast::Stmt* > () = yystack_[0].value.as < pdm::ast::Stmt* > (); }
+#line 2454 "parser.tab.cc"
     break;
 
-  case 40: // expr: binary_exp
+  case 26: // chain_prefix_stmt: val_stmt
+#line 344 "parser.yy"
+      { yylhs.value.as < pdm::ast::Stmt* > () = yystack_[0].value.as < pdm::ast::Stmt* > (); }
+#line 2460 "parser.tab.cc"
+    break;
+
+  case 27: // chain_prefix_stmt: var_stmt
+#line 345 "parser.yy"
+      { yylhs.value.as < pdm::ast::Stmt* > () = yystack_[0].value.as < pdm::ast::Stmt* > (); }
+#line 2466 "parser.tab.cc"
+    break;
+
+  case 28: // chain_prefix_stmt: set_stmt
+#line 346 "parser.yy"
+      { yylhs.value.as < pdm::ast::Stmt* > () = yystack_[0].value.as < pdm::ast::Stmt* > (); }
+#line 2472 "parser.tab.cc"
+    break;
+
+  case 29: // chain_prefix_stmt: discard_stmt
+#line 347 "parser.yy"
+      { yylhs.value.as < pdm::ast::Stmt* > () = yystack_[0].value.as < pdm::ast::Stmt* > (); }
+#line 2478 "parser.tab.cc"
+    break;
+
+  case 30: // const_stmt: "const" lpattern "=" expr
+#line 350 "parser.yy"
+                                  { yylhs.value.as < pdm::ast::Stmt* > () = mgr->new_const_stmt(yylhs.location, yystack_[2].value.as < pdm::ast::LPattern* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 2484 "parser.tab.cc"
+    break;
+
+  case 31: // val_stmt: "val" lpattern "=" expr
+#line 353 "parser.yy"
+                                  { yylhs.value.as < pdm::ast::Stmt* > () = mgr->new_val_stmt(yylhs.location, yystack_[2].value.as < pdm::ast::LPattern* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 2490 "parser.tab.cc"
+    break;
+
+  case 32: // var_stmt: "var" lpattern "=" expr
+#line 356 "parser.yy"
+                                  { yylhs.value.as < pdm::ast::Stmt* > () = mgr->new_var_stmt(yylhs.location, yystack_[2].value.as < pdm::ast::LPattern* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 2496 "parser.tab.cc"
+    break;
+
+  case 33: // set_stmt: "set" expr "=" expr
+#line 359 "parser.yy"
+                              { yylhs.value.as < pdm::ast::Stmt* > () = mgr->new_set_stmt(yylhs.location, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 2502 "parser.tab.cc"
+    break;
+
+  case 34: // discard_stmt: "discard" expr
+#line 362 "parser.yy"
+                        { yylhs.value.as < pdm::ast::Stmt* > () = mgr->new_discard_stmt(yylhs.location, yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 2508 "parser.tab.cc"
+    break;
+
+  case 35: // tid: "TypeId"
+#line 369 "parser.yy"
+     { yylhs.value.as < TokenInfo > () = yystack_[0].value.as < TokenInfo > (); }
+#line 2514 "parser.tab.cc"
+    break;
+
+  case 36: // vid: "val_id"
+#line 370 "parser.yy"
+     { yylhs.value.as < TokenInfo > () = yystack_[0].value.as < TokenInfo > (); }
+#line 2520 "parser.tab.cc"
+    break;
+
+  case 37: // cid: "CLS_ID"
+#line 371 "parser.yy"
+     { yylhs.value.as < TokenInfo > () = yystack_[0].value.as < TokenInfo > (); }
+#line 2526 "parser.tab.cc"
+    break;
+
+  case 38: // floatl: "4.2"
 #line 374 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2458 "parser.tab.cc"
+      { yylhs.value.as < TokenInfo > () = yystack_[0].value.as < TokenInfo > (); }
+#line 2532 "parser.tab.cc"
     break;
 
-  case 41: // long_exp: expr
+  case 39: // stringl: "'sq-string-literal'"
 #line 377 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2464 "parser.tab.cc"
+      { yylhs.value.as < TokenInfo > () = yystack_[0].value.as < TokenInfo > (); }
+#line 2538 "parser.tab.cc"
     break;
 
-  case 42: // long_exp: lambda_exp
+  case 40: // stringl: "\"dq-string-literal\""
 #line 378 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2470 "parser.tab.cc"
+      { yylhs.value.as < TokenInfo > () = yystack_[0].value.as < TokenInfo > (); }
+#line 2544 "parser.tab.cc"
     break;
 
-  case 43: // expr_cl2: expr "," expr
-#line 390 "parser.yy"
-                             { yylhs.value.as < std::vector<pdm::ast::Exp*> > ().reserve(2); yylhs.value.as < std::vector<pdm::ast::Exp*> > ().push_back(yystack_[2].value.as < pdm::ast::Exp* > ()); yylhs.value.as < std::vector<pdm::ast::Exp*> > ().push_back(yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2476 "parser.tab.cc"
+  case 41: // mod_prefix: vid "::"
+#line 381 "parser.yy"
+                                                      { yylhs.value.as < pdm::ast::ModAddress* > () = mgr->new_mod_address(yylhs.location, nullptr, yystack_[1].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::TArg*>{})); }
+#line 2550 "parser.tab.cc"
     break;
 
-  case 44: // expr_cl2: expr_cl2 "," expr
+  case 42: // mod_prefix: vid "[" targ_cl "]" "::"
+#line 382 "parser.yy"
+                                                      { yylhs.value.as < pdm::ast::ModAddress* > () = mgr->new_mod_address(yylhs.location, nullptr, yystack_[4].value.as < TokenInfo > ().ID_intstr, std::move(yystack_[2].value.as < std::vector<pdm::ast::TArg*> > ())); }
+#line 2556 "parser.tab.cc"
+    break;
+
+  case 43: // mod_prefix: mod_prefix vid "::"
+#line 383 "parser.yy"
+                                                      { yylhs.value.as < pdm::ast::ModAddress* > () = mgr->new_mod_address(yylhs.location, yystack_[2].value.as < pdm::ast::ModAddress* > (), yystack_[1].value.as < TokenInfo > ().ID_intstr, std::move(std::vector<ast::TArg*>{})); }
+#line 2562 "parser.tab.cc"
+    break;
+
+  case 44: // mod_prefix: mod_prefix vid "[" targ_cl "]" "::"
+#line 384 "parser.yy"
+                                                      { yylhs.value.as < pdm::ast::ModAddress* > () = mgr->new_mod_address(yylhs.location, yystack_[5].value.as < pdm::ast::ModAddress* > (), yystack_[4].value.as < TokenInfo > ().ID_intstr, std::move(yystack_[2].value.as < std::vector<pdm::ast::TArg*> > ())); }
+#line 2568 "parser.tab.cc"
+    break;
+
+  case 45: // expr: binary_exp
 #line 391 "parser.yy"
-                             { yylhs.value.as < std::vector<pdm::ast::Exp*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::Exp*> > ()); yylhs.value.as < std::vector<pdm::ast::Exp*> > ().push_back(yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2482 "parser.tab.cc"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2574 "parser.tab.cc"
     break;
 
-  case 45: // type_query_exp_sl0: %empty
+  case 46: // long_exp: expr
 #line 394 "parser.yy"
-                                                  {}
-#line 2488 "parser.tab.cc"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2580 "parser.tab.cc"
     break;
 
-  case 46: // type_query_exp_sl0: type_query_exp_sl0 type_query_exp ";"
+  case 47: // long_exp: lambda_exp
 #line 395 "parser.yy"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2586 "parser.tab.cc"
+    break;
+
+  case 48: // expr_cl2: expr "," expr
+#line 407 "parser.yy"
+                             { yylhs.value.as < std::vector<pdm::ast::Exp*> > ().reserve(2); yylhs.value.as < std::vector<pdm::ast::Exp*> > ().push_back(yystack_[2].value.as < pdm::ast::Exp* > ()); yylhs.value.as < std::vector<pdm::ast::Exp*> > ().push_back(yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 2592 "parser.tab.cc"
+    break;
+
+  case 49: // expr_cl2: expr_cl2 "," expr
+#line 408 "parser.yy"
+                             { yylhs.value.as < std::vector<pdm::ast::Exp*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::Exp*> > ()); yylhs.value.as < std::vector<pdm::ast::Exp*> > ().push_back(yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 2598 "parser.tab.cc"
+    break;
+
+  case 50: // type_query_exp_sl0: %empty
+#line 411 "parser.yy"
+                                                  {}
+#line 2604 "parser.tab.cc"
+    break;
+
+  case 51: // type_query_exp_sl0: type_query_exp_sl0 type_query_exp ";"
+#line 412 "parser.yy"
                                                   { yylhs.value.as < std::vector<pdm::ast::TypeQueryExp*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::TypeQueryExp*> > ()); yylhs.value.as < std::vector<pdm::ast::TypeQueryExp*> > ().push_back(yystack_[1].value.as < pdm::ast::TypeQueryExp* > ()); }
-#line 2494 "parser.tab.cc"
+#line 2610 "parser.tab.cc"
     break;
 
-  case 47: // bracketed_exp: paren_exp
-#line 399 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2500 "parser.tab.cc"
-    break;
-
-  case 48: // bracketed_exp: vtupleExpr
-#line 400 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2506 "parser.tab.cc"
-    break;
-
-  case 49: // bracketed_exp: vstructExpr
-#line 401 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2512 "parser.tab.cc"
-    break;
-
-  case 50: // bracketed_exp: chain_exp
-#line 402 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2518 "parser.tab.cc"
-    break;
-
-  case 51: // paren_exp: "(" long_exp ")"
-#line 413 "parser.yy"
-                              { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_paren_exp(yylhs.location, yystack_[1].value.as < pdm::ast::Exp* > ()); }
-#line 2524 "parser.tab.cc"
-    break;
-
-  case 52: // vtupleExpr: "(" ")"
+  case 52: // bracketed_exp: paren_exp
 #line 416 "parser.yy"
-                                   { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_tuple_exp(yylhs.location, std::move(std::vector<ast::Exp*>())); }
-#line 2530 "parser.tab.cc"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2616 "parser.tab.cc"
     break;
 
-  case 53: // vtupleExpr: "(" expr "," ")"
+  case 53: // bracketed_exp: vtupleExpr
 #line 417 "parser.yy"
-                                   { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_tuple_exp(yylhs.location, std::move(std::vector(1,yystack_[2].value.as < pdm::ast::Exp* > ()))); }
-#line 2536 "parser.tab.cc"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2622 "parser.tab.cc"
     break;
 
-  case 54: // vtupleExpr: "(" expr_cl2 ")"
+  case 54: // bracketed_exp: vstructExpr
 #line 418 "parser.yy"
-                                   { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_tuple_exp(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::Exp*> > ())); }
-#line 2542 "parser.tab.cc"
-    break;
-
-  case 55: // vstructExpr: "{" struct_exp_field_cl "}"
-#line 421 "parser.yy"
-                                            { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_struct_exp(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::StructExp::Field*> > ())); }
-#line 2548 "parser.tab.cc"
-    break;
-
-  case 56: // primary_exp: bracketed_exp
-#line 424 "parser.yy"
       { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2554 "parser.tab.cc"
+#line 2628 "parser.tab.cc"
     break;
 
-  case 57: // primary_exp: vid
-#line 425 "parser.yy"
-                     { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_id_exp(yylhs.location, yystack_[0].value.as < TokenInfo > ().ID_intstr); }
-#line 2560 "parser.tab.cc"
-    break;
-
-  case 58: // primary_exp: int_expr
-#line 426 "parser.yy"
+  case 55: // bracketed_exp: chain_exp
+#line 419 "parser.yy"
       { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2566 "parser.tab.cc"
+#line 2634 "parser.tab.cc"
     break;
 
-  case 59: // primary_exp: floatl
-#line 427 "parser.yy"
-                     { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_float_exp(yylhs.location, yystack_[0].value.as < TokenInfo > ().Float); }
-#line 2572 "parser.tab.cc"
-    break;
-
-  case 60: // primary_exp: stringls
-#line 428 "parser.yy"
-                     { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_string_exp(yylhs.location, std::move(yystack_[0].value.as < std::vector<pdm::ast::StringExp::Piece> > ())); }
-#line 2578 "parser.tab.cc"
-    break;
-
-  case 61: // primary_exp: if_exp
-#line 429 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2584 "parser.tab.cc"
-    break;
-
-  case 62: // primary_exp: mod_prefix vid
+  case 56: // paren_exp: "(" long_exp ")"
 #line 430 "parser.yy"
-                        { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_module_dot_name_exp(yylhs.location, yystack_[1].value.as < pdm::ast::ModAddress* > (), yystack_[0].value.as < TokenInfo > ().ID_intstr); }
-#line 2590 "parser.tab.cc"
+                              { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_paren_exp(yylhs.location, yystack_[1].value.as < pdm::ast::Exp* > ()); }
+#line 2640 "parser.tab.cc"
     break;
 
-  case 63: // int_expr: "42"
+  case 57: // vtupleExpr: "(" ")"
 #line 433 "parser.yy"
-                { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_int_exp(yylhs.location, yystack_[0].value.as < TokenInfo > ().Int, ast::IntExp::Base::Dec, false); }
-#line 2596 "parser.tab.cc"
+                                   { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_tuple_exp(yylhs.location, std::move(std::vector<ast::Exp*>())); }
+#line 2646 "parser.tab.cc"
     break;
 
-  case 64: // int_expr: "0x2a"
+  case 58: // vtupleExpr: "(" expr "," ")"
 #line 434 "parser.yy"
-                { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_int_exp(yylhs.location, yystack_[0].value.as < TokenInfo > ().Int, ast::IntExp::Base::Hex, false); }
-#line 2602 "parser.tab.cc"
+                                   { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_tuple_exp(yylhs.location, std::move(std::vector(1,yystack_[2].value.as < pdm::ast::Exp* > ()))); }
+#line 2652 "parser.tab.cc"
     break;
 
-  case 65: // int_expr: "42u"
+  case 59: // vtupleExpr: "(" expr_cl2 ")"
 #line 435 "parser.yy"
-                         { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_int_exp(yylhs.location, yystack_[0].value.as < TokenInfo > ().Int, ast::IntExp::Base::Dec, true); }
-#line 2608 "parser.tab.cc"
+                                   { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_tuple_exp(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::Exp*> > ())); }
+#line 2658 "parser.tab.cc"
     break;
 
-  case 66: // int_expr: "0x2Au"
-#line 436 "parser.yy"
-                         { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_int_exp(yylhs.location, yystack_[0].value.as < TokenInfo > ().Int, ast::IntExp::Base::Hex, true); }
-#line 2614 "parser.tab.cc"
+  case 60: // vstructExpr: "{" struct_exp_field_cl "}"
+#line 438 "parser.yy"
+                                            { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_struct_exp(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::StructExp::Field*> > ())); }
+#line 2664 "parser.tab.cc"
     break;
 
-  case 67: // stringls: "'sq-string-literal'"
-#line 439 "parser.yy"
-                             { yylhs.value.as < std::vector<pdm::ast::StringExp::Piece> > ().emplace_back(yylhs.location, *yystack_[0].value.as < TokenInfo > ().String_utf8string, ast::StringExp::QuoteKind::SingleQuote); }
-#line 2620 "parser.tab.cc"
-    break;
-
-  case 68: // stringls: "\"dq-string-literal\""
-#line 440 "parser.yy"
-                             { yylhs.value.as < std::vector<pdm::ast::StringExp::Piece> > ().emplace_back(yylhs.location, *yystack_[0].value.as < TokenInfo > ().String_utf8string, ast::StringExp::QuoteKind::DoubleQuote); }
-#line 2626 "parser.tab.cc"
-    break;
-
-  case 69: // stringls: stringls "'sq-string-literal'"
+  case 61: // primary_exp: bracketed_exp
 #line 441 "parser.yy"
-                             { yylhs.value.as < std::vector<pdm::ast::StringExp::Piece> > () = std::move(yystack_[1].value.as < std::vector<pdm::ast::StringExp::Piece> > ()); yylhs.value.as < std::vector<pdm::ast::StringExp::Piece> > ().emplace_back(yystack_[0].location, *yystack_[0].value.as < TokenInfo > ().String_utf8string, ast::StringExp::QuoteKind::SingleQuote); }
-#line 2632 "parser.tab.cc"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2670 "parser.tab.cc"
     break;
 
-  case 70: // stringls: stringls "\"dq-string-literal\""
+  case 62: // primary_exp: vid
 #line 442 "parser.yy"
-                             { yylhs.value.as < std::vector<pdm::ast::StringExp::Piece> > () = std::move(yystack_[1].value.as < std::vector<pdm::ast::StringExp::Piece> > ()); yylhs.value.as < std::vector<pdm::ast::StringExp::Piece> > ().emplace_back(yystack_[0].location, *yystack_[0].value.as < TokenInfo > ().String_utf8string, ast::StringExp::QuoteKind::DoubleQuote); }
-#line 2638 "parser.tab.cc"
+                     { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_id_exp(yylhs.location, yystack_[0].value.as < TokenInfo > ().ID_intstr); }
+#line 2676 "parser.tab.cc"
     break;
 
-  case 71: // if_exp: "if" bracketed_exp "then" bracketed_exp
+  case 63: // primary_exp: int_expr
+#line 443 "parser.yy"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2682 "parser.tab.cc"
+    break;
+
+  case 64: // primary_exp: floatl
+#line 444 "parser.yy"
+                     { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_float_exp(yylhs.location, yystack_[0].value.as < TokenInfo > ().Float); }
+#line 2688 "parser.tab.cc"
+    break;
+
+  case 65: // primary_exp: stringls
 #line 445 "parser.yy"
-                                                                        { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_if_exp(yylhs.location, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > (), nullptr); }
-#line 2644 "parser.tab.cc"
+                     { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_string_exp(yylhs.location, std::move(yystack_[0].value.as < std::vector<pdm::ast::StringExp::Piece> > ())); }
+#line 2694 "parser.tab.cc"
     break;
 
-  case 72: // if_exp: "if" bracketed_exp "then" bracketed_exp "else" primary_exp
+  case 66: // primary_exp: if_exp
 #line 446 "parser.yy"
-                                                                        { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_if_exp(yylhs.location, yystack_[4].value.as < pdm::ast::Exp* > (), yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2650 "parser.tab.cc"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2700 "parser.tab.cc"
     break;
 
-  case 73: // chain_exp: "{" "}"
-#line 449 "parser.yy"
-                                               { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_chain_exp(yylhs.location, std::move(std::vector<ast::Stmt*>{}), nullptr); }
-#line 2656 "parser.tab.cc"
+  case 67: // primary_exp: mod_prefix vid
+#line 447 "parser.yy"
+                        { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_module_dot_name_exp(yylhs.location, yystack_[1].value.as < pdm::ast::ModAddress* > (), yystack_[0].value.as < TokenInfo > ().ID_intstr); }
+#line 2706 "parser.tab.cc"
     break;
 
-  case 74: // chain_exp: "{" long_exp "}"
+  case 68: // int_expr: "42"
 #line 450 "parser.yy"
-                                               { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_chain_exp(yylhs.location, std::move(std::vector<ast::Stmt*>{}), yystack_[1].value.as < pdm::ast::Exp* > ()); }
-#line 2662 "parser.tab.cc"
+                { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_int_exp(yylhs.location, yystack_[0].value.as < TokenInfo > ().Int, ast::IntExp::Base::Dec, false); }
+#line 2712 "parser.tab.cc"
     break;
 
-  case 75: // chain_exp: "{" chain_prefix "}"
+  case 69: // int_expr: "0x2a"
 #line 451 "parser.yy"
-                                               { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_chain_exp(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::Stmt*> > ()), nullptr); }
-#line 2668 "parser.tab.cc"
+                { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_int_exp(yylhs.location, yystack_[0].value.as < TokenInfo > ().Int, ast::IntExp::Base::Hex, false); }
+#line 2718 "parser.tab.cc"
     break;
 
-  case 76: // chain_exp: "{" chain_prefix long_exp "}"
+  case 70: // int_expr: "42u"
 #line 452 "parser.yy"
-                                               { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_chain_exp(yylhs.location, std::move(yystack_[2].value.as < std::vector<pdm::ast::Stmt*> > ()), yystack_[1].value.as < pdm::ast::Exp* > ()); }
-#line 2674 "parser.tab.cc"
+                         { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_int_exp(yylhs.location, yystack_[0].value.as < TokenInfo > ().Int, ast::IntExp::Base::Dec, true); }
+#line 2724 "parser.tab.cc"
     break;
 
-  case 77: // chain_prefix: chain_prefix_stmt ";"
-#line 455 "parser.yy"
-                                                { yylhs.value.as < std::vector<pdm::ast::Stmt*> > ().push_back(yystack_[1].value.as < pdm::ast::Stmt* > ()); }
-#line 2680 "parser.tab.cc"
+  case 71: // int_expr: "0x2Au"
+#line 453 "parser.yy"
+                         { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_int_exp(yylhs.location, yystack_[0].value.as < TokenInfo > ().Int, ast::IntExp::Base::Hex, true); }
+#line 2730 "parser.tab.cc"
     break;
 
-  case 78: // chain_prefix: chain_prefix chain_prefix_stmt ";"
+  case 72: // stringls: "'sq-string-literal'"
 #line 456 "parser.yy"
-                                                { yylhs.value.as < std::vector<pdm::ast::Stmt*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::Stmt*> > ()); yylhs.value.as < std::vector<pdm::ast::Stmt*> > ().push_back(yystack_[1].value.as < pdm::ast::Stmt* > ()); }
-#line 2686 "parser.tab.cc"
+                             { yylhs.value.as < std::vector<pdm::ast::StringExp::Piece> > ().emplace_back(yylhs.location, *yystack_[0].value.as < TokenInfo > ().String_utf8string, ast::StringExp::QuoteKind::SingleQuote); }
+#line 2736 "parser.tab.cc"
     break;
 
-  case 79: // lambda_exp: fn_type_spec bracketed_exp
+  case 73: // stringls: "\"dq-string-literal\""
+#line 457 "parser.yy"
+                             { yylhs.value.as < std::vector<pdm::ast::StringExp::Piece> > ().emplace_back(yylhs.location, *yystack_[0].value.as < TokenInfo > ().String_utf8string, ast::StringExp::QuoteKind::DoubleQuote); }
+#line 2742 "parser.tab.cc"
+    break;
+
+  case 74: // stringls: stringls "'sq-string-literal'"
+#line 458 "parser.yy"
+                             { yylhs.value.as < std::vector<pdm::ast::StringExp::Piece> > () = std::move(yystack_[1].value.as < std::vector<pdm::ast::StringExp::Piece> > ()); yylhs.value.as < std::vector<pdm::ast::StringExp::Piece> > ().emplace_back(yystack_[0].location, *yystack_[0].value.as < TokenInfo > ().String_utf8string, ast::StringExp::QuoteKind::SingleQuote); }
+#line 2748 "parser.tab.cc"
+    break;
+
+  case 75: // stringls: stringls "\"dq-string-literal\""
 #line 459 "parser.yy"
-                                   { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_lambda_exp(yylhs.location, yystack_[1].value.as < pdm::ast::FnTypeSpec* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2692 "parser.tab.cc"
+                             { yylhs.value.as < std::vector<pdm::ast::StringExp::Piece> > () = std::move(yystack_[1].value.as < std::vector<pdm::ast::StringExp::Piece> > ()); yylhs.value.as < std::vector<pdm::ast::StringExp::Piece> > ().emplace_back(yystack_[0].location, *yystack_[0].value.as < TokenInfo > ().String_utf8string, ast::StringExp::QuoteKind::DoubleQuote); }
+#line 2754 "parser.tab.cc"
     break;
 
-  case 80: // postfix_exp: primary_exp
+  case 76: // if_exp: "if" bracketed_exp "then" bracketed_exp
+#line 462 "parser.yy"
+                                                                        { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_if_exp(yylhs.location, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > (), nullptr); }
+#line 2760 "parser.tab.cc"
+    break;
+
+  case 77: // if_exp: "if" bracketed_exp "then" bracketed_exp "else" primary_exp
 #line 463 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2698 "parser.tab.cc"
+                                                                        { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_if_exp(yylhs.location, yystack_[4].value.as < pdm::ast::Exp* > (), yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 2766 "parser.tab.cc"
     break;
 
-  case 81: // postfix_exp: vcall_exp
-#line 464 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2704 "parser.tab.cc"
-    break;
-
-  case 82: // postfix_exp: dot_name_exp
-#line 465 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2710 "parser.tab.cc"
-    break;
-
-  case 83: // postfix_exp: dot_index_exp
+  case 78: // chain_exp: "{" "}"
 #line 466 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2716 "parser.tab.cc"
+                                               { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_chain_exp(yylhs.location, std::move(std::vector<ast::Stmt*>{}), nullptr); }
+#line 2772 "parser.tab.cc"
     break;
 
-  case 84: // vcall_exp: postfix_exp "(" ")"
+  case 79: // chain_exp: "{" long_exp "}"
+#line 467 "parser.yy"
+                                               { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_chain_exp(yylhs.location, std::move(std::vector<ast::Stmt*>{}), yystack_[1].value.as < pdm::ast::Exp* > ()); }
+#line 2778 "parser.tab.cc"
+    break;
+
+  case 80: // chain_exp: "{" chain_prefix "}"
+#line 468 "parser.yy"
+                                               { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_chain_exp(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::Stmt*> > ()), nullptr); }
+#line 2784 "parser.tab.cc"
+    break;
+
+  case 81: // chain_exp: "{" chain_prefix long_exp "}"
 #line 469 "parser.yy"
-                                            { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_vcall_exp(yylhs.location, yystack_[2].value.as < pdm::ast::Exp* > (), std::move(std::vector<ast::VArg*>{})); }
-#line 2722 "parser.tab.cc"
+                                               { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_chain_exp(yylhs.location, std::move(yystack_[2].value.as < std::vector<pdm::ast::Stmt*> > ()), yystack_[1].value.as < pdm::ast::Exp* > ()); }
+#line 2790 "parser.tab.cc"
     break;
 
-  case 85: // vcall_exp: postfix_exp "(" varg_cl ")"
-#line 470 "parser.yy"
-                                            { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_vcall_exp(yylhs.location, yystack_[3].value.as < pdm::ast::Exp* > (), std::move(yystack_[1].value.as < std::vector<pdm::ast::VArg*> > ())); }
-#line 2728 "parser.tab.cc"
+  case 82: // chain_prefix: chain_prefix_stmt ";"
+#line 472 "parser.yy"
+                                                { yylhs.value.as < std::vector<pdm::ast::Stmt*> > ().push_back(yystack_[1].value.as < pdm::ast::Stmt* > ()); }
+#line 2796 "parser.tab.cc"
     break;
 
-  case 86: // dot_name_exp: postfix_exp "." "val_id"
+  case 83: // chain_prefix: chain_prefix chain_prefix_stmt ";"
 #line 473 "parser.yy"
-                                                { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_struct_dot_name_exp(yylhs.location, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < TokenInfo > ().ID_intstr); }
-#line 2734 "parser.tab.cc"
+                                                { yylhs.value.as < std::vector<pdm::ast::Stmt*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::Stmt*> > ()); yylhs.value.as < std::vector<pdm::ast::Stmt*> > ().push_back(yystack_[1].value.as < pdm::ast::Stmt* > ()); }
+#line 2802 "parser.tab.cc"
     break;
 
-  case 87: // dot_name_exp: type_spec "::" "TypeId"
-#line 474 "parser.yy"
-                                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_enum_dot_name_exp(yylhs.location, yystack_[2].value.as < pdm::ast::TypeSpec* > (), yystack_[0].value.as < TokenInfo > ().ID_intstr, nullptr); }
-#line 2740 "parser.tab.cc"
+  case 84: // lambda_exp: fn_type_spec bracketed_exp
+#line 476 "parser.yy"
+                                   { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_lambda_exp(yylhs.location, yystack_[1].value.as < pdm::ast::FnTypeSpec* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 2808 "parser.tab.cc"
     break;
 
-  case 88: // dot_name_exp: type_spec "::" "TypeId" "using" paren_exp
-#line 475 "parser.yy"
-                                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_enum_dot_name_exp(yylhs.location, yystack_[4].value.as < pdm::ast::TypeSpec* > (), yystack_[2].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2746 "parser.tab.cc"
+  case 85: // postfix_exp: primary_exp
+#line 480 "parser.yy"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2814 "parser.tab.cc"
     break;
 
-  case 89: // dot_index_exp: postfix_exp "." int_expr
-#line 478 "parser.yy"
-                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_dot_index_exp(yylhs.location, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > (), ast::DotIndexExp::RhsHint::LhsNotPtr); }
-#line 2752 "parser.tab.cc"
+  case 86: // postfix_exp: vcall_exp
+#line 481 "parser.yy"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2820 "parser.tab.cc"
     break;
 
-  case 90: // dot_index_exp: postfix_exp "." bracketed_exp
-#line 479 "parser.yy"
-                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_dot_index_exp(yylhs.location, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > (), ast::DotIndexExp::RhsHint::LhsNotPtr); }
-#line 2758 "parser.tab.cc"
+  case 87: // postfix_exp: dot_name_exp
+#line 482 "parser.yy"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2826 "parser.tab.cc"
     break;
 
-  case 91: // unary_exp: postfix_exp
+  case 88: // postfix_exp: dot_index_exp
 #line 483 "parser.yy"
       { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2764 "parser.tab.cc"
+#line 2832 "parser.tab.cc"
     break;
 
-  case 92: // unary_exp: unary_op unary_exp
-#line 484 "parser.yy"
-                             { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_unary_exp(yylhs.location, yystack_[1].value.as < pdm::ast::UnaryOperator > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2770 "parser.tab.cc"
+  case 89: // vcall_exp: postfix_exp "(" ")"
+#line 486 "parser.yy"
+                                            { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_vcall_exp(yylhs.location, yystack_[2].value.as < pdm::ast::Exp* > (), std::move(std::vector<ast::VArg*>{})); }
+#line 2838 "parser.tab.cc"
     break;
 
-  case 93: // unary_op: "+"
+  case 90: // vcall_exp: postfix_exp "(" varg_cl ")"
 #line 487 "parser.yy"
-                 { yylhs.value.as < pdm::ast::UnaryOperator > () = ast::UnaryOperator::Plus; }
-#line 2776 "parser.tab.cc"
+                                            { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_vcall_exp(yylhs.location, yystack_[3].value.as < pdm::ast::Exp* > (), std::move(yystack_[1].value.as < std::vector<pdm::ast::VArg*> > ())); }
+#line 2844 "parser.tab.cc"
     break;
 
-  case 94: // unary_op: "-"
-#line 488 "parser.yy"
-                 { yylhs.value.as < pdm::ast::UnaryOperator > () = ast::UnaryOperator::Minus; }
-#line 2782 "parser.tab.cc"
+  case 91: // dot_name_exp: postfix_exp "." "val_id"
+#line 490 "parser.yy"
+                                                { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_struct_dot_name_exp(yylhs.location, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < TokenInfo > ().ID_intstr); }
+#line 2850 "parser.tab.cc"
     break;
 
-  case 95: // unary_op: "not"
-#line 489 "parser.yy"
-                 { yylhs.value.as < pdm::ast::UnaryOperator > () = ast::UnaryOperator::Not; }
-#line 2788 "parser.tab.cc"
+  case 92: // dot_name_exp: type_spec "::" "TypeId"
+#line 491 "parser.yy"
+                                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_enum_dot_name_exp(yylhs.location, yystack_[2].value.as < pdm::ast::TypeSpec* > (), yystack_[0].value.as < TokenInfo > ().ID_intstr, nullptr); }
+#line 2856 "parser.tab.cc"
     break;
 
-  case 96: // binary_exp: or_binary_exp
-#line 493 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2794 "parser.tab.cc"
+  case 93: // dot_name_exp: type_spec "::" "TypeId" "using" paren_exp
+#line 492 "parser.yy"
+                                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_enum_dot_name_exp(yylhs.location, yystack_[4].value.as < pdm::ast::TypeSpec* > (), yystack_[2].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 2862 "parser.tab.cc"
     break;
 
-  case 97: // mul_binary_op: "*"
+  case 94: // dot_index_exp: postfix_exp "." int_expr
+#line 495 "parser.yy"
+                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_dot_index_exp(yylhs.location, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > (), ast::DotIndexExp::RhsHint::LhsNotPtr); }
+#line 2868 "parser.tab.cc"
+    break;
+
+  case 95: // dot_index_exp: postfix_exp "." bracketed_exp
 #line 496 "parser.yy"
-                 { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Mul; }
-#line 2800 "parser.tab.cc"
+                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_dot_index_exp(yylhs.location, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > (), ast::DotIndexExp::RhsHint::LhsNotPtr); }
+#line 2874 "parser.tab.cc"
     break;
 
-  case 98: // mul_binary_op: "/"
-#line 497 "parser.yy"
-                 { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Div; }
-#line 2806 "parser.tab.cc"
+  case 96: // unary_exp: postfix_exp
+#line 500 "parser.yy"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2880 "parser.tab.cc"
     break;
 
-  case 99: // mul_binary_op: "%"
-#line 498 "parser.yy"
-                 { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Rem; }
-#line 2812 "parser.tab.cc"
-    break;
-
-  case 100: // mul_binary_exp: unary_exp
+  case 97: // unary_exp: unary_op unary_exp
 #line 501 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2818 "parser.tab.cc"
+                             { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_unary_exp(yylhs.location, yystack_[1].value.as < pdm::ast::UnaryOperator > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 2886 "parser.tab.cc"
     break;
 
-  case 101: // mul_binary_exp: mul_binary_exp mul_binary_op unary_exp
-#line 502 "parser.yy"
-                                               { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, yystack_[1].value.as < pdm::ast::BinaryOperator > (), yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2824 "parser.tab.cc"
+  case 98: // unary_op: "+"
+#line 504 "parser.yy"
+                 { yylhs.value.as < pdm::ast::UnaryOperator > () = ast::UnaryOperator::Plus; }
+#line 2892 "parser.tab.cc"
     break;
 
-  case 102: // add_binary_op: "+"
+  case 99: // unary_op: "-"
 #line 505 "parser.yy"
-             { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Add; }
-#line 2830 "parser.tab.cc"
+                 { yylhs.value.as < pdm::ast::UnaryOperator > () = ast::UnaryOperator::Minus; }
+#line 2898 "parser.tab.cc"
     break;
 
-  case 103: // add_binary_op: "-"
+  case 100: // unary_op: "not"
 #line 506 "parser.yy"
-             { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Subtract; }
-#line 2836 "parser.tab.cc"
+                 { yylhs.value.as < pdm::ast::UnaryOperator > () = ast::UnaryOperator::Not; }
+#line 2904 "parser.tab.cc"
     break;
 
-  case 104: // add_binary_exp: mul_binary_exp
-#line 509 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2842 "parser.tab.cc"
-    break;
-
-  case 105: // add_binary_exp: add_binary_exp add_binary_op mul_binary_exp
+  case 101: // binary_exp: or_binary_exp
 #line 510 "parser.yy"
-                                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, yystack_[1].value.as < pdm::ast::BinaryOperator > (), yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2848 "parser.tab.cc"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2910 "parser.tab.cc"
     break;
 
-  case 106: // cmp_binary_op: "<"
+  case 102: // mul_binary_op: "*"
 #line 513 "parser.yy"
-                { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Less; }
-#line 2854 "parser.tab.cc"
+                 { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Mul; }
+#line 2916 "parser.tab.cc"
     break;
 
-  case 107: // cmp_binary_op: "<="
+  case 103: // mul_binary_op: "/"
 #line 514 "parser.yy"
-                { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::LessOrEq; }
-#line 2860 "parser.tab.cc"
+                 { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Div; }
+#line 2922 "parser.tab.cc"
     break;
 
-  case 108: // cmp_binary_op: ">"
+  case 104: // mul_binary_op: "%"
 #line 515 "parser.yy"
-                { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Greater; }
-#line 2866 "parser.tab.cc"
+                 { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Rem; }
+#line 2928 "parser.tab.cc"
     break;
 
-  case 109: // cmp_binary_op: ">="
-#line 516 "parser.yy"
-                { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::GreaterOrEq; }
-#line 2872 "parser.tab.cc"
+  case 105: // mul_binary_exp: unary_exp
+#line 518 "parser.yy"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2934 "parser.tab.cc"
     break;
 
-  case 110: // cmp_binary_exp: add_binary_exp
+  case 106: // mul_binary_exp: mul_binary_exp mul_binary_op unary_exp
 #line 519 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2878 "parser.tab.cc"
+                                               { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, yystack_[1].value.as < pdm::ast::BinaryOperator > (), yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 2940 "parser.tab.cc"
     break;
 
-  case 111: // cmp_binary_exp: cmp_binary_exp cmp_binary_op add_binary_exp
-#line 520 "parser.yy"
-                                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, yystack_[1].value.as < pdm::ast::BinaryOperator > (), yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2884 "parser.tab.cc"
+  case 107: // add_binary_op: "+"
+#line 522 "parser.yy"
+             { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Add; }
+#line 2946 "parser.tab.cc"
     break;
 
-  case 112: // eq_binary_op: "=="
+  case 108: // add_binary_op: "-"
 #line 523 "parser.yy"
-                 { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Equals; }
-#line 2890 "parser.tab.cc"
+             { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Subtract; }
+#line 2952 "parser.tab.cc"
     break;
 
-  case 113: // eq_binary_op: "!="
-#line 524 "parser.yy"
-                 { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::NotEquals; }
-#line 2896 "parser.tab.cc"
+  case 109: // add_binary_exp: mul_binary_exp
+#line 526 "parser.yy"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 2958 "parser.tab.cc"
     break;
 
-  case 114: // eq_binary_exp: cmp_binary_exp
+  case 110: // add_binary_exp: add_binary_exp add_binary_op mul_binary_exp
 #line 527 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2902 "parser.tab.cc"
+                                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, yystack_[1].value.as < pdm::ast::BinaryOperator > (), yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 2964 "parser.tab.cc"
     break;
 
-  case 115: // eq_binary_exp: eq_binary_exp eq_binary_op cmp_binary_exp
-#line 528 "parser.yy"
-                                                { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, yystack_[1].value.as < pdm::ast::BinaryOperator > (), yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2908 "parser.tab.cc"
+  case 111: // cmp_binary_op: "<"
+#line 530 "parser.yy"
+                { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Less; }
+#line 2970 "parser.tab.cc"
     break;
 
-  case 116: // and_binary_exp: eq_binary_exp
+  case 112: // cmp_binary_op: "<="
 #line 531 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2914 "parser.tab.cc"
+                { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::LessOrEq; }
+#line 2976 "parser.tab.cc"
     break;
 
-  case 117: // and_binary_exp: and_binary_exp "and" eq_binary_exp
+  case 113: // cmp_binary_op: ">"
 #line 532 "parser.yy"
-                                           { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, ast::BinaryOperator::And, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2920 "parser.tab.cc"
+                { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Greater; }
+#line 2982 "parser.tab.cc"
     break;
 
-  case 118: // xor_binary_exp: and_binary_exp
-#line 535 "parser.yy"
-      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2926 "parser.tab.cc"
+  case 114: // cmp_binary_op: ">="
+#line 533 "parser.yy"
+                { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::GreaterOrEq; }
+#line 2988 "parser.tab.cc"
     break;
 
-  case 119: // xor_binary_exp: xor_binary_exp "xor" and_binary_exp
+  case 115: // cmp_binary_exp: add_binary_exp
 #line 536 "parser.yy"
-                                           { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, ast::BinaryOperator::XOr, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2932 "parser.tab.cc"
-    break;
-
-  case 120: // or_binary_exp: xor_binary_exp
-#line 539 "parser.yy"
       { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
-#line 2938 "parser.tab.cc"
+#line 2994 "parser.tab.cc"
     break;
 
-  case 121: // or_binary_exp: or_binary_exp "or" xor_binary_exp
+  case 116: // cmp_binary_exp: cmp_binary_exp cmp_binary_op add_binary_exp
+#line 537 "parser.yy"
+                                                    { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, yystack_[1].value.as < pdm::ast::BinaryOperator > (), yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 3000 "parser.tab.cc"
+    break;
+
+  case 117: // eq_binary_op: "=="
 #line 540 "parser.yy"
-                                           { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, ast::BinaryOperator::Or, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 2944 "parser.tab.cc"
+                 { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::Equals; }
+#line 3006 "parser.tab.cc"
     break;
 
-  case 122: // type_query_exp: type_spec type_query_op type_spec
+  case 118: // eq_binary_op: "!="
+#line 541 "parser.yy"
+                 { yylhs.value.as < pdm::ast::BinaryOperator > () = ast::BinaryOperator::NotEquals; }
+#line 3012 "parser.tab.cc"
+    break;
+
+  case 119: // eq_binary_exp: cmp_binary_exp
 #line 544 "parser.yy"
-                                          { yylhs.value.as < pdm::ast::TypeQueryExp* > () = mgr->new_type_query_exp(yylhs.location, yystack_[1].value.as < pdm::ast::TypeQueryKind > (), yystack_[2].value.as < pdm::ast::TypeSpec* > (), yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
-#line 2950 "parser.tab.cc"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 3018 "parser.tab.cc"
     break;
 
-  case 123: // type_query_op: ":<"
-#line 547 "parser.yy"
-                    { yylhs.value.as < pdm::ast::TypeQueryKind > () = ast::TypeQueryKind::LhsSubtypesRhs; }
-#line 2956 "parser.tab.cc"
+  case 120: // eq_binary_exp: eq_binary_exp eq_binary_op cmp_binary_exp
+#line 545 "parser.yy"
+                                                { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, yystack_[1].value.as < pdm::ast::BinaryOperator > (), yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 3024 "parser.tab.cc"
     break;
 
-  case 124: // type_query_op: ">:"
+  case 121: // and_binary_exp: eq_binary_exp
 #line 548 "parser.yy"
-                    { yylhs.value.as < pdm::ast::TypeQueryKind > () = ast::TypeQueryKind::LhsSupertypesRhs; }
-#line 2962 "parser.tab.cc"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 3030 "parser.tab.cc"
     break;
 
-  case 125: // type_query_op: "=="
+  case 122: // and_binary_exp: and_binary_exp "and" eq_binary_exp
 #line 549 "parser.yy"
-                    { yylhs.value.as < pdm::ast::TypeQueryKind > () = ast::TypeQueryKind::LhsEqualsRhs; }
-#line 2968 "parser.tab.cc"
+                                           { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, ast::BinaryOperator::And, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 3036 "parser.tab.cc"
     break;
 
-  case 126: // type_spec_cl2: type_spec "," type_spec
+  case 123: // xor_binary_exp: and_binary_exp
+#line 552 "parser.yy"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 3042 "parser.tab.cc"
+    break;
+
+  case 124: // xor_binary_exp: xor_binary_exp "xor" and_binary_exp
+#line 553 "parser.yy"
+                                           { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, ast::BinaryOperator::XOr, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 3048 "parser.tab.cc"
+    break;
+
+  case 125: // or_binary_exp: xor_binary_exp
+#line 556 "parser.yy"
+      { yylhs.value.as < pdm::ast::Exp* > () = yystack_[0].value.as < pdm::ast::Exp* > (); }
+#line 3054 "parser.tab.cc"
+    break;
+
+  case 126: // or_binary_exp: or_binary_exp "or" xor_binary_exp
+#line 557 "parser.yy"
+                                           { yylhs.value.as < pdm::ast::Exp* > () = mgr->new_binary_exp(yylhs.location, ast::BinaryOperator::Or, yystack_[2].value.as < pdm::ast::Exp* > (), yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 3060 "parser.tab.cc"
+    break;
+
+  case 127: // type_query_exp: type_spec type_query_op type_spec
+#line 561 "parser.yy"
+                                          { yylhs.value.as < pdm::ast::TypeQueryExp* > () = mgr->new_type_query_exp(yylhs.location, yystack_[1].value.as < pdm::ast::TypeQueryKind > (), yystack_[2].value.as < pdm::ast::TypeSpec* > (), yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
+#line 3066 "parser.tab.cc"
+    break;
+
+  case 128: // type_query_op: ":<"
 #line 564 "parser.yy"
-                                    { yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > ().reserve(2); yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > ().push_back(yystack_[2].value.as < pdm::ast::TypeSpec* > ()); yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > ().push_back(yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
-#line 2974 "parser.tab.cc"
+                    { yylhs.value.as < pdm::ast::TypeQueryKind > () = ast::TypeQueryKind::LhsSubtypesRhs; }
+#line 3072 "parser.tab.cc"
     break;
 
-  case 127: // type_spec_cl2: type_spec_cl2 "," type_spec
+  case 129: // type_query_op: ">:"
 #line 565 "parser.yy"
+                    { yylhs.value.as < pdm::ast::TypeQueryKind > () = ast::TypeQueryKind::LhsSupertypesRhs; }
+#line 3078 "parser.tab.cc"
+    break;
+
+  case 130: // type_query_op: "=="
+#line 566 "parser.yy"
+                    { yylhs.value.as < pdm::ast::TypeQueryKind > () = ast::TypeQueryKind::LhsEqualsRhs; }
+#line 3084 "parser.tab.cc"
+    break;
+
+  case 131: // type_spec_cl2: type_spec "," type_spec
+#line 581 "parser.yy"
+                                    { yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > ().reserve(2); yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > ().push_back(yystack_[2].value.as < pdm::ast::TypeSpec* > ()); yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > ().push_back(yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
+#line 3090 "parser.tab.cc"
+    break;
+
+  case 132: // type_spec_cl2: type_spec_cl2 "," type_spec
+#line 582 "parser.yy"
                                     { yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::TypeSpec*> > ()); yylhs.value.as < std::vector<pdm::ast::TypeSpec*> > ().push_back(yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
-#line 2980 "parser.tab.cc"
+#line 3096 "parser.tab.cc"
     break;
 
-  case 128: // type_spec: tid
-#line 569 "parser.yy"
+  case 133: // type_spec: tid
+#line 586 "parser.yy"
                         { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_id_type_spec(yylhs.location, yystack_[0].value.as < TokenInfo > ().ID_intstr); }
-#line 2986 "parser.tab.cc"
+#line 3102 "parser.tab.cc"
     break;
 
-  case 129: // type_spec: mod_prefix_tid
-#line 570 "parser.yy"
-      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
-#line 2992 "parser.tab.cc"
-    break;
-
-  case 130: // type_spec: tuple_type_spec
-#line 571 "parser.yy"
-      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
-#line 2998 "parser.tab.cc"
-    break;
-
-  case 131: // type_spec: array_type_spec
-#line 572 "parser.yy"
-      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
-#line 3004 "parser.tab.cc"
-    break;
-
-  case 132: // type_spec: struct_type_spec
-#line 573 "parser.yy"
-      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
-#line 3010 "parser.tab.cc"
-    break;
-
-  case 133: // type_spec: enum_type_spec
-#line 574 "parser.yy"
-      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
-#line 3016 "parser.tab.cc"
-    break;
-
-  case 134: // type_spec: fn_type_spec
-#line 575 "parser.yy"
-                    { yylhs.value.as < pdm::ast::TypeSpec* > () = dynamic_cast<ast::TypeSpec*>(yystack_[0].value.as < pdm::ast::FnTypeSpec* > ()); }
-#line 3022 "parser.tab.cc"
-    break;
-
-  case 135: // mod_prefix_tid: mod_prefix tid
-#line 579 "parser.yy"
-                            { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_ma_type_spec(yylhs.location, yystack_[1].value.as < pdm::ast::ModAddress* > (), yystack_[0].value.as < TokenInfo > ().ID_intstr); }
-#line 3028 "parser.tab.cc"
-    break;
-
-  case 136: // tuple_type_spec: "{" type_spec "}"
-#line 583 "parser.yy"
-                                   { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_tuple_type_spec(yylhs.location, std::move(std::vector(1,yystack_[1].value.as < pdm::ast::TypeSpec* > ()))); }
-#line 3034 "parser.tab.cc"
-    break;
-
-  case 137: // tuple_type_spec: "{" type_spec_cl2 "}"
-#line 584 "parser.yy"
-                                   { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_tuple_type_spec(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::TypeSpec*> > ())); }
-#line 3040 "parser.tab.cc"
-    break;
-
-  case 138: // array_type_spec: "[" type_spec "*" expr "]"
+  case 134: // type_spec: mod_prefix_tid
 #line 587 "parser.yy"
-                                                { yylhs.value.as < pdm::ast::TypeSpec* > () = nullptr; }
-#line 3046 "parser.tab.cc"
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
+#line 3108 "parser.tab.cc"
     break;
 
-  case 139: // struct_type_spec: "{" struct_type_spec_field_cl "}"
+  case 135: // type_spec: tuple_type_spec
+#line 588 "parser.yy"
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
+#line 3114 "parser.tab.cc"
+    break;
+
+  case 136: // type_spec: array_type_spec
+#line 589 "parser.yy"
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
+#line 3120 "parser.tab.cc"
+    break;
+
+  case 137: // type_spec: struct_type_spec
+#line 590 "parser.yy"
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
+#line 3126 "parser.tab.cc"
+    break;
+
+  case 138: // type_spec: enum_type_spec
 #line 591 "parser.yy"
+      { yylhs.value.as < pdm::ast::TypeSpec* > () = yystack_[0].value.as < pdm::ast::TypeSpec* > (); }
+#line 3132 "parser.tab.cc"
+    break;
+
+  case 139: // type_spec: fn_type_spec
+#line 592 "parser.yy"
+                    { yylhs.value.as < pdm::ast::TypeSpec* > () = dynamic_cast<ast::TypeSpec*>(yystack_[0].value.as < pdm::ast::FnTypeSpec* > ()); }
+#line 3138 "parser.tab.cc"
+    break;
+
+  case 140: // mod_prefix_tid: mod_prefix tid
+#line 596 "parser.yy"
+                            { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_ma_type_spec(yylhs.location, yystack_[1].value.as < pdm::ast::ModAddress* > (), yystack_[0].value.as < TokenInfo > ().ID_intstr); }
+#line 3144 "parser.tab.cc"
+    break;
+
+  case 141: // tuple_type_spec: "{" type_spec "}"
+#line 600 "parser.yy"
+                                   { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_tuple_type_spec(yylhs.location, std::move(std::vector(1,yystack_[1].value.as < pdm::ast::TypeSpec* > ()))); }
+#line 3150 "parser.tab.cc"
+    break;
+
+  case 142: // tuple_type_spec: "{" type_spec_cl2 "}"
+#line 601 "parser.yy"
+                                   { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_tuple_type_spec(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::TypeSpec*> > ())); }
+#line 3156 "parser.tab.cc"
+    break;
+
+  case 143: // array_type_spec: "[" type_spec "*" expr "]"
+#line 604 "parser.yy"
+                                                { yylhs.value.as < pdm::ast::TypeSpec* > () = nullptr; }
+#line 3162 "parser.tab.cc"
+    break;
+
+  case 144: // struct_type_spec: "{" struct_type_spec_field_cl "}"
+#line 608 "parser.yy"
                                                { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_struct_type_spec(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::StructTypeSpec::Field*> > ())); }
-#line 3052 "parser.tab.cc"
+#line 3168 "parser.tab.cc"
     break;
 
-  case 140: // struct_type_spec_field_cl: struct_type_spec_field
-#line 594 "parser.yy"
+  case 145: // struct_type_spec_field_cl: struct_type_spec_field
+#line 611 "parser.yy"
                                                               { yylhs.value.as < std::vector<pdm::ast::StructTypeSpec::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::StructTypeSpec::Field* > ()); }
-#line 3058 "parser.tab.cc"
+#line 3174 "parser.tab.cc"
     break;
 
-  case 141: // struct_type_spec_field_cl: struct_type_spec_field_cl "," struct_type_spec_field
-#line 595 "parser.yy"
+  case 146: // struct_type_spec_field_cl: struct_type_spec_field_cl "," struct_type_spec_field
+#line 612 "parser.yy"
                                                               { yylhs.value.as < std::vector<pdm::ast::StructTypeSpec::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::StructTypeSpec::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::StructTypeSpec::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::StructTypeSpec::Field* > ()); }
-#line 3064 "parser.tab.cc"
+#line 3180 "parser.tab.cc"
     break;
 
-  case 142: // struct_type_spec_field: vid type_spec
-#line 598 "parser.yy"
+  case 147: // struct_type_spec_field: vid type_spec
+#line 615 "parser.yy"
                                     { yylhs.value.as < pdm::ast::StructTypeSpec::Field* > () = mgr->new_struct_type_spec_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
-#line 3070 "parser.tab.cc"
+#line 3186 "parser.tab.cc"
     break;
 
-  case 143: // enum_type_spec_field: tid
-#line 602 "parser.yy"
-                        { yylhs.value.as < pdm::ast::EnumTypeSpec::Field* > () = mgr->new_enum_type_spec_field(yylhs.location, yystack_[0].value.as < TokenInfo > ().ID_intstr, nullptr); }
-#line 3076 "parser.tab.cc"
-    break;
-
-  case 144: // enum_type_spec_field: tid type_spec
-#line 603 "parser.yy"
-                        { yylhs.value.as < pdm::ast::EnumTypeSpec::Field* > () = mgr->new_enum_type_spec_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
-#line 3082 "parser.tab.cc"
-    break;
-
-  case 145: // enum_type_spec_field_cl: enum_type_spec_field
-#line 606 "parser.yy"
-                                                            { yylhs.value.as < std::vector<pdm::ast::EnumTypeSpec::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::EnumTypeSpec::Field* > ()); }
-#line 3088 "parser.tab.cc"
-    break;
-
-  case 146: // enum_type_spec_field_cl: enum_type_spec_field_cl "," enum_type_spec_field
-#line 607 "parser.yy"
-                                                            { yylhs.value.as < std::vector<pdm::ast::EnumTypeSpec::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::EnumTypeSpec::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::EnumTypeSpec::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::EnumTypeSpec::Field* > ()); }
-#line 3094 "parser.tab.cc"
-    break;
-
-  case 147: // enum_type_spec: "enum" "{" enum_type_spec_field_cl "}"
-#line 610 "parser.yy"
-                                                        { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_enum_type_spec(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::EnumTypeSpec::Field*> > ())); }
-#line 3100 "parser.tab.cc"
-    break;
-
-  case 148: // fn_type_spec: "fn" vpattern "->" type_spec
-#line 614 "parser.yy"
-                                     { yylhs.value.as < pdm::ast::FnTypeSpec* > () = mgr->new_fn_type_spec(yylhs.location, std::move(yystack_[2].value.as < pdm::ast::VPattern* > ()), yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
-#line 3106 "parser.tab.cc"
-    break;
-
-  case 149: // targ: type_spec
-#line 618 "parser.yy"
-                { yylhs.value.as < pdm::ast::TArg* > () = mgr->new_targ_type_spec(yylhs.location, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
-#line 3112 "parser.tab.cc"
-    break;
-
-  case 150: // targ: expr
+  case 148: // enum_type_spec_field: tid
 #line 619 "parser.yy"
-               { yylhs.value.as < pdm::ast::TArg* > () = mgr->new_targ_exp(yylhs.location, yystack_[0].value.as < pdm::ast::Exp* > ()); }
-#line 3118 "parser.tab.cc"
+                        { yylhs.value.as < pdm::ast::EnumTypeSpec::Field* > () = mgr->new_enum_type_spec_field(yylhs.location, yystack_[0].value.as < TokenInfo > ().ID_intstr, nullptr); }
+#line 3192 "parser.tab.cc"
     break;
 
-  case 151: // targ_cl: targ
-#line 622 "parser.yy"
-                            { yylhs.value.as < std::vector<pdm::ast::TArg*> > ().push_back(yystack_[0].value.as < pdm::ast::TArg* > ()); }
-#line 3124 "parser.tab.cc"
-    break;
-
-  case 152: // targ_cl: targ_cl "," targ
-#line 623 "parser.yy"
-                            { yylhs.value.as < std::vector<pdm::ast::TArg*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::TArg*> > ()); yylhs.value.as < std::vector<pdm::ast::TArg*> > ().push_back(yystack_[0].value.as < pdm::ast::TArg* > ()); }
-#line 3130 "parser.tab.cc"
-    break;
-
-  case 153: // varg: expr
-#line 625 "parser.yy"
-                            { yylhs.value.as < pdm::ast::VArg* > () = mgr->new_varg(yylhs.location, yystack_[0].value.as < pdm::ast::Exp* > (), ast::VArgAccessSpec::In); }
-#line 3136 "parser.tab.cc"
-    break;
-
-  case 154: // varg: "out" expr
-#line 626 "parser.yy"
-                            { yylhs.value.as < pdm::ast::VArg* > () = mgr->new_varg(yylhs.location, yystack_[0].value.as < pdm::ast::Exp* > (), ast::VArgAccessSpec::Out); }
-#line 3142 "parser.tab.cc"
-    break;
-
-  case 155: // varg: "inout" expr
-#line 627 "parser.yy"
-                            { yylhs.value.as < pdm::ast::VArg* > () = mgr->new_varg(yylhs.location, yystack_[0].value.as < pdm::ast::Exp* > (), ast::VArgAccessSpec::InOut); }
-#line 3148 "parser.tab.cc"
-    break;
-
-  case 156: // varg_cl: varg
-#line 630 "parser.yy"
-                            { yylhs.value.as < std::vector<pdm::ast::VArg*> > ().push_back(yystack_[0].value.as < pdm::ast::VArg* > ()); }
-#line 3154 "parser.tab.cc"
-    break;
-
-  case 157: // varg_cl: varg_cl "," varg
-#line 631 "parser.yy"
-                            { yylhs.value.as < std::vector<pdm::ast::VArg*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::VArg*> > ()); yylhs.value.as < std::vector<pdm::ast::VArg*> > ().push_back(yystack_[0].value.as < pdm::ast::VArg* > ()); }
-#line 3160 "parser.tab.cc"
-    break;
-
-  case 158: // class_spec: primary_class_spec
-#line 641 "parser.yy"
-      { yylhs.value.as < pdm::ast::ClassSpec* > () = yystack_[0].value.as < pdm::ast::ClassSpec* > (); }
-#line 3166 "parser.tab.cc"
-    break;
-
-  case 159: // primary_class_spec: cid
-#line 644 "parser.yy"
-                        { yylhs.value.as < pdm::ast::ClassSpec* > () = mgr->new_id_class_spec(yylhs.location, yystack_[0].value.as < TokenInfo > ().ID_intstr); }
-#line 3172 "parser.tab.cc"
-    break;
-
-  case 160: // primary_class_spec: mod_prefix_cid_class_spec
-#line 645 "parser.yy"
-      { yylhs.value.as < pdm::ast::ClassSpec* > () = yystack_[0].value.as < pdm::ast::ClassSpec* > (); }
-#line 3178 "parser.tab.cc"
-    break;
-
-  case 161: // primary_class_spec: class_exp_class_spec
-#line 646 "parser.yy"
-      { yylhs.value.as < pdm::ast::ClassSpec* > () = yystack_[0].value.as < pdm::ast::ClassSpec* > (); }
-#line 3184 "parser.tab.cc"
-    break;
-
-  case 162: // mod_prefix_cid_class_spec: mod_prefix cid
-#line 649 "parser.yy"
-                        { yylhs.value.as < pdm::ast::ClassSpec* > () = mgr->new_ma_class_spec(yylhs.location, std::move(yystack_[1].value.as < pdm::ast::ModAddress* > ()), yystack_[0].value.as < TokenInfo > ().ID_intstr); }
-#line 3190 "parser.tab.cc"
-    break;
-
-  case 163: // class_exp_class_spec: "cls" "[" tid class_spec "]" "{" type_query_exp_sl0 "}"
-#line 654 "parser.yy"
-                                                                           {
-            yylhs.value.as < pdm::ast::ClassSpec* > () = mgr->new_class_exp_class_spec(yylhs.location, yystack_[5].value.as < TokenInfo > ().ID_intstr, yystack_[4].value.as < pdm::ast::ClassSpec* > (), std::move(yystack_[1].value.as < std::vector<pdm::ast::TypeQueryExp*> > ()));
-        }
+  case 149: // enum_type_spec_field: tid type_spec
+#line 620 "parser.yy"
+                        { yylhs.value.as < pdm::ast::EnumTypeSpec::Field* > () = mgr->new_enum_type_spec_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3198 "parser.tab.cc"
     break;
 
-  case 164: // struct_exp_field: vid ":" expr
-#line 664 "parser.yy"
-                     { yylhs.value.as < pdm::ast::StructExp::Field* > () = mgr->new_struct_exp_field(yylhs.location, yystack_[2].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::Exp* > ()); }
+  case 150: // enum_type_spec_field_cl: enum_type_spec_field
+#line 623 "parser.yy"
+                                                            { yylhs.value.as < std::vector<pdm::ast::EnumTypeSpec::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::EnumTypeSpec::Field* > ()); }
 #line 3204 "parser.tab.cc"
     break;
 
-  case 165: // vpattern_field: vid type_spec
-#line 667 "parser.yy"
-                             { yylhs.value.as < pdm::ast::VPattern::Field* > () = mgr->new_vpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > (), ast::VArgAccessSpec::In); }
+  case 151: // enum_type_spec_field_cl: enum_type_spec_field_cl "," enum_type_spec_field
+#line 624 "parser.yy"
+                                                            { yylhs.value.as < std::vector<pdm::ast::EnumTypeSpec::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::EnumTypeSpec::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::EnumTypeSpec::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::EnumTypeSpec::Field* > ()); }
 #line 3210 "parser.tab.cc"
     break;
 
-  case 166: // vpattern_field: "out" vid type_spec
-#line 668 "parser.yy"
-                             { yylhs.value.as < pdm::ast::VPattern::Field* > () = mgr->new_vpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > (), ast::VArgAccessSpec::Out); }
+  case 152: // enum_type_spec: "enum" "{" enum_type_spec_field_cl "}"
+#line 627 "parser.yy"
+                                                        { yylhs.value.as < pdm::ast::TypeSpec* > () = mgr->new_enum_type_spec(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::EnumTypeSpec::Field*> > ())); }
 #line 3216 "parser.tab.cc"
     break;
 
-  case 167: // vpattern_field: "inout" vid type_spec
-#line 669 "parser.yy"
-                             { yylhs.value.as < pdm::ast::VPattern::Field* > () = mgr->new_vpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > (), ast::VArgAccessSpec::InOut); }
+  case 153: // fn_type_spec: "fn" vpattern "->" type_spec
+#line 631 "parser.yy"
+                                     { yylhs.value.as < pdm::ast::FnTypeSpec* > () = mgr->new_fn_type_spec(yylhs.location, std::move(yystack_[2].value.as < pdm::ast::VPattern* > ()), yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3222 "parser.tab.cc"
     break;
 
-  case 168: // lpattern_field: vid type_spec
-#line 672 "parser.yy"
-                     { yylhs.value.as < pdm::ast::LPattern::Field* > () = mgr->new_lpattern_field(yylhs.location, ast::LPattern::FieldKind::IdTypeSpecPair, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
+  case 154: // targ: type_spec
+#line 635 "parser.yy"
+                { yylhs.value.as < pdm::ast::TArg* > () = mgr->new_targ_type_spec(yylhs.location, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
 #line 3228 "parser.tab.cc"
     break;
 
-  case 169: // lpattern_field: vid
-#line 673 "parser.yy"
-                    { yylhs.value.as < pdm::ast::LPattern::Field* > () = mgr->new_lpattern_field(yylhs.location, ast::LPattern::FieldKind::IdSingleton, yystack_[0].value.as < TokenInfo > ().ID_intstr); }
+  case 155: // targ: expr
+#line 636 "parser.yy"
+               { yylhs.value.as < pdm::ast::TArg* > () = mgr->new_targ_exp(yylhs.location, yystack_[0].value.as < pdm::ast::Exp* > ()); }
 #line 3234 "parser.tab.cc"
     break;
 
-  case 170: // tpattern_field: vid type_spec
-#line 676 "parser.yy"
-                      { yylhs.value.as < pdm::ast::TPattern::Field* > () = mgr->new_value_tpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
+  case 156: // targ_cl: targ
+#line 639 "parser.yy"
+                            { yylhs.value.as < std::vector<pdm::ast::TArg*> > ().push_back(yystack_[0].value.as < pdm::ast::TArg* > ()); }
 #line 3240 "parser.tab.cc"
     break;
 
-  case 171: // tpattern_field: tid class_spec
-#line 677 "parser.yy"
-                      { yylhs.value.as < pdm::ast::TPattern::Field* > () = mgr->new_type_tpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::ClassSpec* > ()); }
+  case 157: // targ_cl: targ_cl "," targ
+#line 640 "parser.yy"
+                            { yylhs.value.as < std::vector<pdm::ast::TArg*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::TArg*> > ()); yylhs.value.as < std::vector<pdm::ast::TArg*> > ().push_back(yystack_[0].value.as < pdm::ast::TArg* > ()); }
 #line 3246 "parser.tab.cc"
     break;
 
-  case 172: // destructured_lpattern: "{" lpattern_field_cl "}"
-#line 681 "parser.yy"
-                                       { yylhs.value.as < pdm::ast::LPattern* > () = mgr->new_lpattern(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::LPattern::Field*> > ()), true); }
+  case 158: // varg: expr
+#line 642 "parser.yy"
+                            { yylhs.value.as < pdm::ast::VArg* > () = mgr->new_varg(yylhs.location, yystack_[0].value.as < pdm::ast::Exp* > (), ast::VArgAccessSpec::In); }
 #line 3252 "parser.tab.cc"
     break;
 
-  case 173: // lpattern: lpattern_field
-#line 684 "parser.yy"
-                        { yylhs.value.as < pdm::ast::LPattern* > () = mgr->new_lpattern(yylhs.location, std::move(std::vector<ast::LPattern::Field*>{1,yystack_[0].value.as < pdm::ast::LPattern::Field* > ()}), false); }
+  case 159: // varg: "out" expr
+#line 643 "parser.yy"
+                            { yylhs.value.as < pdm::ast::VArg* > () = mgr->new_varg(yylhs.location, yystack_[0].value.as < pdm::ast::Exp* > (), ast::VArgAccessSpec::Out); }
 #line 3258 "parser.tab.cc"
     break;
 
-  case 174: // lpattern: destructured_lpattern
-#line 685 "parser.yy"
-      { yylhs.value.as < pdm::ast::LPattern* > () = yystack_[0].value.as < pdm::ast::LPattern* > (); }
+  case 160: // varg: "inout" expr
+#line 644 "parser.yy"
+                            { yylhs.value.as < pdm::ast::VArg* > () = mgr->new_varg(yylhs.location, yystack_[0].value.as < pdm::ast::Exp* > (), ast::VArgAccessSpec::InOut); }
 #line 3264 "parser.tab.cc"
     break;
 
-  case 175: // vpattern: "(" vpattern_field_cl ")"
-#line 688 "parser.yy"
-                                       { yylhs.value.as < pdm::ast::VPattern* > () = mgr->new_vpattern(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::VPattern::Field*> > ())); }
+  case 161: // varg_cl: varg
+#line 647 "parser.yy"
+                            { yylhs.value.as < std::vector<pdm::ast::VArg*> > ().push_back(yystack_[0].value.as < pdm::ast::VArg* > ()); }
 #line 3270 "parser.tab.cc"
     break;
 
-  case 176: // vpattern: "(" ")"
-#line 689 "parser.yy"
-                                       { yylhs.value.as < pdm::ast::VPattern* > () = mgr->new_vpattern(yylhs.location, std::move(std::vector<ast::VPattern::Field*>{})); }
+  case 162: // varg_cl: varg_cl "," varg
+#line 648 "parser.yy"
+                            { yylhs.value.as < std::vector<pdm::ast::VArg*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::VArg*> > ()); yylhs.value.as < std::vector<pdm::ast::VArg*> > ().push_back(yystack_[0].value.as < pdm::ast::VArg* > ()); }
 #line 3276 "parser.tab.cc"
     break;
 
-  case 177: // tpattern: "[" tpattern_field_cl1 "]"
-#line 692 "parser.yy"
-                                        { yylhs.value.as < pdm::ast::TPattern* > () = mgr->new_tpattern(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::TPattern::Field*> > ()), false); }
+  case 163: // class_spec: primary_class_spec
+#line 658 "parser.yy"
+      { yylhs.value.as < pdm::ast::ClassSpec* > () = yystack_[0].value.as < pdm::ast::ClassSpec* > (); }
 #line 3282 "parser.tab.cc"
     break;
 
-  case 178: // vpattern_field_cl: vpattern_field
-#line 696 "parser.yy"
-                                              { yylhs.value.as < std::vector<pdm::ast::VPattern::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::VPattern::Field* > ()); }
+  case 164: // primary_class_spec: cid
+#line 661 "parser.yy"
+                        { yylhs.value.as < pdm::ast::ClassSpec* > () = mgr->new_id_class_spec(yylhs.location, yystack_[0].value.as < TokenInfo > ().ID_intstr); }
 #line 3288 "parser.tab.cc"
     break;
 
-  case 179: // vpattern_field_cl: vpattern_field_cl "," vpattern_field
-#line 697 "parser.yy"
-                                               { yylhs.value.as < std::vector<pdm::ast::VPattern::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::VPattern::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::VPattern::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::VPattern::Field* > ()); }
+  case 165: // primary_class_spec: mod_prefix_cid_class_spec
+#line 662 "parser.yy"
+      { yylhs.value.as < pdm::ast::ClassSpec* > () = yystack_[0].value.as < pdm::ast::ClassSpec* > (); }
 #line 3294 "parser.tab.cc"
     break;
 
-  case 180: // lpattern_field_cl: lpattern_field
-#line 700 "parser.yy"
-                                               { yylhs.value.as < std::vector<pdm::ast::LPattern::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::LPattern::Field* > ()); }
+  case 166: // primary_class_spec: class_exp_class_spec
+#line 663 "parser.yy"
+      { yylhs.value.as < pdm::ast::ClassSpec* > () = yystack_[0].value.as < pdm::ast::ClassSpec* > (); }
 #line 3300 "parser.tab.cc"
     break;
 
-  case 181: // lpattern_field_cl: lpattern_field_cl "," lpattern_field
-#line 701 "parser.yy"
-                                               { yylhs.value.as < std::vector<pdm::ast::LPattern::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::LPattern::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::LPattern::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::LPattern::Field* > ()); }
+  case 167: // mod_prefix_cid_class_spec: mod_prefix cid
+#line 666 "parser.yy"
+                        { yylhs.value.as < pdm::ast::ClassSpec* > () = mgr->new_ma_class_spec(yylhs.location, std::move(yystack_[1].value.as < pdm::ast::ModAddress* > ()), yystack_[0].value.as < TokenInfo > ().ID_intstr); }
 #line 3306 "parser.tab.cc"
     break;
 
-  case 182: // tpattern_field_cl1: tpattern_field
-#line 704 "parser.yy"
-                                              { yylhs.value.as < std::vector<pdm::ast::TPattern::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::TPattern::Field* > ()); }
-#line 3312 "parser.tab.cc"
+  case 168: // class_exp_class_spec: "cls" "[" tid class_spec "]" "{" type_query_exp_sl0 "}"
+#line 671 "parser.yy"
+                                                                           {
+            yylhs.value.as < pdm::ast::ClassSpec* > () = mgr->new_class_exp_class_spec(yylhs.location, yystack_[5].value.as < TokenInfo > ().ID_intstr, yystack_[4].value.as < pdm::ast::ClassSpec* > (), std::move(yystack_[1].value.as < std::vector<pdm::ast::TypeQueryExp*> > ()));
+        }
+#line 3314 "parser.tab.cc"
     break;
 
-  case 183: // tpattern_field_cl1: tpattern_field_cl1 "," tpattern_field
+  case 169: // struct_exp_field: vid ":" expr
+#line 681 "parser.yy"
+                     { yylhs.value.as < pdm::ast::StructExp::Field* > () = mgr->new_struct_exp_field(yylhs.location, yystack_[2].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::Exp* > ()); }
+#line 3320 "parser.tab.cc"
+    break;
+
+  case 170: // vpattern_field: vid type_spec
+#line 684 "parser.yy"
+                             { yylhs.value.as < pdm::ast::VPattern::Field* > () = mgr->new_vpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > (), ast::VArgAccessSpec::In); }
+#line 3326 "parser.tab.cc"
+    break;
+
+  case 171: // vpattern_field: "out" vid type_spec
+#line 685 "parser.yy"
+                             { yylhs.value.as < pdm::ast::VPattern::Field* > () = mgr->new_vpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > (), ast::VArgAccessSpec::Out); }
+#line 3332 "parser.tab.cc"
+    break;
+
+  case 172: // vpattern_field: "inout" vid type_spec
+#line 686 "parser.yy"
+                             { yylhs.value.as < pdm::ast::VPattern::Field* > () = mgr->new_vpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > (), ast::VArgAccessSpec::InOut); }
+#line 3338 "parser.tab.cc"
+    break;
+
+  case 173: // lpattern_field: vid type_spec
+#line 689 "parser.yy"
+                     { yylhs.value.as < pdm::ast::LPattern::Field* > () = mgr->new_lpattern_field(yylhs.location, ast::LPattern::FieldKind::IdTypeSpecPair, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
+#line 3344 "parser.tab.cc"
+    break;
+
+  case 174: // lpattern_field: vid
+#line 690 "parser.yy"
+                    { yylhs.value.as < pdm::ast::LPattern::Field* > () = mgr->new_lpattern_field(yylhs.location, ast::LPattern::FieldKind::IdSingleton, yystack_[0].value.as < TokenInfo > ().ID_intstr); }
+#line 3350 "parser.tab.cc"
+    break;
+
+  case 175: // tpattern_field: vid type_spec
+#line 693 "parser.yy"
+                      { yylhs.value.as < pdm::ast::TPattern::Field* > () = mgr->new_value_tpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::TypeSpec* > ()); }
+#line 3356 "parser.tab.cc"
+    break;
+
+  case 176: // tpattern_field: tid class_spec
+#line 694 "parser.yy"
+                      { yylhs.value.as < pdm::ast::TPattern::Field* > () = mgr->new_type_tpattern_field(yylhs.location, yystack_[1].value.as < TokenInfo > ().ID_intstr, yystack_[0].value.as < pdm::ast::ClassSpec* > ()); }
+#line 3362 "parser.tab.cc"
+    break;
+
+  case 177: // destructured_lpattern: "{" lpattern_field_cl "}"
+#line 698 "parser.yy"
+                                       { yylhs.value.as < pdm::ast::LPattern* > () = mgr->new_lpattern(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::LPattern::Field*> > ()), true); }
+#line 3368 "parser.tab.cc"
+    break;
+
+  case 178: // lpattern: lpattern_field
+#line 701 "parser.yy"
+                        { yylhs.value.as < pdm::ast::LPattern* > () = mgr->new_lpattern(yylhs.location, std::move(std::vector<ast::LPattern::Field*>{1,yystack_[0].value.as < pdm::ast::LPattern::Field* > ()}), false); }
+#line 3374 "parser.tab.cc"
+    break;
+
+  case 179: // lpattern: destructured_lpattern
+#line 702 "parser.yy"
+      { yylhs.value.as < pdm::ast::LPattern* > () = yystack_[0].value.as < pdm::ast::LPattern* > (); }
+#line 3380 "parser.tab.cc"
+    break;
+
+  case 180: // vpattern: "(" vpattern_field_cl ")"
 #line 705 "parser.yy"
-                                                { yylhs.value.as < std::vector<pdm::ast::TPattern::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::TPattern::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::TPattern::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::TPattern::Field* > ()); }
-#line 3318 "parser.tab.cc"
+                                       { yylhs.value.as < pdm::ast::VPattern* > () = mgr->new_vpattern(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::VPattern::Field*> > ())); }
+#line 3386 "parser.tab.cc"
     break;
 
-  case 184: // struct_exp_field_cl: struct_exp_field
-#line 708 "parser.yy"
-                                                    { yylhs.value.as < std::vector<pdm::ast::StructExp::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::StructExp::Field* > ()); }
-#line 3324 "parser.tab.cc"
+  case 181: // vpattern: "(" ")"
+#line 706 "parser.yy"
+                                       { yylhs.value.as < pdm::ast::VPattern* > () = mgr->new_vpattern(yylhs.location, std::move(std::vector<ast::VPattern::Field*>{})); }
+#line 3392 "parser.tab.cc"
     break;
 
-  case 185: // struct_exp_field_cl: struct_exp_field_cl "," struct_exp_field
+  case 182: // tpattern: "[" tpattern_field_cl1 "]"
 #line 709 "parser.yy"
+                                        { yylhs.value.as < pdm::ast::TPattern* > () = mgr->new_tpattern(yylhs.location, std::move(yystack_[1].value.as < std::vector<pdm::ast::TPattern::Field*> > ()), false); }
+#line 3398 "parser.tab.cc"
+    break;
+
+  case 183: // vpattern_field_cl: vpattern_field
+#line 713 "parser.yy"
+                                              { yylhs.value.as < std::vector<pdm::ast::VPattern::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::VPattern::Field* > ()); }
+#line 3404 "parser.tab.cc"
+    break;
+
+  case 184: // vpattern_field_cl: vpattern_field_cl "," vpattern_field
+#line 714 "parser.yy"
+                                               { yylhs.value.as < std::vector<pdm::ast::VPattern::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::VPattern::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::VPattern::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::VPattern::Field* > ()); }
+#line 3410 "parser.tab.cc"
+    break;
+
+  case 185: // lpattern_field_cl: lpattern_field
+#line 717 "parser.yy"
+                                               { yylhs.value.as < std::vector<pdm::ast::LPattern::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::LPattern::Field* > ()); }
+#line 3416 "parser.tab.cc"
+    break;
+
+  case 186: // lpattern_field_cl: lpattern_field_cl "," lpattern_field
+#line 718 "parser.yy"
+                                               { yylhs.value.as < std::vector<pdm::ast::LPattern::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::LPattern::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::LPattern::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::LPattern::Field* > ()); }
+#line 3422 "parser.tab.cc"
+    break;
+
+  case 187: // tpattern_field_cl1: tpattern_field
+#line 721 "parser.yy"
+                                              { yylhs.value.as < std::vector<pdm::ast::TPattern::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::TPattern::Field* > ()); }
+#line 3428 "parser.tab.cc"
+    break;
+
+  case 188: // tpattern_field_cl1: tpattern_field_cl1 "," tpattern_field
+#line 722 "parser.yy"
+                                                { yylhs.value.as < std::vector<pdm::ast::TPattern::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::TPattern::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::TPattern::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::TPattern::Field* > ()); }
+#line 3434 "parser.tab.cc"
+    break;
+
+  case 189: // struct_exp_field_cl: struct_exp_field
+#line 725 "parser.yy"
+                                                    { yylhs.value.as < std::vector<pdm::ast::StructExp::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::StructExp::Field* > ()); }
+#line 3440 "parser.tab.cc"
+    break;
+
+  case 190: // struct_exp_field_cl: struct_exp_field_cl "," struct_exp_field
+#line 726 "parser.yy"
                                                     { yylhs.value.as < std::vector<pdm::ast::StructExp::Field*> > () = std::move(yystack_[2].value.as < std::vector<pdm::ast::StructExp::Field*> > ()); yylhs.value.as < std::vector<pdm::ast::StructExp::Field*> > ().push_back(yystack_[0].value.as < pdm::ast::StructExp::Field* > ()); }
-#line 3330 "parser.tab.cc"
+#line 3446 "parser.tab.cc"
     break;
 
 
-#line 3334 "parser.tab.cc"
+#line 3450 "parser.tab.cc"
 
             default:
               break;
@@ -3519,294 +3635,289 @@ namespace pdm { namespace parser {
 
 
 
-  const short parser::yypact_ninf_ = -239;
+  const short parser::yypact_ninf_ = -241;
 
   const signed char parser::yytable_ninf_ = -1;
 
   const short
   parser::yypact_[] =
   {
-    -239,    14,    50,  -239,    59,    23,    71,    97,  -239,  -239,
-      36,  -239,  -239,    59,    80,   -11,   248,    13,  -239,    90,
-      49,  -239,  -239,  -239,   119,  -239,    21,   206,  -239,   125,
-    -239,    59,  -239,    56,   116,   110,   115,   141,    86,   -11,
-     122,    -6,  -239,    78,  -239,  -239,  -239,  -239,   169,   186,
-     206,   206,  -239,   248,  -239,  -239,  -239,  -239,  -239,  -239,
-    -239,   248,  -239,    49,  -239,   200,  -239,   206,   609,    21,
-    -239,   132,  -239,   228,  -239,   609,   175,  -239,   228,   184,
-     211,   214,   179,   -25,   -20,    -2,  -239,  -239,  -239,  -239,
-    -239,  -239,   -37,  -239,  -239,  -239,  -239,  -239,  -239,  -239,
-    -239,   527,   343,  -239,  -239,    -6,  -239,   248,  -239,  -239,
-    -239,  -239,  -239,  -239,  -239,  -239,   212,  -239,  -239,  -239,
-      31,  -239,  -239,  -239,  -239,   609,  -239,   188,   204,   177,
-     205,   234,   246,   251,   232,   -37,  -239,  -239,    21,  -239,
-     232,  -239,   130,  -239,   609,   206,  -239,    66,    59,    59,
-    -239,   206,  -239,    84,   206,   609,   609,  -239,   206,  -239,
-     206,  -239,    59,  -239,   343,   267,  -239,   236,   233,   162,
-       2,     2,     2,   609,   609,  -239,   238,  -239,  -239,  -239,
-    -239,  -239,   149,   242,   394,    65,  -239,    93,   175,  -239,
-    -239,   271,   445,  -239,  -239,  -239,  -239,   609,  -239,  -239,
-     609,  -239,  -239,  -239,  -239,   609,  -239,  -239,   609,   609,
-     609,   609,   281,  -239,   245,   609,   240,   143,  -239,   228,
-    -239,   206,   206,  -239,   101,  -239,  -239,   247,   108,  -239,
-    -239,   206,  -239,   148,   -37,   568,  -239,   609,  -239,    59,
-     206,  -239,  -239,   235,   237,   249,   250,  -239,  -239,   609,
-    -239,  -239,   260,   244,    59,  -239,  -239,  -239,  -239,   609,
-     609,  -239,  -239,  -239,   170,  -239,   188,   204,   177,   205,
-     234,   246,   308,   264,  -239,  -239,   273,  -239,  -239,  -239,
-    -239,  -239,   304,  -239,  -239,  -239,  -239,   112,  -239,   609,
-     609,   609,   609,  -239,  -239,  -239,   277,  -239,  -239,  -239,
-     486,  -239,   276,  -239,  -239,   252,    59,  -239,  -239,  -239,
-    -239,  -239,  -239,   609,  -239,    32,    59,  -239,  -239,  -239,
-     279,    51,  -239,  -239,  -239,  -239,   206,  -239
+    -241,    69,    13,  -241,    25,    10,    30,    78,    84,  -241,
+    -241,    -7,  -241,  -241,  -241,    90,     7,   114,  -241,    43,
+       1,  -241,  -241,    63,   477,  -241,    -1,  -241,    25,  -241,
+     140,    96,    93,   113,   122,   177,  -241,   154,   -12,  -241,
+      60,   111,  -241,   160,  -241,  -241,  -241,  -241,   143,   159,
+     477,   477,  -241,     7,  -241,  -241,  -241,  -241,  -241,  -241,
+    -241,     7,  -241,    -7,  -241,   185,  -241,   477,   536,    63,
+    -241,   209,  -241,   169,    25,   228,  -241,   536,   128,  -241,
+     228,    11,   180,   184,   436,    49,    62,    67,  -241,  -241,
+    -241,  -241,  -241,  -241,   -23,  -241,  -241,  -241,  -241,  -241,
+    -241,  -241,  -241,   454,   309,  -241,  -241,   111,  -241,     7,
+    -241,  -241,  -241,  -241,  -241,  -241,  -241,  -241,   174,  -241,
+    -241,  -241,   -16,  -241,  -241,  -241,  -241,   536,  -241,   149,
+     163,   108,   153,   215,   218,   219,   198,   -23,  -241,  -241,
+    -241,  -241,  -241,  -241,    63,  -241,   198,  -241,    45,  -241,
+     536,   477,  -241,    80,    25,    25,  -241,   477,  -241,    64,
+     477,   536,   536,  -241,   477,  -241,   477,  -241,    25,  -241,
+     309,   235,  -241,   204,   208,    86,     0,     0,     0,   536,
+     536,  -241,   207,  -241,  -241,  -241,  -241,  -241,   384,   213,
+     362,    28,  -241,    81,   128,  -241,  -241,   199,   251,  -241,
+    -241,  -241,  -241,   536,  -241,  -241,   536,  -241,  -241,  -241,
+    -241,   536,  -241,  -241,   536,   536,   536,   536,   263,  -241,
+     217,   536,   224,    46,  -241,   228,  -241,   477,   477,  -241,
+      56,  -241,  -241,   222,    82,  -241,  -241,   477,  -241,   102,
+     -23,   495,  -241,   536,  -241,    25,   477,  -241,  -241,   212,
+     221,   232,   233,  -241,  -241,   536,  -241,  -241,   231,   229,
+      25,  -241,  -241,  -241,  -241,   536,   536,  -241,  -241,  -241,
+     110,  -241,   149,   163,   108,   153,   215,   218,   279,   246,
+    -241,  -241,   255,  -241,  -241,  -241,  -241,  -241,   290,  -241,
+    -241,  -241,  -241,    85,  -241,   536,   536,   536,   536,  -241,
+    -241,  -241,   261,  -241,  -241,  -241,   413,  -241,   258,  -241,
+    -241,   567,    25,  -241,  -241,  -241,  -241,  -241,  -241,   536,
+    -241,   423,    25,  -241,  -241,  -241,   265,   -50,  -241,  -241,
+    -241,  -241,   477,  -241
   };
 
   const unsigned char
   parser::yydefact_[] =
   {
-       3,     0,     0,     1,     0,     0,     0,     2,     5,    31,
-       0,     4,     7,     0,     0,     0,     0,     0,     6,     0,
-       0,     8,    35,    34,     0,    30,     0,     0,   182,     0,
-      32,     0,    11,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,   159,     0,   171,   158,   160,   161,     0,     0,
-       0,     0,   128,     0,   170,   129,   130,   131,   132,   133,
-     134,     0,   177,     0,     9,     0,    13,     0,     0,     0,
-      12,     0,    19,     0,    36,     0,     0,   162,     0,     0,
-       0,     0,     0,     0,     0,     0,   140,   135,   183,    18,
-      14,    16,     0,    95,    63,    64,    65,    66,    33,    68,
-      67,     0,     0,    93,    94,    57,    59,     0,    41,    15,
-      56,    47,    48,    49,    80,    58,    60,    61,    50,    42,
-      91,    81,    82,    83,   100,     0,    40,   104,   110,   114,
-     116,   118,   120,    96,     0,   134,    17,    10,     0,   150,
-     149,   151,     0,    38,     0,   143,   145,     0,     0,     0,
-     176,     0,   178,     0,     0,     0,     0,   142,     0,   137,
-       0,   136,     0,   139,     0,     0,    52,    41,     0,     0,
-       0,     0,     0,     0,     0,    73,     0,    20,    21,    22,
-      23,    24,    57,     0,     0,     0,   184,     0,    62,    70,
-      69,     0,     0,    92,    97,    98,    99,     0,   102,   103,
-       0,   106,   107,   108,   109,     0,   112,   113,     0,     0,
-       0,     0,     0,    79,     0,     0,     0,     0,   144,     0,
-     147,     0,     0,   165,     0,   175,   148,     0,   149,   127,
-     126,     0,   141,    57,     0,     0,    51,     0,    54,     0,
-     169,   173,   174,     0,     0,     0,     0,    29,    77,     0,
-      74,    75,     0,     0,     0,    55,    86,    90,    89,     0,
-       0,    84,   153,   156,     0,   101,   105,   111,   115,   117,
-     119,   121,    87,     0,   152,    37,     0,   146,   166,   167,
-     179,   138,    71,    53,    43,    44,   180,     0,   168,     0,
-       0,     0,     0,   164,    78,    76,     0,   185,   154,   155,
-       0,    85,     0,    45,    39,     0,     0,   172,    25,    26,
-      27,    28,   157,     0,    88,     0,     0,    72,   181,   163,
-       0,     0,    46,   125,   123,   124,     0,   122
+       3,     0,     0,     1,     0,     0,     0,     0,     2,     5,
+      36,     0,    20,     4,     7,     0,     0,     0,     6,     0,
+       0,     8,    35,     0,     0,   187,     0,    37,     0,    11,
+       0,     0,     0,     0,     0,     0,    19,     0,     0,    23,
+       0,     0,   164,     0,   176,   163,   165,   166,     0,     0,
+       0,     0,   133,     0,   175,   134,   135,   136,   137,   138,
+     139,     0,   182,     0,     9,     0,    13,     0,     0,     0,
+      12,     0,    21,     0,     0,     0,    41,     0,     0,   167,
+       0,     0,     0,     0,     0,     0,     0,     0,   145,   140,
+     188,    18,    14,    16,     0,   100,    68,    69,    70,    71,
+      38,    73,    72,     0,     0,    98,    99,    62,    64,     0,
+      46,    15,    61,    52,    53,    54,    85,    63,    65,    66,
+      55,    47,    96,    86,    87,    88,   105,     0,    45,   109,
+     115,   119,   121,   123,   125,   101,     0,   139,    17,    10,
+      40,    39,    22,    24,     0,   155,   154,   156,     0,    43,
+       0,   148,   150,     0,     0,     0,   181,     0,   183,     0,
+       0,     0,     0,   147,     0,   142,     0,   141,     0,   144,
+       0,     0,    57,    46,     0,     0,     0,     0,     0,     0,
+       0,    78,     0,    25,    26,    27,    28,    29,    62,     0,
+       0,     0,   189,     0,    67,    75,    74,     0,     0,    97,
+     102,   103,   104,     0,   107,   108,     0,   111,   112,   113,
+     114,     0,   117,   118,     0,     0,     0,     0,     0,    84,
+       0,     0,     0,     0,   149,     0,   152,     0,     0,   170,
+       0,   180,   153,     0,   154,   132,   131,     0,   146,    62,
+       0,     0,    56,     0,    59,     0,   174,   178,   179,     0,
+       0,     0,     0,    34,    82,     0,    79,    80,     0,     0,
+       0,    60,    91,    95,    94,     0,     0,    89,   158,   161,
+       0,   106,   110,   116,   120,   122,   124,   126,    92,     0,
+     157,    42,     0,   151,   171,   172,   184,   143,    76,    58,
+      48,    49,   185,     0,   173,     0,     0,     0,     0,   169,
+      83,    81,     0,   190,   159,   160,     0,    90,     0,    50,
+      44,     0,     0,   177,    30,    31,    32,    33,   162,     0,
+      93,     0,     0,    77,   186,   168,     0,     0,    51,   130,
+     128,   129,     0,   127
   };
 
   const short
   parser::yypgoto_[] =
   {
-    -239,  -239,  -239,  -239,   319,  -239,   266,   292,   -23,  -239,
-     150,  -239,  -239,  -239,  -239,  -239,    54,    -4,   -24,  -239,
-     293,    26,    68,   -62,  -239,  -239,   -85,    33,  -239,  -239,
-      28,   145,  -239,  -239,  -239,  -239,  -239,  -239,  -239,  -239,
-    -239,  -117,  -239,  -239,  -239,   137,  -239,   133,  -239,   131,
-    -239,   134,   135,   129,  -239,  -239,  -239,  -239,    46,  -239,
-    -239,  -239,  -239,  -239,   180,   151,  -239,  -239,   -64,   136,
-     210,    44,  -239,   -66,  -239,  -239,  -239,    94,   126,  -238,
-     288,  -239,   104,  -239,  -239,  -239,  -239,  -239,  -239
+    -241,  -241,  -241,  -241,   299,  -241,   252,   281,   -13,  -241,
+    -241,  -241,  -241,   124,  -241,  -241,  -241,  -241,  -241,    18,
+      -4,    -5,  -241,  -241,    32,    29,   -62,  -241,  -241,   -86,
+      12,  -241,  -241,    23,   125,  -241,  -241,  -241,  -241,  -241,
+    -241,  -241,  -241,  -241,  -125,  -241,  -241,  -241,   117,  -241,
+     127,  -241,   130,  -241,   121,   123,   135,  -241,  -241,  -241,
+    -241,    37,  -241,  -241,  -241,  -241,  -241,   173,   129,  -241,
+    -241,   -67,   134,   192,    50,  -241,   -60,  -241,  -241,  -241,
+     100,   133,  -240,   310,  -241,    51,  -241,  -241,  -241,  -241,
+    -241,  -241
   };
 
   const short
   parser::yydefgoto_[] =
   {
-      -1,     1,     2,     5,     6,     7,    18,    33,    34,     8,
-     176,   177,   178,   179,   180,   181,    52,   105,    37,   106,
-      24,   107,   108,   168,   169,   315,   110,   111,   112,   113,
-     114,   115,   116,   117,   118,   184,   119,   120,   121,   122,
-     123,   124,   125,   126,   197,   127,   200,   128,   205,   129,
-     208,   130,   131,   132,   133,   320,   326,    83,   134,    55,
-      56,    57,    58,    85,    86,   146,   147,    59,    60,   141,
-     142,   263,   264,    44,    45,    46,    47,   186,   152,   241,
-      28,   242,   243,    80,    19,   153,   287,    29,   187
+      -1,     1,     2,     6,     7,     8,    18,    30,    31,     9,
+      20,    37,    38,   182,   183,   184,   185,   186,   187,    52,
+     107,    34,   108,   142,   109,   110,   174,   175,   321,   112,
+     113,   114,   115,   116,   117,   118,   119,   120,   190,   121,
+     122,   123,   124,   125,   126,   127,   128,   203,   129,   206,
+     130,   211,   131,   214,   132,   133,   134,   135,   326,   332,
+      85,   136,    55,    56,    57,    58,    87,    88,   152,   153,
+      59,    60,   147,   148,   269,   270,    44,    45,    46,    47,
+     192,   158,   247,    25,   248,   249,    82,    19,   159,   293,
+      26,   193
   };
 
   const short
   parser::yytable_[] =
   {
-      10,   286,    42,   136,   135,     9,   109,   165,   193,    20,
-      65,   101,    27,    36,     3,   164,     9,    25,    30,    77,
-     158,    31,    41,    41,     9,   160,    30,    63,   159,    36,
-      22,    23,    40,   161,    36,     9,    25,   135,   135,    76,
-     183,    74,    48,   162,    75,    42,    41,    82,    65,    76,
-     213,   163,    43,    53,   239,    15,    49,    27,     4,     9,
-      25,    30,     9,    41,    31,    41,    32,    36,   318,    11,
-      26,    35,   214,    54,   191,   151,    53,    53,    41,   192,
-     265,     9,    50,    30,    51,   319,    16,    35,    17,     9,
-      25,    30,    35,    53,    31,    43,    81,    84,   182,    16,
-     135,    17,   183,   188,     9,    13,   257,    87,    53,    64,
-     160,   219,   212,    91,    42,    26,   323,    12,   161,   220,
-     135,   140,   253,   324,   325,    35,    21,   138,   157,   224,
-     148,   149,   145,   225,    41,     9,    25,    30,   254,    70,
-      31,    41,    38,   139,   221,   222,   255,    41,   185,   282,
-      41,    39,     9,    25,    41,   212,    41,   306,   231,    48,
-     233,    87,    66,   155,    43,   307,   240,   240,   240,   167,
-      61,    53,    73,    49,    67,   215,    62,    53,    41,    68,
-      53,   216,     9,    25,    53,   137,    53,     9,   215,    48,
-     140,   218,   249,   249,   276,    74,    74,   223,    75,   156,
-     226,    51,   228,    49,   229,    69,   230,   237,    53,     9,
-      25,   238,   139,   148,   149,   300,    48,    41,    41,   301,
-     151,    78,   143,   227,   139,   144,    74,    41,   157,   156,
-      49,    51,    25,   150,    79,   240,    41,   201,   202,   203,
-     204,   246,   247,   194,   195,   196,    90,    53,    53,   135,
-     296,     9,    25,   189,   190,     9,    50,    53,    51,   209,
-     262,   140,   198,   199,    92,   154,    53,   278,   279,   155,
-     206,   207,   210,   145,   256,   244,   245,   157,   211,   212,
-     234,   235,   236,   139,   248,   272,   288,   275,    94,    95,
-      96,    97,    98,    99,   100,   250,   273,   295,   281,   289,
-     101,   290,   240,   284,   164,   285,   294,    94,    95,    96,
-      97,    41,   188,   291,   292,   302,   303,   293,   305,   101,
-     304,   249,    41,   164,   313,   322,    14,   298,   299,    89,
-      71,   316,    72,   317,   252,   314,   258,   266,   267,   268,
-     271,    53,   232,   269,   312,   270,     9,    25,   297,    88,
-     280,   274,    53,    48,   217,    92,     0,   308,   309,   310,
-     311,   321,     0,   170,   171,   172,   173,    49,   262,     0,
-     277,    93,   327,     0,   174,     0,     0,     0,     0,    94,
-      95,    96,    97,    98,    99,   100,     0,     0,     0,     0,
-       0,   101,     0,    50,     0,   102,   175,     9,    25,     0,
-       0,   103,   104,     0,    48,     0,    92,     0,     0,     0,
-       0,     0,     0,     0,   170,   171,   172,   173,    49,     0,
-       0,     0,    93,     0,     0,   174,     0,     0,     0,     0,
-      94,    95,    96,    97,    98,    99,   100,     0,     0,     0,
-       0,     0,   101,     0,    50,     0,   102,   251,     9,    25,
-       0,     0,   103,   104,     0,    48,     0,    92,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,    49,
-       0,     0,     0,    93,   259,   260,     0,     0,     0,     0,
-       0,    94,    95,    96,    97,    98,    99,   100,     0,     9,
-      25,     0,     0,   101,   261,    50,    48,   102,    92,     0,
-       0,     0,     0,   103,   104,     0,     0,     0,     0,     0,
-      49,     0,     0,     0,    93,   259,   260,     0,     0,     0,
-       0,     0,    94,    95,    96,    97,    98,    99,   100,     0,
-       9,    25,     0,     0,   101,     0,    50,    48,   102,    92,
-       0,     0,     0,     0,   103,   104,     0,     0,     0,     0,
-       0,    49,     0,     0,     0,    93,     0,     0,     0,     0,
-       0,     0,     0,    94,    95,    96,    97,    98,    99,   100,
-       0,     9,    25,     0,     0,   101,   166,    50,    48,   102,
-      92,     0,     0,     0,     0,   103,   104,     0,     0,     0,
-       0,     0,    49,     0,     0,     0,    93,     0,     0,     0,
-       0,     0,     0,     0,    94,    95,    96,    97,    98,    99,
-     100,     0,     9,    25,     0,     0,   101,   283,    50,    48,
-     102,    92,     0,     0,     0,     0,   103,   104,     0,     0,
-       0,     0,     0,    49,     0,     0,     0,    93,     0,     0,
-       0,     0,     0,     0,     0,    94,    95,    96,    97,    98,
-      99,   100,     0,     0,     0,     0,     0,   101,     0,    50,
-       0,   102,     0,     0,     0,     0,     0,   103,   104
+      11,   137,   199,    10,    10,   292,   111,    73,   171,   138,
+      10,    22,    24,    33,    10,   329,    39,    65,    42,    41,
+      41,     4,   330,   331,    63,   103,    33,   197,    10,   170,
+       5,    33,   198,    74,    23,    32,   137,   137,    79,    78,
+     154,   155,   189,    16,    61,    17,    41,    84,    32,    78,
+      62,   219,   245,    32,    36,    43,    53,    24,    65,    10,
+     156,    54,    12,    41,    42,    41,    10,    33,    27,     3,
+     143,    89,   324,   166,    40,   218,    13,   157,   271,    23,
+      41,   167,    53,    53,   220,   154,   155,    83,    86,    32,
+     221,   221,     4,   144,   164,    35,   222,   282,   151,    53,
+     188,    43,   165,   137,    93,   194,   145,   166,   189,   230,
+      75,   263,   168,   231,   146,   167,    53,    10,    22,    27,
+     169,   163,    28,   137,    14,   225,   260,    89,   259,   218,
+     312,   243,   173,   226,   261,   244,    21,   161,   313,    42,
+      41,   191,    66,    10,    22,    27,   255,    41,    28,    76,
+     227,   228,    77,    41,   288,   306,    41,    67,    76,   307,
+      41,    77,    41,    10,   237,    27,   239,    29,   207,   208,
+     209,   210,   246,   246,   246,   149,    43,    68,   150,   145,
+      10,    22,    27,    53,    41,    28,    69,   146,   224,    53,
+     233,   145,    53,    64,   229,    80,    53,   232,    53,   234,
+      72,   235,   262,   236,   200,   201,   202,    81,   252,   253,
+     140,   141,    10,    22,    27,   195,   196,    28,   212,   213,
+      53,   204,   205,    41,    41,   163,   157,   268,   250,   251,
+      70,    92,    22,    41,   160,    96,    97,    98,    99,   161,
+     215,   246,    41,   151,   216,   218,   217,   103,   240,   241,
+     145,   170,   137,   254,    10,    22,   302,   242,   146,    53,
+      53,    48,   139,    94,   284,   285,   256,   278,   279,    53,
+     290,   281,   291,   287,   163,    49,   295,   300,    53,    95,
+     265,   266,   301,   294,   299,   296,   308,    96,    97,    98,
+      99,   100,   101,   102,   304,   305,   297,   298,   309,   103,
+     267,    50,   310,   104,   311,   255,   319,    15,   246,   105,
+     106,   328,    10,    22,   258,    91,    71,    41,   194,    48,
+     320,    94,   264,   272,   314,   315,   316,   317,    41,   176,
+     177,   178,   179,    49,   323,   268,   275,    95,   273,   276,
+     180,   238,   223,   322,   274,    96,    97,    98,    99,   100,
+     101,   102,   277,    53,   283,   280,   318,   103,   327,    50,
+     303,   104,   181,   286,    53,    10,    22,   105,   106,   333,
+       0,    90,    48,     0,    94,     0,     0,     0,     0,     0,
+       0,     0,   176,   177,   178,   179,    49,    10,    22,     0,
+      95,     0,     0,   180,    48,     0,     0,     0,    96,    97,
+      98,    99,   100,   101,   102,     0,     0,     0,    49,     0,
+     103,     0,    50,     0,   104,   257,    10,    22,     0,     0,
+     105,   106,     0,    48,     0,    94,    10,    22,   255,     0,
+       0,    76,     0,    48,   162,     0,    51,    49,     0,    10,
+      22,    95,   265,   266,     0,     0,    48,    49,     0,    96,
+      97,    98,    99,   100,   101,   102,     0,    10,    22,     0,
+      49,   103,     0,    50,    48,   104,    94,     0,     0,     0,
+       0,   105,   106,    50,     0,    51,   325,     0,    49,     0,
+      10,    22,    95,    76,     0,     0,   162,    48,    51,     0,
+      96,    97,    98,    99,   100,   101,   102,     0,    10,    22,
+       0,    49,   103,   172,    50,    48,   104,    94,     0,     0,
+       0,     0,   105,   106,     0,     0,     0,     0,     0,    49,
+       0,     0,     0,    95,     0,     0,     0,    50,     0,    51,
+       0,    96,    97,    98,    99,   100,   101,   102,     0,    10,
+      22,     0,     0,   103,   289,    50,    48,   104,    94,     0,
+       0,     0,     0,   105,   106,     0,     0,     0,     0,     0,
+      49,     0,     0,     0,    95,     0,     0,     0,     0,     0,
+      10,     0,    96,    97,    98,    99,   100,   101,   102,    94,
+       0,     0,     0,     0,   103,     0,    50,     0,   104,     0,
+       0,     0,     0,     0,   105,   106,     0,     0,     0,     0,
+       0,     0,     0,    96,    97,    98,    99,   100,   101,   102,
+       0,     0,     0,     0,     0,   103,     0,     0,     0,   170
   };
 
   const short
   parser::yycheck_[] =
   {
-       4,   239,    26,    69,    68,     3,    68,    92,   125,    13,
-      33,    48,    16,    17,     0,    52,     3,     4,     5,    43,
-      45,     8,    26,    27,     3,    45,     5,    31,    53,    33,
-      41,    42,    11,    53,    38,     3,     4,   101,   102,    43,
-     102,    47,    10,    45,    50,    69,    50,    51,    71,    53,
-     135,    53,    26,    27,    52,    19,    24,    61,     8,     3,
-       4,     5,     3,    67,     8,    69,    53,    71,   306,    46,
-      16,    17,   138,    27,    43,    79,    50,    51,    82,    48,
-     197,     3,    50,     5,    52,    53,    50,    33,    52,     3,
-       4,     5,    38,    67,     8,    69,    50,    51,   102,    50,
-     164,    52,   164,   107,     3,     8,   191,    53,    82,    53,
-      45,    45,    47,    67,   138,    61,    65,    46,    53,    53,
-     184,    75,   184,    72,    73,    71,    46,    73,    82,    45,
-      29,    30,    78,    49,   138,     3,     4,     5,    45,    53,
-       8,   145,    52,    75,   148,   149,    53,   151,   102,   234,
-     154,    32,     3,     4,   158,    47,   160,    45,   162,    10,
-     164,   107,    46,    55,   138,    53,   170,   171,   172,   101,
-      45,   145,    50,    24,    64,    45,    51,   151,   182,    64,
-     154,    51,     3,     4,   158,    53,   160,     3,    45,    10,
-     144,   145,    44,    44,    51,    47,    47,   151,    50,    50,
-     154,    52,   156,    24,   158,    64,   160,    45,   182,     3,
-       4,    49,   144,    29,    30,    45,    10,   221,   222,    49,
-     224,    52,    47,   155,   156,    50,    47,   231,   182,    50,
-      24,    52,     4,    49,    48,   239,   240,    60,    61,    62,
-      63,   173,   174,    55,    56,    57,    46,   221,   222,   313,
-     254,     3,     4,    41,    42,     3,    50,   231,    52,    25,
-     192,   215,    58,    59,    12,    54,   240,   221,   222,    55,
-      65,    66,    26,   219,     3,   171,   172,   231,    27,    47,
-      13,    45,    49,   215,    46,     4,   240,    47,    36,    37,
-      38,    39,    40,    41,    42,    53,    51,    53,    51,    64,
-      48,    64,   306,   235,    52,   237,    46,    36,    37,    38,
-      39,   315,   316,    64,    64,     7,    52,   249,    14,    48,
-      47,    44,   326,    52,    48,    46,     7,   259,   260,    63,
-      38,   305,    39,   305,   184,   302,   191,   200,   205,   208,
-     211,   315,   162,   209,   300,   210,     3,     4,   254,    61,
-     224,   215,   326,    10,   144,    12,    -1,   289,   290,   291,
-     292,   315,    -1,    20,    21,    22,    23,    24,   300,    -1,
-     219,    28,   326,    -1,    31,    -1,    -1,    -1,    -1,    36,
-      37,    38,    39,    40,    41,    42,    -1,    -1,    -1,    -1,
-      -1,    48,    -1,    50,    -1,    52,    53,     3,     4,    -1,
-      -1,    58,    59,    -1,    10,    -1,    12,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    20,    21,    22,    23,    24,    -1,
-      -1,    -1,    28,    -1,    -1,    31,    -1,    -1,    -1,    -1,
-      36,    37,    38,    39,    40,    41,    42,    -1,    -1,    -1,
-      -1,    -1,    48,    -1,    50,    -1,    52,    53,     3,     4,
-      -1,    -1,    58,    59,    -1,    10,    -1,    12,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    24,
-      -1,    -1,    -1,    28,    29,    30,    -1,    -1,    -1,    -1,
+       4,    68,   127,     3,     3,   245,    68,    19,    94,    69,
+       3,     4,    16,    17,     3,    65,    20,    30,    23,    23,
+      24,     8,    72,    73,    28,    48,    30,    43,     3,    52,
+      17,    35,    48,    45,    16,    17,   103,   104,    43,    43,
+      29,    30,   104,    50,    45,    52,    50,    51,    30,    53,
+      51,   137,    52,    35,    53,    23,    24,    61,    71,     3,
+      49,    24,    52,    67,    69,    69,     3,    71,     5,     0,
+      74,    53,   312,    45,    11,    47,    46,    81,   203,    61,
+      84,    53,    50,    51,   144,    29,    30,    50,    51,    71,
+      45,    45,     8,    75,    45,    52,    51,    51,    80,    67,
+     104,    69,    53,   170,    67,   109,    77,    45,   170,    45,
+      50,   197,    45,    49,    77,    53,    84,     3,     4,     5,
+      53,    84,     8,   190,    46,    45,    45,   109,   190,    47,
+      45,    45,   103,    53,    53,    49,    46,    55,    53,   144,
+     144,   104,    46,     3,     4,     5,    44,   151,     8,    47,
+     154,   155,    50,   157,   240,    45,   160,    64,    47,    49,
+     164,    50,   166,     3,   168,     5,   170,    53,    60,    61,
+      62,    63,   176,   177,   178,    47,   144,    64,    50,   150,
+       3,     4,     5,   151,   188,     8,    64,   150,   151,   157,
+     161,   162,   160,    53,   157,    52,   164,   160,   166,   162,
+      46,   164,     3,   166,    55,    56,    57,    48,   179,   180,
+      41,    42,     3,     4,     5,    41,    42,     8,    65,    66,
+     188,    58,    59,   227,   228,   188,   230,   198,   177,   178,
+      53,    46,     4,   237,    54,    36,    37,    38,    39,    55,
+      25,   245,   246,   225,    26,    47,    27,    48,    13,    45,
+     221,    52,   319,    46,     3,     4,   260,    49,   221,   227,
+     228,    10,    53,    12,   227,   228,    53,     4,    51,   237,
+     241,    47,   243,    51,   237,    24,    64,    46,   246,    28,
+      29,    30,    53,   246,   255,    64,     7,    36,    37,    38,
+      39,    40,    41,    42,   265,   266,    64,    64,    52,    48,
+      49,    50,    47,    52,    14,    44,    48,     8,   312,    58,
+      59,    46,     3,     4,   190,    63,    35,   321,   322,    10,
+     308,    12,   197,   206,   295,   296,   297,   298,   332,    20,
+      21,    22,    23,    24,   311,   306,   215,    28,   211,   216,
+      31,   168,   150,   311,   214,    36,    37,    38,    39,    40,
+      41,    42,   217,   321,   225,   221,   306,    48,   321,    50,
+     260,    52,    53,   230,   332,     3,     4,    58,    59,   332,
+      -1,    61,    10,    -1,    12,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    20,    21,    22,    23,    24,     3,     4,    -1,
+      28,    -1,    -1,    31,    10,    -1,    -1,    -1,    36,    37,
+      38,    39,    40,    41,    42,    -1,    -1,    -1,    24,    -1,
+      48,    -1,    50,    -1,    52,    53,     3,     4,    -1,    -1,
+      58,    59,    -1,    10,    -1,    12,     3,     4,    44,    -1,
+      -1,    47,    -1,    10,    50,    -1,    52,    24,    -1,     3,
+       4,    28,    29,    30,    -1,    -1,    10,    24,    -1,    36,
+      37,    38,    39,    40,    41,    42,    -1,     3,     4,    -1,
+      24,    48,    -1,    50,    10,    52,    12,    -1,    -1,    -1,
+      -1,    58,    59,    50,    -1,    52,    53,    -1,    24,    -1,
+       3,     4,    28,    47,    -1,    -1,    50,    10,    52,    -1,
+      36,    37,    38,    39,    40,    41,    42,    -1,     3,     4,
+      -1,    24,    48,    49,    50,    10,    52,    12,    -1,    -1,
+      -1,    -1,    58,    59,    -1,    -1,    -1,    -1,    -1,    24,
+      -1,    -1,    -1,    28,    -1,    -1,    -1,    50,    -1,    52,
       -1,    36,    37,    38,    39,    40,    41,    42,    -1,     3,
        4,    -1,    -1,    48,    49,    50,    10,    52,    12,    -1,
       -1,    -1,    -1,    58,    59,    -1,    -1,    -1,    -1,    -1,
-      24,    -1,    -1,    -1,    28,    29,    30,    -1,    -1,    -1,
-      -1,    -1,    36,    37,    38,    39,    40,    41,    42,    -1,
-       3,     4,    -1,    -1,    48,    -1,    50,    10,    52,    12,
+      24,    -1,    -1,    -1,    28,    -1,    -1,    -1,    -1,    -1,
+       3,    -1,    36,    37,    38,    39,    40,    41,    42,    12,
+      -1,    -1,    -1,    -1,    48,    -1,    50,    -1,    52,    -1,
       -1,    -1,    -1,    -1,    58,    59,    -1,    -1,    -1,    -1,
-      -1,    24,    -1,    -1,    -1,    28,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    36,    37,    38,    39,    40,    41,    42,
-      -1,     3,     4,    -1,    -1,    48,    49,    50,    10,    52,
-      12,    -1,    -1,    -1,    -1,    58,    59,    -1,    -1,    -1,
-      -1,    -1,    24,    -1,    -1,    -1,    28,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    36,    37,    38,    39,    40,    41,
-      42,    -1,     3,     4,    -1,    -1,    48,    49,    50,    10,
-      52,    12,    -1,    -1,    -1,    -1,    58,    59,    -1,    -1,
-      -1,    -1,    -1,    24,    -1,    -1,    -1,    28,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    36,    37,    38,    39,    40,
-      41,    42,    -1,    -1,    -1,    -1,    -1,    48,    -1,    50,
-      -1,    52,    -1,    -1,    -1,    -1,    -1,    58,    59
+      -1,    -1,    -1,    -1,    -1,    48,    -1,    -1,    -1,    52
   };
 
   const unsigned char
   parser::yystos_[] =
   {
-       0,    76,    77,     0,     8,    78,    79,    80,    84,     3,
-      92,    46,    46,     8,    79,    19,    50,    52,    81,   159,
-      92,    46,    41,    42,    95,     4,    91,    92,   155,   162,
-       5,     8,    53,    82,    83,    91,    92,    93,    52,    32,
-      11,    92,    93,    96,   148,   149,   150,   151,    10,    24,
-      50,    52,    91,    96,   133,   134,   135,   136,   137,   142,
-     143,    45,    51,    92,    53,    83,    46,    64,    64,    64,
-      53,    82,    95,    50,    47,    50,    92,    93,    52,    48,
-     158,   133,    92,   132,   133,   138,   139,    91,   155,    81,
-      46,   133,    12,    28,    36,    37,    38,    39,    40,    41,
-      42,    48,    52,    58,    59,    92,    94,    96,    97,    98,
-     101,   102,   103,   104,   105,   106,   107,   108,   109,   111,
-     112,   113,   114,   115,   116,   117,   118,   120,   122,   124,
-     126,   127,   128,   129,   133,   143,   148,    53,    91,    97,
-     133,   144,   145,    47,    50,    91,   140,   141,    29,    30,
-      49,    92,   153,   160,    54,    55,    50,   133,    45,    53,
-      45,    53,    45,    53,    52,   101,    49,    97,    98,    99,
-      20,    21,    22,    23,    31,    53,    85,    86,    87,    88,
-      89,    90,    92,    98,   110,   133,   152,   163,    92,    41,
-      42,    43,    48,   116,    55,    56,    57,   119,    58,    59,
-     121,    60,    61,    62,    63,   123,    65,    66,   125,    25,
-      26,    27,    47,   101,   148,    45,    51,   145,   133,    45,
-      53,    92,    92,   133,    45,    49,   133,    97,   133,   133,
-     133,    92,   139,    92,    13,    45,    49,    45,    49,    52,
-      92,   154,   156,   157,   157,   157,    97,    97,    46,    44,
-      53,    53,    85,    98,    45,    53,     3,   101,   106,    29,
-      30,    49,    97,   146,   147,   116,   120,   122,   124,   126,
-     127,   128,     4,    51,   144,    47,    51,   140,   133,   133,
-     153,    51,   101,    49,    97,    97,   154,   161,   133,    64,
-      64,    64,    64,    97,    46,    53,    92,   152,    97,    97,
-      45,    49,     7,    52,    47,    14,    45,    53,    97,    97,
-      97,    97,   146,    48,   102,   100,    96,   105,   154,    53,
-     130,   133,    46,    65,    72,    73,   131,   133
+       0,    76,    77,     0,     8,    17,    78,    79,    80,    84,
+       3,    95,    52,    46,    46,    79,    50,    52,    81,   162,
+      85,    46,     4,    94,    95,   158,   165,     5,     8,    53,
+      82,    83,    94,    95,    96,    52,    53,    86,    87,    95,
+      11,    95,    96,    99,   151,   152,   153,   154,    10,    24,
+      50,    52,    94,    99,   136,   137,   138,   139,   140,   145,
+     146,    45,    51,    95,    53,    83,    46,    64,    64,    64,
+      53,    82,    46,    19,    45,    50,    47,    50,    95,    96,
+      52,    48,   161,   136,    95,   135,   136,   141,   142,    94,
+     158,    81,    46,   136,    12,    28,    36,    37,    38,    39,
+      40,    41,    42,    48,    52,    58,    59,    95,    97,    99,
+     100,   101,   104,   105,   106,   107,   108,   109,   110,   111,
+     112,   114,   115,   116,   117,   118,   119,   120,   121,   123,
+     125,   127,   129,   130,   131,   132,   136,   146,   151,    53,
+      41,    42,    98,    95,    94,   100,   136,   147,   148,    47,
+      50,    94,   143,   144,    29,    30,    49,    95,   156,   163,
+      54,    55,    50,   136,    45,    53,    45,    53,    45,    53,
+      52,   104,    49,   100,   101,   102,    20,    21,    22,    23,
+      31,    53,    88,    89,    90,    91,    92,    93,    95,   101,
+     113,   136,   155,   166,    95,    41,    42,    43,    48,   119,
+      55,    56,    57,   122,    58,    59,   124,    60,    61,    62,
+      63,   126,    65,    66,   128,    25,    26,    27,    47,   104,
+     151,    45,    51,   148,   136,    45,    53,    95,    95,   136,
+      45,    49,   136,   100,   136,   136,   136,    95,   142,    95,
+      13,    45,    49,    45,    49,    52,    95,   157,   159,   160,
+     160,   160,   100,   100,    46,    44,    53,    53,    88,   101,
+      45,    53,     3,   104,   109,    29,    30,    49,   100,   149,
+     150,   119,   123,   125,   127,   129,   130,   131,     4,    51,
+     147,    47,    51,   143,   136,   136,   156,    51,   104,    49,
+     100,   100,   157,   164,   136,    64,    64,    64,    64,   100,
+      46,    53,    95,   155,   100,   100,    45,    49,     7,    52,
+      47,    14,    45,    53,   100,   100,   100,   100,   149,    48,
+     105,   103,    99,   108,   157,    53,   133,   136,    46,    65,
+      72,    73,   134,   136
   };
 
   const unsigned char
@@ -3814,47 +3925,49 @@ namespace pdm { namespace parser {
   {
        0,    75,    76,    77,    77,    78,    79,    80,    80,    81,
       81,    81,    81,    82,    82,    83,    83,    83,    83,    84,
-      85,    85,    85,    85,    85,    86,    87,    88,    89,    90,
-      91,    92,    93,    94,    95,    95,    96,    96,    96,    96,
-      97,    98,    98,    99,    99,   100,   100,   101,   101,   101,
-     101,   102,   103,   103,   103,   104,   105,   105,   105,   105,
-     105,   105,   105,   106,   106,   106,   106,   107,   107,   107,
-     107,   108,   108,   109,   109,   109,   109,   110,   110,   111,
-     112,   112,   112,   112,   113,   113,   114,   114,   114,   115,
-     115,   116,   116,   117,   117,   117,   118,   119,   119,   119,
-     120,   120,   121,   121,   122,   122,   123,   123,   123,   123,
-     124,   124,   125,   125,   126,   126,   127,   127,   128,   128,
-     129,   129,   130,   131,   131,   131,   132,   132,   133,   133,
-     133,   133,   133,   133,   133,   134,   135,   135,   136,   137,
-     138,   138,   139,   140,   140,   141,   141,   142,   143,   144,
-     144,   145,   145,   146,   146,   146,   147,   147,   148,   149,
-     149,   149,   150,   151,   152,   153,   153,   153,   154,   154,
-     155,   155,   156,   157,   157,   158,   158,   159,   160,   160,
-     161,   161,   162,   162,   163,   163
+      85,    85,    86,    87,    87,    88,    88,    88,    88,    88,
+      89,    90,    91,    92,    93,    94,    95,    96,    97,    98,
+      98,    99,    99,    99,    99,   100,   101,   101,   102,   102,
+     103,   103,   104,   104,   104,   104,   105,   106,   106,   106,
+     107,   108,   108,   108,   108,   108,   108,   108,   109,   109,
+     109,   109,   110,   110,   110,   110,   111,   111,   112,   112,
+     112,   112,   113,   113,   114,   115,   115,   115,   115,   116,
+     116,   117,   117,   117,   118,   118,   119,   119,   120,   120,
+     120,   121,   122,   122,   122,   123,   123,   124,   124,   125,
+     125,   126,   126,   126,   126,   127,   127,   128,   128,   129,
+     129,   130,   130,   131,   131,   132,   132,   133,   134,   134,
+     134,   135,   135,   136,   136,   136,   136,   136,   136,   136,
+     137,   138,   138,   139,   140,   141,   141,   142,   143,   143,
+     144,   144,   145,   146,   147,   147,   148,   148,   149,   149,
+     149,   150,   150,   151,   152,   152,   152,   153,   154,   155,
+     156,   156,   156,   157,   157,   158,   158,   159,   160,   160,
+     161,   161,   162,   163,   163,   164,   164,   165,   165,   166,
+     166
   };
 
   const signed char
   parser::yyr2_[] =
   {
        0,     2,     2,     0,     3,     1,     3,     2,     3,     3,
-       4,     2,     3,     2,     3,     3,     3,     3,     3,     6,
-       1,     1,     1,     1,     1,     4,     4,     4,     4,     2,
-       1,     1,     1,     1,     1,     1,     2,     5,     3,     6,
-       1,     1,     1,     3,     3,     0,     3,     1,     1,     1,
-       1,     3,     2,     4,     3,     3,     1,     1,     1,     1,
-       1,     1,     2,     1,     1,     1,     1,     1,     1,     2,
-       2,     4,     6,     2,     3,     3,     4,     2,     3,     2,
-       1,     1,     1,     1,     3,     4,     3,     3,     5,     3,
-       3,     1,     2,     1,     1,     1,     1,     1,     1,     1,
-       1,     3,     1,     1,     1,     3,     1,     1,     1,     1,
-       1,     3,     1,     1,     1,     3,     1,     3,     1,     3,
-       1,     3,     3,     1,     1,     1,     3,     3,     1,     1,
-       1,     1,     1,     1,     1,     2,     3,     3,     5,     3,
-       1,     3,     2,     1,     2,     1,     3,     4,     4,     1,
-       1,     1,     3,     1,     2,     2,     1,     3,     1,     1,
-       1,     1,     2,     8,     3,     2,     3,     3,     2,     1,
-       2,     2,     3,     1,     1,     3,     2,     3,     1,     3,
-       1,     3,     1,     3,     1,     3
+       4,     2,     3,     2,     3,     3,     3,     3,     3,     4,
+       0,     3,     3,     1,     3,     1,     1,     1,     1,     1,
+       4,     4,     4,     4,     2,     1,     1,     1,     1,     1,
+       1,     2,     5,     3,     6,     1,     1,     1,     3,     3,
+       0,     3,     1,     1,     1,     1,     3,     2,     4,     3,
+       3,     1,     1,     1,     1,     1,     1,     2,     1,     1,
+       1,     1,     1,     1,     2,     2,     4,     6,     2,     3,
+       3,     4,     2,     3,     2,     1,     1,     1,     1,     3,
+       4,     3,     3,     5,     3,     3,     1,     2,     1,     1,
+       1,     1,     1,     1,     1,     1,     3,     1,     1,     1,
+       3,     1,     1,     1,     1,     1,     3,     1,     1,     1,
+       3,     1,     3,     1,     3,     1,     3,     3,     1,     1,
+       1,     3,     3,     1,     1,     1,     1,     1,     1,     1,
+       2,     3,     3,     5,     3,     1,     3,     2,     1,     2,
+       1,     3,     4,     4,     1,     1,     1,     3,     1,     2,
+       2,     1,     3,     1,     1,     1,     1,     2,     8,     3,
+       2,     3,     3,     2,     1,     2,     2,     3,     1,     1,
+       3,     2,     3,     1,     3,     1,     3,     1,     3,     1,
+       3
   };
 
 
@@ -3879,7 +3992,8 @@ namespace pdm { namespace parser {
   "\"!=\"", "\"^\"", "\"&\"", "\"!\"", "\"|\"", "\"EOS\"", "\":<\"",
   "\">:\"", "\"<null>\"", "$accept", "script", "script_header",
   "script_header_stmt", "script_field", "script_field_sl", "mod_exp",
-  "mod_field_sl", "mod_field", "import_stmt", "chain_prefix_stmt",
+  "mod_field_sl", "mod_field", "import_stmt", "import_field_group_sl0",
+  "import_field_group", "import_field_cl1", "chain_prefix_stmt",
   "const_stmt", "val_stmt", "var_stmt", "set_stmt", "discard_stmt", "tid",
   "vid", "cid", "floatl", "stringl", "mod_prefix", "expr", "long_exp",
   "expr_cl2", "type_query_exp_sl0", "bracketed_exp", "paren_exp",
@@ -3908,25 +4022,26 @@ namespace pdm { namespace parser {
   const short
   parser::yyrline_[] =
   {
-       0,   273,   273,   281,   282,   285,   289,   292,   293,   301,
-     302,   303,   304,   307,   308,   311,   312,   313,   314,   322,
-     326,   327,   328,   329,   330,   333,   336,   339,   342,   345,
-     352,   353,   354,   357,   360,   361,   364,   365,   366,   367,
-     374,   377,   378,   390,   391,   394,   395,   399,   400,   401,
-     402,   413,   416,   417,   418,   421,   424,   425,   426,   427,
-     428,   429,   430,   433,   434,   435,   436,   439,   440,   441,
-     442,   445,   446,   449,   450,   451,   452,   455,   456,   459,
-     463,   464,   465,   466,   469,   470,   473,   474,   475,   478,
-     479,   483,   484,   487,   488,   489,   493,   496,   497,   498,
-     501,   502,   505,   506,   509,   510,   513,   514,   515,   516,
-     519,   520,   523,   524,   527,   528,   531,   532,   535,   536,
-     539,   540,   544,   547,   548,   549,   564,   565,   569,   570,
-     571,   572,   573,   574,   575,   579,   583,   584,   587,   591,
-     594,   595,   598,   602,   603,   606,   607,   610,   614,   618,
-     619,   622,   623,   625,   626,   627,   630,   631,   641,   644,
-     645,   646,   649,   654,   664,   667,   668,   669,   672,   673,
-     676,   677,   681,   684,   685,   688,   689,   692,   696,   697,
-     700,   701,   704,   705,   708,   709
+       0,   277,   277,   285,   286,   289,   293,   296,   297,   305,
+     306,   307,   308,   311,   312,   315,   316,   317,   318,   326,
+     331,   332,   335,   338,   339,   343,   344,   345,   346,   347,
+     350,   353,   356,   359,   362,   369,   370,   371,   374,   377,
+     378,   381,   382,   383,   384,   391,   394,   395,   407,   408,
+     411,   412,   416,   417,   418,   419,   430,   433,   434,   435,
+     438,   441,   442,   443,   444,   445,   446,   447,   450,   451,
+     452,   453,   456,   457,   458,   459,   462,   463,   466,   467,
+     468,   469,   472,   473,   476,   480,   481,   482,   483,   486,
+     487,   490,   491,   492,   495,   496,   500,   501,   504,   505,
+     506,   510,   513,   514,   515,   518,   519,   522,   523,   526,
+     527,   530,   531,   532,   533,   536,   537,   540,   541,   544,
+     545,   548,   549,   552,   553,   556,   557,   561,   564,   565,
+     566,   581,   582,   586,   587,   588,   589,   590,   591,   592,
+     596,   600,   601,   604,   608,   611,   612,   615,   619,   620,
+     623,   624,   627,   631,   635,   636,   639,   640,   642,   643,
+     644,   647,   648,   658,   661,   662,   663,   666,   671,   681,
+     684,   685,   686,   689,   690,   693,   694,   698,   701,   702,
+     705,   706,   709,   713,   714,   717,   718,   721,   722,   725,
+     726
   };
 
   void
@@ -4012,9 +4127,9 @@ namespace pdm { namespace parser {
 
 #line 11 "parser.yy"
 } } // pdm::parser
-#line 4016 "parser.tab.cc"
+#line 4131 "parser.tab.cc"
 
-#line 712 "parser.yy"
+#line 729 "parser.yy"
 
 
 #include <iostream>

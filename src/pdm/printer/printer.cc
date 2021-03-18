@@ -480,14 +480,38 @@ namespace pdm::printer {
         print_node(es->link_arg());
     }
     void Printer::print_import_stmt(ast::ImportStmt* is) {
-        print_c_str("mod ");
-        print_intstr(is->import_name());
-        // fixme; incorrect escapes, so hacky, but eh
-        print_c_str(" from \"");
-        print_u8_str(is->import_from_str());
-        print_c_str("\" as \"");
-        print_u8_str(is->import_type_str());
-        print_u32_char('"');
+        print_c_str("import ");
+        print_u32_char('{');
+        print_newline_indent();
+        {
+            size_t group_count = is->field_groups().size();
+            for (size_t field_group_index = 0; field_group_index < group_count; field_group_index++) {
+                auto field_group = is->field_groups()[field_group_index];
+
+                size_t field_count = field_group->fields().size();
+                for (size_t field_index = 0; field_index < field_count; field_index++) {
+                    auto field = field_group->fields()[field_index];
+                    print_intstr(field->import_name());
+
+                    if (field_index + 1 < field_count) {
+                        print_str(", ");
+                    }
+                }
+                print_c_str(" from ");
+                print_u32_char('"');
+                {
+                    // fixme; incorrect escapes, so hacky, but only in debug import printer, so eh
+                    print_u8_str(field_group->from_path());
+                }
+                print_u32_char('"');
+                print_u32_char(';');
+                if (field_group_index + 1 < group_count) {
+                    print_newline();
+                }
+            }
+        }
+        print_newline_exdent();
+        print_u32_char('}');
     }
     void Printer::print_using_stmt(ast::UsingStmt* node) {
         print_c_str("using ");

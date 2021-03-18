@@ -21,25 +21,22 @@ namespace pdm {
     namespace aux {
         struct Key {
             std::filesystem::path import_from_path;
-            std::string import_type_str;
+            // std::string import_type_str;
 
-            bool operator==(Key const k) const {
+            bool operator==(Key const& k) const {
                 return (
-                    import_from_path == k.import_from_path &&
-                    import_type_str == k.import_type_str
+                    import_from_path == k.import_from_path
                 );
             }
         };
         struct Hash {
-            Hash() {}
+            Hash() = default;
 
-            std::size_t operator() (Key const it) const {
-                size_t lt = std::hash<std::string>{}(it.import_from_path.native());
-                size_t rt = std::hash<std::string>{}(it.import_type_str);
-                return lt ^ rt;
+            std::size_t operator() (Key const& it) const {
+                return std::hash<std::string>{}(it.import_from_path.native());
             }
         };
-        using ImportMap = std::unordered_map<Key, ast::Script*, Hash>;
+        using ImportMap = std::unordered_map<Key, ast::ISourceNode*, Hash>;
     }
 
     // 'Compiler' instances transform input files into output files.
@@ -47,11 +44,11 @@ namespace pdm {
       public:
         using PrintFlagBitset = u64;
         enum class PrintFlag: PrintFlagBitset {
-            SourceCode  = 0x1,
-            Scopes      = 0x2,
-            Types       = 0x4,
-            Llvm        = 0x8,
-            Wasm        = 0x10
+            SourceCode = 0x1,
+            Scopes = 0x2,
+            Types = 0x4,
+            Llvm = 0x8,
+            Wasm = 0x10
         };
         static PrintFlagBitset PrintFlags_PrintEverything;
 
@@ -59,7 +56,7 @@ namespace pdm {
         std::filesystem::path m_cwd;
         std::filesystem::path m_entry_point_path;
         
-        aux::ImportMap            m_cached_imports;
+        aux::ImportMap m_cached_imports;
         std::vector<ast::Script*> m_all_scripts;
         
         types::Manager m_types_mgr;
@@ -90,22 +87,23 @@ namespace pdm {
         Compiler(std::string&& cwd, std::string const& entry_point_path, u64 print_flags = 0);
         
       public:
-        ast::Script* import(std::string const& from_path, std::string const& type, std::string const& reason);
+        ast::ISourceNode* import(std::string const& from_path, std::string const& reason);
 
       private:
         // help_define_builtin_type is called during the constructor, post initialization to define
         // universal types.
         ast::BuiltinStmt* help_define_builtin_type(scoper::Scoper& scoper, intern::String name, types::Var* typer_var);
-        
-        // help_import_script_1 is called for every imported function, regardless of whether imported before or not.
-        ast::Script* help_import_script_1(std::string const& from_path, std::string const& type);
 
-        // help_import_script_2 is used to perform first-time initialization of freshly loaded Scripts.
-        void help_import_script_2(ast::Script* script);
+        ast::ISourceNode* check_cache_or_import(std::string const& from_path, std::string const& reason);
+        ast::ISourceNode* import_new(std::string const& abs_from_path_string, std::string const& reason);
+        ast::Script* import_new_script(std::string const& abs_from_path_string, std::string const& reason);
+        ast::Package* import_new_package(std::string const& abs_from_path_string, std::string const& reason);
+        // void setup_fresh_script(ast::Script* script);
+        // void setup_fresh_package(ast::Package* package);
 
       private:
         bool pass1_import_all(scoper::Scoper& scoper);
-        bool pass2_typecheck_all();
+        bool pass2_type_check_all();
         bool pass3_emit_all();
 
       private:

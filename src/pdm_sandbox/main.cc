@@ -19,7 +19,7 @@ int main(int argc, char const* argv[]) {
         std::string entry_point_path {argv[1]};
         pdm::Compiler compiler {
             std::move(std::filesystem::current_path().string()),
-            std::move(entry_point_path),
+            entry_point_path,
             pdm::Compiler::PrintFlags_PrintEverything
         };
         bool compiled_ok = compiler.finish();

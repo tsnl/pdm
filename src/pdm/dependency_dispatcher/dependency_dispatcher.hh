@@ -14,8 +14,6 @@ namespace pdm::ast {
 
 namespace pdm::dependency_dispatcher {
 
-    extern std::string const PD_SCRIPT_IMPORT_TYPE_STRING;
-
     class DDVisitor: public ast::TinyVisitor {
       private:
         Compiler* m_compiler_ref;

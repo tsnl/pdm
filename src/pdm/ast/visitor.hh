@@ -26,6 +26,7 @@
 #include "pdm/ast/pattern/vpattern.hh"
 
 #include "pdm/ast/source-node/script.hh"
+#include "pdm/ast/source-node/package.hh"
 
 #include "pdm/ast/stmt/stmt.hh"
 #include "pdm/ast/stmt/const.hh"

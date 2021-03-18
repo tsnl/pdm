@@ -3,8 +3,9 @@
 
 namespace pdm::source {
     enum class SourceKind {
-        Script,
-        Package,
+        LocalScript,
+        LocalPackage,
+        RemotePackage,
         META_Count
     };
 }

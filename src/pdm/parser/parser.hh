@@ -3,7 +3,7 @@
 
 #include "lexer.hh"
 #include "pdm/ast/source-node/script.hh"
-#include "pdm/source/i_source.hh"
+#include "pdm/source/i-source.hh"
 
 namespace pdm::parser {
 

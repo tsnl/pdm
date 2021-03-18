@@ -144,15 +144,15 @@ namespace pdm::scoper {
             ImportLookupOrder import_order = *it;
             
             // fetching the exported frame:
-            ast::ImportStmt* import_stmt = import_order.import_stmt;
-            ast::Script* origin_script = import_stmt->x_origin_script();
+            ast::ImportStmt::Field* import_field = import_order.import_field;
+            ast::Script* origin_script = import_field->x_origin_script();
             if (origin_script == nullptr) {
                 // posting feedback about an import failure:
-                std::string headline = "Import could not be resolved.";
-                std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
+                std::string headline = "Import '" + import_field->import_name().cpp_str() + "' could not be resolved.";
+                std::string desc = "From '" + import_field->parent_group()->from_path().string() + "'";
                 std::vector<feedback::Note*> notes{1}; {
                     std::string note_desc0 = "at import statement here...";
-                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_stmt->loc());
+                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_field->loc());
                 }
                 feedback::post(new feedback::Letter(
                     feedback::Severity::Error,
@@ -167,10 +167,10 @@ namespace pdm::scoper {
             if (origin_script_frame == nullptr) {
                 // posting feedback about an import failure:
                 std::string headline = "Import could not be resolved.";
-                std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
+                std::string desc = "From '" + import_field->parent_group()->from_path().string() + "'";
                 std::vector<feedback::Note*> notes{1}; {
                     std::string note_desc0 = "at import statement here...";
-                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_stmt->loc());
+                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_field->loc());
                 }
                 feedback::post(new feedback::Letter(
                     feedback::Severity::Error,
@@ -185,14 +185,14 @@ namespace pdm::scoper {
             // looking up the exported symbol in the exported frame:
             Context* first_ctx = origin_script_frame->first_context();
             Context* last_ctx = origin_script_frame->last_context();
-            Defn const* module_defn = last_ctx->lookup_until(import_stmt->import_name(), first_ctx);
+            Defn const* module_defn = last_ctx->lookup_until(import_field->import_name(), first_ctx);
             if (module_defn == nullptr) {
                 // posting feedback about importing an undefined symbol
-                std::string headline = "Module '" + import_stmt->import_name().cpp_str() + "' could not be found in the origin script.";
-                std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
+                std::string headline = "Module '" + import_field->import_name().cpp_str() + "' could not be found in the origin script.";
+                std::string desc = "From '" + import_field->parent_group()->from_path().string() + "'";
                 std::vector<feedback::Note*> notes{1}; {
                     std::string note_desc0 = "at import statement here...";
-                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_stmt->loc());
+                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_field->loc());
                 }
                 feedback::post(new feedback::Letter(
                     feedback::Severity::Error,
@@ -207,11 +207,11 @@ namespace pdm::scoper {
             // checking the exported symbol's kind:
             if (!module_defn_kind(module_defn->kind())) {
                 // posting feedback about importing an undefined symbol
-                std::string headline = "Symbol '" + import_stmt->import_name().cpp_str() + "' is not importable.";
-                std::string desc = "From '" + import_stmt->import_from_str().string() + "'";
+                std::string headline = "Symbol '" + import_field->import_name().cpp_str() + "' is not importable.";
+                std::string desc = "From '" + import_field->parent_group()->from_path().string() + "'";
                 std::vector<feedback::Note*> notes{2}; {
                     std::string note_desc0 = "at import statement here...";
-                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_stmt->loc());
+                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_field->loc());
                     
                     std::string note_desc1 = "non-importable node here (expected module or imported module)...";
                     notes[1] = new feedback::SourceLocNote(std::move(note_desc1), module_defn->defn_node()->loc());
@@ -228,7 +228,7 @@ namespace pdm::scoper {
             
             // setting the exported 'defn' and 'stmt' so the typer can equate both Vars:
             ast::ModExp* original_mod_exp = original_mod_exp_of_import(module_defn);
-            import_stmt->x_origin_mod_exp(original_mod_exp);
+            import_field->x_origin_mod_exp(original_mod_exp);
         }
 
         // Using
@@ -365,8 +365,8 @@ namespace pdm::scoper {
         Scoper::IdClassSpecLookupOrder order {id_class_spec, top_frame()->last_context()};
         scoper()->m_id_class_spec_orders.push_back(order);
     }
-    void ScoperVisitor::place_import_lookup_order(ast::ImportStmt* import_stmt) {
-        Scoper::ImportLookupOrder order {import_stmt, top_frame()->last_context()};
+    void ScoperVisitor::place_import_lookup_order(ast::ImportStmt::Field* import_field) {
+        Scoper::ImportLookupOrder order {import_field, top_frame()->last_context()};
         scoper()->m_import_orders.push_back(order);
     }
     void ScoperVisitor::place_using_lookup_order(ast::UsingStmt* using_stmt) {
@@ -421,7 +421,7 @@ namespace pdm::scoper {
             }
         }
         else if (module_defn->kind() == DefnKind::ImportModule) {
-            auto imported_stmt = dynamic_cast<ast::ImportStmt*>(module_defn->defn_node());
+            auto imported_stmt = dynamic_cast<ast::ImportStmt::Field*>(module_defn->defn_node());
             assert(imported_stmt != nullptr);
             // from dependency dispatcher:
             original_mod_exp = imported_stmt->x_origin_mod_exp();
@@ -736,27 +736,31 @@ namespace pdm::scoper {
     }
     bool ScoperVisitor::on_visit_import_stmt(ast::ImportStmt* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            // defining the new symbol with a new, exported TV:
-            types::TypeVar* mod_tv = nullptr; {
-                std::string tv_prefix = "Defn(ImportModule):";
-                std::string tv_name = std::move(tv_prefix) + node->import_name().content();
-                mod_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
-            }
-            Defn new_defn {
-                DefnKind::ImportModule,
-                node->import_name(),
-                node,
-                mod_tv
-            };
-            bool defn_ok = top_frame()->define(new_defn);
-            if (!defn_ok) {
-                post_overlapping_defn_error("import", new_defn);
-                return false;
-            }
+            for (ast::ImportStmt::FieldGroup* group: node->field_groups()) {
+                for (ast::ImportStmt::Field* field: group->fields()) {
+                    // defining the new symbol with a new, exported TV:
+                    types::TypeVar* mod_tv = nullptr; {
+                        std::string tv_prefix = "Defn(ImportModule):";
+                        std::string tv_name = std::move(tv_prefix) + field->import_name().content();
+                        mod_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
+                    }
+                    Defn new_defn {
+                        DefnKind::ImportModule,
+                        field->import_name(),
+                        node,
+                        mod_tv
+                    };
+                    bool defn_ok = top_frame()->define(new_defn);
+                    if (!defn_ok) {
+                        post_overlapping_defn_error("import", new_defn);
+                        return false;
+                    }
 
-            // storing the exported TV to link against later, placing an order to link:
-            node->x_exported_tv(mod_tv);
-            place_import_lookup_order(node);
+                    // storing the exported TV to link against later, placing an order to link:
+                    field->x_exported_tv(mod_tv);
+                    place_import_lookup_order(field);
+                }
+            }
         }
         return true;
     }

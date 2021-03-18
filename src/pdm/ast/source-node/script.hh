@@ -5,7 +5,7 @@
 
 #include "./i_source_node.hh"
 #include "pdm/core/intern.hh"
-#include "pdm/source/i_source.hh"
+#include "pdm/source/i-source.hh"
 #include "pdm/source/loc.hh"
 
 namespace pdm::ast {

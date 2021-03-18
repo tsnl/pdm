@@ -3,7 +3,7 @@
 
 #include <cstdio>
 
-#include "pdm/source/i_source.hh"
+#include "pdm/source/i-source.hh"
 #include "pdm/source/pos.hh"
 
 namespace pdm::parser {
