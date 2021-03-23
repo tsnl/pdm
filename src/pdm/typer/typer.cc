@@ -1753,9 +1753,14 @@ namespace pdm::types {
 
 namespace pdm::typer {
 
-    bool type(types::Manager* types_mgr, ast::Script* script) {
+    bool type_script(types::Manager* types_mgr, ast::Script* script) {
         types::TyperVisitor typer_visitor {types_mgr, script};
         return typer_visitor.visit(script);
+    }
+
+    bool type_package(types::Manager* manager, ast::Package* package) {
+        assert(0 && "NotImplemented: typer::type_package.");
+        return false;
     }
 
 }

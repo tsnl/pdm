@@ -12,7 +12,8 @@ namespace pdm::ast {
 
 namespace pdm::typer {
 
-    bool type(types::Manager* manager, ast::Script* script);
+    bool type_script(types::Manager* manager, ast::Script* script);
+    bool type_package(types::Manager* manager, ast::Package* package);
 
 }
 

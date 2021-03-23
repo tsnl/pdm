@@ -10,26 +10,14 @@ namespace pdm {
 }
 namespace pdm::ast {
     class Script;
+    class Package;
 }
 
 namespace pdm::dependency_dispatcher {
 
-    class DDVisitor: public ast::TinyVisitor {
-      private:
-        Compiler* m_compiler_ref;
-        ast::Script*        m_this_script;
+    void dispatch_script_dependencies(Compiler* compiler, ast::Script* script);
 
-      public:
-        DDVisitor(Compiler* compiler_ref, ast::Script* this_script)
-        : m_compiler_ref(compiler_ref),
-          m_this_script(this_script) {}
-      
-      public:
-        virtual bool on_visit(ast::Node* node, VisitOrder visit_order) override;
-
-      protected:
-        virtual bool on_visit_import_stmt(ast::ImportStmt* node, VisitOrder visit_order) override;
-    };
+    void dispatch_package_dependencies(Compiler* compiler, ast::Package* package);
 
 }
 

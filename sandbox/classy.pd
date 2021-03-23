@@ -1,5 +1,5 @@
 mod classy {
-    SHAPE = cls [Shape STRUCT] {
+    SHAPE = typeclass (Shape STRUCT) {
         # must have Int32 fields 'area' and 'perimeter'
         Shape :< {area Int32, perimeter Int32};
     };

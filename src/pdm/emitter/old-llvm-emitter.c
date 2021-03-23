@@ -1240,12 +1240,12 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
                 DefnScope* refedDefnScope = GetAstColonNameRefedDefnScope(colonNode);
                 AstNode* refedDefnNode = GetDefnNode(refedDefnScope);
 
-                // if the defined node is an 'extern' statement, storing the llvm value directly:
+                // if the defined node is an 'package-content' statement, storing the llvm value directly:
                 if (GetAstNodeKind(refedDefnNode) == AST_STMT_LINK) {
                     ExportedValue* externLlvmRepr = GetAstNodeLlvmRepr(refedDefnNode);
                     exportedValue.llvm = externLlvmRepr->llvm;
-                    COMPILER_ASSERT(exportedValue.llvm != NULL, "NULL extern");
-                    // COMPILER_ERROR("DISABLED: 'extern' statements");
+                    COMPILER_ASSERT(exportedValue.llvm != NULL, "NULL package-content");
+                    // COMPILER_ERROR("DISABLED: 'package-content' statements");
                     // exportedValue.llvm = NULL;
                 } else {
                     // HACK: if the defined node is a 'def', obtain the RHS instead
@@ -1272,15 +1272,15 @@ ExportedValue exportValue(Emitter* emitter, AstNode* exprNode) {
 char* exportName(AstNode* node) {
     char* exportedName = NULL;
 
-    // ensuring node if extern or def:
+    // ensuring node if package-content or def:
     AstKind nodeKind = GetAstNodeKind(node);
     COMPILER_ASSERT(
         (nodeKind == AST_STMT_VDEF) ||
         (nodeKind == AST_STMT_LINK),
-        "exportName: invalid node->kind: expected 'def' or 'extern'"
+        "exportName: invalid node->kind: expected 'def' or 'package-content'"
     );
 
-    // extern statements uniquely export just the alias:
+    // package-content statements uniquely export just the alias:
     if (nodeKind == AST_STMT_LINK_ITEM) {
         // fixme: hacky, only works with ASCII subset of UTF-8, leaks memory
         Utf8String alias = AstLinkItem_Alias(node);

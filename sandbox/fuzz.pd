@@ -5,18 +5,18 @@ mod vec {
         y Float32
     };
 
-    mul = fn (v Vec2, s Float32) -> Vec2 {
-        x: v.x * s,
-        y: v.y * s
+    mul = fn (v Vec2, s Float32) Vec2 {
+        x = v.x * s,
+        y = v.y * s
     };
 
-    dot = fn (v Vec2, w Vec2) -> Float32 {
+    dot = fn (v Vec2, w Vec2) Float32 {
         v.x * w.x + v.y * w.y
     };
-    length_sqr = fn (v Vec2) -> Float32 {
+    length_sqr = fn (v Vec2) Float32 {
         dot(v, v)
     };
-    # length = fn (v Vec2) -> Float32 {
+    # length = fn (v Vec2) Float32 {
     #     # TODO: math, sqrt ;-;
     #     # Math.sqrt(length_sqr(v))
     # };
@@ -27,7 +27,7 @@ mod vec {
     #   - raise this error if user forgets the 'if'
     #   - disable this error when 'if' is present
     #   * the compiler helps check your code
-    normalize = fn (v Vec2) -> Vec2 {
+    normalize = fn (v Vec2) Vec2 {
         val v_length_sqr = length_sqr(v);
         if (v_length_sqr == 0.0) then {
             v

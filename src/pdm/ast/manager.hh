@@ -8,6 +8,7 @@
 #include "pdm/core/units.hh"
 
 #include "source-node/script.hh"
+#include "source-node/package.hh"
 
 #include "exp/exp.hh"
 #include "exp/array.hh"
@@ -45,9 +46,7 @@
 #include "stmt/mod_type.hh"
 #include "stmt/mod_typeclass.hh"
 #include "stmt/mod_val.hh"
-//#include "stmt/import.hh"
-#include "pdm/ast/header/extern_stmt.hh"
-//#include "stmt/mod.hh"
+#include "header/extern_stmt.hh"
 #include "stmt/set.hh"
 #include "stmt/using.hh"
 #include "stmt/val.hh"
@@ -66,6 +65,10 @@
 #include "pdm/ast/class_spec/id.hh"
 #include "pdm/ast/class_spec/class_exp.hh"
 #include "pdm/ast/class_spec/mai.hh"
+
+#include "pdm/source/local-script-source.hh"
+#include "pdm/source/local-package-source.hh"
+
 
 namespace pdm {
     class Compiler;
@@ -183,6 +186,21 @@ namespace pdm::ast {
         TArg* new_targ_exp(source::Loc loc, Exp* exp);
         TArg* new_targ_type_spec(source::Loc loc, TypeSpec* typespec);
         VArg* new_varg(source::Loc, Exp* exp, VArgAccessSpec varg_kind);
+
+        Package* new_package(
+            source::LocalPackageSource* package_source,
+            source::Loc loc,
+            std::vector<Package::ExportField*>&& export_fields
+        );
+        Package::ExportField_ExternModuleInC* new_package_export_field_for_extern_module_in_c(
+            source::Loc loc,
+            Package::ExportField_ExternModuleInC::CoreCompilerArgs&& core_compiler_args,
+            Package::ExportField_ExternModuleInC::PlatformCompilerArgs&& platform_compiler_args
+        );
+        Package::ExportField_ImportAllModulesFrom* new_package_export_field_for_import_modules_from(
+            source::Loc loc,
+            std::string&& path
+        );
 
       public:
         Compiler* compiler();

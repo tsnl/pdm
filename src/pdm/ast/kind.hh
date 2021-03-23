@@ -4,7 +4,9 @@
 namespace pdm::ast {
 
     enum class Kind {
+        //
         // scripts:
+        //
         Script, ScriptField,
 
         // modules:
@@ -53,6 +55,13 @@ namespace pdm::ast {
         Aux_VPatternField,
         Aux_TPatternField,
         Aux_LPatternField,
+
+        //
+        // packages:
+        //
+        Package,
+        PackageExportField_ExternModuleInC,
+        PackageExportField_ImportAllModulesFrom,
 
         // total count:
         META_Count

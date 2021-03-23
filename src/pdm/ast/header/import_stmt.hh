@@ -9,7 +9,7 @@
 namespace pdm::ast {
     class Manager;
     class ModExp;
-    class Script;
+    class ISourceNode;
 }
 namespace pdm::types {
     class TypeVar;
@@ -27,7 +27,7 @@ namespace pdm::ast {
             friend FieldGroup;
 
           private:
-            Script* m_x_origin_script;
+            ISourceNode* m_x_source_node;
             ast::ModExp* m_x_origin_mod_exp;
             types::TypeVar* m_x_exported_tv;
             FieldGroup* m_parent_group;
@@ -42,11 +42,11 @@ namespace pdm::ast {
             [[nodiscard]] intern::String import_name() const;
             [[nodiscard]] source::Loc loc() const;
 
-            [[nodiscard]] Script* x_origin_script() const;
+            [[nodiscard]] ISourceNode* x_origin_source_node() const;
             [[nodiscard]] ast::ModExp* x_origin_mod_exp() const;
             [[nodiscard]] types::TypeVar* x_exported_tv() const;
 
-            void x_origin_script(Script* set_script);
+            void x_origin_source_node(ISourceNode* source_node);
             void x_origin_mod_exp(ast::ModExp* set_mod_stmt);
             void x_exported_tv(types::TypeVar* set_exported_tv);
         };
@@ -80,12 +80,12 @@ namespace pdm::ast {
     };
 
     inline ImportStmt::Field::Field(source::Loc loc, intern::String import_name)
-    :   m_x_origin_script(nullptr),
-        m_x_origin_mod_exp(nullptr),
-        m_x_exported_tv(nullptr),
-        m_parent_group(nullptr),
-        m_import_name(import_name),
-        m_loc(loc)
+    : m_x_source_node(nullptr),
+      m_x_origin_mod_exp(nullptr),
+      m_x_exported_tv(nullptr),
+      m_parent_group(nullptr),
+      m_import_name(import_name),
+      m_loc(loc)
     {}
 
     inline ImportStmt::FieldGroup::FieldGroup(source::Loc loc, std::vector<Field*> fields, utf8::String from_path)
@@ -127,8 +127,8 @@ namespace pdm::ast {
         return m_from_path;
     }
 
-    inline Script* ImportStmt::Field::x_origin_script() const {
-        return m_x_origin_script;
+    inline ISourceNode* ImportStmt::Field::x_origin_source_node() const {
+        return m_x_source_node;
     }
 
     inline types::TypeVar* ImportStmt::Field::x_exported_tv() const {
@@ -147,8 +147,8 @@ namespace pdm::ast {
         m_x_exported_tv = exported_tv;
     }
 
-    inline void ImportStmt::Field::x_origin_script(Script *script) {
-        m_x_origin_script = script;
+    inline void ImportStmt::Field::x_origin_source_node(ISourceNode* source_node) {
+        m_x_source_node = source_node;
     }
 
     inline std::vector<ImportStmt::FieldGroup*> const& ImportStmt::field_groups() const {

@@ -58,6 +58,9 @@ namespace pdm::ast {
         "Aux_VPatternField",
         "Aux_TPatternField",
         "Aux_LPatternField",
+        "Package",
+        "PackageExportField_ExternModuleInC",
+        "PackageExportField_ImportAllModulesFrom",
         "(META: Count)"
     };
 

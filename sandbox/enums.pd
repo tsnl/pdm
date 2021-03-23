@@ -5,8 +5,8 @@ mod test_module {
         None
     };
 
-    divide = fn (p Int32, q Int32) -> OptionalInt32 {
-        if (q == 0) then {
+    divide = fn (p Int32, q Int32) OptionalInt32 {
+        if (q == 0) {
             OptionalInt32::None
         } else {
             OptionalInt32::Some using (p / q)

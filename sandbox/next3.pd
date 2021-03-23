@@ -4,16 +4,16 @@ mod scene1 {
         impl fancy_engine[impl]::Engine
     };
 
-    new = fn () -> Scene {
-        name: "Scene1",
-        impl: impl
+    new = fn () Scene {
+        name = "Scene1",
+        impl = impl
     };
 };
 
 mod impl {
     x = 0;
 
-    hello = fn () -> Int32 {
+    hello = fn () Int32 {
         x
     };
 };

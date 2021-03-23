@@ -44,8 +44,8 @@ namespace pdm::parser::aux {
 
     struct Keywords {
         intern::String using_int_str;
-        intern::String cls_int_str;
-        intern::String import_int_str;
+        intern::String typeclass_int_str;
+        intern::String imports_int_str;
         intern::String if_int_str;
         intern::String then_int_str;
         intern::String else_int_str;
@@ -66,37 +66,39 @@ namespace pdm::parser::aux {
         intern::String out_int_str;
         intern::String inout_int_str;
         intern::String enum_int_str;
+        intern::String for_int_str;
 
         Keywords()
-        :   using_int_str{},
-            cls_int_str{},
-            import_int_str{},
-            if_int_str{},
-            then_int_str{},
-            else_int_str{},
-            match_int_str{},
-            with_int_str{},
-            discard_int_str{},
-            fn_int_str{},
-            val_int_str{},
-            var_int_str{},
-            const_int_str{},
-            and_int_str{},
-            xor_int_str{},
-            or_int_str{},
-            not_int_str{},
-            set_int_str{},
-            mod_int_str{},
-            from_int_str{},
-            out_int_str{},
-            inout_int_str{},
-            enum_int_str{}
+        : using_int_str{},
+          typeclass_int_str{},
+          imports_int_str{},
+          if_int_str{},
+          then_int_str{},
+          else_int_str{},
+          match_int_str{},
+          with_int_str{},
+          discard_int_str{},
+          fn_int_str{},
+          val_int_str{},
+          var_int_str{},
+          const_int_str{},
+          and_int_str{},
+          xor_int_str{},
+          or_int_str{},
+          not_int_str{},
+          set_int_str{},
+          mod_int_str{},
+          from_int_str{},
+          out_int_str{},
+          inout_int_str{},
+          enum_int_str{},
+          for_int_str{}
         {
             intern::String::ensure_init();
 
             using_int_str = "using";
-            cls_int_str = "cls";
-            import_int_str = "import";
+            typeclass_int_str = "typeclass";
+            imports_int_str = "imports";
             if_int_str = "if";
             then_int_str = "then";
             else_int_str = "else";
@@ -117,6 +119,7 @@ namespace pdm::parser::aux {
             out_int_str = "out";
             inout_int_str = "inout";
             enum_int_str = "enum";
+            for_int_str = "for";
         }
     };
 
@@ -574,8 +577,8 @@ namespace pdm::parser::aux {
         // Looking up charBuf as a keyword or symbol:
         intern::String intstr = charBuf;
         if (intstr == keywords.using_int_str) { return Tk::KW_USING; }
-        if (intstr == keywords.cls_int_str) { return Tk::KW_CLS; }
-        if (intstr == keywords.import_int_str) { return Tk::KW_IMPORT; }
+        if (intstr == keywords.typeclass_int_str) { return Tk::KW_TYPECLASS; }
+        if (intstr == keywords.imports_int_str) { return Tk::KW_IMPORTS; }
         if (intstr == keywords.if_int_str) { return Tk::KW_IF; }
         if (intstr == keywords.then_int_str) { return Tk::KW_THEN; }
         if (intstr == keywords.else_int_str) { return Tk::KW_ELSE; }
@@ -596,6 +599,7 @@ namespace pdm::parser::aux {
         if (intstr == keywords.inout_int_str) { return Tk::KW_INOUT; }
         if (intstr == keywords.discard_int_str) { return Tk::KW_DISCARD; }
         if (intstr == keywords.enum_int_str) { return Tk::KW_ENUM; }
+        if (intstr == keywords.for_int_str) { return Tk::KW_FOR; }
         else {
             infoP->ID_intstr = intstr;
             return getIdTextKind(charBuf);
@@ -907,9 +911,9 @@ namespace pdm::parser::aux {
                 name = "using";
                 break;
             }
-            case Tk::KW_CLS:
+            case Tk::KW_TYPECLASS:
             {
-                name = "cls";
+                name = "typeclass";
                 break;
             }
             case Tk::KW_MOD:
@@ -917,9 +921,9 @@ namespace pdm::parser::aux {
                 name = "mod";
                 break;
             }
-            case Tk::KW_IMPORT:
+            case Tk::KW_IMPORTS:
             {
-                name = "import";
+                name = "imports";
                 break;
             }
             case Tk::KW_IF:
@@ -990,6 +994,16 @@ namespace pdm::parser::aux {
             case Tk::KW_DISCARD:
             {
                 name = "discard";
+                break;
+            }
+            case Tk::KW_ENUM:
+            {
+                name = "enum";
+                break;
+            }
+            case Tk::KW_FOR:
+            {
+                name = "for";
                 break;
             }
             case Tk::DINT_LIT:

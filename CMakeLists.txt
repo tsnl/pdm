@@ -103,6 +103,7 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/source-node/i_source_node.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/source-node/script.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/source-node/script.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/source-node/package.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/stmt.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/stmt/builtin.cc
@@ -139,6 +140,8 @@ add_library(
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/platform.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/platform.cc
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/core/bitsets.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/core/integer.hh
@@ -163,7 +166,10 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/source/loc.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/source/pos.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/source/pos.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/source/i_source.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/source/i-source.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/source/local-script-source.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/source/local-package-source.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/source/source-kind.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/manager.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/manager.hh
@@ -203,6 +209,7 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/parser/parser.tab.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/parser/reader.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/parser/reader.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/parser/package-parser.cc
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/printer/printer.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/printer/printer.hh
@@ -212,17 +219,17 @@ add_library(
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/emitter/llvm_emitter.hh
 
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/mai.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/mai.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/enum.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/struct.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/class_exp.hh
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/mai.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/mai.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/array.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/emitter/llvm-emitter.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/emitter/base_emitter.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/emitter/base_emitter.cc
-        src/pdm/ast/source-node/package.hh src/pdm/source/script_source.hh src/pdm/source/package_source.hh src/pdm/source/source_kind.hh)
+)
 
 # link pdm <- llvm
 # - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt

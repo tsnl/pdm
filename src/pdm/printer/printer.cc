@@ -407,13 +407,17 @@ namespace pdm::printer {
 
     // modules:
     void Printer::print_mod_exp(ast::ModExp* node) {
-        if (node->opt_template_pattern()) {
-            print_node(node->opt_template_pattern());
-            print_c_str(" ");
-        }
         print_c_str("{");
         print_newline_indent();
         {
+            if (node->opt_template_pattern()) {
+                print_c_str("using ");
+                print_node(node->opt_template_pattern());
+                if (!node->fields().empty()) {
+                    print_newline();
+                }
+            }
+
             size_t fields_count = node->fields().size();
             for (size_t field_index = 0; field_index < fields_count; field_index++) {
                 ast::ModExp::Field* field = node->fields()[field_index];
@@ -474,7 +478,7 @@ namespace pdm::printer {
         print_node(node->discarded_exp());
     }
     void Printer::print_extern_stmt(ast::ExternStmt* es) {
-        print_c_str("extern ");
+        print_c_str("package-content ");
         print_intstr(es->ext_mod_name());
         print_u32_char(' ');
         print_node(es->link_arg());

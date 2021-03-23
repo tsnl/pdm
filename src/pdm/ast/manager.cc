@@ -256,4 +256,38 @@ namespace pdm::ast {
     VArg* Manager::new_varg(source::Loc loc, Exp* exp, VArgAccessSpec varg_kind) {
         return emplace<VArg>(loc, exp, varg_kind);
     }
+
+
+    Package* Manager::new_package(
+        source::LocalPackageSource* package_source,
+        source::Loc loc,
+        std::vector<Package::ExportField*>&& export_fields
+    ) {
+        return emplace<Package>(package_source, loc, std::move(export_fields));
+    }
+
+    Package::ExportField_ExternModuleInC*
+    Manager::new_package_export_field_for_extern_module_in_c(
+        source::Loc loc,
+        Package::ExportField_ExternModuleInC::CoreCompilerArgs&& core_compiler_args,
+        Package::ExportField_ExternModuleInC::PlatformCompilerArgs&& platform_compiler_args
+    ) {
+        return emplace<Package::ExportField_ExternModuleInC>(
+            loc,
+            std::move(core_compiler_args),
+            std::move(platform_compiler_args)
+        );
+    }
+
+    Package::ExportField_ImportAllModulesFrom*
+    Manager::new_package_export_field_for_import_modules_from(
+        source::Loc loc,
+        std::string&& path
+    ) {
+        return emplace<Package::ExportField_ImportAllModulesFrom>(
+            loc,
+            std::move(path)
+        );
+    }
+
 }

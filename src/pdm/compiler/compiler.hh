@@ -9,7 +9,7 @@
 
 #include "pdm/core/intern.hh"
 #include "pdm/ast/manager.hh"
-#include "pdm/ast/source-node/script.hh"
+#include "pdm/ast/source-node/i_source_node.hh"
 
 #include "pdm/types/manager.hh"
 #include "pdm/scoper/scoper.hh"
@@ -41,26 +41,17 @@ namespace pdm {
 
     // 'Compiler' instances transform input files into output files.
     class Compiler {
-      public:
-        using PrintFlagBitset = u64;
-        enum class PrintFlag: PrintFlagBitset {
-            SourceCode = 0x1,
-            Scopes = 0x2,
-            Types = 0x4,
-            Llvm = 0x8,
-            Wasm = 0x10
-        };
-        static PrintFlagBitset PrintFlags_PrintEverything;
-
       private:
         std::filesystem::path m_cwd;
         std::filesystem::path m_entry_point_path;
         
         aux::ImportMap m_cached_imports;
-        std::vector<ast::Script*> m_all_scripts;
+        std::vector<ast::ISourceNode*> m_all_source_nodes;
         
         types::Manager m_types_mgr;
         ast::Manager   m_ast_mgr;
+
+        intern::String m_target_name;
 
         u64 m_print_flags;
 
@@ -84,10 +75,10 @@ namespace pdm {
         ast::BuiltinStmt* m_f64_tv_client_astn;
 
       public:
-        Compiler(std::string&& cwd, std::string const& entry_point_path, u64 print_flags = 0);
+        Compiler(std::string&& cwd, std::string const& entry_point_path, intern::String target_name);
         
       public:
-        ast::ISourceNode* import(std::string const& from_path, std::string const& reason);
+        ast::ISourceNode* import(std::string const& abs_from_path, std::string const& reason);
 
       private:
         // help_define_builtin_type is called during the constructor, post initialization to define
@@ -95,11 +86,11 @@ namespace pdm {
         ast::BuiltinStmt* help_define_builtin_type(scoper::Scoper& scoper, intern::String name, types::Var* typer_var);
 
         ast::ISourceNode* check_cache_or_import(std::string const& from_path, std::string const& reason);
-        ast::ISourceNode* import_new(std::string const& abs_from_path_string, std::string const& reason);
-        ast::Script* import_new_script(std::string const& abs_from_path_string, std::string const& reason);
-        ast::Package* import_new_package(std::string const& abs_from_path_string, std::string const& reason);
+        ast::ISourceNode* import_new(std::string const& raw_from_path_string, std::string const& abs_from_path_string, std::string const& reason);
+        ast::Script* import_new_script(std::string const& raw_from_path_string, std::string const& abs_from_path_string, std::string const& reason);
+        ast::Package* import_new_package(std::string const& raw_from_path_string, std::string const& abs_from_path_string, std::string const& reason);
         // void setup_fresh_script(ast::Script* script);
-        // void setup_fresh_package(ast::Package* package);
+        // void setup_fresh_package(ast::Package* package-content);
 
       private:
         bool pass1_import_all(scoper::Scoper& scoper);
@@ -126,8 +117,11 @@ namespace pdm {
         ast::Manager* ast_mgr() {
             return &m_ast_mgr;
         }
-        std::vector<ast::Script*> const& all_scripts() const {
-            return m_all_scripts;
+        [[nodiscard]] std::vector<ast::ISourceNode*> const& all_source_nodes() const {
+            return m_all_source_nodes;
+        }
+        [[nodiscard]] intern::String target_name() const {
+            return m_target_name;
         }
     };
 

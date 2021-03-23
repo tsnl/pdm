@@ -19,10 +19,6 @@
 
 // including headers:
 %code requires {
-    // DEBUG only:
-    // @nocheckin
-    #include <iostream>
-
     #include "pdm/core/config.hh"
 
     #include "pdm/feedback/feedback.hh"
@@ -35,6 +31,9 @@
     #include "pdm/ast/visitor.hh"
 
     #include "pdm/parser/lexer.hh"
+
+    #include "pdm/source/local-script-source.hh"
+    #include "pdm/source/local-package-source.hh"
 }
 
 %code provides {
@@ -87,6 +86,8 @@
 %type <pdm::ast::ModExp*> mod_exp
 %type <std::vector<pdm::ast::ModExp::Field*>> mod_field_sl
 %type <pdm::ast::ModExp::Field*> mod_field
+
+%type <pdm::ast::TPattern*> using_tpattern
 
 //
 // Stmt:
@@ -196,13 +197,13 @@
 %token KW_MOD "mod"
 %token KW_STRUCT "struct"
 %token KW_ENUM "enum"
-%token KW_CLS "cls"
-%token KW_IF "if" 
+%token KW_TYPECLASS "typeclass"
+%token KW_IF "if"
 %token KW_THEN "then"
 %token KW_ELSE "else"
 %token KW_MATCH "match"     /* reserved */
 %token KW_WITH "with"       /* reserved */
-%token KW_IMPORT "import"
+%token KW_IMPORTS "imports"
 %token KW_EXTERN "extern"
 %token KW_FROM "from"
 %token KW_CONST "const"
@@ -218,6 +219,7 @@
 %token KW_INOUT "inout"
 %token KW_DISCARD "discard"
 %token KW_AS "as"
+%token KW_FOR "for"
 %token KW_CORE_PROFILE "CORE_PROFILE"           /* todo: add to lexer */
 %token KW_BROWSER_PROFILE "BROWSER_PROFILE"     /* todo: add to lexer */
 %token KW_NATIVE_PROFILE "NATIVE_PROFILE"       /* todo: add to lexer */
@@ -302,10 +304,10 @@ script_field_sl
  */
 
 mod_exp
-    :          LCYBRK mod_field_sl RCYBRK     { $$ = mgr->new_mod_exp(@$, nullptr, std::move($2)); }
-    | tpattern LCYBRK mod_field_sl RCYBRK     { $$ = mgr->new_mod_exp(@$, $1, std::move($3)); }
-    |          LCYBRK              RCYBRK     { $$ = mgr->new_mod_exp(@$, nullptr, std::move(std::vector<ast::ModExp::Field*>{})); }
-    | tpattern LCYBRK              RCYBRK     { $$ = mgr->new_mod_exp(@$, $1, std::move(std::vector<ast::ModExp::Field*>{})); }
+    : LCYBRK                mod_field_sl RCYBRK     { $$ = mgr->new_mod_exp(@$, nullptr, std::move($2)); }
+    | LCYBRK using_tpattern mod_field_sl RCYBRK     { $$ = mgr->new_mod_exp(@$, $2, std::move($3)); }
+    | LCYBRK                             RCYBRK     { $$ = mgr->new_mod_exp(@$, nullptr, std::move(std::vector<ast::ModExp::Field*>{})); }
+    | LCYBRK using_tpattern              RCYBRK     { $$ = mgr->new_mod_exp(@$, $2, std::move(std::vector<ast::ModExp::Field*>{})); }
     ;
 mod_field_sl
     : mod_field SEMICOLON               { $$.push_back($1); }
@@ -317,13 +319,16 @@ mod_field
     | cid BIND class_spec  { $$ = mgr->new_class_mod_field(@$, $1.ID_intstr, $3); }
     | KW_MOD vid mod_exp   { $$ = mgr->new_mod_mod_field(@$, $2.ID_intstr, $3); }
     ;
+using_tpattern
+    : KW_USING tpattern SEMICOLON   { $$ = $2; }
+    ;
 
 /*
  * Statements:
  */
 
 import_stmt
-    : KW_IMPORT LCYBRK import_field_group_sl0 RCYBRK {
+    : KW_IMPORTS LCYBRK import_field_group_sl0 RCYBRK {
         $$ = mgr->new_import_stmt(@$, std::move($3));
       }
     ;
@@ -459,8 +464,8 @@ stringls
     | stringls DQSTRING_LIT  { $$ = std::move($1); $$.emplace_back(@2, *$2.String_utf8string, ast::StringExp::QuoteKind::DoubleQuote); }
     ;
 if_exp
-    : KW_IF bracketed_exp KW_THEN bracketed_exp                         { $$ = mgr->new_if_exp(@$, $2, $4, nullptr); }
-    | KW_IF bracketed_exp KW_THEN bracketed_exp KW_ELSE primary_exp     { $$ = mgr->new_if_exp(@$, $2, $4, $6); }
+    : KW_IF bracketed_exp bracketed_exp                         { $$ = mgr->new_if_exp(@$, $2, $3, nullptr); }
+    | KW_IF bracketed_exp bracketed_exp KW_ELSE primary_exp     { $$ = mgr->new_if_exp(@$, $2, $3, $5); }
     ;
 chain_exp
     : LCYBRK                       RCYBRK      { $$ = mgr->new_chain_exp(@$, std::move(std::vector<ast::Stmt*>{}), nullptr); }
@@ -626,11 +631,9 @@ enum_type_spec_field_cl
 enum_type_spec
     : KW_ENUM LCYBRK enum_type_spec_field_cl RCYBRK     { $$ = mgr->new_enum_type_spec(@$, std::move($3)); }
     ;
-
 fn_type_spec
-    : KW_FN vpattern ARROW type_spec { $$ = mgr->new_fn_type_spec(@$, std::move($2), $4); }
+    : KW_FN vpattern type_spec { $$ = mgr->new_fn_type_spec(@$, std::move($2), $3); }
     ;
-
 
 targ: type_spec { $$ = mgr->new_targ_type_spec(@$, $1); }
     | expr     { $$ = mgr->new_targ_exp(@$, $1); }
@@ -668,7 +671,7 @@ mod_prefix_cid_class_spec
 
 /* todo: implement class_exp_class_spec in parser.yy */
 class_exp_class_spec
-    : KW_CLS LSQBRK tid class_spec RSQBRK LCYBRK type_query_exp_sl0 RCYBRK {
+    : KW_TYPECLASS LPAREN tid class_spec RPAREN LCYBRK type_query_exp_sl0 RCYBRK {
             $$ = mgr->new_class_exp_class_spec(@$, $3.ID_intstr, $4, std::move($7));
         }
     ;
@@ -678,7 +681,7 @@ class_exp_class_spec
  */
 
 struct_exp_field
-    : vid COLON expr { $$ = mgr->new_struct_exp_field(@$, $1.ID_intstr, $3); }
+    : vid BIND expr { $$ = mgr->new_struct_exp_field(@$, $1.ID_intstr, $3); }
     ;
 vpattern_field
     :          vid type_spec { $$ = mgr->new_vpattern_field(@$, $1.ID_intstr, $2, ast::VArgAccessSpec::In); }
@@ -750,7 +753,7 @@ struct_exp_field_cl
 
 namespace pdm::parser {
 
-    ast::Script* parse_script(ast::Manager* manager, source::ISource* source) {
+    ast::Script* parse_script(ast::Manager* manager, source::LocalScriptSource* source) {
         Lexer lexer;
         if (!lexer.setup(source)) {
             return nullptr;
@@ -784,12 +787,17 @@ namespace pdm::parser {
             std::move(desc),
             std::move(notes)
         ));
-        std::cout << "YACC error: " << message << " at " << loc << std::endl;
+        // std::cout << "YACC error: " << message << " at " << loc << std::endl;
     }
 
 }
 
-int yylex(pdm::parser::parser::semantic_type* semval, pdm::source::Loc* llocp, pdm::source::ISource* source, pdm::parser::Lexer* lexer) {
+int yylex (
+    pdm::parser::parser::semantic_type* semval,
+    pdm::source::Loc* llocp,
+    pdm::source::ISource* source,
+    pdm::parser::Lexer* lexer
+) {
     // see:
     // https://www.gnu.org/software/bison/manual/html_node/Calling-Convention.html
     

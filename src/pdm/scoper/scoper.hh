@@ -16,13 +16,13 @@ namespace pdm {
 }
 namespace pdm::scoper {
     class Scoper;
-    class ScoperVisitor;
+    class ScriptScoperVisitor;
 }
 
 namespace pdm::scoper {
 
     class Scoper: public ast::TinyVisitor {
-        friend ScoperVisitor;
+        friend ScriptScoperVisitor;
 
       private:
         struct IdExpLookupOrder       { ast::IdExp* id_exp; Context* lookup_context; };
@@ -56,7 +56,7 @@ namespace pdm::scoper {
 
       public:
         // `scope` creates data structures needed to lookup IDs
-        bool scope(ast::Script* script);
+        bool scope_script(ast::Script* script);
         
         // `finish` should be called after all imported scripts are scoped.
         // it traverses the constructed data-structure to set ASTN properties
@@ -67,7 +67,7 @@ namespace pdm::scoper {
         void print(printer::Printer& printer);
     };
 
-    class ScoperVisitor: public ast::Visitor {
+    class ScriptScoperVisitor: public ast::Visitor {
         friend Scoper;
 
       private:
@@ -78,7 +78,7 @@ namespace pdm::scoper {
         std::stack<Frame*>   m_frame_stack;
 
       protected:
-        explicit ScoperVisitor(Scoper* scoper_ref);
+        explicit ScriptScoperVisitor(Scoper* scoper_ref);
 
       private:
         [[nodiscard]] Scoper* scoper() const {

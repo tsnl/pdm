@@ -1,23 +1,22 @@
 mod next {
     mod ll_base {
-        LL_NODE = cls [NodeType STRUCT] {
+        LL_NODE = typeclass (NodeType STRUCT) {
             NodeType :< {
                 index UInt32,
                 value UInt32
             };
         };
         NodeAllocator = {
-            allocator fn () -> UInt32
+            allocator fn () UInt32
         };
     };
 
-    mod linked_list [Node ll_base::LL_NODE, impl NodeImpl] {
-        LL_NODE = cls [NodeType ll_base::LL_NODE] {
-        };
+    mod linked_list {
+        using [Node ll_base::LL_NODE, impl NodeImpl];
 
-        add = fn (node1 Node, node2 Node) -> Node {
-            index: implex.allocator(size[Node]::size),
-            value: node1.value + node2.value
+        add = fn (node1 Node, node2 Node) Node {
+            index = impl.allocator(rtti[Node]::size),
+            value = node1.value + node2.value
         };
 
         hello = 24;
@@ -26,7 +25,7 @@ mod next {
     mod testing {
         Rectangle = {Int32,Int32};
 
-        rectangle = fn (dim Rectangle) -> Rectangle {
+        rectangle = fn (dim Rectangle) Rectangle {
             x * x
         };
     };

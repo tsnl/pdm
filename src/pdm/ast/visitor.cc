@@ -2,6 +2,7 @@
 
 #include "node.hh"
 #include "kind.hh"
+#include "pdm/core/config.hh"
 
 namespace pdm::ast {
 
@@ -373,6 +374,18 @@ namespace pdm::ast {
             {
                 break;
             }
+
+            //
+            // packages: visit disabled
+            //
+
+            case Kind::Package:
+            case Kind::PackageExportField_ImportAllModulesFrom:
+            case Kind::PackageExportField_ExternModuleInC:
+            {
+                assert(0 && "DISABLED: Cannot invoke Visitor on Package instances.");
+                break;
+            }
         }
 
         ok = on_visit(node, VisitOrder::Post) && ok;
@@ -605,6 +618,16 @@ namespace pdm::ast {
             case Kind::Aux_VPatternField:
             {
                 return true;
+            }
+
+            case Kind::Package:
+            case Kind::PackageExportField_ImportAllModulesFrom:
+            case Kind::PackageExportField_ExternModuleInC:
+            {
+                if (pdm::DEBUG) {
+                    assert(0 && "DISABLED: Cannot invoke Visitor on Package instances.");
+                }
+                return false;
             }
         }
     }

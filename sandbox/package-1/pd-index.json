@@ -1,0 +1,31 @@
+{
+  "exports": {
+    "alice": {
+      "kind": "EXTERN_MODULE_IN_C",
+      "about": {},
+      "core-compiler-args": {
+        "include": [
+          "./alice.h"
+        ],
+        "src": [
+          "./alice.c"
+        ],
+        "lib": []
+      },
+      "platform-compiler-args": {
+        "windows-amd64": {},
+        "linux-amd64": {},
+        "macos-amd64": {},
+        "wasi": {}
+      }
+    },
+    "brittany": {
+      "kind": "IMPORT_ALL_MODULES_FROM",
+      "path": "./brittany.pd"
+    },
+    "charlie": {
+      "kind": "IMPORT_ALL_MODULES_FROM",
+      "path": "./charlie.pd"
+    }
+  }
+}
