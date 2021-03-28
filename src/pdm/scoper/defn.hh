@@ -25,17 +25,19 @@ namespace pdm::scoper {
         Typeclass, TypeclassCandidate,
         Using,
         Import,
-        ExternObject,
+        Package_ExternModule, Package_ImportBundleModule,
         FormalVArg, FormalTArg,
-        IGNORE_FnTypeSpecFormalVArg
+        NO_DEF_FnTypeSpecFormalVArg
     };
 
     char const* defn_kind_as_text(DefnKind defn_kind);
 
     inline bool module_defn_kind(DefnKind defn_kind) {
-        return (0
-            || defn_kind == DefnKind::Module
-            || defn_kind == DefnKind::ImportModule
+        return (
+            defn_kind == DefnKind::Module ||
+            defn_kind == DefnKind::ImportModule ||
+            defn_kind == DefnKind::Package_ExternModule ||
+            defn_kind == DefnKind::Package_ImportBundleModule
         );
     }
 
@@ -49,11 +51,12 @@ namespace pdm::scoper {
 
       public:
         Defn(DefnKind kind, intern::String name, ast::Node* defn_node, types::Var* typer_var)
-        : m_kind(kind), 
-          m_name(name), 
-          m_defn_node(defn_node),
-          m_var(typer_var),
-          m_container_context(nullptr) {}
+        :   m_kind(kind),
+            m_name(name),
+            m_defn_node(defn_node),
+            m_var(typer_var),
+            m_container_context(nullptr)
+        {}
 
       public:
         [[nodiscard]] DefnKind kind() const {

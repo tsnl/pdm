@@ -57,6 +57,7 @@ namespace pdm::scoper {
       public:
         // `scope` creates data structures needed to lookup IDs
         bool scope_script(ast::Script* script);
+        bool scope_package(ast::Package* package);
         
         // `finish` should be called after all imported scripts are scoped.
         // it traverses the constructed data-structure to set ASTN properties
@@ -98,7 +99,7 @@ namespace pdm::scoper {
         void pop_frame();
 
       private:
-        void place_id_exp_lookup_order(ast::IdExp* id_exp);
+        void place_id_exp_lookup_order(ast::IdExp* exp);
         void place_id_type_spec_lookup_order(ast::IdTypeSpec* id_type_spec);
         void place_id_class_spec_lookup_order(ast::IdClassSpec* id_class_spec);
         void place_import_lookup_order(ast::ImportStmt::Field* import_stmt_field);
@@ -116,11 +117,11 @@ namespace pdm::scoper {
         bool on_visit_script_field(ast::Script::Field* field, VisitOrder visit_order) override;
 
         // modules:
-        bool on_visit_mod_exp(ast::ModExp* node, VisitOrder visit_order) override;
-        bool on_visit_value_mod_field(ast::ModExp::ValueField* node, VisitOrder visit_order) override;
-        bool on_visit_type_mod_field(ast::ModExp::TypeField* node, VisitOrder visit_order) override;
-        bool on_visit_class_mod_field(ast::ModExp::ClassField* node, VisitOrder visit_order) override;
-        bool on_visit_mod_mod_field(ast::ModExp::ModuleField* node, VisitOrder visit_order) override;
+        bool on_visit_mod_exp(ast::NativeModExp* node, VisitOrder visit_order) override;
+        bool on_visit_value_mod_field(ast::NativeModExp::ValueField* node, VisitOrder visit_order) override;
+        bool on_visit_type_mod_field(ast::NativeModExp::TypeField* node, VisitOrder visit_order) override;
+        bool on_visit_class_mod_field(ast::NativeModExp::ClassField* node, VisitOrder visit_order) override;
+        bool on_visit_mod_mod_field(ast::NativeModExp::ModuleField* node, VisitOrder visit_order) override;
         bool on_visit_mod_address(ast::ModAddress* node, VisitOrder visit_order) override;
 
         // statements:

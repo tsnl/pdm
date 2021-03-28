@@ -18,7 +18,8 @@ namespace pdm::scoper {
         ModModFieldRhs, ValueModFieldRhs, TypeModFieldRhs, ClassModFieldRhs,
         EnumTypeSpecBody, ModuleBody,
         LPattern, VPattern, TPattern,
-        Chain
+        Chain,
+        Package
     };
 
     char const* frame_kind_as_text(FrameKind frame_kind);
@@ -29,7 +30,7 @@ namespace pdm::scoper {
     // - used by links
     class Frame {
       private:
-        types::Manager*       m_typer;
+        types::Manager*     m_typer;
         FrameKind           m_kind;
         Frame*              m_parent_frame;
         std::vector<Frame*> m_child_frames;
@@ -102,6 +103,7 @@ namespace pdm::scoper {
                 case FrameKind::TypeModFieldRhs: return ContextKind::TypeRhsStart;
                 case FrameKind::EnumTypeSpecBody: return ContextKind::EnumRhsStart;
                 case FrameKind::ClassModFieldRhs: return ContextKind::TypeclassRhsStart;
+                case FrameKind::Package: return ContextKind::PackageDefs;
             }
         }
 

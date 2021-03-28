@@ -680,7 +680,7 @@ namespace pdm::types {
                 for (auto it: m_fields) {
                     printer.print_newline();
                     printer.print_c_str("- Field '");
-                    printer.print_intstr(it.first);
+                    printer.print_int_str(it.first);
                     printer.print_c_str("': ");
                     it.second->print_title(printer);
                 }
@@ -925,7 +925,7 @@ namespace pdm::types {
 
                     // printing arg name:
                     if (arg.name.has_value()) {
-                        printer.print_intstr(arg.name.value());
+                        printer.print_int_str(arg.name.value());
                     } else {
                         printer.print_c_str("*");
                     }

@@ -9,16 +9,24 @@ namespace pdm::ast {
         //
         Script, ScriptField,
 
-        // modules:
-        ModExp,
-        ValueModField, TypeModField, ClassModField, ModModField,
+        // native modules:
+        NativeModExp,
+        NativeModExp_ValueField,
+        NativeModExp_TypeField,
+        NativeModExp_ClassField,
+        NativeModExp_ModField,
+
+        // package modules:
+        ExternModExp, PkgBundleModExp,
+
+        // module addresses:
         ModAddress,
-        
+
         // statements:
         BuiltinStmt,    // non-syntactic
         DiscardStmt, ConstStmt, ValStmt, VarStmt, SetStmt,
         ExternStmt,
-        ImportStmt,
+        ImportStmt, ImportStmt_Field,
         UsingStmt,
 
         // expressions:

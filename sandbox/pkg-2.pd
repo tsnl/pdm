@@ -1,0 +1,9 @@
+imports {
+    alice from "./package-2/";
+};
+
+mod module {
+    module_field = fn (x Int32) {Int32,Int32} {
+        (x, alice::about::id)
+    };
+};

@@ -15,7 +15,11 @@
       "platform-compiler-args": {
         "windows-amd64": {},
         "linux-amd64": {},
-        "macos-amd64": {},
+        "macos-amd64": {
+          "include": [
+            "./alice.macos.h"
+          ]
+        },
         "wasi": {}
       }
     },

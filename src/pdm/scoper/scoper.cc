@@ -12,11 +12,13 @@
 #include "pdm/feedback/severity.hh"
 #include "pdm/feedback/note.hh"
 
+#include "pdm/ast/module/pkg-bundle-mod-exp.hh"
+
 #include "defn.hh"
 
 // helpers:
 namespace pdm::scoper {
-    static ast::ModExp* original_mod_exp_of_import(Defn const* module_defn);
+    static ast::BaseModExp* original_mod_exp_of_import(Defn const* module_defn);
 }
 
 namespace pdm::scoper {
@@ -28,13 +30,13 @@ namespace pdm::scoper {
     //
 
     Scoper::Scoper(Compiler* compiler_ptr)
-    : m_compiler_ptr(compiler_ptr),
-      m_id_exp_orders(),
-      m_id_type_spec_orders(),
-      m_id_class_spec_orders(),
-      m_import_orders(),
-      m_using_orders(),
-      m_finished(false)
+    :   m_compiler_ptr(compiler_ptr),
+        m_id_exp_orders(),
+        m_id_type_spec_orders(),
+        m_id_class_spec_orders(),
+        m_import_orders(),
+        m_using_orders(),
+        m_finished(false)
     {
         m_root_frame = new RootFrame(compiler()->types_mgr());
     }
@@ -46,7 +48,7 @@ namespace pdm::scoper {
     bool Scoper::scope_script(ast::Script* script) {
         if (finished()) {
             if (DEBUG) {
-                assert(0 && "Scoper: cannot call `scope` after 'finish'.");
+                assert(0 && "ScoperError: cannot call `scope_script` after 'finish'.");
             }
             return false;
         }
@@ -55,263 +57,328 @@ namespace pdm::scoper {
         return visitor.visit(script);
     }
 
-    bool Scoper::finish() {
-        assert(0 && "Stubbed: Scoper::finish, pending i-source-node interface.");
+    bool Scoper::scope_package(ast::Package* package) {
+        if (finished()) {
+            if (DEBUG) {
+                assert(0 && "ScoperError: cannot call `scope_package` after 'finish'.");
+            }
+            return false;
+        }
 
-//        m_finished = true;
-//
-//        bool ok = true;
-//
-//        // IdExp
-//        for (IdExpLookupOrder id_exp_order: m_id_exp_orders) {
-//            ast::IdExp* id_exp = id_exp_order.id_exp;
-//            intern::String id_name = id_exp->name();
-//            Defn const* opt_defn = id_exp_order.lookup_context->lookup(id_name);
-//            if (opt_defn != nullptr) {
-//                id_exp->x_defn(opt_defn);
-//            } else {
-//                // post feedback about a value ID that was used but not defined.
-//                std::string headline = "Value ID '" + std::string(id_name.content()) + "' used but not defined";
-//                std::string desc = "";
-//                std::vector<feedback::Note*> notes(1); {
-//                    source::Loc defn_loc = id_exp->loc();
-//                    std::string defn_desc = "see here...";
-//                    notes[0] = new feedback::SourceLocNote(std::move(defn_desc), defn_loc);
-//                }
-//                feedback::post(new feedback::Letter(
-//                    feedback::Severity::Error,
-//                    std::move(headline),
-//                    std::move(desc),
-//                    std::move(notes)
-//                ));
-//                ok = false;
-//            }
-//        }
-//
-//        // IdTypeSpec
-//        for (IdTypeSpecLookupOrder id_type_spec_order: m_id_type_spec_orders) {
-//            ast::IdTypeSpec* id_type_spec = id_type_spec_order.type_spec;
-//            intern::String id_name = id_type_spec_order.type_spec->name();
-//            Defn const* defn = id_type_spec_order.lookup_context->lookup(id_name);
-//            if (defn != nullptr) {
-//                id_type_spec_order.type_spec->x_defn(defn);
-//            } else {
-//                // post feedback about a type ID that was used but not defined.
-//                std::string headline = "Type ID '" + std::string(id_name.content()) + "' used but not defined";
-//                std::string desc = "";
-//                std::vector<feedback::Note*> notes(1); {
-//                    source::Loc defn_loc = id_type_spec->loc();
-//                    std::string defn_desc = "see here...";
-//                    notes[0] = new feedback::SourceLocNote(std::move(defn_desc), defn_loc);
-//                }
-//                feedback::post(new feedback::Letter(
-//                    feedback::Severity::Error,
-//                    std::move(headline),
-//                    std::move(desc),
-//                    std::move(notes)
-//                ));
-//                ok = false;
-//            }
-//        }
-//
-//        // IdClassSpec:
-//        for (IdClassSpecLookupOrder id_class_spec_order: m_id_class_spec_orders) {
-//            ast::IdClassSpec* id_class_spec = id_class_spec_order.class_spec;
-//            intern::String id_name = id_class_spec_order.class_spec->name();
-//            Defn const* defn = id_class_spec_order.lookup_context->lookup(id_name);
-//            if (defn != nullptr) {
-//                id_class_spec_order.class_spec->x_defn(defn);
-//            } else {
-//                // post feedback about a class ID that was used but not defined:
-//                std::string headline = "Class ID '" + std::string(id_name.content()) + "' used but not defined";
-//                std::string desc = "";
-//                std::vector<feedback::Note*> notes(1); {
-//                    source::Loc defn_loc = id_class_spec->loc();
-//                    std::string defn_desc = "see here...";
-//                    notes[0] = new feedback::SourceLocNote(std::move(defn_desc), defn_loc);
-//                }
-//                feedback::post(new feedback::Letter(
-//                    feedback::Severity::Error,
-//                    std::move(headline),
-//                    std::move(desc),
-//                    std::move(notes)
-//                ));
-//                ok = false;
-//            }
-//        }
-//
-//        // Import
-//        // important to traverse in reverse-order, assuming scripts scoped in DD order.
-//        for (auto it = m_import_orders.rbegin(); it != m_import_orders.rend(); it++) {
-//            ImportLookupOrder import_order = *it;
-//
-//            // fetching the exported frame:
-//            ast::ImportStmt::Field* import_field = import_order.import_field;
-//            ast::ISourceNode* origin_source_node = import_field->x_origin_source_node();
-//            if (origin_source_node == nullptr) {
-//                // posting feedback about an import failure:
-//                std::string headline = "Import '" + import_field->import_name().cpp_str() + "' could not be resolved.";
-//                std::string desc = "From '" + import_field->parent_group()->from_path().string() + "'";
-//                std::vector<feedback::Note*> notes{1}; {
-//                    std::string note_desc0 = "at import statement here...";
-//                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_field->loc());
-//                }
-//                feedback::post(new feedback::Letter(
-//                    feedback::Severity::Error,
-//                    std::move(headline),
-//                    std::move(desc),
-//                    std::move(notes)
-//                ));
-//                ok = false;
-//                continue;
-//            }
-//            Frame* origin_script_frame = origin_source_node->x_script_frame();
-//            if (origin_script_frame == nullptr) {
-//                // posting feedback about an import failure:
-//                std::string headline = "Import could not be resolved.";
-//                std::string desc = "From '" + import_field->parent_group()->from_path().string() + "'";
-//                std::vector<feedback::Note*> notes{1}; {
-//                    std::string note_desc0 = "at import statement here...";
-//                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_field->loc());
-//                }
-//                feedback::post(new feedback::Letter(
-//                    feedback::Severity::Error,
-//                    std::move(headline),
-//                    std::move(desc),
-//                    std::move(notes)
-//                ));
-//                ok = false;
-//                continue;
-//            }
-//
-//            // looking up the exported symbol in the exported frame:
-//            Context* first_ctx = origin_script_frame->first_context();
-//            Context* last_ctx = origin_script_frame->last_context();
-//            Defn const* module_defn = last_ctx->lookup_until(import_field->import_name(), first_ctx);
-//            if (module_defn == nullptr) {
-//                // posting feedback about importing an undefined symbol
-//                std::string headline = "Module '" + import_field->import_name().cpp_str() + "' could not be found in the origin script.";
-//                std::string desc = "From '" + import_field->parent_group()->from_path().string() + "'";
-//                std::vector<feedback::Note*> notes{1}; {
-//                    std::string note_desc0 = "at import statement here...";
-//                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_field->loc());
-//                }
-//                feedback::post(new feedback::Letter(
-//                    feedback::Severity::Error,
-//                    std::move(headline),
-//                    std::move(desc),
-//                    std::move(notes)
-//                ));
-//                ok = false;
-//                continue;
-//            }
-//
-//            // checking the exported symbol's kind:
-//            if (!module_defn_kind(module_defn->kind())) {
-//                // posting feedback about importing an undefined symbol
-//                std::string headline = "Symbol '" + import_field->import_name().cpp_str() + "' is not importable.";
-//                std::string desc = "From '" + import_field->parent_group()->from_path().string() + "'";
-//                std::vector<feedback::Note*> notes{2}; {
-//                    std::string note_desc0 = "at import statement here...";
-//                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_field->loc());
-//
-//                    std::string note_desc1 = "non-importable node here (expected module or imported module)...";
-//                    notes[1] = new feedback::SourceLocNote(std::move(note_desc1), module_defn->defn_node()->loc());
-//                }
-//                feedback::post(new feedback::Letter(
-//                    feedback::Severity::Error,
-//                    std::move(headline),
-//                    std::move(desc),
-//                    std::move(notes)
-//                ));
-//                ok = false;
-//                continue;
-//            }
-//
-//            // setting the exported 'defn' and 'stmt' so the typer can equate both Vars:
-//            ast::ModExp* original_mod_exp = original_mod_exp_of_import(module_defn);
-//            import_field->x_origin_mod_exp(original_mod_exp);
-//        }
-//
-//        // Using
-//        // todo: rename to 'extend' such that a module may extend another
-//        for (UsingLookupOrder using_order: m_using_orders) {
-//            ast::UsingStmt* using_stmt = using_order.using_stmt;
-//
-//            // lookup 'module_name' in specified context.
-//            Defn const* module_defn = using_order.lookup_context->lookup(using_stmt->module_name());
-//
-//            // check that 'using' not applied to an 'package-content' module, only 'importable' ones
-//            if (!module_defn_kind(module_defn->kind())) {
-//                // todo: post feedback about using a non-module.
-//                assert(0 && "NotImplemented: error reporting on 'using/extend'-ing a non-module");
-//                ok = false;
-//                continue;
-//            }
-//
-//            // linking to an appropriate frame:
-//            ast::ModExp* original_mod_exp = original_mod_exp_of_import(module_defn);
-//            Frame* module_frame = original_mod_exp->x_module_frame();
-//            using_order.lookup_context->link(module_frame, using_stmt->suffix());
-//        }
-//
-//        // ModAddressLookupOrders:
-//        // Each 'ModAddress' (i.e. a::b::c::, multiple 'residents' can share a module) requires a sequence of successive
-//        // queries.
-//        // - using grammar, recursive queries encoded as nested nodes
-//        // - so, important to traverse in reverse order such that we go from last-visited (original parent) to
-//        //   first-visited
-//        // - provides module targets to type ModAddressId{TypeSpec|ClassSpec} using `x_defn_var`
-//        // NOTE: ModAddress-X gets resolved in Typer module.
-//        for (auto order_it = m_mod_address_orders.rbegin(); order_it != m_mod_address_orders.rend(); order_it++) {
-//            ModAddressLookupOrder order = *order_it;
-//            ast::ModAddress* mod_address = order.mod_address;
-//            assert(mod_address->template_args().empty() && "NotImplemented: template calls in mod addresses");
-//
-//            Defn const* module_defn = nullptr;
-//            if (mod_address->opt_parent_address()) {
-//                // parent address provided: lookup in lhs module
-//                auto lhs_origin_mod_exp = mod_address->opt_parent_address()->x_origin_mod_exp();
-//
-//                // if the parent origin is unknown, an error has already been reported. ignore and move on.
-//                continue;
-//
-//                // if traversing in reverse order and visit-order correct, LHS' origin should already be known:
-//                if (lhs_origin_mod_exp) {
-//                    // looking up in LHS:
-//                    module_defn = lhs_origin_mod_exp->x_module_frame()->last_context()->lookup(mod_address->rhs_name());
-//                } else {
-//                    assert(lhs_origin_mod_exp && "Iterating/appending 'ModAddressLookupOrder's incorrectly-- order error.");
-//                }
-//            } else {
-//                // parent address not provided: lookup in the context where this address was used:
-//                module_defn = order.lookup_context->lookup(mod_address->rhs_name());
-//            }
-//            if (module_defn) {
-//                // lookup succeeded!
-//                ast::ModExp *origin_mod_exp = original_mod_exp_of_import(module_defn);
-//                assert(origin_mod_exp && "error in Scoper::finish: could not find original_mod_exp_of_import");
-//                mod_address->x_origin_mod_exp(origin_mod_exp);
-//            } else {
-//                // lookup failed... fail & post feedback.
-//                ok = false;
-//                std::string headline; {
-//                    if (mod_address->opt_parent_address()) {
-//                        headline = "Field '<...>::" + mod_address->rhs_name().cpp_str() + "' used, but not defined.";
-//                    } else {
-//                        headline = "Symbol '" + mod_address->rhs_name().cpp_str() + "' used, but not defined.";
-//                    }
-//                }
-//                std::string desc = "Are you sure the module and its field is imported/defined?";
-//                std::vector<feedback::Note*> notes{1};
-//                feedback::post(new feedback::Letter(
-//                    feedback::Severity::Error,
-//                    std::move(headline), std::move(desc), std::move(notes)
-//                ));
-//            }
-//        }
-//
-//        return ok;
+        // defining the symbols found in this package into an exported package_root_frame:
+
+        auto package_root_frame = new Frame(FrameKind::Package, root_frame());
+        package->x_export_frame(package_root_frame);
+        for (auto base_export_field: package->exports_fields()) {
+            DefnKind defn_kind;
+            types::TypeVar* tv;
+            scoper::Frame* field_module_frame = nullptr;
+            {
+                auto export_field_kind = base_export_field->kind();
+                switch (export_field_kind)
+                {
+                    case ast::Kind::PackageExportField_ImportAllModulesFrom: {
+                        defn_kind = DefnKind::Package_ImportBundleModule;
+                        auto field = dynamic_cast<ast::Package::ExportField_ImportAllModulesFrom*>(base_export_field);
+                        std::string tv_name = ast::kind_as_text(export_field_kind);
+                        tv = types_mgr()->new_unknown_type_var(std::move(tv_name), base_export_field);
+
+                        // creating a new frame nested within the exported frame:
+                        // - can access all definitions
+                        // - any new definitions in this frame do not influence the old one
+                        auto from_source_node = field->x_origin_source_node();
+                        assert(from_source_node && "Expected an export source node from DD.");
+
+                        auto from_source_frame = from_source_node->x_export_frame();
+                        assert(from_source_node && "Expected an export frame on source node from DD.");
+
+                        field_module_frame = new scoper::Frame(FrameKind::Package, from_source_frame);
+
+                        break;
+                    }
+                    case ast::Kind::PackageExportField_ExternModuleInC: {
+                        defn_kind = DefnKind::Package_ExternModule;
+                        auto field = dynamic_cast<ast::Package::ExportField_ExternModuleInC*>(base_export_field);
+                        std::string tv_name = "PackageExportField_ImportAllModulesFrom";
+                        tv = types_mgr()->new_unknown_type_var(std::move(tv_name), base_export_field);
+
+                        field_module_frame = new scoper::Frame(FrameKind::Package, package_root_frame);
+                        // todo: define symbols in `field_module_frame` for 'extern' module.
+
+                        break;
+                    }
+                    default: {
+                        assert(0 && "NotImplemented: unknown ast::Kind::PackageExportField_?");
+                    }
+                }
+            }
+            Defn defn {
+                defn_kind,
+                base_export_field->name(),
+                base_export_field,
+                tv
+            };
+            base_export_field->mod_exp()->x_module_var(tv);
+            base_export_field->mod_exp()->x_module_frame(field_module_frame);
+            bool defn_ok = package_root_frame->define(defn);
+            if (!defn_ok) {
+                assert(0 && "NotImplemented: report multiple package export fields have same name.");
+            }
+        }
+        return true;
+    }
+
+    bool Scoper::finish() {
+        m_finished = true;
+
+        bool ok = true;
+
+        // IdExp
+        for (IdExpLookupOrder id_exp_order: m_id_exp_orders) {
+            ast::IdExp* id_exp = id_exp_order.id_exp;
+            intern::String id_name = id_exp->name();
+            Defn const* opt_defn = id_exp_order.lookup_context->lookup(id_name);
+            if (opt_defn != nullptr) {
+                id_exp->x_defn(opt_defn);
+            } else {
+                // post feedback about a value ID that was used but not defined.
+                std::string headline = "Value ID '" + std::string(id_name.content()) + "' used but not defined";
+                std::string desc = "";
+                std::vector<feedback::Note*> notes(1); {
+                    source::Loc defn_loc = id_exp->loc();
+                    std::string defn_desc = "see here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(defn_desc), defn_loc);
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
+                ok = false;
+            }
+        }
+
+        // IdTypeSpec
+        for (IdTypeSpecLookupOrder id_type_spec_order: m_id_type_spec_orders) {
+            ast::IdTypeSpec* id_type_spec = id_type_spec_order.type_spec;
+            intern::String id_name = id_type_spec_order.type_spec->name();
+            Defn const* defn = id_type_spec_order.lookup_context->lookup(id_name);
+            if (defn != nullptr) {
+                id_type_spec_order.type_spec->x_defn(defn);
+            } else {
+                // post feedback about a type ID that was used but not defined.
+                std::string headline = "Type ID '" + std::string(id_name.content()) + "' used but not defined";
+                std::string desc = "";
+                std::vector<feedback::Note*> notes(1); {
+                    source::Loc defn_loc = id_type_spec->loc();
+                    std::string defn_desc = "see here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(defn_desc), defn_loc);
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
+                ok = false;
+            }
+        }
+
+        // IdClassSpec:
+        for (IdClassSpecLookupOrder id_class_spec_order: m_id_class_spec_orders) {
+            ast::IdClassSpec* id_class_spec = id_class_spec_order.class_spec;
+            intern::String id_name = id_class_spec_order.class_spec->name();
+            Defn const* defn = id_class_spec_order.lookup_context->lookup(id_name);
+            if (defn != nullptr) {
+                id_class_spec_order.class_spec->x_defn(defn);
+            } else {
+                // post feedback about a class ID that was used but not defined:
+                std::string headline = "Class ID '" + std::string(id_name.content()) + "' used but not defined";
+                std::string desc = "";
+                std::vector<feedback::Note*> notes(1); {
+                    source::Loc defn_loc = id_class_spec->loc();
+                    std::string defn_desc = "see here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(defn_desc), defn_loc);
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
+                ok = false;
+            }
+        }
+
+        // Import
+        // - important to traverse in reverse-order, assuming scripts scoped in DD order.
+        // - this allows leaves to set pointers for intermediate nodes to use.
+        for (auto it = m_import_orders.rbegin(); it != m_import_orders.rend(); it++) {
+            ImportLookupOrder import_order = *it;
+
+            // fetching the exported frame:
+            ast::ImportStmt::Field* import_field = import_order.import_field;
+            ast::ISourceNode* origin_source_node = import_field->x_origin_source_node();
+            if (origin_source_node == nullptr) {
+                // posting feedback about an import failure:
+                std::string headline = "Import '" + import_field->import_name().cpp_str() + "' could not be resolved.";
+                std::string desc = "From '" + import_field->parent_group()->from_path().string() + "'";
+                std::vector<feedback::Note*> notes{1}; {
+                    std::string note_desc0 = "at import statement here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_field->loc());
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
+                ok = false;
+                continue;
+            }
+
+            // looking up the exported symbol in the exported frame:
+            Frame* exported_frame = origin_source_node->x_export_frame();
+            if (exported_frame == nullptr) {
+                assert(0 && "Successfully retrieved an origin source node, but no frame was exported.");
+                continue;
+            }
+            Context* first_ctx = exported_frame->first_context();
+            Context* last_ctx = exported_frame->last_context();
+            Defn const* module_defn = last_ctx->lookup_until(import_field->import_name(), first_ctx);
+            if (module_defn == nullptr) {
+                // posting feedback about importing an undefined symbol
+                std::string headline = "Module '" + import_field->import_name().cpp_str() + "' could not be found in the origin script.";
+                std::string desc = "From '" + import_field->parent_group()->from_path().string() + "'";
+                std::vector<feedback::Note*> notes{1}; {
+                    std::string note_desc0 = "at import statement here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_field->loc());
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
+                ok = false;
+                continue;
+            }
+
+            // checking the exported symbol's kind:
+            if (!module_defn_kind(module_defn->kind())) {
+                // posting feedback about importing an undefined symbol
+                std::string headline = "Symbol '" + import_field->import_name().cpp_str() + "' is not importable.";
+                std::string desc = "From '" + import_field->parent_group()->from_path().string() + "'";
+                std::vector<feedback::Note*> notes{2}; {
+                    std::string note_desc0 = "at import statement here...";
+                    notes[0] = new feedback::SourceLocNote(std::move(note_desc0), import_field->loc());
+
+                    std::string note_desc1 = "non-importable node here (expected module or imported module)...";
+                    notes[1] = new feedback::SourceLocNote(std::move(note_desc1), module_defn->defn_node()->loc());
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline),
+                    std::move(desc),
+                    std::move(notes)
+                ));
+                ok = false;
+                continue;
+            }
+
+            // setting the exported 'defn' tv so the typer can equate both Vars:
+            ast::BaseModExp* original_mod_exp = original_mod_exp_of_import(module_defn);
+            assert(original_mod_exp && "Failed to locate original mod exp of import.");
+            import_field->x_origin_mod_exp(original_mod_exp);
+        }
+
+        // Using
+        // todo: rename to 'extend' such that a module may extend another
+        for (UsingLookupOrder using_order: m_using_orders) {
+            ast::UsingStmt* using_stmt = using_order.using_stmt;
+
+            // lookup 'module_name' in specified context.
+            Defn const* module_defn = using_order.lookup_context->lookup(using_stmt->module_name());
+
+            // check that 'using' not applied to an 'package-content' module, only 'importable' ones
+            if (!module_defn_kind(module_defn->kind())) {
+                // todo: post feedback about using a non-module.
+                assert(0 && "NotImplemented: error reporting on 'using/extend'-ing a non-module");
+                ok = false;
+                continue;
+            }
+
+            // linking to an appropriate frame:
+            ast::BaseModExp* original_mod_exp = original_mod_exp_of_import(module_defn);
+            Frame* module_frame = original_mod_exp->x_module_frame();
+            using_order.lookup_context->link(module_frame, using_stmt->suffix());
+        }
+
+        // ModAddressLookupOrders:
+        // Each 'ModAddress' (i.e. a::b::c::, multiple 'residents' can share a module) requires a sequence of successive
+        // queries.
+        // - using grammar, recursive queries encoded as nested nodes
+        // - so, important to traverse in reverse order such that we go from last-visited (original parent) to
+        //   first-visited
+        // - provides module targets to type ModAddressId{TypeSpec|ClassSpec} using `x_defn_var`
+        // - if no opt_parent_module is provided, equivalent to an ID lookup.
+        // NOTE: ModAddress-X gets resolved in Typer module.
+        for (auto order_it = m_mod_address_orders.begin(); order_it != m_mod_address_orders.end(); order_it++) {
+            ModAddressLookupOrder order = *order_it;
+            ast::ModAddress* mod_address = order.mod_address;
+            assert(mod_address->template_args().empty() && "NotImplemented: template calls in mod addresses");
+
+            Defn const* module_defn = nullptr;
+            if (mod_address->opt_parent_address()) {
+                // parent address provided: lookup in lhs module
+                auto lhs_origin_mod_exp = mod_address->opt_parent_address()->x_origin_mod_exp();
+                assert(lhs_origin_mod_exp && "Expected non-nullptr lhs_origin_mod_exp when scoping ModAddress");
+
+                // if the parent origin is unknown, an error has already been reported. ignore and move on.
+                if (!lhs_origin_mod_exp) {
+                    continue;
+                }
+
+                // if traversing in reverse order and visit-order correct, LHS' origin should already be known:
+                if (lhs_origin_mod_exp) {
+                    // looking up in LHS:
+                    module_defn = lhs_origin_mod_exp->x_module_frame()->last_context()->lookup(mod_address->rhs_name());
+                } else {
+                    assert(lhs_origin_mod_exp && "Iterating/appending 'ModAddressLookupOrder's incorrectly-- order error.");
+                }
+            } else {
+                // parent address not provided: lookup in the context where this address was used:
+                module_defn = order.lookup_context->lookup(mod_address->rhs_name());
+            }
+            if (module_defn) {
+                // lookup succeeded!
+                ast::BaseModExp* origin_mod_exp = original_mod_exp_of_import(module_defn);
+                assert(origin_mod_exp && "error in Scoper::finish: could not find origin mod_exp of import");
+                mod_address->x_origin_mod_exp(origin_mod_exp);
+            } else {
+                // lookup failed... fail & post feedback.
+                ok = false;
+                std::string headline; {
+                    if (mod_address->opt_parent_address()) {
+                        headline = "Field '<...>::" + mod_address->rhs_name().cpp_str() + "' used, but not defined.";
+                    } else {
+                        headline = "Symbol '" + mod_address->rhs_name().cpp_str() + "' used, but not defined.";
+                    }
+                }
+                std::string desc = "Are you sure the module and its field is imported/defined?";
+                std::vector<feedback::Note*> notes{1}; {
+                    std::string desc0 = "see usage here...";
+                    notes[0] = new feedback::AstNodeNote(std::move(desc0), mod_address);
+                }
+                feedback::post(new feedback::Letter(
+                    feedback::Severity::Error,
+                    std::move(headline), std::move(desc), std::move(notes)
+                ));
+            }
+        }
+
+        return ok;
     }
 
     // debug:
@@ -408,27 +475,47 @@ namespace pdm::scoper {
         ));
     }
 
-    ast::ModExp* original_mod_exp_of_import(Defn const* module_defn) {
-        ast::ModExp* original_mod_exp = nullptr;
-        if (module_defn->kind() == DefnKind::Module) {
-            auto node = dynamic_cast<ast::Node*>(module_defn->defn_node());
+    ast::BaseModExp* original_mod_exp_of_import(Defn const* module_defn) {
+        ast::BaseModExp* original_mod_exp = nullptr;
+        {
+            switch (module_defn->kind())
+            {
+                case DefnKind::Module:
+                {
+                    auto node = dynamic_cast<ast::Node*>(module_defn->defn_node());
 
-            auto script_field = dynamic_cast<ast::Script::Field*>(node);
-            if (script_field) {
-                original_mod_exp = script_field->rhs_mod_exp();
-            }
-            auto mod_field = dynamic_cast<ast::ModExp::ModuleField*>(node);
-            if (mod_field) {
-                original_mod_exp = mod_field->rhs_mod_exp();
+                    auto script_field = dynamic_cast<ast::Script::Field*>(node);
+                    if (script_field) {
+                        original_mod_exp = script_field->rhs_mod_exp();
+                    }
+                    auto mod_field = dynamic_cast<ast::NativeModExp::ModuleField*>(node);
+                    if (mod_field) {
+                        original_mod_exp = mod_field->rhs_mod_exp();
+                    }
+                    break;
+                }
+                case DefnKind::ImportModule:
+                {
+                    auto imported_field = dynamic_cast<ast::ImportStmt::Field*>(module_defn->defn_node());
+                    assert(imported_field != nullptr);
+                    // from dependency dispatcher:
+                    original_mod_exp = imported_field->x_origin_mod_exp();
+                    break;
+                }
+                case DefnKind::Package_ExternModule:
+                case DefnKind::Package_ImportBundleModule:
+                {
+                    auto package_export_field = dynamic_cast<ast::Package::ExportField*>(module_defn->defn_node());
+                    original_mod_exp = package_export_field->mod_exp();
+                    break;
+                }
+                default:
+                {
+                    // std::cout << "Unknown DefnKind: " << defn_kind_as_text(module_defn->kind()) << std::endl;
+                    assert(original_mod_exp && "Mod expression lookup failed: unknown DefnKind");
+                }
             }
         }
-        else if (module_defn->kind() == DefnKind::ImportModule) {
-            auto imported_stmt = dynamic_cast<ast::ImportStmt::Field*>(module_defn->defn_node());
-            assert(imported_stmt != nullptr);
-            // from dependency dispatcher:
-            original_mod_exp = imported_stmt->x_origin_mod_exp();
-        }
-        assert(original_mod_exp && "Mod expression lookup failed");
         return original_mod_exp;
     }
 
@@ -446,7 +533,8 @@ namespace pdm::scoper {
             pop_frame();
 
             // storing the frame on the script node for later (for imports):
-            script->x_script_frame(script_frame);
+            assert(script_frame && "Cannot export a NULL frame for a script.");
+            script->x_export_frame(script_frame);
         }
         return true;
     }
@@ -486,7 +574,7 @@ namespace pdm::scoper {
     // Modules:
     //
 
-    bool ScriptScoperVisitor::on_visit_mod_exp(ast::ModExp* node, VisitOrder visit_order) {
+    bool ScriptScoperVisitor::on_visit_mod_exp(ast::NativeModExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // storing the Frame and TV on the module for later:
             // node->x_module_frame(module_frame);
@@ -505,11 +593,11 @@ namespace pdm::scoper {
         }
         return true;
     }
-    bool ScriptScoperVisitor::on_visit_mod_mod_field(ast::ModExp::ModuleField* node, VisitOrder visit_order) {
+    bool ScriptScoperVisitor::on_visit_mod_mod_field(ast::NativeModExp::ModuleField* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // creating a 'var':
             types::Var* mod_val_var = nullptr; {
-                std::string tv_prefix = "ModModField:";
+                std::string tv_prefix = "NativeModExp_ModField:";
                 std::string tv_name = tv_prefix + node->name().content();
                 mod_val_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
             }
@@ -536,13 +624,13 @@ namespace pdm::scoper {
         }
         return true;
     }
-    bool ScriptScoperVisitor::on_visit_value_mod_field(ast::ModExp::ValueField* node, VisitOrder visit_order) {
+    bool ScriptScoperVisitor::on_visit_value_mod_field(ast::NativeModExp::ValueField* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // creating the var:
             types::Var* type_var = nullptr;
 
             // single type
-            std::string tv_prefix = "ValueModField:";
+            std::string tv_prefix = "NativeModExp_ValueField:";
             std::string tv_name = tv_prefix + node->name().content();
             type_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
 
@@ -569,13 +657,13 @@ namespace pdm::scoper {
         }
         return true;
     }
-    bool ScriptScoperVisitor::on_visit_type_mod_field(ast::ModExp::TypeField *node, VisitOrder visit_order) {
+    bool ScriptScoperVisitor::on_visit_type_mod_field(ast::NativeModExp::TypeField *node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // creating the var:
             types::Var* type_var = nullptr;
 
             // single type
-            std::string tv_prefix = "TypeModField:";
+            std::string tv_prefix = "NativeModExp_TypeField:";
             std::string tv_name = tv_prefix + node->name().content();
             type_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name));
 
@@ -602,11 +690,11 @@ namespace pdm::scoper {
         }
         return true;
     }
-    bool ScriptScoperVisitor::on_visit_class_mod_field(ast::ModExp::ClassField *node, VisitOrder visit_order) {
+    bool ScriptScoperVisitor::on_visit_class_mod_field(ast::NativeModExp::ClassField *node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // creating the typeclass var:
             types::Var* typeclass_var; {
-                std::string cv_prefix = "ClassModField:";
+                std::string cv_prefix = "NativeModExp_ClassField:";
                 std::string cv_name = cv_prefix + node->name().content();
                 typeclass_var = scoper()->types_mgr()->new_unknown_class_var(std::move(cv_name), node);
             }
@@ -655,7 +743,8 @@ namespace pdm::scoper {
         return true;
     }
     bool ScriptScoperVisitor::on_visit_mod_address(ast::ModAddress* node, VisitOrder visit_order) {
-        if (visit_order == VisitOrder::Pre) {
+        // important to perform in 'post' order, such that most nested are processed first.
+        if (visit_order == VisitOrder::Post) {
             place_mod_address_lookup_order(node);
         }
         return true;
@@ -725,7 +814,7 @@ namespace pdm::scoper {
                 ext_mod_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
             }
             bool defn_ok = top_frame()->define(Defn(
-                DefnKind::ExternObject,
+                DefnKind::Package_ExternModule,
                 node->ext_mod_name(),
                 node,
                 ext_mod_tv
@@ -742,14 +831,14 @@ namespace pdm::scoper {
                 for (ast::ImportStmt::Field* field: group->fields()) {
                     // defining the new symbol with a new, exported TV:
                     types::TypeVar* mod_tv = nullptr; {
-                        std::string tv_prefix = "Defn(ImportModule):";
+                        std::string tv_prefix = "ExportedProxy:";
                         std::string tv_name = std::move(tv_prefix) + field->import_name().content();
                         mod_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
                     }
                     Defn new_defn {
                         DefnKind::ImportModule,
                         field->import_name(),
-                        node,
+                        field,
                         mod_tv
                     };
                     bool defn_ok = top_frame()->define(new_defn);
@@ -877,7 +966,7 @@ namespace pdm::scoper {
 
                 // when vpatterns are used in Fn typespecs, we do not define the symbols in the top frame.
                 // in all other cases, we do.
-                if (m_vpattern_defn_kind_stack.top() != DefnKind::IGNORE_FnTypeSpecFormalVArg) {
+                if (m_vpattern_defn_kind_stack.top() != DefnKind::NO_DEF_FnTypeSpecFormalVArg) {
                     bool defn_ok = top_frame()->define(new_defn);
                     if (!defn_ok) {
                         post_overlapping_defn_error(field_prefix, new_defn);
@@ -972,7 +1061,7 @@ namespace pdm::scoper {
     }
     bool ScriptScoperVisitor::on_visit_fn_type_spec(ast::FnTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            m_vpattern_defn_kind_stack.push(DefnKind::IGNORE_FnTypeSpecFormalVArg);
+            m_vpattern_defn_kind_stack.push(DefnKind::NO_DEF_FnTypeSpecFormalVArg);
         } else {
             assert(visit_order == VisitOrder::Post);
             m_vpattern_defn_kind_stack.pop();

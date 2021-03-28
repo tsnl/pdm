@@ -1,5 +1,7 @@
 #include "frame.hh"
+
 #include <stack>
+
 
 namespace pdm::scoper {
     
@@ -19,6 +21,10 @@ namespace pdm::scoper {
             case FrameKind::VPattern: return "VPattern";
             case FrameKind::TPattern: return "TPattern";
             case FrameKind::Chain: return "Chain";
+            case FrameKind::Package: return "Package";
+        }
+        if (DEBUG) {
+            assert(0 && "NotImplemented: invalid FrameKind.");
         }
         return nullptr;
     }
@@ -62,7 +68,7 @@ namespace pdm::scoper {
             // p.print_newline();
 
             // child frames:
-            p.print_c_str("Subframes: (");
+            p.print_c_str("Sub-frames: (");
             p.print_uint_dec(m_child_frames.size());
             p.print_c_str(") ...");
             if (m_child_frames.empty()) {

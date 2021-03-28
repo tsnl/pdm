@@ -57,11 +57,11 @@ namespace pdm::types {
         bool on_visit_script_field(ast::Script::Field* script_field, VisitOrder visit_order) override;
 
         // module:
-        bool on_visit_mod_exp(ast::ModExp* mod_exp, VisitOrder visit_order) override;
-        bool on_visit_mod_mod_field(ast::ModExp::ModuleField* module_field, VisitOrder visit_order) override;
-        bool on_visit_value_mod_field(ast::ModExp::ValueField* value_field, VisitOrder visit_order) override;
-        bool on_visit_type_mod_field(ast::ModExp::TypeField* type_field, VisitOrder visit_order) override;
-        bool on_visit_class_mod_field(ast::ModExp::ClassField* class_field, VisitOrder visit_order) override;
+        bool on_visit_mod_exp(ast::NativeModExp* mod_exp, VisitOrder visit_order) override;
+        bool on_visit_mod_mod_field(ast::NativeModExp::ModuleField* module_field, VisitOrder visit_order) override;
+        bool on_visit_value_mod_field(ast::NativeModExp::ValueField* value_field, VisitOrder visit_order) override;
+        bool on_visit_type_mod_field(ast::NativeModExp::TypeField* type_field, VisitOrder visit_order) override;
+        bool on_visit_class_mod_field(ast::NativeModExp::ClassField* class_field, VisitOrder visit_order) override;
         bool on_visit_mod_address(ast::ModAddress* mod_address, VisitOrder visit_order) override;
 
         // statements:
@@ -127,7 +127,7 @@ namespace pdm::types {
         static ClassVar* expect_class_var(Var* var, std::string&& expected_desc, std::string&& in_desc, source::Loc loc);
         static Var* expect_var_check(Var* var, std::string&& expected_desc, std::string&& in_desc, VarArchetype expected_var_kind, source::Loc loc);
 
-        static ast::ModExp::Field* get_mod_field_from_addr(ast::ModAddress* lhs_mod_address, intern::String rhs_name);
+        static ast::BaseModExp::Field* get_mod_field_from_addr(ast::ModAddress* lhs_mod_address, intern::String rhs_name);
     };
 
     //
@@ -184,7 +184,7 @@ namespace pdm::types {
     }
 
     // modules:
-    bool TyperVisitor::on_visit_mod_exp(ast::ModExp* mod_exp, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_mod_exp(ast::NativeModExp* mod_exp, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // TODO: implement typing for templates.
             if (mod_exp->opt_template_pattern()) {
@@ -199,7 +199,7 @@ namespace pdm::types {
             auto module_tv = dynamic_cast<TypeVar*>(mod_exp->x_module_var());
 
             std::map<intern::String, Var*> fields_tvs; {
-                for (ast::ModExp::Field* field: mod_exp->fields()) {
+                for (ast::NativeModExp::Field* field: mod_exp->fields()) {
                     fields_tvs[field->name()] = field->x_defn_var();
                 }
             }
@@ -215,7 +215,7 @@ namespace pdm::types {
             return !result_is_error(assume_relation_result);
         }
     }
-    bool TyperVisitor::on_visit_mod_mod_field(ast::ModExp::ModuleField* mod_field, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_mod_mod_field(ast::NativeModExp::ModuleField* mod_field, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             return true;
         } else if (visit_order == VisitOrder::Post) {
@@ -235,7 +235,7 @@ namespace pdm::types {
             return false;
         }
     }
-    bool TyperVisitor::on_visit_value_mod_field(ast::ModExp::ValueField* mod_field, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_value_mod_field(ast::NativeModExp::ValueField* mod_field, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             return true;
         } else if (visit_order == VisitOrder::Post) {
@@ -256,7 +256,7 @@ namespace pdm::types {
             return false;
         }
     }
-    bool TyperVisitor::on_visit_type_mod_field(ast::ModExp::TypeField* mod_field, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_type_mod_field(ast::NativeModExp::TypeField* mod_field, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             return true;
         } else if (visit_order == VisitOrder::Post) {
@@ -286,7 +286,7 @@ namespace pdm::types {
             return false;
         }
     }
-    bool TyperVisitor::on_visit_class_mod_field(ast::ModExp::ClassField* mod_field, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_class_mod_field(ast::NativeModExp::ClassField* mod_field, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             return true;
         } else if (visit_order == VisitOrder::Post) {
@@ -327,7 +327,7 @@ namespace pdm::types {
             assert(origin_mod_exp && "nullptr origin_mod_exp");
             // ast::ModExp::Field* ref_field = nullptr;
             // for (auto field: origin_mod_exp->fields()) {
-            //     if (field->name() == mod_address->rhs_name() && field->kind() == ast::Kind::ModModField) {
+            //     if (field->name() == mod_address->rhs_name() && field->kind() == ast::Kind::NativeModExp_ModField) {
             //         ref_field = field;
             //         break;
             //     }
@@ -395,9 +395,31 @@ namespace pdm::types {
         return true;
     }
     bool TyperVisitor::on_visit_import_stmt(ast::ImportStmt* node, VisitOrder visit_order) {
-        // todo: implement this typer.
-        assert(0 && "NotImplemented: TyperVisitor::on_visit_import_stmt");
-        return true;
+        if (visit_order == VisitOrder::Pre) {
+            // from scoper's ImportOrder handler: `origin_tv`
+            // from scoper's visitor: `export_tv`
+
+            SolveResult result = SolveResult::NoChange;
+            for (auto group: node->field_groups()) {
+                for (auto field: group->fields()) {
+                    auto origin_mod_exp = field->x_origin_mod_exp();
+                    auto origin_tv = origin_mod_exp->x_module_var();
+                    auto export_tv = field->x_exported_tv();
+
+                    assert(origin_tv && "ScoperError: expected `origin_tv` from ImportLookupOrder");
+                    assert(export_tv && "ScoperError: expected `export_tv` from scoper visitor");
+
+                    SolveResult field_result = m_types_mgr->assume_relation_holds(new TypeEqualsRelation(
+                        field,
+                        origin_tv, export_tv
+                    ));
+                    result = result_and(result, field_result);
+                }
+            }
+            return !result_is_error(result);
+        } else {
+            return true;
+        }
     }
     bool TyperVisitor::on_visit_using_stmt(ast::UsingStmt* node, VisitOrder visit_order) {
         // todo: implement this typer.
@@ -845,7 +867,10 @@ namespace pdm::types {
     }
     bool TyperVisitor::on_visit_module_dot_exp(ast::ModuleDotExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            ast::ModExp::Field* field = get_mod_field_from_addr(node->lhs_mod_address(), node->rhs_name());
+            ast::BaseModExp::Field* field = get_mod_field_from_addr(node->lhs_mod_address(), node->rhs_name());
+            if (!field) {
+                assert(0 && "NotImplemented: could not find field named '?' in module");
+            }
             auto defn_tv = dynamic_cast<TypeVar*>(field->x_defn_var());
             assert(defn_tv && "Invalid/malformed ma_type_spec => error in scoper.");
             node->x_type_of_var(defn_tv);
@@ -1388,7 +1413,10 @@ namespace pdm::types {
     }
     bool TyperVisitor::on_visit_ma_type_spec(ast::ModAddressIdTypeSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            ast::ModExp::Field* field = get_mod_field_from_addr(node->lhs_mod_address(), node->rhs_type_name());
+            ast::BaseModExp::Field* field = get_mod_field_from_addr(node->lhs_mod_address(), node->rhs_type_name());
+            if (!field) {
+                assert(0 && "NotImplemented: could not find field named '?' in module");
+            }
             auto defn_tv = dynamic_cast<TypeVar*>(field->x_defn_var());
             assert(defn_tv && "Invalid/malformed ma_type_spec => error in scoper.");
             node->x_spec_var(defn_tv);
@@ -1593,7 +1621,10 @@ namespace pdm::types {
     }
     bool TyperVisitor::on_visit_ma_class_spec(ast::ModAddressIdClassSpec* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            ast::ModExp::Field* field = get_mod_field_from_addr(node->lhs_mod_address(), node->rhs_type_name());
+            ast::BaseModExp::Field* field = get_mod_field_from_addr(node->lhs_mod_address(), node->rhs_type_name());
+            if (!field) {
+                assert(0 && "NotImplemented: could not find field named '?' in module");
+            }
             auto defn_tv = dynamic_cast<ClassVar*>(field->x_defn_var());
             assert(defn_tv && "Invalid/malformed ma_class_spec => error in scoper.");
             node->x_spec_var(defn_tv);
@@ -1727,17 +1758,18 @@ namespace pdm::types {
         }
     }
 
-    ast::ModExp::Field* TyperVisitor::get_mod_field_from_addr(
+    ast::BaseModExp::Field* TyperVisitor::get_mod_field_from_addr(
         ast::ModAddress* lhs_mod_address,
         intern::String rhs_name
     ) {
         auto lhs_mod_exp = lhs_mod_address->x_origin_mod_exp();
         assert(lhs_mod_exp && "Scoper error: expected lhs mod exp to be non-nullptr");
 
+        // assert(0 && "STUBBED: TyperVisitor::get_mod_field_from_addr-- needs rewrite.");
         // note: consider a more efficient field lookup mechanism if required
         // currently just using a linear scan.
-        ast::ModExp::Field* found_field = nullptr;
-        for (ast::ModExp::Field* field: lhs_mod_exp->fields()) {
+        ast::BaseModExp::Field* found_field = nullptr;
+        for (ast::BaseModExp::Field* field: lhs_mod_exp->fields()) {
             if (rhs_name == field->name()) {
                 found_field = field;
                 break;
@@ -1759,7 +1791,8 @@ namespace pdm::typer {
     }
 
     bool type_package(types::Manager* manager, ast::Package* package) {
-        assert(0 && "NotImplemented: typer::type_package.");
+        // assert(0 && "NotImplemented: typer::type_package.");
+        std::cout << "NotImplemented: typer::type_package" << std::endl;
         return false;
     }
 

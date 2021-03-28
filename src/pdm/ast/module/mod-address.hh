@@ -6,14 +6,14 @@
 #include "pdm/core/intern.hh"
 
 namespace pdm::ast {
-    class ModExp;
+    class BaseModExp;
 }
 namespace pdm::ast {
 
     class ModAddress: public Node {
       private:
         ModAddress* m_opt_parent_address;
-        ast::ModExp* m_x_origin_mod_exp;
+        ast::BaseModExp* m_x_origin_mod_exp;
         intern::String m_rhs_name;
         std::vector<ast::TArg*> m_template_args;
 
@@ -31,8 +31,8 @@ namespace pdm::ast {
         [[nodiscard]] std::vector<ast::TArg*> const& template_args() const;
 
     public:
-        [[nodiscard]] ast::ModExp* x_origin_mod_exp() const;
-        void x_origin_mod_exp(ast::ModExp* origin_mod_exp);
+        [[nodiscard]] ast::BaseModExp* x_origin_mod_exp() const;
+        void x_origin_mod_exp(ast::BaseModExp* origin_mod_exp);
     };
 
     //
@@ -59,11 +59,11 @@ namespace pdm::ast {
         return m_rhs_name;
     }
 
-    inline ast::ModExp* ModAddress::x_origin_mod_exp() const {
+    inline ast::BaseModExp* ModAddress::x_origin_mod_exp() const {
         return m_x_origin_mod_exp;
     }
 
-    inline void ModAddress::x_origin_mod_exp(ast::ModExp* origin_mod_exp) {
+    inline void ModAddress::x_origin_mod_exp(ast::BaseModExp* origin_mod_exp) {
         m_x_origin_mod_exp = origin_mod_exp;
     }
 

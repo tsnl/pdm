@@ -9,7 +9,7 @@
 
 #include "pdm/core/intern.hh"
 #include "pdm/ast/manager.hh"
-#include "pdm/ast/source-node/i_source_node.hh"
+#include "pdm/ast/source-node/i-source-node.hh"
 
 #include "pdm/types/manager.hh"
 #include "pdm/scoper/scoper.hh"

@@ -145,6 +145,7 @@ namespace pdm::scoper {
             case ContextKind::RootDefs: return "RootDefs";
             case ContextKind::ScriptDefs: return "ScriptDefs";
             case ContextKind::ModuleDefs: return "ModuleDefs";
+            case ContextKind::PackageDefs: return "PackageDefs";
             case ContextKind::TPatternDefs: return "TPatternDefs";
             case ContextKind::VPatternDefs: return "VPatternDefs";
             case ContextKind::LPatternDefs: return "LPatternDefs";

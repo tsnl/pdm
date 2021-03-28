@@ -1,0 +1,8 @@
+{
+  "exports": {
+    "alice": {
+      "kind": "IMPORT_ALL_MODULES_FROM",
+      "path": "alice.pd"
+    }
+  }
+}

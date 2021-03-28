@@ -16,7 +16,7 @@
 
 #include "pdm/parser/parser.hh"
 
-#include "pdm/dependency_dispatcher/dependency_dispatcher.hh"
+#include "pdm/dependency_dispatcher/dependency-dispatcher.hh"
 
 #include "pdm/scoper/scoper.hh"
 #include "pdm/scoper/context.hh"
@@ -100,7 +100,7 @@ namespace pdm {
         if (!std::filesystem::exists(from_path)) {
             feedback::post(new feedback::Letter(
                 feedback::Severity::Error, 
-                "Cannot import from non-existent",
+                "Cannot import from non-existent source node",
                 "abspath: \"" + abs_from_path_string + "\""
             ));
             return nullptr;
@@ -134,7 +134,7 @@ namespace pdm {
         if (script == nullptr) {
             return nullptr;
         } else {
-            std::cout << "Dispatching script at " << source->abs_path() << std::endl;
+            std::cout << "Dispatching Script:\t" << source->abs_path() << std::endl;
 
             // adding to the 'all_source_nodes' list BEFORE adding more scripts
             // <=> entry_point is always the first script, leaves farther out.
@@ -165,7 +165,7 @@ namespace pdm {
         if (package == nullptr) {
             return nullptr;
         } else {
-            std::cout << "Dispatching package: " << source->abs_path() << std::endl;
+            std::cout << "Dispatching Package:\t" << source->abs_path() << std::endl;
 
             // adding to the 'all_source_nodes' list BEFORE adding more scripts
             m_all_source_nodes.push_back(package);
@@ -211,8 +211,11 @@ namespace pdm {
             }
         }
 
-        // next, scoping each loaded source node in the order they were imported, excluding repetitions:
-        for (ast::ISourceNode* source_node: m_all_source_nodes) {
+        // next, scoping each loaded source node in the REVERSE order they were imported, excluding repetitions:
+        // - reverse order so that a package may reference a source file's frame
+        for (auto it = m_all_source_nodes.rbegin(); it != m_all_source_nodes.rend(); it++) {
+            ast::ISourceNode* source_node = *it;
+
             auto script = dynamic_cast<ast::Script*>(source_node);
             if (script) {
                 scoper.scope_script(script);
@@ -221,8 +224,9 @@ namespace pdm {
 
             auto package = dynamic_cast<ast::Package*>(source_node);
             if (package) {
-                assert(0 && "NotImplemented: scoper on ast::Package");
-                // scoper.scope(package-content);
+                // assert(0 && "NotImplemented: scoper on ast::Package");
+                // std::cout << "NotImplemented: scoper on ast::Package" << std::endl;
+                scoper.scope_package(package);
                 continue;
             }
 
@@ -278,17 +282,17 @@ namespace pdm {
     }
 
     void Compiler::postpass1_print1_code() {
-        printer::Printer p{std::cout};
+        printer::Printer p{std::cout, target_name()};
         for (ast::ISourceNode* source_node: all_source_nodes()) {
             p.print_node(source_node);
         }
     }
     void Compiler::postpass1_print2_scopes(scoper::Scoper& scoper) {
-        printer::Printer p{std::cout};
+        printer::Printer p{std::cout, target_name()};
         scoper.print(p);
     }
     void Compiler::postpass2_print1_types() {
-        printer::Printer p{std::cout};
+        printer::Printer p{std::cout, target_name()};
         m_types_mgr.print(p, "After pass2");
     }
     void Compiler::postpass3_print1_llvm() {

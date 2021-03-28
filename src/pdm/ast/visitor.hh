@@ -44,8 +44,8 @@
 #include "pdm/ast/stmt/var.hh"
 #include "pdm/ast/stmt/val.hh"
 
-#include "pdm/ast/module/mod_exp.hh"
-#include "pdm/ast/module/mod_address.hh"
+#include "pdm/ast/module/native-mod-exp.hh"
+#include "pdm/ast/module/mod-address.hh"
 
 #include "pdm/ast/header/import_stmt.hh"
 
@@ -101,11 +101,11 @@ namespace pdm::ast {
         virtual bool on_visit_script_field(Script::Field* field, VisitOrder visit_order) = 0;
 
         // modules:
-        virtual bool on_visit_mod_exp(ModExp* node, VisitOrder visit_order) = 0;
-        virtual bool on_visit_value_mod_field(ModExp::ValueField* node, VisitOrder visit_order) = 0;
-        virtual bool on_visit_type_mod_field(ModExp::TypeField* node, VisitOrder visit_order) = 0;
-        virtual bool on_visit_class_mod_field(ModExp::ClassField* node, VisitOrder visit_order) = 0;
-        virtual bool on_visit_mod_mod_field(ModExp::ModuleField* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit_mod_exp(NativeModExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit_value_mod_field(NativeModExp::ValueField* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit_type_mod_field(NativeModExp::TypeField* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit_class_mod_field(NativeModExp::ClassField* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit_mod_mod_field(NativeModExp::ModuleField* node, VisitOrder visit_order) = 0;
         virtual bool on_visit_mod_address(ModAddress* node, VisitOrder visit_order) = 0;
 
         // statements:
@@ -178,19 +178,19 @@ namespace pdm::ast {
         }
 
         // modules:
-        bool on_visit_mod_exp(ModExp* mod_exp, VisitOrder visit_order) override {
+        bool on_visit_mod_exp(NativeModExp* mod_exp, VisitOrder visit_order) override {
             return true;
         }
-        bool on_visit_value_mod_field(ModExp::ValueField* node, VisitOrder visit_order) override {
+        bool on_visit_value_mod_field(NativeModExp::ValueField* node, VisitOrder visit_order) override {
             return true;
         }
-        bool on_visit_type_mod_field(ModExp::TypeField* node, VisitOrder visit_order) override {
+        bool on_visit_type_mod_field(NativeModExp::TypeField* node, VisitOrder visit_order) override {
             return true;
         }
-        bool on_visit_class_mod_field(ModExp::ClassField* node, VisitOrder visit_order) override {
+        bool on_visit_class_mod_field(NativeModExp::ClassField* node, VisitOrder visit_order) override {
             return true;
         }
-        bool on_visit_mod_mod_field(ast::ModExp::ModuleField* node, VisitOrder visit_order) override {
+        bool on_visit_mod_mod_field(ast::NativeModExp::ModuleField* node, VisitOrder visit_order) override {
             return true;
         }
         bool on_visit_mod_address(ModAddress* node, VisitOrder visit_order) override {

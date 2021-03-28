@@ -8,7 +8,7 @@
 
 namespace pdm::ast {
     class Manager;
-    class ModExp;
+    class BaseModExp;
     class ISourceNode;
 }
 namespace pdm::types {
@@ -23,16 +23,15 @@ namespace pdm::ast {
         class Field;
         class FieldGroup;
 
-        class Field {
+        class Field: public Node {
             friend FieldGroup;
 
           private:
             ISourceNode* m_x_source_node;
-            ast::ModExp* m_x_origin_mod_exp;
+            ast::BaseModExp* m_x_origin_mod_exp;
             types::TypeVar* m_x_exported_tv;
             FieldGroup* m_parent_group;
             intern::String m_import_name;
-            source::Loc m_loc;
 
           public:
             explicit Field(source::Loc loc, intern::String import_name);
@@ -40,14 +39,13 @@ namespace pdm::ast {
           public:
             [[nodiscard]] FieldGroup* parent_group() const;
             [[nodiscard]] intern::String import_name() const;
-            [[nodiscard]] source::Loc loc() const;
 
             [[nodiscard]] ISourceNode* x_origin_source_node() const;
-            [[nodiscard]] ast::ModExp* x_origin_mod_exp() const;
+            [[nodiscard]] ast::BaseModExp* x_origin_mod_exp() const;
             [[nodiscard]] types::TypeVar* x_exported_tv() const;
 
             void x_origin_source_node(ISourceNode* source_node);
-            void x_origin_mod_exp(ast::ModExp* set_mod_stmt);
+            void x_origin_mod_exp(ast::BaseModExp* set_mod_stmt);
             void x_exported_tv(types::TypeVar* set_exported_tv);
         };
         class FieldGroup {
@@ -80,12 +78,12 @@ namespace pdm::ast {
     };
 
     inline ImportStmt::Field::Field(source::Loc loc, intern::String import_name)
-    : m_x_source_node(nullptr),
-      m_x_origin_mod_exp(nullptr),
-      m_x_exported_tv(nullptr),
-      m_parent_group(nullptr),
-      m_import_name(import_name),
-      m_loc(loc)
+    :   Node(loc, Kind::ImportStmt_Field),
+        m_x_source_node(nullptr),
+        m_x_origin_mod_exp(nullptr),
+        m_x_exported_tv(nullptr),
+        m_parent_group(nullptr),
+        m_import_name(import_name)
     {}
 
     inline ImportStmt::FieldGroup::FieldGroup(source::Loc loc, std::vector<Field*> fields, utf8::String from_path)
@@ -105,10 +103,6 @@ namespace pdm::ast {
 
     inline std::vector<ImportStmt::Field*> const& ImportStmt::FieldGroup::fields() const {
         return m_fields;
-    }
-
-    inline source::Loc ImportStmt::Field::loc() const {
-        return m_loc;
     }
 
     inline ImportStmt::FieldGroup* ImportStmt::Field::parent_group() const {
@@ -135,11 +129,11 @@ namespace pdm::ast {
         return m_x_exported_tv;
     }
 
-    inline ast::ModExp* ImportStmt::Field::x_origin_mod_exp() const {
+    inline ast::BaseModExp* ImportStmt::Field::x_origin_mod_exp() const {
         return m_x_origin_mod_exp;
     }
 
-    inline void ImportStmt::Field::x_origin_mod_exp(ast::ModExp *set_mod_stmt) {
+    inline void ImportStmt::Field::x_origin_mod_exp(ast::BaseModExp *set_mod_stmt) {
         m_x_origin_mod_exp = set_mod_stmt;
     }
 

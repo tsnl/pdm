@@ -11,8 +11,7 @@ mod next {
         };
     };
 
-    mod linked_list {
-        using [Node ll_base::LL_NODE, impl NodeImpl];
+    mod linked_list [Node ll_base::LL_NODE, impl NodeImpl] {
 
         add = fn (node1 Node, node2 Node) Node {
             index = impl.allocator(rtti[Node]::size),

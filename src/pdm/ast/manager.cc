@@ -32,39 +32,52 @@ namespace pdm::ast {
     ) {
         return emplace<Script>(source, loc, std::move(head_stmts), std::move(body_mod_stmts));
     }
-    Script::Field* Manager::new_script_field(source::Loc loc, intern::String name, ast::ModExp* mod_exp) {
+    Script::Field* Manager::new_script_field(source::Loc loc, intern::String name, ast::BaseModExp* mod_exp) {
         return emplace<Script::Field>(loc, name, mod_exp);
     }
 
-    ModExp* Manager::new_mod_exp(
+    NativeModExp* Manager::new_native_mod_exp(
         source::Loc loc,
-        ast::TPattern* opt_template_pattern, std::vector<ast::ModExp::Field*>&& fields
+        ast::TPattern* opt_template_pattern,
+        std::vector<ast::NativeModExp::Field*>&& fields
     ) {
-        return emplace<ModExp>(loc, std::move(fields), opt_template_pattern);
+        return emplace<NativeModExp>(loc, std::move(fields), opt_template_pattern);
     }
-    ModExp::ModuleField* Manager::new_mod_mod_field(
+    ExternCModExp* Manager::new_extern_c_mod_exp(
         source::Loc loc,
-        intern::String lhs_name, ast::ModExp* mod_exp
+        std::vector<BaseModExp::Field*>&& fields
     ) {
-        return emplace<ModExp::ModuleField>(loc, lhs_name, mod_exp);
+        return emplace<ExternCModExp>(loc, std::move(fields));
     }
-    ModExp::ValueField* Manager::new_value_mod_field(
+    PkgBundleModExp* Manager::new_pkg_bundle_mod_exp(
+        source::Loc loc,
+        std::vector<BaseModExp::Field*>&& fields
+    ) {
+        return emplace<PkgBundleModExp>(loc, std::move(fields));
+    }
+    NativeModExp::ModuleField* Manager::new_mod_field_for_mod_exp(
+        source::Loc loc,
+        intern::String lhs_name, ast::BaseModExp* mod_exp
+    ) {
+        return emplace<NativeModExp::ModuleField>(loc, lhs_name, mod_exp);
+    }
+    NativeModExp::ValueField* Manager::new_value_field_for_mod_exp(
         source::Loc loc,
         intern::String lhs_name, ast::Exp* rhs_exp
     ) {
-        return emplace<ModExp::ValueField>(loc, lhs_name, rhs_exp);
+        return emplace<NativeModExp::ValueField>(loc, lhs_name, rhs_exp);
     }
-    ModExp::TypeField* Manager::new_type_mod_field(
+    NativeModExp::TypeField* Manager::new_type_field_for_mod_exp(
         source::Loc loc,
         intern::String lhs_name, ast::TypeSpec* rhs_type_spec
     ) {
-        return emplace<ModExp::TypeField>(loc, lhs_name, rhs_type_spec);
+        return emplace<NativeModExp::TypeField>(loc, lhs_name, rhs_type_spec);
     }
-    ModExp::ClassField* Manager::new_class_mod_field(
+    NativeModExp::ClassField* Manager::new_class_field_for_mod_exp(
         source::Loc loc,
         intern::String lhs_name, ast::ClassSpec* rhs_class_spec
     ) {
-        return emplace<ModExp::ClassField>(loc, lhs_name, rhs_class_spec);
+        return emplace<NativeModExp::ClassField>(loc, lhs_name, rhs_class_spec);
     }
     ModAddress* Manager::new_mod_address(
         source::Loc loc,
@@ -269,11 +282,12 @@ namespace pdm::ast {
     Package::ExportField_ExternModuleInC*
     Manager::new_package_export_field_for_extern_module_in_c(
         source::Loc loc,
+        intern::String name,
         Package::ExportField_ExternModuleInC::CoreCompilerArgs&& core_compiler_args,
         Package::ExportField_ExternModuleInC::PlatformCompilerArgs&& platform_compiler_args
     ) {
         return emplace<Package::ExportField_ExternModuleInC>(
-            loc,
+            loc, name,
             std::move(core_compiler_args),
             std::move(platform_compiler_args)
         );
@@ -282,10 +296,11 @@ namespace pdm::ast {
     Package::ExportField_ImportAllModulesFrom*
     Manager::new_package_export_field_for_import_modules_from(
         source::Loc loc,
+        intern::String name,
         std::string&& path
     ) {
         return emplace<Package::ExportField_ImportAllModulesFrom>(
-            loc,
+            loc, name,
             std::move(path)
         );
     }

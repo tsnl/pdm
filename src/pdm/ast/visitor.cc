@@ -42,36 +42,41 @@ namespace pdm::ast {
             // Modules:
             //
 
-            case Kind::ModExp: {
-                auto exp = dynamic_cast<ModExp*>(node);
-                for (ast::ModExp::Field* field: exp->fields()) {
+            case Kind::NativeModExp: {
+                auto exp = dynamic_cast<NativeModExp*>(node);
+                for (ast::NativeModExp::Field* field: exp->fields()) {
                     ok = visit(field) && ok;
                 }
                 break;
             }
-            case Kind::ModModField: {
-                auto field = dynamic_cast<ModExp::ModuleField*>(node);
+            case Kind::NativeModExp_ModField: {
+                auto field = dynamic_cast<NativeModExp::ModuleField*>(node);
                 ok = visit(field->rhs_mod_exp()) && ok;
                 break;
             }
-            case Kind::ValueModField: {
-                auto field = dynamic_cast<ModExp::ValueField*>(node);
+            case Kind::NativeModExp_ValueField: {
+                auto field = dynamic_cast<NativeModExp::ValueField*>(node);
                 ok = visit(field->rhs_exp()) && ok;
                 break;
             }
-            case Kind::TypeModField: {
-                auto field = dynamic_cast<ModExp::TypeField*>(node);
+            case Kind::NativeModExp_TypeField: {
+                auto field = dynamic_cast<NativeModExp::TypeField*>(node);
                 ok = visit(field->rhs_type_spec()) && ok;
                 break;
             }
-            case Kind::ClassModField: {
-                auto field = dynamic_cast<ModExp::ClassField*>(node);
+            case Kind::NativeModExp_ClassField: {
+                auto field = dynamic_cast<NativeModExp::ClassField*>(node);
                 ok = visit(field->rhs_class_spec()) && ok;
                 break;
             }
 
             case Kind::ModAddress: {
                 auto address = dynamic_cast<ModAddress*>(node);
+
+                if (address->opt_parent_address()) {
+                    ok = visit(address->opt_parent_address()) && ok;
+                }
+
                 for (ast::TArg* template_arg: address->template_args()) {
                     ok = visit(template_arg) && ok;
                 }
@@ -117,9 +122,20 @@ namespace pdm::ast {
                 break;
             }
             case Kind::ImportStmt:
+            case Kind::ImportStmt_Field:
+            {
+                // instead of visiting fields, we just use a 'for' loop for now.
+                break;
+            }
             case Kind::UsingStmt:
             {
                 // no children
+                break;
+            }
+
+            case Kind::ExternModExp:
+            case Kind::PkgBundleModExp:
+            {
                 break;
             }
 
@@ -406,31 +422,40 @@ namespace pdm::ast {
                 visit_order
             );
 
-            // modules:
-            case Kind::ModExp: return on_visit_mod_exp(
-                dynamic_cast<ModExp*>(node),
+            // native modules:
+            case Kind::NativeModExp: return on_visit_mod_exp(
+                dynamic_cast<NativeModExp*>(node),
                 visit_order
             );
-            case Kind::ModModField: return on_visit_mod_mod_field(
-                dynamic_cast<ModExp::ModuleField*>(node),
+            case Kind::NativeModExp_ModField: return on_visit_mod_mod_field(
+                dynamic_cast<NativeModExp::ModuleField*>(node),
                 visit_order
             );
-            case Kind::ClassModField: return on_visit_class_mod_field(
-                dynamic_cast<ModExp::ClassField*>(node),
+            case Kind::NativeModExp_ClassField: return on_visit_class_mod_field(
+                dynamic_cast<NativeModExp::ClassField*>(node),
                 visit_order
             );
-            case Kind::TypeModField: return on_visit_type_mod_field(
-                dynamic_cast<ModExp::TypeField*>(node),
+            case Kind::NativeModExp_TypeField: return on_visit_type_mod_field(
+                dynamic_cast<NativeModExp::TypeField*>(node),
                 visit_order
             );
-            case Kind::ValueModField: return on_visit_value_mod_field(
-                dynamic_cast<ModExp::ValueField*>(node),
+            case Kind::NativeModExp_ValueField: return on_visit_value_mod_field(
+                dynamic_cast<NativeModExp::ValueField*>(node),
                 visit_order
             );
             case Kind::ModAddress: return on_visit_mod_address(
                 dynamic_cast<ModAddress*>(node),
                 visit_order
             );
+
+            // IGNORE:
+            // extern modules:
+            // package (bundle) modules:
+            case Kind::ExternModExp:
+            case Kind::PkgBundleModExp:
+            {
+                return true;
+            }
 
             // statements:
             case Kind::DiscardStmt: return on_visit_discard_stmt(
@@ -626,6 +651,14 @@ namespace pdm::ast {
             {
                 if (pdm::DEBUG) {
                     assert(0 && "DISABLED: Cannot invoke Visitor on Package instances.");
+                }
+                return false;
+            }
+
+            case Kind::ImportStmt_Field:
+            {
+                if (pdm::DEBUG) {
+                    assert(0 && "DISABLED: Cannot invoke Visitor on ImportStmt_Field instances.");
                 }
                 return false;
             }

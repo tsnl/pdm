@@ -16,13 +16,17 @@ namespace pdm::printer {
         std::ostream& m_ostream_ref;
         int           m_indent_count;
         char const*   m_indent_text;
+        intern::String m_target_name;
 
       // constructor:
       public:
-        Printer(std::ostream& ostream_ref, char const* indent_text = "    ")
+        explicit
+        Printer(std::ostream& ostream_ref, intern::String target_name = {}, char const* indent_text = "    ")
         :   m_ostream_ref(ostream_ref),
             m_indent_count(0),
-            m_indent_text(indent_text) {}
+            m_indent_text(indent_text),
+            m_target_name(target_name)
+        {}
 
       public:
         void print_newline();
@@ -34,13 +38,22 @@ namespace pdm::printer {
         void print_c_str(char const* cstr);
         void print_str(std::string const& s);
         void print_u8_str(utf8::String const& s);
-        void print_intstr(intern::String const& s);
+        void print_int_str(intern::String const& s);
 
         void print_uint_dec(u64 u);
         void print_uint_hex(u64 u);
         void print_float(long double float_val);
 
         void print_node(ast::Node* node);
+
+        void print_json_list(
+            std::vector<std::string> const& list
+        );
+
+        void print_json_list_from_2_lists(
+            std::vector<std::string> const& list1,
+            std::vector<std::string> const& list2
+        );
 
       // visit overloads:
       private:
@@ -50,11 +63,11 @@ namespace pdm::printer {
         void print_script_field(ast::Script::Field* field);
 
         // modules:
-        void print_mod_exp(ast::ModExp* mod_exp);
-        void print_mod_mod_field(ast::ModExp::ModuleField* field);
-        void print_value_mod_field(ast::ModExp::ValueField* field);
-        void print_type_mod_field(ast::ModExp::TypeField* field);
-        void print_class_mod_field(ast::ModExp::ClassField* field);
+        void print_mod_exp(ast::NativeModExp* mod_exp);
+        void print_mod_mod_field(ast::NativeModExp::ModuleField* field);
+        void print_value_mod_field(ast::NativeModExp::ValueField* field);
+        void print_type_mod_field(ast::NativeModExp::TypeField* field);
+        void print_class_mod_field(ast::NativeModExp::ClassField* field);
         void print_mod_address(ast::ModAddress* mod_address);
 
         // statements:
@@ -113,6 +126,15 @@ namespace pdm::printer {
 
         // non-syntactic elements:
         void print_builtin_type_stmt(ast::BuiltinStmt* node);
+
+        // packages:
+        void print_package(ast::Package* package);
+        void print_package_export_field_for_extern_module_in_c(
+            ast::Package::ExportField_ExternModuleInC* field
+        );
+        void print_package_export_field_for_import_all_modules_from(
+            ast::Package::ExportField_ImportAllModulesFrom* extern_field
+        );
     };
 
 }

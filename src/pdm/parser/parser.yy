@@ -83,11 +83,9 @@
 // Modules:
 //
 
-%type <pdm::ast::ModExp*> mod_exp
-%type <std::vector<pdm::ast::ModExp::Field*>> mod_field_sl
-%type <pdm::ast::ModExp::Field*> mod_field
-
-%type <pdm::ast::TPattern*> using_tpattern
+%type <pdm::ast::BaseModExp*> native_mod_exp
+%type <std::vector<pdm::ast::BaseModExp::Field*>> mod_field_sl
+%type <pdm::ast::BaseModExp::Field*> mod_field
 
 //
 // Stmt:
@@ -292,7 +290,7 @@ script_header_stmt
     ;
 
 script_field
-    : KW_MOD vid mod_exp  { $$ = mgr->new_script_field(@$, $2.ID_intstr, $3); }
+    : KW_MOD vid native_mod_exp  { $$ = mgr->new_script_field(@$, $2.ID_intstr, $3); }
     ;
 script_field_sl
     : script_field SEMICOLON                    { $$.push_back($1); }
@@ -303,24 +301,21 @@ script_field_sl
  * Modules:
  */
 
-mod_exp
-    : LCYBRK                mod_field_sl RCYBRK     { $$ = mgr->new_mod_exp(@$, nullptr, std::move($2)); }
-    | LCYBRK using_tpattern mod_field_sl RCYBRK     { $$ = mgr->new_mod_exp(@$, $2, std::move($3)); }
-    | LCYBRK                             RCYBRK     { $$ = mgr->new_mod_exp(@$, nullptr, std::move(std::vector<ast::ModExp::Field*>{})); }
-    | LCYBRK using_tpattern              RCYBRK     { $$ = mgr->new_mod_exp(@$, $2, std::move(std::vector<ast::ModExp::Field*>{})); }
+native_mod_exp
+    :          LCYBRK mod_field_sl RCYBRK     { $$ = mgr->new_native_mod_exp(@$, nullptr, std::move($2)); }
+    | tpattern LCYBRK mod_field_sl RCYBRK     { $$ = mgr->new_native_mod_exp(@$, $1, std::move($3)); }
+    |          LCYBRK              RCYBRK     { $$ = mgr->new_native_mod_exp(@$, nullptr, std::move(std::vector<ast::BaseModExp::Field*>{})); }
+    | tpattern LCYBRK              RCYBRK     { $$ = mgr->new_native_mod_exp(@$, $1, std::move(std::vector<ast::BaseModExp::Field*>{})); }
     ;
 mod_field_sl
-    : mod_field SEMICOLON               { $$.push_back($1); }
+    :              mod_field SEMICOLON  { $$.push_back($1); }
     | mod_field_sl mod_field SEMICOLON  { $$ = std::move($1); $$.push_back($2); }
     ;
 mod_field
-    : vid BIND long_exp    { $$ = mgr->new_value_mod_field(@$, $1.ID_intstr, $3); }
-    | tid BIND type_spec   { $$ = mgr->new_type_mod_field(@$, $1.ID_intstr, $3); }
-    | cid BIND class_spec  { $$ = mgr->new_class_mod_field(@$, $1.ID_intstr, $3); }
-    | KW_MOD vid mod_exp   { $$ = mgr->new_mod_mod_field(@$, $2.ID_intstr, $3); }
-    ;
-using_tpattern
-    : KW_USING tpattern SEMICOLON   { $$ = $2; }
+    : vid BIND long_exp    { $$ = mgr->new_value_field_for_mod_exp(@$, $1.ID_intstr, $3); }
+    | tid BIND type_spec   { $$ = mgr->new_type_field_for_mod_exp(@$, $1.ID_intstr, $3); }
+    | cid BIND class_spec  { $$ = mgr->new_class_field_for_mod_exp(@$, $1.ID_intstr, $3); }
+    | KW_MOD vid native_mod_exp   { $$ = mgr->new_mod_field_for_mod_exp(@$, $2.ID_intstr, $3); }
     ;
 
 /*

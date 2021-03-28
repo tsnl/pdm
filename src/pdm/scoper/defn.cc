@@ -16,16 +16,17 @@ namespace pdm::scoper {
             case DefnKind::TypeclassCandidate: return "TypeclassCandidate";
             case DefnKind::Using: return "Using";
             case DefnKind::Import: return "Import";
-            case DefnKind::ExternObject: return "ExternObject";
+            case DefnKind::Package_ExternModule: return "Package_ExternModule";
+            case DefnKind::Package_ImportBundleModule: return "Package_ImportBundleModule";
             case DefnKind::FormalVArg: return "FormalVArg";
             case DefnKind::FormalTArg: return "FormalTArg";
-            case DefnKind::IGNORE_FnTypeSpecFormalVArg: return "IGNORE_FnTypeSpecFormalVArg";
+            case DefnKind::NO_DEF_FnTypeSpecFormalVArg: return "NO_DEF_FnTypeSpecFormalVArg";
         }
         return nullptr;
     }
 
     void Defn::print(printer::Printer& p) const {
-        p.print_intstr(name());
+        p.print_int_str(name());
         p.print_c_str(":");
         p.print_c_str(defn_kind_as_text(kind()));
     }

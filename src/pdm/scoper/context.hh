@@ -20,7 +20,8 @@ namespace pdm::scoper {
     enum class ContextKind {
         // contexts containing Defns:
         RootDefs,             // contains all primitives, builtins in one context
-        ScriptDefs,           // contains all modules in a script in one context  (out)
+        ScriptDefs,           // contains all modules in a script in one context
+        PackageDefs,          // contains all modules in a package in one context
         ModuleDefs,           // contains all constants/defns in a module in one context (out of order query) [fn,const]
         TPatternDefs,         // contains all defns in a TPattern
         VPatternDefs,         // contains all defns in a VPattern

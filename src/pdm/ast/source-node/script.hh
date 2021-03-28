@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "./i_source_node.hh"
+#include "./i-source-node.hh"
 #include "pdm/core/intern.hh"
 #include "pdm/source/i-source.hh"
 #include "pdm/source/loc.hh"
@@ -11,7 +11,7 @@
 namespace pdm::ast {
     class Manager;
     class HeaderStmt;
-    class ModExp;
+    class BaseModExp;
 }
 namespace pdm::scoper {
     class Frame;
@@ -22,6 +22,7 @@ namespace pdm::types {
 
 namespace pdm::ast {
 
+    // A Script is a source node that is a collection of native modules.
     class Script: public ISourceNode {
         friend Manager;
 
@@ -29,15 +30,15 @@ namespace pdm::ast {
         class Field: public Node {
           private:
             intern::String  m_name;
-            ModExp*         m_rhs_mod_exp;
+            BaseModExp*     m_rhs_mod_exp;
             types::TypeVar* m_x_defn_var;
 
           public:
-            Field(source::Loc loc, intern::String name, ModExp* rhs_mod_exp);
+            Field(source::Loc loc, intern::String name, BaseModExp* rhs_mod_exp);
 
           public:
             [[nodiscard]] intern::String name() const;
-            [[nodiscard]] ModExp* rhs_mod_exp() const;
+            [[nodiscard]] BaseModExp* rhs_mod_exp() const;
           
           public:
             [[nodiscard]] types::TypeVar* x_defn_var() const;
@@ -47,40 +48,48 @@ namespace pdm::ast {
       private:
         std::vector<HeaderStmt*> m_header_stmts;
         std::vector<Script::Field*> m_body_fields;
-        scoper::Frame* m_x_script_frame;
 
       protected:
         Script(
             source::ISource* source,
             source::Loc loc,
-            std::vector<HeaderStmt*>&& head_stmts,
+            std::vector<HeaderStmt*>&& header_stmts,
             std::vector<Script::Field*>&& body_fields
         );
 
       public:
         [[nodiscard]] std::vector<HeaderStmt*> const& header_stmts() const;
         [[nodiscard]] std::vector<Script::Field*> const& body_fields() const;
-
-      public:
-        [[nodiscard]] scoper::Frame* x_script_frame() const;
-        void x_script_frame(scoper::Frame* frame);
     };
 
     //
     // Inline implementations:
     //
 
-    inline Script::Field::Field(source::Loc loc, intern::String name, ModExp *rhs_mod_exp)
+    inline
+    Script::Script(
+        source::ISource* source,
+        source::Loc loc,
+        std::vector<HeaderStmt*>&& header_stmts,
+        std::vector<Script::Field*>&& body_fields
+    )
+    :   ISourceNode(source, loc, Kind::Script),
+        m_header_stmts(std::move(header_stmts)),
+        m_body_fields(std::move(body_fields))
+    {}
+
+    inline Script::Field::Field(source::Loc loc, intern::String name, BaseModExp *rhs_mod_exp)
     :   Node(loc, ast::Kind::ScriptField),
         m_name(name),
-        m_rhs_mod_exp(rhs_mod_exp)
+        m_rhs_mod_exp(rhs_mod_exp),
+        m_x_defn_var(nullptr)
     {}
 
     inline intern::String Script::Field::name() const {
         return m_name;
     }
 
-    inline ModExp* Script::Field::rhs_mod_exp() const {
+    inline BaseModExp* Script::Field::rhs_mod_exp() const {
         return m_rhs_mod_exp;
     }
 
@@ -99,15 +108,6 @@ namespace pdm::ast {
     inline std::vector<Script::Field*> const& Script::body_fields() const {
         return m_body_fields;
     }
-
-    inline scoper::Frame* Script::x_script_frame() const {
-        return m_x_script_frame;
-    }
-
-    inline void Script::x_script_frame(scoper::Frame* frame) {
-        m_x_script_frame = frame;
-    }
-
 
 }   // namespace pdm::ast
 

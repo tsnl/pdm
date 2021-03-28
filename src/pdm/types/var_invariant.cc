@@ -92,7 +92,7 @@ namespace pdm::types {
     void IsStructInvariant::print(printer::Printer &printer) const {
         printer.print_c_str("(KD) IsStructInvariant{");
         for (auto const& field: fields()) {
-            printer.print_intstr(field.first);
+            printer.print_int_str(field.first);
             printer.print_c_str(":");
             field.second->print_title(printer);
             printer.print_c_str(",");
@@ -116,7 +116,7 @@ namespace pdm::types {
     void IsEnumInvariant::print(printer::Printer &printer) const {
         printer.print_c_str("(KD) IsEnumInvariant{");
         for (auto const& field: fields()) {
-            printer.print_intstr(field.first);
+            printer.print_int_str(field.first);
             printer.print_c_str(":");
             field.second->print_title(printer);
             printer.print_c_str(",");
@@ -140,7 +140,7 @@ namespace pdm::types {
     void IsModuleInvariant::print(printer::Printer &printer) const {
         printer.print_c_str("(KD) IsModuleInvariant{");
         for (auto const& field: fields()) {
-            printer.print_intstr(field.first);
+            printer.print_int_str(field.first);
             printer.print_c_str(":");
             field.second->print_title(printer);
             printer.print_c_str(",");

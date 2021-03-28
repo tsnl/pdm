@@ -1,10 +1,8 @@
-mod optional {
-    using [
-        DataType ANY
-    ];
+mod optional [DataType ANY] {
 
     Optional = enum {
         Some DataType,
         None
     };
+
 };

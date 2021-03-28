@@ -1,6 +1,6 @@
 #include "parser.hh"
 
-#include <iostream>
+// #include <iostream>
 #include <fstream>
 #include <filesystem>
 #include <string>
@@ -9,6 +9,8 @@
 #include <json/single_include/nlohmann/json.hpp>
 
 #include "pdm/ast/source-node/package.hh"
+#include "pdm/ast/module/extern-c-mod-exp.hh"
+#include "pdm/ast/module/pkg-bundle-mod-exp.hh"
 #include "pdm/ast/manager.hh"
 
 #include "pdm/compiler/platform.hh"
@@ -21,8 +23,8 @@ using Package_ImportAllModulesFrom = pdm::ast::Package::ExportField_ImportAllMod
 namespace pdm::parser {
 
     struct Parser {
-        std::string const kind_str_for_import_all_modules_from;
-        std::string const kind_str_for_extern_module_in_c;
+        std::string const kind_str_for_IMPORT_ALL_MODULES_FROM;
+        std::string const kind_str_for_EXTERN_MODULE_IN_C;
         std::string const index_file_name;
 
         Parser();
@@ -31,13 +33,13 @@ namespace pdm::parser {
         parse_package(ast::Manager* manager, source::LocalPackageSource* source);
 
         std::optional<Package_ExternModuleInC::CompilerArgs>
-        parse_compiler_args_object(json core_compiler_args);
+        parse_compiler_args_object(json args_json);
     };
 
     Parser::Parser()
-    :   kind_str_for_import_all_modules_from("IMPORT_ALL_MODULES_FROM"),
-        kind_str_for_extern_module_in_c("EXTERN_MODULE_IN_C"),
-        index_file_name("pd-index.json")
+    : kind_str_for_IMPORT_ALL_MODULES_FROM("IMPORT_ALL_MODULES_FROM"),
+      kind_str_for_EXTERN_MODULE_IN_C("EXTERN_MODULE_IN_C"),
+      index_file_name("pd-index.json")
     {
         intern::String::ensure_init();
     }
@@ -96,6 +98,7 @@ namespace pdm::parser {
                 }
 
                 auto lhs_str = lhs.get<std::string>();
+                intern::String lhs_int_str{lhs_str.c_str()};
 
                 json rhs_kind = rhs["kind"];
                 auto rhs_kind_str = rhs_kind.get<std::string>();
@@ -103,8 +106,8 @@ namespace pdm::parser {
                 // dispatching to resolve each kind of module:
                 ast::Package::ExportField* export_field;
                 {
-                    if (rhs_kind_str == kind_str_for_import_all_modules_from) {
-                        std::cout << "IMPORT_ALL_MODULES_FROM" << ' ' << lhs_str << std::endl;
+                    if (rhs_kind_str == kind_str_for_IMPORT_ALL_MODULES_FROM) {
+                        // std::cout << "IMPORT_ALL_MODULES_FROM" << ' ' << lhs_str << std::endl;
                         // assert(0 && "NotImplemented: parsing IMPORT_ALL_MODULES_FROM");
 
                         if (!rhs.contains("path")) {
@@ -117,12 +120,12 @@ namespace pdm::parser {
                         auto path_json_str = path_json.get<std::string>();
 
                         export_field = manager->new_package_export_field_for_import_modules_from(
-                            {},
+                            {}, lhs_int_str,
                             std::move(path_json_str)
                         );
                     }
-                    else if (rhs_kind_str == kind_str_for_extern_module_in_c) {
-                        std::cout << "EXTERN_MODULE_IN_C" << ' ' << lhs_str << std::endl;
+                    else if (rhs_kind_str == kind_str_for_EXTERN_MODULE_IN_C) {
+                        // std::cout << "EXTERN_MODULE_IN_C" << ' ' << lhs_str << std::endl;
 
                         source::Loc loc{};
                         Package_ExternModuleInC::CoreCompilerArgs core_compiler_args;
@@ -180,8 +183,9 @@ namespace pdm::parser {
                             }
                         }
 
+                        // creating an export field, and an associated module:
                         export_field = manager->new_package_export_field_for_extern_module_in_c(
-                            loc,
+                            loc, lhs_int_str,
                             std::move(core_compiler_args),
                             std::move(platform_compiler_args)
                         );
@@ -204,7 +208,7 @@ namespace pdm::parser {
                 goto only_upon_failure;
             }
 
-            std::cout << "src:" << std::endl;
+            // std::cout << "src:" << std::endl;
             parsed_args.src.reserve(src_array.size());
             for (auto const& it: src_array) {
                 if (!it.is_string()) {
@@ -213,17 +217,17 @@ namespace pdm::parser {
                 }
                 auto arg_text = it.get<std::string>();
                 parsed_args.src.push_back(arg_text);
-                std::cout << "- " << arg_text << std::endl;
+                // std::cout << "- " << arg_text << std::endl;
             }
         }
         if (args_json.contains("lib")) {
             json lib_array = args_json["lib"];
             if (!lib_array.is_array()) {
-                assert(0 && "NotImplemented: parsing an array for 'lib'.");
+                assert(0 && "NotImplemented: expected an array for 'lib'.");
                 goto only_upon_failure;
             }
 
-            std::cout << "lib:" << std::endl;
+            // std::cout << "lib:" << std::endl;
             for (auto const& it: lib_array) {
                 if (!it.is_string()) {
                     assert(0 && "NotImplemented: expected a string file path entry for 'src'.");
@@ -231,17 +235,17 @@ namespace pdm::parser {
                 }
                 auto arg_text = it.get<std::string>();
                 parsed_args.lib.push_back(arg_text);
-                std::cout << "- " << arg_text << std::endl;
+                // std::cout << "- " << arg_text << std::endl;
             }
         }
         if (args_json.contains("include")) {
             json include_array = args_json["include"];
             if (!include_array.is_array()) {
-                assert(0 && "NotImplemented: parsing an array for 'include'.");
+                assert(0 && "NotImplemented: expected an array for 'include'.");
                 goto only_upon_failure;
             }
 
-            std::cout << "include:" << std::endl;
+            // std::cout << "include:" << std::endl;
             for (auto const& it: include_array) {
                 if (!it.is_string()) {
                     assert(0 && "NotImplemented: expected a string file path entry for 'src'.");
@@ -249,7 +253,7 @@ namespace pdm::parser {
                 }
                 auto arg_text = it.get<std::string>();
                 parsed_args.include.push_back(arg_text);
-                std::cout << "- " << arg_text << std::endl;
+                // std::cout << "- " << arg_text << std::endl;
             }
         }
 

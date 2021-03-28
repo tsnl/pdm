@@ -1,4 +1,4 @@
-#include "dependency_dispatcher.hh"
+#include "dependency-dispatcher.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -14,6 +14,7 @@
 #include "pdm/ast/pattern/vpattern.hh"
 #include "pdm/ast/pattern/lpattern.hh"
 #include "pdm/ast/pattern/tpattern.hh"
+#include "pdm/ast/module/pkg-bundle-mod-exp.hh"
 
 #include "pdm/feedback/feedback.hh"
 #include "pdm/feedback/letter.hh"
@@ -24,8 +25,8 @@ namespace pdm::dependency_dispatcher {
 
     class ScriptDDVisitor: public ast::TinyVisitor {
       private:
-        Compiler* m_compiler_ref;
-        ast::Script*        m_this_script;
+        Compiler*    m_compiler_ref;
+        ast::Script* m_this_script;
 
       public:
         ScriptDDVisitor(Compiler* compiler_ref, ast::Script* this_script)
@@ -113,6 +114,8 @@ namespace pdm::dependency_dispatcher {
                 // assigning the imported source node to each field group:
                 for (auto field: field_group->fields()) {
                     field->x_origin_source_node(imported_source_node);
+                    assert(imported_source_node->x_container_mod_exp() && "Expected x_container_mod_exp.");
+                    field->x_origin_mod_exp(imported_source_node->x_container_mod_exp());
                 }
             }
             return ok;
@@ -123,53 +126,101 @@ namespace pdm::dependency_dispatcher {
 
 }
 
+//
+// The primary role of DD for packages is setting
+// - the 'mod_exp' property for 'Package::ExportField'
+// - and the 'x_bundle_mod_exp' property for 'Package'
+//
+// This cannot be done earlier since we need to dispatch
+// referenced scripts and packages before exporting their
+// fields.
+//
+
 namespace pdm::dependency_dispatcher {
 
-    void dispatch_extern_module_in_c(Compiler* compiler, ast::Package::ExportField_ExternModuleInC* field) {
+    void dispatch_extern_module_in_c(
+        Compiler* compiler,
+        ast::Package* package,
+        ast::Package::ExportField_ExternModuleInC* field
+    ) {
         std::cout << "TODO: Compiling C module with Clang:" << std::endl;
 
-        intern::String compiler_target_name = compiler->target_name();
         ast::Package::ExportField_ExternModuleInC::CoreCompilerArgs const&
         core_args_ref = field->core_compiler_args();
 
-        ast::Package::ExportField_ExternModuleInC::PlatformCompilerArgs const&
-        platform_args_ref = field->platform_compiler_args();
+        ast::Package::ExportField_ExternModuleInC::CompilerArgs const* opt_platform_args;
+        {
+            intern::String compiler_target_name = compiler->target_name();
 
-        std::cout << "include:" << std::endl;
-        for (auto const& it: core_args_ref.include) {
-            std::cout << "- " << it << std::endl;
-        }
-        if (platform_args_ref.contains(compiler_target_name)) {
-            for (auto const& it: platform_args_ref.find(compiler_target_name)->second.include) {
-                std::cout << "- " << it << std::endl;
+            auto const& platform_args_ref = field->platform_compiler_args();
+
+            auto active_platform_args_it = platform_args_ref.find(compiler_target_name);
+            if (active_platform_args_it != platform_args_ref.end()) {
+                opt_platform_args = &active_platform_args_it->second;
             }
         }
 
-        std::cout << "lib:" << std::endl;
-        for (auto const& it: core_args_ref.lib) {
-            std::cout << "- " << it << std::endl;
-        }
-        if (platform_args_ref.contains(compiler_target_name)) {
-            for (auto const& it: platform_args_ref.find(compiler_target_name)->second.lib) {
-                std::cout << "- " << it << std::endl;
+        auto const print_extern = false;
+        if (print_extern) {
+            std::cout << "* include:" << std::endl;
+            for (auto const& it: core_args_ref.include) {
+                std::cout << "  - " << it << std::endl;
             }
-        }
+            if (opt_platform_args) {
+                for (auto const& it: opt_platform_args->include) {
+                    std::cout << "  - " << it << std::endl;
+                }
+            }
 
-        std::cout << "src:" << std::endl;
-        for (auto const& it: core_args_ref.src) {
-            std::cout << "- " << it << std::endl;
-        }
-        if (platform_args_ref.contains(compiler_target_name)) {
-            for (auto const& it: platform_args_ref.find(compiler_target_name)->second.src) {
-                std::cout << "- " << it << std::endl;
+            std::cout << "* lib:" << std::endl;
+            for (auto const& it: core_args_ref.lib) {
+                std::cout << "  - " << it << std::endl;
+            }
+            if (opt_platform_args) {
+                for (auto const& it: opt_platform_args->lib) {
+                    std::cout << "  - " << it << std::endl;
+                }
+            }
+
+            std::cout << "* src:" << std::endl;
+            for (auto const& it: core_args_ref.src) {
+                std::cout << "  - " << it << std::endl;
+            }
+            if (opt_platform_args) {
+                for (auto const& it: opt_platform_args->src) {
+                    std::cout << "  - " << it << std::endl;
+                }
             }
         }
 
         // LLVM dispatches C dependencies from here.
+
+        // todo: initialize interface_fields from C source code here!
+        std::vector<ast::BaseModExp::Field*> interface_fields;
+        auto extern_c_mod_exp = compiler->ast_mgr()->new_extern_c_mod_exp(field->loc(), std::move(interface_fields));
+        field->mod_exp(extern_c_mod_exp);
     }
 
-    void dispatch_import_all_modules_from(Compiler* compiler, ast::Package::ExportField_ImportAllModulesFrom* field) {
-        assert(0 && "NotImplemented: dependency dispatch for IMPORT_ALL_MODULES_FROM.");
+    void dispatch_import_all_modules_from(
+        Compiler* compiler,
+        ast::Package* package,
+        ast::Package::ExportField_ImportAllModulesFrom* field
+    ) {
+        std::string reason = "packaged import field: '" + field->name().cpp_str() + "'";
+
+        std::filesystem::path package_dir_path {package->source()->abs_path()};
+        std::filesystem::path target_path = std::filesystem::canonical(package_dir_path / field->path());
+        auto imported_source_node = compiler->import(target_path, reason);
+        if (!imported_source_node) {
+            assert(0 && "NotImplemented: report failed import.");
+        }
+
+        // todo: assert that imported sources are dependency-dispatched already, i.e. no cycles.
+
+        // Importing the source-node's 'container' module:
+        std::vector<ast::BaseModExp::Field*> imported_fields;
+        field->mod_exp(imported_source_node->x_container_mod_exp());
+        field->x_origin_source_node(imported_source_node);
     }
 
 }
@@ -178,22 +229,45 @@ namespace pdm::dependency_dispatcher {
 
     void dispatch_script_dependencies(Compiler* compiler, ast::Script* script) {
         dependency_dispatcher::ScriptDDVisitor dd_visitor{compiler, script};
+
+        // creating and storing the module expression & the origin source node:
+        std::vector<ast::BaseModExp::Field*> container_mod_fields;
+        container_mod_fields.reserve(script->body_fields().size());
+        for (ast::Script::Field* script_field: script->body_fields()) {
+            container_mod_fields.push_back(
+                compiler->ast_mgr()->new_mod_field_for_mod_exp(
+                    script_field->loc(),
+                    script_field->name(),
+                    script_field->rhs_mod_exp()
+                )
+            );
+        }
+        auto container_mod_exp = compiler->ast_mgr()->new_pkg_bundle_mod_exp(
+            script->loc(),
+            std::move(container_mod_fields)
+        );
+        script->x_container_mod_exp(container_mod_exp);
         dd_visitor.visit(script);
     }
 
     void dispatch_package_dependencies(Compiler* compiler, ast::Package* package) {
+
+        // iterating through package export fields, dispatching, and collating exported module fields.
+        size_t export_fields_count = package->exports_fields().size();
+        std::vector<ast::BaseModExp::Field*> package_container_fields;
+        package_container_fields.reserve(export_fields_count);
         for (ast::Package::ExportField* base_export_field: package->exports_fields()) {
             switch (base_export_field->kind()) {
                 case ast::Kind::PackageExportField_ExternModuleInC:
                 {
                     auto field = dynamic_cast<ast::Package::ExportField_ExternModuleInC*>(base_export_field);
-                    dispatch_extern_module_in_c(compiler, field);
+                    dispatch_extern_module_in_c(compiler, package, field);
                     break;
                 }
                 case ast::Kind::PackageExportField_ImportAllModulesFrom:
                 {
                     auto field = dynamic_cast<ast::Package::ExportField_ImportAllModulesFrom*>(base_export_field);
-                    dispatch_import_all_modules_from(compiler, field);
+                    dispatch_import_all_modules_from(compiler, package, field);
                     break;
                 }
                 default:
@@ -202,7 +276,25 @@ namespace pdm::dependency_dispatcher {
                     break;
                 }
             }
+            assert(
+                base_export_field->mod_exp() &&
+                "Expected `field->mod_exp()` after dispatching from IMPORT_ALL field."
+            );
+            package_container_fields.push_back(
+                compiler->ast_mgr()->new_mod_field_for_mod_exp(
+                    base_export_field->loc(),
+                    base_export_field->name(),
+                    base_export_field->mod_exp()
+                )
+            );
         }
+
+        // setting the container module expression:
+        auto bundle_mod_exp = compiler->ast_mgr()->new_pkg_bundle_mod_exp(
+            package->loc(),
+            std::move(package_container_fields)
+        );
+        package->x_container_mod_exp(bundle_mod_exp);
     }
 
 }

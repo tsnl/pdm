@@ -6,6 +6,11 @@
 
 #include "source-kind.hh"
 
+
+namespace pdm::scoper {
+    class Frame;
+}
+
 namespace pdm::source {
 
     class ISource {
@@ -39,7 +44,6 @@ namespace pdm::source {
     inline SourceKind ISource::source_kind() const {
         return m_source_kind;
     }
-
 
 }   // namespace pdm::source
 

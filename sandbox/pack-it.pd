@@ -5,7 +5,8 @@ imports {
 
 mod pack_it {
     main = fn () Int32 {
-        val uid_tuple = (alice::about.uid, brittany::about::uid, charlie::about::uid);
+        # val uid_tuple = (alice::about.uid, brittany::about::uid, charlie::about::uid);
+        val uid_tuple = (brittany::about::uid, charlie::about::uid);
         val random_int = greetings::random();
         val arbitrary_sum = uid_tuple.0 + random_int;
         arbitrary_sum

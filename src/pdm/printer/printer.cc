@@ -79,7 +79,7 @@ namespace pdm::printer {
         }
         // print_cstr(s.const_data());
     }
-    void Printer::print_intstr(intern::String const& s) {
+    void Printer::print_int_str(intern::String const& s) {
         char const* cstr = s.content();
         print_c_str(cstr);
     }
@@ -115,29 +115,29 @@ namespace pdm::printer {
             }
 
             // modules:
-            case ast::Kind::ModExp:
+            case ast::Kind::NativeModExp:
             {
-                print_mod_exp(dynamic_cast<ast::ModExp*>(node));
+                print_mod_exp(dynamic_cast<ast::NativeModExp*>(node));
                 break;
             }
-            case ast::Kind::ModModField:
+            case ast::Kind::NativeModExp_ModField:
             {
-                print_mod_mod_field(dynamic_cast<ast::ModExp::ModuleField*>(node));
+                print_mod_mod_field(dynamic_cast<ast::NativeModExp::ModuleField*>(node));
                 break;
             }
-            case ast::Kind::ValueModField:
+            case ast::Kind::NativeModExp_ValueField:
             {
-                print_value_mod_field(dynamic_cast<ast::ModExp::ValueField*>(node));
+                print_value_mod_field(dynamic_cast<ast::NativeModExp::ValueField*>(node));
                 break;
             }
-            case ast::Kind::TypeModField:
+            case ast::Kind::NativeModExp_TypeField:
             {
-                print_type_mod_field(dynamic_cast<ast::ModExp::TypeField*>(node));
+                print_type_mod_field(dynamic_cast<ast::NativeModExp::TypeField*>(node));
                 break;
             }
-            case ast::Kind::ClassModField:
+            case ast::Kind::NativeModExp_ClassField:
             {
-                print_class_mod_field(dynamic_cast<ast::ModExp::ClassField*>(node));
+                print_class_mod_field(dynamic_cast<ast::NativeModExp::ClassField*>(node));
                 break;
             }
             case ast::Kind::ModAddress:
@@ -355,6 +355,24 @@ namespace pdm::printer {
                 break;
             }
 
+            // packages:
+            case ast::Kind::Package: {
+                print_package(dynamic_cast<ast::Package*>(node));
+                break;
+            }
+            case ast::Kind::PackageExportField_ExternModuleInC: {
+                print_package_export_field_for_extern_module_in_c(
+                    dynamic_cast<ast::Package::ExportField_ExternModuleInC*>(node)
+                );
+                break;
+            }
+            case ast::Kind::PackageExportField_ImportAllModulesFrom: {
+                print_package_export_field_for_import_all_modules_from(
+                    dynamic_cast<ast::Package::ExportField_ImportAllModulesFrom*>(node)
+                );
+                break;
+            }
+
             // illegal elements:
             default:
             {
@@ -400,27 +418,26 @@ namespace pdm::printer {
     }
     void Printer::print_script_field(ast::Script::Field* node) {
         print_c_str("mod ");
-        print_intstr(node->name());
+        print_int_str(node->name());
         print_c_str(" ");
         print_node(node->rhs_mod_exp());
     }
 
     // modules:
-    void Printer::print_mod_exp(ast::ModExp* node) {
+    void Printer::print_mod_exp(ast::NativeModExp* node) {
+        if (node->opt_template_pattern()) {
+            print_node(node->opt_template_pattern());
+            if (!node->fields().empty()) {
+                print_newline();
+            }
+        }
+
         print_c_str("{");
         print_newline_indent();
         {
-            if (node->opt_template_pattern()) {
-                print_c_str("using ");
-                print_node(node->opt_template_pattern());
-                if (!node->fields().empty()) {
-                    print_newline();
-                }
-            }
-
             size_t fields_count = node->fields().size();
             for (size_t field_index = 0; field_index < fields_count; field_index++) {
-                ast::ModExp::Field* field = node->fields()[field_index];
+                ast::NativeModExp::Field* field = node->fields()[field_index];
                 print_node(field);
                 print_c_str(";");
                 if (1+field_index < fields_count) {
@@ -431,24 +448,24 @@ namespace pdm::printer {
         print_newline_exdent();
         print_c_str("}");
     }
-    void Printer::print_mod_mod_field(ast::ModExp::ModuleField* node) {
+    void Printer::print_mod_mod_field(ast::NativeModExp::ModuleField* node) {
         print_c_str("mod ");
-        print_intstr(node->name());
+        print_int_str(node->name());
         print_c_str(" ");
         print_node(node->rhs_mod_exp());
     }
-    void Printer::print_value_mod_field(ast::ModExp::ValueField* node) {
-        print_intstr(node->name());
+    void Printer::print_value_mod_field(ast::NativeModExp::ValueField* node) {
+        print_int_str(node->name());
         print_c_str(" = ");
         print_node(node->rhs_exp());
     }
-    void Printer::print_type_mod_field(ast::ModExp::TypeField* node) {
-        print_intstr(node->name());
+    void Printer::print_type_mod_field(ast::NativeModExp::TypeField* node) {
+        print_int_str(node->name());
         print_c_str(" = ");
         print_node(node->rhs_type_spec());
     }
-    void Printer::print_class_mod_field(ast::ModExp::ClassField* node) {
-        print_intstr(node->name());
+    void Printer::print_class_mod_field(ast::NativeModExp::ClassField* node) {
+        print_int_str(node->name());
         print_c_str(" = ");
         print_node(node->rhs_class_spec());
     }
@@ -457,7 +474,7 @@ namespace pdm::printer {
             print_node(mod_address->opt_parent_address());
             print_c_str("::");
         }
-        print_intstr(mod_address->rhs_name());
+        print_int_str(mod_address->rhs_name());
     }
 
     // statements:
@@ -479,7 +496,7 @@ namespace pdm::printer {
     }
     void Printer::print_extern_stmt(ast::ExternStmt* es) {
         print_c_str("package-content ");
-        print_intstr(es->ext_mod_name());
+        print_int_str(es->ext_mod_name());
         print_u32_char(' ');
         print_node(es->link_arg());
     }
@@ -495,7 +512,7 @@ namespace pdm::printer {
                 size_t field_count = field_group->fields().size();
                 for (size_t field_index = 0; field_index < field_count; field_index++) {
                     auto field = field_group->fields()[field_index];
-                    print_intstr(field->import_name());
+                    print_int_str(field->import_name());
 
                     if (field_index + 1 < field_count) {
                         print_str(", ");
@@ -519,7 +536,7 @@ namespace pdm::printer {
     }
     void Printer::print_using_stmt(ast::UsingStmt* node) {
         print_c_str("using ");
-        print_intstr(node->module_name());
+        print_int_str(node->module_name());
         print_u32_char('.');
         print_str(node->suffix());
         print_u32_char('*');
@@ -601,7 +618,7 @@ namespace pdm::printer {
         print_u32_char(se_piece.quote_char());
     }
     void Printer::print_id_exp(ast::IdExp* node) {
-        print_intstr(node->name());
+        print_int_str(node->name());
     }
     void Printer::print_paren_exp(ast::ParenExp* node) {
         print_u32_char('(');
@@ -637,7 +654,7 @@ namespace pdm::printer {
         {
             for (int index = 0; index < node->fields().size(); index++) {
                 ast::StructExp::Field* field = node->fields()[index];
-                print_intstr(field->name());
+                print_int_str(field->name());
                 print_u32_char(':');
                 print_u32_char(' ');
                 print_node(field->value());
@@ -707,7 +724,7 @@ namespace pdm::printer {
         print_node(node->lhs_vpattern());
         print_c_str(" ");
         if (node->opt_ret_typespec() != nullptr) {
-            print_c_str("-> ");
+            // print_c_str("-> ");
             print_node(node->opt_ret_typespec());
             print_c_str(" ");
         }
@@ -739,7 +756,7 @@ namespace pdm::printer {
         } else {
             print_c_str(" <dot-?> ");
         }
-        print_intstr(node->rhs_name());
+        print_int_str(node->rhs_name());
 
         if (node->rhs_hint() == ast::DotNameExp::RhsHint::LhsEnum) {
             auto self = dynamic_cast<ast::EnumDotNameExp*>(node);
@@ -755,7 +772,7 @@ namespace pdm::printer {
             print_node(node->lhs_mod_address());
             print_c_str("::");
         }
-        print_intstr(node->rhs_name());
+        print_int_str(node->rhs_name());
     }
     void Printer::print_unary_exp(ast::UnaryExp* node) {
         switch (node->unary_operator())
@@ -919,7 +936,7 @@ namespace pdm::printer {
                 }
             }
 
-            print_intstr(field->lhs_name());
+            print_int_str(field->lhs_name());
             print_u32_char(' ');
             print_node(field->rhs_typespec());
             if (index+1 != field_count) {
@@ -937,7 +954,7 @@ namespace pdm::printer {
         int field_count = node->fields().size();
         for (int index = 0; index < field_count; index++) {
             ast::TPattern::Field* field = node->fields()[index];
-            print_intstr(field->lhs_name());
+            print_int_str(field->lhs_name());
             print_u32_char(' ');
             print_node(field->rhs_set_spec());
             if (index+1 != field_count) {
@@ -953,7 +970,7 @@ namespace pdm::printer {
             int field_count = node->fields().size();
             for (int index = 0; index < field_count; index++) {
                 ast::LPattern::Field* field = node->fields()[index];
-                print_intstr(field->lhs_name());
+                print_int_str(field->lhs_name());
                 if (field->opt_rhs_typespec()) {
                     print_u32_char(' ');
                     print_node(field->opt_rhs_typespec());
@@ -969,7 +986,7 @@ namespace pdm::printer {
             print_u32_char(')');
         } else {
             ast::LPattern::Field* field = node->fields()[0];
-            print_intstr(field->lhs_name());
+            print_int_str(field->lhs_name());
             if (field->opt_rhs_typespec()) {
                 print_u32_char(' ');
                 print_node(field->opt_rhs_typespec());
@@ -979,10 +996,10 @@ namespace pdm::printer {
 
     // typespecs:
     void Printer::print_id_class_spec(ast::IdClassSpec* node) {
-        print_intstr(node->name());
+        print_int_str(node->name());
     }
     void Printer::print_id_type_spec(ast::IdTypeSpec* node) {
-        print_intstr(node->name());
+        print_int_str(node->name());
     }
     void Printer::print_fn_type_spec(ast::FnTypeSpec* node) {
         print_c_str("Fn ");
@@ -1015,7 +1032,7 @@ namespace pdm::printer {
             size_t field_count = node->fields().size();
             for (size_t index = 0; index < field_count; index++) {
                 ast::StructTypeSpec::Field* field = node->fields()[index];
-                print_intstr(field->lhs_name());
+                print_int_str(field->lhs_name());
                 print_u32_char(' ');
                 print_node(field->rhs_typespec());
                 if (index+1 < field_count) {
@@ -1035,7 +1052,7 @@ namespace pdm::printer {
             size_t field_count = node->fields().size();
             for (size_t index = 0; index < field_count; index++) {
                 ast::EnumTypeSpec::Field* field = node->fields()[index];
-                print_intstr(field->name());
+                print_int_str(field->name());
                 if (field->opt_type_spec()) {
                     print_u32_char(' ');
                     print_node(field->opt_type_spec());
@@ -1076,11 +1093,212 @@ namespace pdm::printer {
 
     // non-syntactic elements:
     void Printer::print_builtin_type_stmt(ast::BuiltinStmt* node) {
-        print_c_str("[builtin-type ");
+        print_c_str("<builtin-type-def ");
         print_u32_char('"');
         print_str(node->desc());
         print_u32_char('"');
-        print_u32_char(']');
+        print_u32_char('>');
+    }
+
+    void Printer::print_dot_type_spec(ast::ModAddressIdTypeSpec* node) {
+        print_mod_address(node->lhs_mod_address());
+        print_int_str(node->rhs_type_name());
+    }
+
+    void Printer::print_class_exp_class_spec(ast::ClassExpClassSpec* node) {
+        print_c_str("typeclass [");
+        print_int_str(node->candidate_name());
+        print_c_str(" ");
+        print_node(node->candidate_class_spec());
+        print_c_str("] {");
+        print_newline_indent();
+        {
+            size_t conditions_count = node->conditions().size();
+            for (size_t index = 0; index < conditions_count; index++) {
+                auto type_query_exp = node->conditions()[index];
+                print_node(type_query_exp);
+                print_c_str(";");
+                if (index+1 != conditions_count) {
+                    print_newline();
+                }
+            }
+        }
+        print_newline_exdent();
+        print_c_str("}");
+
+    }
+
+    void Printer::print_package(ast::Package* package) {
+        print_c_str("package ");
+        print_u32_char('"');
+        print_str(package->source()->abs_path());
+        print_u32_char('"');
+        print_c_str(" {");
+        print_newline_indent();
+        {
+            size_t fields_count = package->exports_fields().size();
+            for (size_t i = 0; i < fields_count; i++) {
+                auto export_field = package->exports_fields()[i];
+                print_node(export_field);
+                if (i + 1 < fields_count) {
+                    print_c_str(",");
+                    print_newline();
+                }
+
+            }
+        }
+        print_newline_exdent();
+        print_c_str("}");
+        print_newline();
+    }
+
+    void Printer::print_package_export_field_for_extern_module_in_c(
+        ast::Package::ExportField_ExternModuleInC *field
+    ) {
+        print_u32_char('"');
+        print_int_str(field->name());
+        print_u32_char('"');
+        print_c_str(": {");
+        print_newline_indent();
+        {
+            ast::Package::ExportField_ExternModuleInC::CoreCompilerArgs const&
+                core_args_ref = field->core_compiler_args();
+
+            ast::Package::ExportField_ExternModuleInC::CompilerArgs const* opt_platform_args = nullptr;
+            {
+                intern::String compiler_target_name = m_target_name;
+
+                auto const& platform_args_ref = field->platform_compiler_args();
+
+                auto active_platform_args_it = platform_args_ref.find(compiler_target_name);
+                if (active_platform_args_it != platform_args_ref.end()) {
+                    opt_platform_args = &active_platform_args_it->second;
+                }
+            }
+
+            print_c_str("\"include\": ");
+            if (opt_platform_args) {
+                print_json_list_from_2_lists(
+                    core_args_ref.include,
+                    opt_platform_args->include
+                );
+            } else {
+                print_json_list(core_args_ref.include);
+            }
+            print_c_str(",");
+            print_newline();
+
+            print_c_str("\"lib\": ");
+            if (opt_platform_args) {
+                print_json_list_from_2_lists(
+                    core_args_ref.lib,
+                    opt_platform_args->lib
+                );
+            } else {
+                print_json_list(core_args_ref.lib);
+            }
+            print_c_str(",");
+            print_newline();
+
+            print_c_str("\"src\": ");
+            if (opt_platform_args) {
+                print_json_list_from_2_lists(
+                    core_args_ref.src,
+                    opt_platform_args->src
+                );
+            } else {
+                print_json_list(core_args_ref.src);
+            }
+        }
+        print_newline_exdent();
+        print_c_str("}");
+    }
+
+    void Printer::print_package_export_field_for_import_all_modules_from(
+        ast::Package::ExportField_ImportAllModulesFrom *field
+    ) {
+        print_u32_char('"');
+        print_int_str(field->name());
+        print_u32_char('"');
+        print_c_str(": {");
+        print_newline_indent();
+        {
+            print_c_str("\"path\": ");
+            print_u32_char('"');
+            print_c_str(field->path().c_str());
+            print_u32_char('"');
+        }
+        print_newline_exdent();
+        print_c_str("}");
+    }
+
+    void Printer::print_json_list(
+        std::vector<std::string> const& list
+    ) {
+        if (list.empty()) {
+            print_c_str("[]");
+        } else {
+            print_c_str("[");
+            print_newline_indent();
+            {
+                size_t list2_count = list.size();
+                for (size_t i = 0; i < list2_count; i++) {
+                    auto const& s = list[i];
+
+                    print_u32_char('"');
+                    print_str(s);
+                    print_u32_char('"');
+
+                    if (i+1 < list2_count) {
+                        print_c_str(",");
+                        print_newline();
+                    }
+                }
+            }
+            print_newline_exdent();
+            print_c_str("]");
+        }
+    }
+
+    void Printer::print_json_list_from_2_lists(
+        std::vector<std::string> const& list1,
+        std::vector<std::string> const& list2
+    ) {
+        if (list1.empty() && list2.empty()) {
+            print_c_str("[]");
+        } else if (list2.empty()) {
+            print_json_list(list1);
+        } else if (list1.empty()) {
+            print_json_list(list2);
+        } else {
+            print_c_str("[");
+            print_newline_indent();
+            {
+                for (auto const& s: list1) {
+                    print_u32_char('"');
+                    print_str(s);
+                    print_u32_char('"');
+
+                    print_c_str(",");
+                    print_newline();
+                }
+                size_t list2_count = list2.size();
+                for (size_t i = 0; i < list2_count; i++) {
+                    auto const& s = list2[i];
+
+                    print_u32_char('"');
+                    print_str(s);
+                    print_u32_char('"');
+
+                    if (i+1 < list2_count) {
+                        print_c_str(",");
+                        print_newline();
+                    }
+                }
+            }
+            print_newline_exdent();
+            print_c_str("]");
+        }
     }
 
 }

@@ -100,7 +100,7 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/pattern/tpattern.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/pattern/vpattern.hh
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/source-node/i_source_node.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/source-node/i-source-node.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/source-node/script.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/source-node/script.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/source-node/package.hh
@@ -123,9 +123,6 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/arg/targ.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/arg/varg.hh
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/module/mod_exp.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/module/mod_address.hh
-
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/header/import_stmt.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/header/import_stmt.cc
 
@@ -137,6 +134,12 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/id.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/class_spec/id.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/struct.hh
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/module/native-mod-exp.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/module/mod-address.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/module/base-mod-exp.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/module/extern-c-mod-exp.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/module/pkg-bundle-mod-exp.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/compiler/compiler.hh
@@ -214,8 +217,8 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/printer/printer.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/printer/printer.hh
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/dependency_dispatcher/dependency_dispatcher.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/dependency_dispatcher/dependency_dispatcher.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/dependency_dispatcher/dependency-dispatcher.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/dependency_dispatcher/dependency-dispatcher.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/emitter/llvm_emitter.hh
 

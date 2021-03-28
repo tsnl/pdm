@@ -32,8 +32,8 @@
 
 #include "header/import_stmt.hh"
 
-#include "module/mod_address.hh"
-#include "module/mod_exp.hh"
+#include "module/mod-address.hh"
+#include "module/native-mod-exp.hh"
 
 #include "pattern/lpattern.hh"
 #include "pattern/vpattern.hh"
@@ -108,13 +108,16 @@ namespace pdm::ast {
             source::ISource* source, source::Loc loc,
             std::vector<HeaderStmt*>&& header_stmts, std::vector<Script::Field*>&& fields
         );
-        Script::Field* new_script_field(source::Loc loc, intern::String name, ast::ModExp* mod_exp);
+        Script::Field* new_script_field(source::Loc loc, intern::String name, ast::BaseModExp* mod_exp);
 
-        ModExp* new_mod_exp(source::Loc loc, ast::TPattern* opt_template_pattern, std::vector<ast::ModExp::Field*>&& fields);
-        ModExp::ModuleField* new_mod_mod_field(source::Loc loc, intern::String lhs_name, ast::ModExp* mod_exp);
-        ModExp::ValueField* new_value_mod_field(source::Loc loc, intern::String lhs_name, ast::Exp* rhs_exp);
-        ModExp::TypeField* new_type_mod_field(source::Loc loc, intern::String lhs_name, ast::TypeSpec* rhs_type_spec);
-        ModExp::ClassField* new_class_mod_field(source::Loc loc, intern::String lhs_name, ast::ClassSpec* rhs_class_spec);
+        NativeModExp* new_native_mod_exp(source::Loc loc, ast::TPattern* opt_template_pattern, std::vector<BaseModExp::Field*>&& fields);
+        ExternCModExp* new_extern_c_mod_exp(source::Loc loc, std::vector<BaseModExp::Field*>&& fields);
+        PkgBundleModExp* new_pkg_bundle_mod_exp(source::Loc loc, std::vector<BaseModExp::Field*>&& fields);
+        BaseModExp::ModuleField* new_mod_field_for_mod_exp(source::Loc loc, intern::String lhs_name, ast::BaseModExp* mod_exp);
+        BaseModExp::ValueField* new_value_field_for_mod_exp(source::Loc loc, intern::String lhs_name, ast::Exp* rhs_exp);
+        BaseModExp::TypeField* new_type_field_for_mod_exp(source::Loc loc, intern::String lhs_name, ast::TypeSpec* rhs_type_spec);
+        BaseModExp::ClassField* new_class_field_for_mod_exp(source::Loc loc, intern::String lhs_name, ast::ClassSpec* rhs_class_spec);
+
         ModAddress* new_mod_address(source::Loc loc, ModAddress* opt_lhs, intern::String rhs_name, std::vector<ast::TArg*>&& template_args);
 
         ArrayExp* new_array_exp(source::Loc loc, std::vector<Exp*>&& items);
@@ -194,11 +197,13 @@ namespace pdm::ast {
         );
         Package::ExportField_ExternModuleInC* new_package_export_field_for_extern_module_in_c(
             source::Loc loc,
+            intern::String name,
             Package::ExportField_ExternModuleInC::CoreCompilerArgs&& core_compiler_args,
             Package::ExportField_ExternModuleInC::PlatformCompilerArgs&& platform_compiler_args
         );
         Package::ExportField_ImportAllModulesFrom* new_package_export_field_for_import_modules_from(
             source::Loc loc,
+            intern::String name,
             std::string&& path
         );
 

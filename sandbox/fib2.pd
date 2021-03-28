@@ -1,7 +1,4 @@
-mod fibonacci {
-    using [
-        NumType SIGNED_INT
-    ];
+mod fibonacci [NumType SIGNED_INT] {
 
     nth = fn (x NumType) NumType {
         if (x == 0 or x == 1) then {
@@ -10,4 +7,5 @@ mod fibonacci {
             nth(x-1) + nth(x-2)
         }
     };
+
 };
