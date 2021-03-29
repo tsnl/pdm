@@ -388,7 +388,7 @@ namespace pdm::printer {
     void Printer::print_script(ast::Script* script) {
         print_c_str("script ");
         print_u32_char('"');
-        print_str(script->source()->abs_path());
+        print_str(script->source()->abs_path_string());
         print_u32_char('"');
         print_c_str(" {");
         print_newline_indent();
@@ -724,7 +724,7 @@ namespace pdm::printer {
         print_node(node->lhs_vpattern());
         print_c_str(" ");
         if (node->opt_ret_typespec() != nullptr) {
-            // print_c_str("-> ");
+             print_c_str("-> ");
             print_node(node->opt_ret_typespec());
             print_c_str(" ");
         }
@@ -1131,7 +1131,7 @@ namespace pdm::printer {
     void Printer::print_package(ast::Package* package) {
         print_c_str("package ");
         print_u32_char('"');
-        print_str(package->source()->abs_path());
+        print_str(package->source()->abs_path_string());
         print_u32_char('"');
         print_c_str(" {");
         print_newline_indent();

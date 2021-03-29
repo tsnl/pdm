@@ -140,12 +140,21 @@ namespace pdm::types {
 
       // protected constructor:
       protected:
-        IntType(std::string&& name, int width_in_bits, bool using_sign_ext)
-        :   Type("IntType:" + std::move(name), (using_sign_ext ? Kind::SignedInt : Kind::UnsignedInt)),
-            m_width_in_bits(width_in_bits),
-            m_using_sign_ext(using_sign_ext)
-        {}
+        IntType(std::string&& name, int width_in_bits, bool using_sign_ext);
+
+      public:
+        [[nodiscard]] int width_in_bits() const;
     };
+
+    inline IntType::IntType(std::string &&name, int width_in_bits, bool using_sign_ext)
+    :   Type("IntType:" + std::move(name), (using_sign_ext ? Kind::SignedInt : Kind::UnsignedInt)),
+        m_width_in_bits(width_in_bits),
+        m_using_sign_ext(using_sign_ext)
+    {}
+
+    inline int IntType::width_in_bits() const {
+        return m_width_in_bits;
+    }
 
     //
     // FloatType:
@@ -169,7 +178,14 @@ namespace pdm::types {
         :   Type("FloatType:" + std::move(name), Kind::Float),
             m_width_in_bits(width_in_bits) 
         {}
+
+      public:
+        [[nodiscard]] int width_in_bits() const;
     };
+
+    inline int FloatType::width_in_bits() const {
+        return m_width_in_bits;
+    }
 
     //
     // Compound types: 
@@ -329,6 +345,8 @@ namespace pdm::types {
     :   CompoundType("FnType", Kind::Fn),
         m_tt_node(tt_node)
     {}
+
+
 
 }   // namespace pdm::typer
 

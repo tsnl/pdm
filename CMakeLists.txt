@@ -220,7 +220,7 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/dependency_dispatcher/dependency-dispatcher.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/dependency_dispatcher/dependency-dispatcher.hh
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/emitter/llvm_emitter.hh
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/emitter/llvm-emitter.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/mai.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/enum.hh

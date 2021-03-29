@@ -27,7 +27,8 @@ namespace pdm::source {
         explicit ISource(std::string&& abs_path, SourceKind source_kind);
 
       public:
-        [[nodiscard]] std::string const& abs_path() const;
+        [[nodiscard]] std::filesystem::path abs_path() const;
+        [[nodiscard]] std::string const& abs_path_string() const;
         [[nodiscard]] SourceKind source_kind() const;
     };
 
@@ -37,7 +38,11 @@ namespace pdm::source {
         m_source_kind(source_kind)
     {}
 
-    inline std::string const& ISource::abs_path() const {
+    inline std::filesystem::path ISource::abs_path() const {
+        return m_abs_path;
+    }
+
+    inline std::string const& ISource::abs_path_string() const {
         return m_abs_path_string;
     }
 

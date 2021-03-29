@@ -1,8 +1,8 @@
-// A Bison parser, made by GNU Bison 3.7.3.
+// A Bison parser, made by GNU Bison 3.7.6.
 
 // Skeleton interface for Bison LALR(1) parsers in C++
 
-// Copyright (C) 2002-2015, 2018-2020 Free Software Foundation, Inc.
+// Copyright (C) 2002-2015, 2018-2021 Free Software Foundation, Inc.
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // As a special exception, you may create a larger work that contains
 // part or all of the Bison parser skeleton and distribute that work
@@ -110,11 +110,6 @@
 #endif
 
 
-#ifndef YY_ASSERT
-# include <cassert>
-# define YY_ASSERT assert
-#endif
-
 
 #ifndef YY_ATTRIBUTE_PURE
 # if defined __GNUC__ && 2 < __GNUC__ + (96 <= __GNUC_MINOR__)
@@ -134,9 +129,9 @@
 
 /* Suppress unused-variable warnings by "using" E.  */
 #if ! defined lint || defined __GNUC__
-# define YYUSE(E) ((void) (E))
+# define YY_USE(E) ((void) (E))
 #else
-# define YYUSE(E) /* empty */
+# define YY_USE(E) /* empty */
 #endif
 
 #if defined __GNUC__ && ! defined __ICC && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
@@ -198,7 +193,7 @@
 
 #line 11 "parser.yy"
 namespace pdm { namespace parser {
-#line 202 "parser.tab.hh"
+#line 197 "parser.tab.hh"
 
 
 
@@ -228,7 +223,6 @@ namespace pdm { namespace parser {
     template <typename T>
     semantic_type (YY_RVREF (T) t)
     {
-      YY_ASSERT (sizeof (T) <= size);
       new (yyas_<T> ()) T (YY_MOVE (t));
     }
 
@@ -1176,7 +1170,7 @@ namespace pdm { namespace parser {
       /// Copy constructor.
       basic_symbol (const basic_symbol& that);
 
-      /// Constructor for valueless symbols, and symbols from each type.
+      /// Constructors for typed symbols.
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, location_type&& l)
         : Base (t)
@@ -1188,6 +1182,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, TokenInfo&& v, location_type&& l)
         : Base (t)
@@ -1201,6 +1196,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, ast::ImportStmt::FieldGroup*&& v, location_type&& l)
         : Base (t)
@@ -1214,6 +1210,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::BaseModExp*&& v, location_type&& l)
         : Base (t)
@@ -1227,6 +1224,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::BaseModExp::Field*&& v, location_type&& l)
         : Base (t)
@@ -1240,6 +1238,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::BinaryOperator&& v, location_type&& l)
         : Base (t)
@@ -1253,6 +1252,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::ClassSpec*&& v, location_type&& l)
         : Base (t)
@@ -1266,6 +1266,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::EnumTypeSpec::Field*&& v, location_type&& l)
         : Base (t)
@@ -1279,6 +1280,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::Exp*&& v, location_type&& l)
         : Base (t)
@@ -1292,6 +1294,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::FnTypeSpec*&& v, location_type&& l)
         : Base (t)
@@ -1305,6 +1308,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::HeaderStmt*&& v, location_type&& l)
         : Base (t)
@@ -1318,6 +1322,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::LPattern*&& v, location_type&& l)
         : Base (t)
@@ -1331,6 +1336,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::LPattern::Field*&& v, location_type&& l)
         : Base (t)
@@ -1344,6 +1350,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::ModAddress*&& v, location_type&& l)
         : Base (t)
@@ -1357,6 +1364,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::Script*&& v, location_type&& l)
         : Base (t)
@@ -1370,6 +1378,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::Script::Field*&& v, location_type&& l)
         : Base (t)
@@ -1383,6 +1392,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::Stmt*&& v, location_type&& l)
         : Base (t)
@@ -1396,6 +1406,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::StructExp::Field*&& v, location_type&& l)
         : Base (t)
@@ -1409,6 +1420,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::StructTypeSpec::Field*&& v, location_type&& l)
         : Base (t)
@@ -1422,6 +1434,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::TArg*&& v, location_type&& l)
         : Base (t)
@@ -1435,6 +1448,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::TPattern*&& v, location_type&& l)
         : Base (t)
@@ -1448,6 +1462,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::TPattern::Field*&& v, location_type&& l)
         : Base (t)
@@ -1461,6 +1476,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::TypeQueryExp*&& v, location_type&& l)
         : Base (t)
@@ -1474,6 +1490,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::TypeQueryKind&& v, location_type&& l)
         : Base (t)
@@ -1487,6 +1504,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::TypeSpec*&& v, location_type&& l)
         : Base (t)
@@ -1500,6 +1518,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::UnaryOperator&& v, location_type&& l)
         : Base (t)
@@ -1513,6 +1532,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::VArg*&& v, location_type&& l)
         : Base (t)
@@ -1526,6 +1546,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::VPattern*&& v, location_type&& l)
         : Base (t)
@@ -1539,6 +1560,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, pdm::ast::VPattern::Field*&& v, location_type&& l)
         : Base (t)
@@ -1552,6 +1574,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<ast::ImportStmt::Field*>&& v, location_type&& l)
         : Base (t)
@@ -1565,6 +1588,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<ast::ImportStmt::FieldGroup*>&& v, location_type&& l)
         : Base (t)
@@ -1578,6 +1602,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::BaseModExp::Field*>&& v, location_type&& l)
         : Base (t)
@@ -1591,6 +1616,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::EnumTypeSpec::Field*>&& v, location_type&& l)
         : Base (t)
@@ -1604,6 +1630,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::Exp*>&& v, location_type&& l)
         : Base (t)
@@ -1617,6 +1644,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::HeaderStmt*>&& v, location_type&& l)
         : Base (t)
@@ -1630,6 +1658,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::LPattern::Field*>&& v, location_type&& l)
         : Base (t)
@@ -1643,6 +1672,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::Script::Field*>&& v, location_type&& l)
         : Base (t)
@@ -1656,6 +1686,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::Stmt*>&& v, location_type&& l)
         : Base (t)
@@ -1669,6 +1700,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::StringExp::Piece>&& v, location_type&& l)
         : Base (t)
@@ -1682,6 +1714,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::StructExp::Field*>&& v, location_type&& l)
         : Base (t)
@@ -1695,6 +1728,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::StructTypeSpec::Field*>&& v, location_type&& l)
         : Base (t)
@@ -1708,6 +1742,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::TArg*>&& v, location_type&& l)
         : Base (t)
@@ -1721,6 +1756,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::TPattern::Field*>&& v, location_type&& l)
         : Base (t)
@@ -1734,6 +1770,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::TypeQueryExp*>&& v, location_type&& l)
         : Base (t)
@@ -1747,6 +1784,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::TypeSpec*>&& v, location_type&& l)
         : Base (t)
@@ -1760,6 +1798,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::VArg*>&& v, location_type&& l)
         : Base (t)
@@ -1773,6 +1812,7 @@ namespace pdm { namespace parser {
         , location (l)
       {}
 #endif
+
 #if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<pdm::ast::VPattern::Field*>&& v, location_type&& l)
         : Base (t)
@@ -1794,7 +1834,7 @@ namespace pdm { namespace parser {
       }
 
       /// Destroy contents, and record that is empty.
-      void clear ()
+      void clear () YY_NOEXCEPT
       {
         // User destructor.
         symbol_kind_type yykind = this->kind ();
@@ -2108,7 +2148,7 @@ switch (yykind)
       by_kind (kind_type t);
 
       /// Record that this symbol is empty.
-      void clear ();
+      void clear () YY_NOEXCEPT;
 
       /// Steal the symbol kind from \a that.
       void move (by_kind& that);
@@ -2141,29 +2181,19 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       symbol_type (int tok, location_type l)
         : super_type(token_type (tok), std::move (l))
-      {
-        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_STRUCT || tok == token::KW_ENUM || tok == token::KW_TYPECLASS || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORTS || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_VAL || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_OUT || tok == token::KW_INOUT || tok == token::KW_DISCARD || tok == token::KW_AS || tok == token::KW_FOR || tok == token::KW_CORE_PROFILE || tok == token::KW_BROWSER_PROFILE || tok == token::KW_NATIVE_PROFILE || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
-      }
 #else
       symbol_type (int tok, const location_type& l)
         : super_type(token_type (tok), l)
-      {
-        YY_ASSERT (tok == token::YYEOF || tok == token::YYerror || tok == token::YYUNDEF || tok == token::KW_USING || tok == token::KW_MOD || tok == token::KW_STRUCT || tok == token::KW_ENUM || tok == token::KW_TYPECLASS || tok == token::KW_IF || tok == token::KW_THEN || tok == token::KW_ELSE || tok == token::KW_MATCH || tok == token::KW_WITH || tok == token::KW_IMPORTS || tok == token::KW_EXTERN || tok == token::KW_FROM || tok == token::KW_CONST || tok == token::KW_VAL || tok == token::KW_VAR || tok == token::KW_SET || tok == token::KW_FN || tok == token::KW_AND || tok == token::KW_XOR || tok == token::KW_OR || tok == token::KW_NOT || tok == token::KW_OUT || tok == token::KW_INOUT || tok == token::KW_DISCARD || tok == token::KW_AS || tok == token::KW_FOR || tok == token::KW_CORE_PROFILE || tok == token::KW_BROWSER_PROFILE || tok == token::KW_NATIVE_PROFILE || tok == token::DOT || tok == token::COLON || tok == token::COMMA || tok == token::SEMICOLON || tok == token::DBL_COLON || tok == token::LPAREN || tok == token::RPAREN || tok == token::LSQBRK || tok == token::RSQBRK || tok == token::LCYBRK || tok == token::RCYBRK || tok == token::ARROW || tok == token::ASTERISK || tok == token::FSLASH || tok == token::PERCENT || tok == token::PLUS || tok == token::MINUS || tok == token::LTHAN || tok == token::LETHAN || tok == token::GTHAN || tok == token::GETHAN || tok == token::BIND || tok == token::EQUALS || tok == token::NEQUALS || tok == token::CARET || tok == token::AMPERSAND || tok == token::EXCLAIM || tok == token::PIPE || tok == token::EOS || tok == token::COLON_LTHAN || tok == token::GTHAN_COLON || tok == token::NONE);
-      }
 #endif
+      {}
 #if 201103L <= YY_CPLUSPLUS
       symbol_type (int tok, TokenInfo v, location_type l)
         : super_type(token_type (tok), std::move (v), std::move (l))
-      {
-        YY_ASSERT (tok == token::VID || tok == token::TID || tok == token::CID || tok == token::HOLE || tok == token::DINT_LIT || tok == token::XINT_LIT || tok == token::UNSIGNED_DINT_LIT || tok == token::UNSIGNED_XINT_LIT || tok == token::FLOAT_LIT || tok == token::DQSTRING_LIT || tok == token::SQSTRING_LIT);
-      }
 #else
       symbol_type (int tok, const TokenInfo& v, const location_type& l)
         : super_type(token_type (tok), v, l)
-      {
-        YY_ASSERT (tok == token::VID || tok == token::TID || tok == token::CID || tok == token::HOLE || tok == token::DINT_LIT || tok == token::XINT_LIT || tok == token::UNSIGNED_DINT_LIT || tok == token::UNSIGNED_XINT_LIT || tok == token::FLOAT_LIT || tok == token::DQSTRING_LIT || tok == token::SQSTRING_LIT);
-      }
 #endif
+      {}
     };
 
     /// Build a parser object.
@@ -3676,7 +3706,7 @@ switch (yykind)
 
 #line 11 "parser.yy"
 } } // pdm::parser
-#line 3680 "parser.tab.hh"
+#line 3710 "parser.tab.hh"
 
 
 // "%code provides" blocks.
@@ -3689,7 +3719,7 @@ switch (yykind)
     int yylex(pdm::parser::parser::semantic_type* st, pdm::source::Loc* llocp, pdm::source::ISource* source, pdm::parser::Lexer* lexer);
     void yyerror(pdm::source::Loc* llocp, char const* message, pdm::source::ISource* source, pdm::parser::Lexer* lexer);
 
-#line 3693 "parser.tab.hh"
+#line 3723 "parser.tab.hh"
 
 
 #endif // !YY_YY_PARSER_TAB_HH_INCLUDED

@@ -28,6 +28,8 @@
 #include "pdm/source/local-script-source.hh"
 #include "pdm/source/local-package-source.hh"
 
+#include "pdm/emitter/llvm-emitter.hh"
+
 
 namespace pdm {
 
@@ -134,7 +136,7 @@ namespace pdm {
         if (script == nullptr) {
             return nullptr;
         } else {
-            std::cout << "Dispatching Script:\t" << source->abs_path() << std::endl;
+            std::cout << "Dispatching Script:\t" << source->abs_path_string() << std::endl;
 
             // adding to the 'all_source_nodes' list BEFORE adding more scripts
             // <=> entry_point is always the first script, leaves farther out.
@@ -165,7 +167,7 @@ namespace pdm {
         if (package == nullptr) {
             return nullptr;
         } else {
-            std::cout << "Dispatching Package:\t" << source->abs_path() << std::endl;
+            std::cout << "Dispatching Package:\t" << source->abs_path_string() << std::endl;
 
             // adding to the 'all_source_nodes' list BEFORE adding more scripts
             m_all_source_nodes.push_back(package);
@@ -277,8 +279,7 @@ namespace pdm {
         return m_types_mgr.typecheck();
     }
     bool Compiler::pass3_emit_all() {
-        std::cout << "Not Implemented: pass3_emit_all" << std::endl;
-        return false;
+        return emitter::emit_llvm(this);
     }
 
     void Compiler::postpass1_print1_code() {
@@ -294,12 +295,6 @@ namespace pdm {
     void Compiler::postpass2_print1_types() {
         printer::Printer p{std::cout, target_name()};
         m_types_mgr.print(p, "After pass2");
-    }
-    void Compiler::postpass3_print1_llvm() {
-        std::cout << "Not Implemented: 'postpass3_print1_llvm'" << std::endl;
-    }
-    void Compiler::postpass3_print2_wasm() {
-        std::cout << "Not Implemented: 'postpass3_print2_wasm'" << std::endl;
     }
 
     bool Compiler::finish() {

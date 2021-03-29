@@ -27,11 +27,11 @@ namespace pdm::parser {
         }
 
         // trying to open the file:
-        m_fp = fopen(source->abs_path().c_str(), "r");
+        m_fp = fopen(source->abs_path_string().c_str(), "r");
         if (m_fp == nullptr) {
             feedback::post(new feedback::Letter(
                 feedback::Severity::Error,
-                "Failed to open source file at '" + source->abs_path() + "'.",
+                "Failed to open source file at '" + source->abs_path_string() + "'.",
                 "Are you sure it exists?"
             ));
             return false;

@@ -101,14 +101,12 @@ namespace pdm {
         void postpass1_print1_code();
         void postpass1_print2_scopes(scoper::Scoper& scoper);
         void postpass2_print1_types();
-        void postpass3_print1_llvm();
-        void postpass3_print2_wasm();
 
       public:
         bool finish();
 
       public:
-        std::string abspath(std::string const& str) const;
+        [[nodiscard]] std::string abspath(std::string const& str) const;
 
       public:
         types::Manager* types_mgr() {

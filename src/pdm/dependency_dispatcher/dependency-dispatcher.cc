@@ -84,7 +84,7 @@ namespace pdm::dependency_dispatcher {
                 // acquiring the absolute path of the 'from':
                 std::filesystem::path absolute_import_from;
                 if (import_from.is_relative()) {
-                    std::filesystem::path base_dir_path = m_this_script->source()->abs_path();
+                    std::filesystem::path base_dir_path = m_this_script->source()->abs_path_string();
                     base_dir_path.remove_filename();
                     absolute_import_from = base_dir_path / import_from;
                 } else {
@@ -208,7 +208,7 @@ namespace pdm::dependency_dispatcher {
     ) {
         std::string reason = "packaged import field: '" + field->name().cpp_str() + "'";
 
-        std::filesystem::path package_dir_path {package->source()->abs_path()};
+        std::filesystem::path package_dir_path {package->source()->abs_path_string()};
         std::filesystem::path target_path = std::filesystem::canonical(package_dir_path / field->path());
         auto imported_source_node = compiler->import(target_path, reason);
         if (!imported_source_node) {

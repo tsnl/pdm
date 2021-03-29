@@ -49,7 +49,7 @@ namespace pdm::parser {
 namespace pdm::parser {
 
     ast::Package* Parser::parse_package(ast::Manager* manager, source::LocalPackageSource* source) {
-        std::filesystem::path package_dir_path = source->abs_path();
+        std::filesystem::path package_dir_path = source->abs_path_string();
         std::filesystem::path package_index_file_path = package_dir_path / index_file_name;
 
         std::ifstream input_file{package_index_file_path};

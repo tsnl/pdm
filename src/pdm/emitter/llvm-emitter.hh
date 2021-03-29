@@ -1,7 +1,13 @@
 #ifndef INCLUDED__PDM__LLVM_EMITTER__LLVM_EMITTER_HH
 #define INCLUDED__PDM__LLVM_EMITTER__LLVM_EMITTER_HH
 
-namespace pdm::llvm_emitter {
+#include <string>
+
+#include "pdm/compiler/compiler.hh"
+
+namespace pdm::emitter {
+
+    bool emit_llvm(Compiler* compiler_with_loaded_sources);
 
 }
 
