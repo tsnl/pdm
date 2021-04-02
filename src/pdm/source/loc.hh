@@ -3,6 +3,8 @@
 
 #include <cassert>
 #include <ostream>
+#include <string>
+#include <sstream>
 
 #include "pos.hh"
 
@@ -39,19 +41,19 @@ namespace pdm::source {
         }
 
       public:
-        ISource* source() const {
+        [[nodiscard]] ISource* source() const {
             return m_source;
         }
-        int first_line() const {
+        [[nodiscard]] int first_line() const {
             return begin.line();
         }
-        int first_column() const {
+        [[nodiscard]] int first_column() const {
             return begin.column();
         }
-        int last_line() const {
+        [[nodiscard]] int last_line() const {
             return end.line();
         }
-        int last_column() const {
+        [[nodiscard]] int last_column() const {
             return end.column();
         }
 
@@ -70,6 +72,13 @@ namespace pdm::source {
         }
         void last_column(int last_column) { 
             end.column(last_column);
+        }
+
+      public:
+        [[nodiscard]] std::string cpp_str() const {
+            std::stringstream ss;
+            print(ss);
+            return ss.str();
         }
 
       public:

@@ -126,7 +126,7 @@ namespace pdm::types {
             default:
             {
                 if (pdm::DEBUG) {
-                    assert(0 && "Invalid Kind for SimplestKDVS");
+                    assert(0 && "Invalid kind for SimplestKDVS");
                 }
                 return nullptr;
             }
@@ -845,10 +845,10 @@ namespace pdm::types {
     }
 
     Type* FnKDVS::reify_impl(Var* var) {
-        std::vector<tt::FnField> fn_arg_fields;
+        std::vector<tt::FnField> fn_tt_node_arg_fields;
 
         size_t args_count = m_args.size();
-        fn_arg_fields.reserve(args_count + 1);
+        fn_tt_node_arg_fields.reserve(args_count + 1);
 
         // pushing all args:
         {
@@ -866,11 +866,11 @@ namespace pdm::types {
                 }
 
                 tt::FnField tt_field{access_spec, arg_name, arg_type_soln, false};
-                fn_arg_fields.push_back(tt_field);
+                fn_tt_node_arg_fields.push_back(tt_field);
             }
         }
 
-        // pushing the return type:
+        // pushing the return type LAST:
         {
             Type* ret_type_soln = nullptr;
             if (m_typeof_ret_tv) {
@@ -882,10 +882,10 @@ namespace pdm::types {
             }
 
             tt::FnField tt_field{ast::VArgAccessSpec::Out, {}, ret_type_soln, true};
-            fn_arg_fields.push_back(tt_field);
+            fn_tt_node_arg_fields.push_back(tt_field);
         }
 
-        return FnType::get(fn_arg_fields);
+        return FnType::get(fn_tt_node_arg_fields);
     }
 
     void FnKDVS::print(printer::Printer& printer) const {
@@ -906,18 +906,15 @@ namespace pdm::types {
                     // printing the access spec:
                     switch (arg.varg_access_spec)
                     {
-                        case ast::VArgAccessSpec::In:
-                        {
+                        case ast::VArgAccessSpec::In: {
                             // do nothing.
                             break;
                         }
-                        case ast::VArgAccessSpec::Out:
-                        {
+                        case ast::VArgAccessSpec::Out: {
                             printer.print_c_str("out ");
                             break;
                         }
-                        case ast::VArgAccessSpec::InOut:
-                        {
+                        case ast::VArgAccessSpec::InOut: {
                             printer.print_c_str("inout ");
                             break;
                         }

@@ -18,8 +18,7 @@ set(CMAKE_C_STANDARD 11)
 # configuring VCPkg, dependencies:
 # from https://github.com/microsoft/vcpkg/README.md
 # from http://cpptruths.blogspot.com/2019/03/bootstrapping-vcpkg-based-cmake-project.html
-set(PDM_DEPENDENCIES llvm)
-# set(PDM_DEPENDENCIES llvm clang)
+set(PDM_DEPENDENCIES llvm[clang])
 
 # load vcpkg toolchain:
 if(NOT DEFINED ${CMAKE_TOOLCHAIN_FILE})
@@ -42,7 +41,8 @@ if(NOT DEFINED ${CMAKE_TOOLCHAIN_FILE})
         message(FATAL_ERROR "*** FATAL ERROR: Could not bootstrap vcpkg")
     endif()
 
-    message(STATUS "Installing Clang,LLVM in ${VCPKG_ROOT}")
+    message(STATUS "Installing ${PDM_DEPENDENCIES} in ${VCPKG_ROOT}")
+    execute_process(COMMAND ${VCPKG_EXEC} update)
     execute_process(COMMAND ${VCPKG_EXEC} install ${PDM_DEPENDENCIES} WORKING_DIRECTORY ${VCPKG_ROOT})
 endif()
 
@@ -176,25 +176,25 @@ add_library(
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/manager.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/manager.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/typeop_result.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var_invariant.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var_invariant.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/typeop-result.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var-invariant.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var-invariant.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/kind.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var_archetype.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/var-archetype.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/relation.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/relation.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/solve_result.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/kdvs.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/kdvs.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type_trie.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/types/type-trie.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/typer/typer.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/typer/typer.hh
-   
+
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/feedback/feedback.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/feedback/feedback.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/feedback/manager.cc
@@ -217,10 +217,10 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/printer/printer.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/printer/printer.hh
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/dependency_dispatcher/dependency-dispatcher.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/dependency_dispatcher/dependency-dispatcher.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/dependency-dispatcher/dependency-dispatcher.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/dependency-dispatcher/dependency-dispatcher.hh
 
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/emitter/llvm-emitter.hh
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/emitter/llvm-emitter.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/mai.hh
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/enum.hh
@@ -237,8 +237,8 @@ add_library(
 # link pdm <- llvm
 # - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt
 llvm_map_components_to_libnames(llvm_libs Core ExecutionEngine Interpreter MCJIT Support nativecodegen IRReader)
-add_definitions(${LLVM_DEFINITIONS})
-target_link_libraries(pdm PUBLIC ${llvm_libs})
+add_definitions(${LLVM_DEFINITIONS} ${CLANG_DEFINITIONS})
+target_link_libraries(pdm PRIVATE ${llvm_libs} clang)
 
 # link pdm <- intern :- C lib for interned string support
 set(BUILD_STATIC ON)

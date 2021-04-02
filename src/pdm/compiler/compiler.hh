@@ -52,8 +52,7 @@ namespace pdm {
         ast::Manager   m_ast_mgr;
 
         intern::String m_target_name;
-
-        u64 m_print_flags;
+        LLVMBuilderRef m_llvm_builder;
 
       // builtin type stmts:
       private:
@@ -76,7 +75,8 @@ namespace pdm {
 
       public:
         Compiler(std::string&& cwd, std::string const& entry_point_path, intern::String target_name);
-        
+        ~Compiler();
+
       public:
         ast::ISourceNode* import(std::string const& abs_from_path, std::string const& reason);
 
@@ -121,7 +121,14 @@ namespace pdm {
         [[nodiscard]] intern::String target_name() const {
             return m_target_name;
         }
+
+      public:
+        [[nodiscard]] LLVMBuilderRef llvm_builder() const;
     };
+
+    inline LLVMBuilderRef Compiler::llvm_builder() const {
+        return m_llvm_builder;
+    }
 
 }
 

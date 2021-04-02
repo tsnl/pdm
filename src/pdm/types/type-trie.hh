@@ -83,11 +83,11 @@ namespace pdm::types {
             };
 
           private:
-            Node*    m_root;
+            Node* m_root;
             TypeCtor m_ctor;
 
           public:
-            explicit GenericTypeTrie(TypeCtor ctor);
+            GenericTypeTrie(TypeCtor ctor);
 
           public:
             [[nodiscard]] Node* root_node() const;
@@ -152,10 +152,10 @@ namespace pdm::types {
             if (fields_start_index >= sorted_fields.size()) {
                 return root_node;
             } else {
-                FieldType const &first_field = sorted_fields[0];
+                FieldType const &first_field = sorted_fields[fields_start_index];
 
                 // checking for an existing edge:
-                for (int index = fields_start_index; index < root_node->edges.size(); index++) {
+                for (int index = 0; index < root_node->edges.size(); index++) {
                     GenericTypeTrie::Edge const& edge = root_node->edges[index];
                     if (edge.field == first_field) {
                         return get(sorted_fields, 1 + fields_start_index, edge.result);
@@ -167,15 +167,20 @@ namespace pdm::types {
 
                 // first initializing 'new_node':
                 new_node->parent = root_node;
-                new_node->parent_edge_index = root_node->edges.size();
-                new_node->hops_to_root = fields_start_index;
+                new_node->hops_to_root = 1 + fields_start_index;
                 new_node->result = nullptr;
 
                 // then, initializing 'result' using fields in 'new_node':
                 new_node->result = m_ctor(new_node);
 
-                Edge new_edge{first_field, new_node};
-                root_node->edges.push_back(new_edge);
+                if (new_node->parent) {
+                    Edge new_edge{first_field, new_node};
+                    size_t edge_insert_index = new_node->parent->edges.size();
+                    new_node->parent->edges.push_back(new_edge);
+                    new_node->parent_edge_index = edge_insert_index;
+                } else {
+                    new_node->parent_edge_index = 0;
+                }
 
                 return get(sorted_fields, 1 + fields_start_index, new_node);
             }

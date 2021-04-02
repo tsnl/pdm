@@ -143,8 +143,6 @@ namespace pdm::dependency_dispatcher {
         ast::Package* package,
         ast::Package::ExportField_ExternModuleInC* field
     ) {
-        std::cout << "TODO: Compiling C module with Clang:" << std::endl;
-
         ast::Package::ExportField_ExternModuleInC::CoreCompilerArgs const&
         core_args_ref = field->core_compiler_args();
 
@@ -162,6 +160,8 @@ namespace pdm::dependency_dispatcher {
 
         auto const print_extern = false;
         if (print_extern) {
+            std::cout << "TODO: Compiling C module with Clang: see Dependency Dispatcher" << std::endl;
+
             std::cout << "* include:" << std::endl;
             for (auto const& it: core_args_ref.include) {
                 std::cout << "  - " << it << std::endl;

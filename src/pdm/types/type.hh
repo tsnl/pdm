@@ -246,6 +246,7 @@ namespace pdm::types {
       private:
         static tt::StructTypeTrie s_type_trie;
         static StructType* tt_ctor(tt::StructTypeTrie::Node* node);
+        static void tt_initializer(tt::StructField* field);
 
       private:
         tt::StructTypeTrie::Node* m_tt_node;
@@ -273,6 +274,7 @@ namespace pdm::types {
      private:
         static tt::EnumTypeTrie s_type_trie;
         static EnumType* tt_ctor(tt::EnumTypeTrie::Node* node);
+        static void tt_initializer(tt::EnumField* field);
 
       private:
         tt::EnumTypeTrie::Node* m_tt_node;
@@ -300,6 +302,7 @@ namespace pdm::types {
      private:
         static tt::ModuleTypeTrie s_type_trie;
         static ModuleType* tt_ctor(tt::ModuleTypeTrie::Node* node);
+        static void tt_initializer(tt::ModuleField* field);
 
       private:
         tt::ModuleTypeTrie::Node* m_tt_node;
@@ -324,9 +327,13 @@ namespace pdm::types {
     //
 
     class FnType: public CompoundType {
-     private:
+      public:
+        struct ArgInfo { intern::String name; Type* type; ast::VArgAccessSpec access_spec; };
+
+      private:
         static tt::FnTypeTrie s_type_trie;
         static FnType* tt_ctor(tt::FnTypeTrie::Node* node);
+        static void tt_initializer(tt::FnField* field);
 
       private:
         tt::FnTypeTrie::Node* m_tt_node;
@@ -339,6 +346,10 @@ namespace pdm::types {
 
       protected:
         bool check_contents_finite(Type::FiniteCheckStackFrame* top_frame) const override;
+
+      public:
+        [[nodiscard]] Type* return_type() const;
+        [[nodiscard]] std::vector<ArgInfo> args() const;
     };
 
     inline FnType::FnType(tt::FnTypeTrie::Node* tt_node)

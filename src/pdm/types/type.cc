@@ -193,4 +193,42 @@ namespace pdm::types {
         }
     }
 
+    Type* FnType::return_type() const {
+        // the return type node is the last entry of the TTN
+        // each prior field has an argument
+        auto const& field = m_tt_node->parent->edges[m_tt_node->parent_edge_index].field;
+        assert(field.is_ret_not_arg && "Malformed FnType TypeTrieList-- expected return type");
+        return field.type;
+    }
+
+    std::vector<FnType::ArgInfo> FnType::args() const {
+        auto return_type_tt_node = m_tt_node;
+        auto return_type_field = return_type_tt_node->parent->edges[return_type_tt_node->parent_edge_index].field;
+        assert(return_type_field.is_ret_not_arg && "Malformed return type");
+
+        std::stack<FnType::ArgInfo> reversed_args;
+        auto last_arg_node = return_type_tt_node->parent;
+        while (last_arg_node->parent) {
+            tt::FnField last_arg_node_field = last_arg_node->parent->edges[last_arg_node->parent_edge_index].field;
+            assert(last_arg_node_field.type && "Invalid arg node field type for FnKDVS");
+            assert(!last_arg_node_field.is_ret_not_arg && "Invalid 'arg' node.");
+            reversed_args.push({
+                last_arg_node_field.name,
+                last_arg_node_field.type,
+                last_arg_node_field.access_spec
+            });
+
+            last_arg_node = last_arg_node->parent;
+        }
+
+        std::vector<FnType::ArgInfo> args;
+        args.reserve(reversed_args.size());
+        while (!reversed_args.empty()) {
+            args.push_back(reversed_args.top());
+            reversed_args.pop();
+        }
+
+        return args;
+    }
+
 };

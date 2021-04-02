@@ -9,7 +9,7 @@
 
 namespace pdm::utf8 {
 
-    using Char = pdm::u8;
+    using Char = char;
 
     class String;
     class StringBuilder;
@@ -27,7 +27,7 @@ namespace pdm::utf8 {
         : m_data(nullptr),
           m_count(0) {}
 
-        String(String&& other)
+        String(String&& other) noexcept
         : m_data(other.m_data), m_count(other.m_count) { 
             other.m_data = nullptr;
             other.m_count = 0;

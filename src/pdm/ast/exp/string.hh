@@ -4,6 +4,8 @@
 #include <vector>
 #include <cassert>
 
+#include <llvm-c/Core.h>
+
 #include "pdm/core/utf8.hh"
 #include "pdm/ast/kind.hh"
 #include "pdm/ast/exp/exp.hh"
@@ -28,9 +30,9 @@ namespace pdm::ast {
             friend Manager;
           
           private:
-            source::Loc  m_loc;
+            source::Loc m_loc;
             utf8::String m_content;
-            QuoteKind    m_quote_kind;
+            QuoteKind m_quote_kind;
 
           public:
             Piece(source::Loc loc, utf8::String content, QuoteKind quote_kind);
@@ -46,7 +48,8 @@ namespace pdm::ast {
 
       private:
         std::vector<StringExp::Piece> m_pieces;
-        utf8::String                  m_content;
+        utf8::String m_content;
+        LLVMValueRef m_x_llvm_global;
 
       public:
         StringExp(source::Loc loc, std::vector<StringExp::Piece>&& pieces);
@@ -66,6 +69,10 @@ namespace pdm::ast {
             }
             return std::move(content_sb.strdup());
         }
+
+      public:
+        void x_llvm_global(LLVMValueRef llvm_global);
+        [[nodiscard]] LLVMValueRef x_llvm_global() const;
     };
 
     inline StringExp::StringExp(source::Loc loc, std::vector<StringExp::Piece>&& pieces)
@@ -84,6 +91,14 @@ namespace pdm::ast {
 
     inline utf8::String const& StringExp::content() const {
         return m_content;
+    }
+
+    inline void StringExp::x_llvm_global(LLVMValueRef llvm_global) {
+        m_x_llvm_global = llvm_global;
+    }
+
+    inline LLVMValueRef StringExp::x_llvm_global() const {
+        return m_x_llvm_global;
     }
 
     inline source::Loc StringExp::Piece::loc() const {

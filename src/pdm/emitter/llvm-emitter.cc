@@ -136,10 +136,13 @@ namespace pdm::emitter {
             }
             case types::Kind::Fn: {
                 auto fn_type = dynamic_cast<types::FnType*>(type);
-                std::vector<LLVMTypeRef> param_types_vec;
-                auto return_type = nullptr;
-                // todo: extract args and return values from FnType.
-                assert(0 && "NotImplemented: emitting LLVM types for FnType");
+                std::vector<types::FnType::ArgInfo> raw_param_types_vec = fn_type->args();
+                size_t num_args = raw_param_types_vec.size();
+                std::vector<LLVMTypeRef> param_types_vec{num_args};
+                for (size_t i = 0; i < raw_param_types_vec.size(); i++) {
+                    param_types_vec[i] = emit_llvm_type_for(raw_param_types_vec[i].type);
+                }
+                auto return_type = emit_llvm_type_for(fn_type->return_type());
                 auto llvm_type = LLVMFunctionType(return_type, param_types_vec.data(), param_types_vec.size(), false);
                 return llvm_type;
             }
@@ -201,7 +204,8 @@ namespace pdm::emitter {
         );
 
       public:
-        bool on_visit_lambda_exp(ast::LambdaExp* node, VisitOrder visit_order);
+        [[nodiscard]] bool on_visit_lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) override;
+        [[nodiscard]] bool on_visit_string_exp(ast::StringExp *node, VisitOrder visit_order) override;
     };
 
     ScriptVisitor_EmitHeaders::ScriptVisitor_EmitHeaders(
@@ -214,26 +218,65 @@ namespace pdm::emitter {
 
     bool ScriptVisitor_EmitHeaders::on_visit_lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Post) {
-            // todo: export the function's type
+            std::string lambda_name = (
+                "lambda @ " + node->loc().cpp_str()
+            );
             auto fn_type = node->x_type_of_var()->get_type_soln();
-            assert(fn_type && "Expected 'soln' type after typer.");
+            assert(fn_type && "Expected 'soln' type after typer for 'lambda-exp' in 'EmitHeaders'");
             LLVMTypeRef llvm_fn_type = emit_llvm_type_for(fn_type);
-            LLVMValueRef llvm_fn = LLVMAddFunction(m_output_module, "lambda", llvm_fn_type);
+            LLVMValueRef llvm_fn = LLVMAddFunction(m_output_module, lambda_name.c_str(), llvm_fn_type);
             node->x_llvm_fn(llvm_fn);
         }
         return true;
     }
+
+    bool ScriptVisitor_EmitHeaders::on_visit_string_exp(ast::StringExp* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Post) {
+            std::stringstream initializer_string_stream;
+            for (auto const& piece: node->pieces()) {
+                initializer_string_stream << static_cast<char const*>(piece.content().const_data());
+            }
+            std::string initializer_content = initializer_string_stream.str();
+            LLVMValueRef llvm_literal_initializer = LLVMConstString(
+                reinterpret_cast<char const*>(initializer_content.data()),
+                initializer_content.size(),
+                false   // opt to null-terminate for backward-compatibility with C.
+            );
+            std::string llvm_literal_global_name = "string-literal @ " + node->loc().cpp_str();
+            LLVMValueRef llvm_literal_global = LLVMAddGlobal(
+                m_output_module,
+                LLVMTypeOf(llvm_literal_initializer),
+                llvm_literal_global_name.c_str()
+            );
+            LLVMSetInitializer(llvm_literal_global, llvm_literal_initializer);
+            LLVMSetLinkage(llvm_literal_global, LLVMInternalLinkage);
+            LLVMSetGlobalConstant(llvm_literal_global, true);
+
+            node->x_llvm_global(llvm_literal_global);
+        }
+        return true;
+    }
+
+}
+
+namespace pdm::emitter {
 
     //
     // Emitting module defs:
     //
 
     class ScriptVisitor_EmitDefs: public BaseScriptVisitor {
+      public:
         ScriptVisitor_EmitDefs(
             Compiler* compiler,
             ast::ISourceNode* source_node,
             LLVMModuleRef output_module
         );
+
+        bool emit_fn(ast::LambdaExp* lambda_node, LLVMValueRef llvm_fn);
+
+      public:
+        [[nodiscard]] bool on_visit_lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) override;
     };
 
     inline ScriptVisitor_EmitDefs::ScriptVisitor_EmitDefs(
@@ -243,6 +286,33 @@ namespace pdm::emitter {
     )
     :   BaseScriptVisitor(compiler, source_node, output_module)
     {}
+
+    bool ScriptVisitor_EmitDefs::emit_fn(ast::LambdaExp* lambda_node, LLVMValueRef llvm_fn) {
+        LLVMBasicBlockRef entry_bb = LLVMAppendBasicBlock(llvm_fn, "entry-point");
+        LLVMPositionBuilderAtEnd(m_compiler->llvm_builder(), entry_bb);
+
+        // storing formal arguments in the entry BB:
+        // - all params use pointers to existing arguments
+        assert(0 && "NotImplemented: `emit_fn` WIP");
+
+        return true;
+    }
+
+    bool ScriptVisitor_EmitDefs::on_visit_lambda_exp(ast::LambdaExp* node, ast::Visitor::VisitOrder visit_order) {
+        auto lambda_ok = TinyVisitor::on_visit_lambda_exp(node, visit_order);
+        if (!lambda_ok) {
+            return false;
+        }
+        if (visit_order == VisitOrder::Pre) {
+            auto lambda_node = dynamic_cast<ast::LambdaExp*>(node);
+            LLVMValueRef llvm_fn = lambda_node->x_llvm_fn();
+
+            if (!emit_fn(lambda_node, llvm_fn)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     //
     // Tying together:

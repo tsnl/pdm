@@ -1,10 +1,11 @@
 #include "compiler.hh"
 
 #include <iostream>
-
 #include <string>
 #include <unordered_map>
 #include <algorithm>
+
+#include <llvm-c/Core.h>
 
 #include "pdm/core/intern.hh"
 #include "pdm/core/config.hh"
@@ -16,7 +17,7 @@
 
 #include "pdm/parser/parser.hh"
 
-#include "pdm/dependency_dispatcher/dependency-dispatcher.hh"
+#include "pdm/dependency-dispatcher/dependency-dispatcher.hh"
 
 #include "pdm/scoper/scoper.hh"
 #include "pdm/scoper/context.hh"
@@ -40,6 +41,8 @@ namespace pdm {
         m_all_source_nodes(),
         m_types_mgr(this),
         m_ast_mgr(this),
+        m_target_name(target_name),
+        m_llvm_builder(LLVMCreateBuilder()),
         m_void_tv_client_astn(nullptr),
         m_string_tv_client_astn(nullptr),
         m_i8_tv_client_astn(nullptr),
@@ -55,10 +58,13 @@ namespace pdm {
         m_u128_tv_client_astn(nullptr),
         m_f16_tv_client_astn(nullptr),
         m_f32_tv_client_astn(nullptr),
-        m_f64_tv_client_astn(nullptr),
-        m_target_name(target_name)
+        m_f64_tv_client_astn(nullptr)
     {
         m_all_source_nodes.reserve(8);
+    }
+
+    Compiler::~Compiler() {
+        LLVMDisposeBuilder(m_llvm_builder);
     }
 
     ast::ISourceNode* Compiler::import(std::string const& abs_from_path, std::string const& reason) {
@@ -299,9 +305,10 @@ namespace pdm {
 
     bool Compiler::finish() {
         // dump state to stdout after each phase?
-        bool const print_source_code = true;
-        bool const print_scopes = true;
-        bool const print_types = true;
+        bool disable_all_printing = false;
+        bool print_source_code = pdm::DEBUG && !disable_all_printing;
+        bool print_scopes = pdm::DEBUG && !disable_all_printing;
+        bool print_types = pdm::DEBUG && !disable_all_printing;
 
         scoper::Scoper scoper{this};
 
@@ -387,4 +394,5 @@ namespace pdm {
     std::string Compiler::abspath(std::string const& rel_path) const {
         return m_cwd / rel_path;
     }
+
 }
