@@ -61,6 +61,7 @@ namespace pdm::parser::aux {
         intern::String or_int_str;
         intern::String not_int_str;
         intern::String set_int_str;
+        intern::String let_int_str;
         intern::String mod_int_str;
         intern::String from_int_str;
         intern::String out_int_str;
@@ -105,7 +106,7 @@ namespace pdm::parser::aux {
             match_int_str = "match";
             with_int_str = "with";
             discard_int_str = "discard";
-            fn_int_str = "fn";
+            fn_int_str = "anonymous_fn";
             val_int_str = "val";
             var_int_str = "var";
             const_int_str = "const";
@@ -114,6 +115,7 @@ namespace pdm::parser::aux {
             or_int_str = "or";
             not_int_str = "not";
             set_int_str = "set";
+            let_int_str = "let";
             mod_int_str = "mod";
             from_int_str = "from";
             out_int_str = "out";
@@ -592,6 +594,7 @@ namespace pdm::parser::aux {
         if (intstr == keywords.or_int_str) { return Tk::KW_OR; }
         if (intstr == keywords.not_int_str) { return Tk::KW_NOT; }
         if (intstr == keywords.set_int_str) { return Tk::KW_SET; }
+        if (intstr == keywords.let_int_str) { return Tk::KW_LET; }
         if (intstr == keywords.fn_int_str) { return Tk::KW_FN; }
         if (intstr == keywords.mod_int_str) { return Tk::KW_MOD; }
         if (intstr == keywords.from_int_str) { return Tk::KW_FROM; }
@@ -984,6 +987,11 @@ namespace pdm::parser::aux {
             case Tk::KW_SET:
             {
                 name = "set";
+                break;
+            }
+            case Tk::KW_LET:
+            {
+                name = "let";
                 break;
             }
             case Tk::KW_FROM:

@@ -16,19 +16,19 @@ import print from "./printer.pdm";
 # module definitions
 mod fibonacci {
 
-    fn fib (n S32) -> S32 = {
+    anonymous_fn fib (n S32) -> S32 = {
         # fib_naive(n)
         fib_faster(n, 1, 0, 1);
     }
     
-    fn fib_naive (n S32) -> S32 = {
+    anonymous_fn fib_naive (n S32) -> S32 = {
         if (n == 0 or n == 1) then (1)
         else {
             fib(n-1) + fib(n-2)
         }
     };
 
-    fn fib_faster (n S32, i S32, xp S32, x S32) -> S32 = {
+    anonymous_fn fib_faster (n S32, i S32, xp S32, x S32) -> S32 = {
         # i tracks current index
         # xp precedes x
         if (n == 0) then {

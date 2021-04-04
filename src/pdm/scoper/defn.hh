@@ -13,6 +13,9 @@ namespace pdm::types {
 namespace pdm::scoper {
     class Context;
 }
+namespace pdm::emitter {
+    struct Dim;
+}
 
 namespace pdm::scoper {
 
@@ -48,6 +51,7 @@ namespace pdm::scoper {
         ast::Node*     m_defn_node;
         types::Var*    m_var;
         Context*       m_container_context;
+        emitter::Dim* m_x_llvm_dim;
 
       public:
         Defn(DefnKind kind, intern::String name, ast::Node* defn_node, types::Var* typer_var)
@@ -55,7 +59,8 @@ namespace pdm::scoper {
             m_name(name),
             m_defn_node(defn_node),
             m_var(typer_var),
-            m_container_context(nullptr)
+            m_container_context(nullptr),
+            m_x_llvm_dim(nullptr)
         {}
 
       public:
@@ -82,7 +87,19 @@ namespace pdm::scoper {
 
       public:
         void print(printer::Printer& p) const;
+
+      public:
+        void x_llvm_dim(emitter::Dim* dim);
+        [[nodiscard]] emitter::Dim* x_llvm_dim() const;
     };
+
+    inline void Defn::x_llvm_dim(emitter::Dim* dim) {
+        m_x_llvm_dim = dim;
+    }
+
+    inline emitter::Dim* Defn::x_llvm_dim() const {
+        return m_x_llvm_dim;
+    }
 
 }
 

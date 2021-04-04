@@ -3,7 +3,7 @@ mod scoper_redef {
     # the only way to get this error is...
     #   val (x, x) = something();
     # or...
-    fn oops (ditto Float32, ditto Float32) -> Float32 = {
+    anonymous_fn oops (ditto Float32, ditto Float32) -> Float32 = {
         0.0
     };
 };

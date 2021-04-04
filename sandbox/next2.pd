@@ -1,6 +1,6 @@
 mod optional [DataType ANY] {
 
-    Optional = enum {
+    let Optional = enum {
         Some DataType,
         None
     };

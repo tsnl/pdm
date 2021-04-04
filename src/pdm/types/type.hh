@@ -8,9 +8,9 @@
 #include "pdm/printer/printer.hh"
 #include "pdm/ast/arg/varg.hh"
 
-#include "var_invariant.hh"
+#include "var-invariant.hh"
 #include "kind.hh"
-#include "type_trie.hh"
+#include "type-trie.hh"
 
 namespace pdm::types {
     class TypeVar;
@@ -144,6 +144,7 @@ namespace pdm::types {
 
       public:
         [[nodiscard]] int width_in_bits() const;
+        [[nodiscard]] bool using_sign_ext() const;
     };
 
     inline IntType::IntType(std::string &&name, int width_in_bits, bool using_sign_ext)
@@ -154,6 +155,10 @@ namespace pdm::types {
 
     inline int IntType::width_in_bits() const {
         return m_width_in_bits;
+    }
+
+    inline bool IntType::using_sign_ext() const {
+        return m_using_sign_ext;
     }
 
     //

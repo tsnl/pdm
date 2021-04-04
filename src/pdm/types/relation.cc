@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "relation.hh"
-#include "var_invariant.hh"
+#include "var-invariant.hh"
 #include "manager.hh"
 
 #include "var.hh"

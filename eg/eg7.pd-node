@@ -7,7 +7,7 @@
 #   - collection triggers 
 # replace ':' operator with '.'
 # - restore ':' for struct initializers
-# add mandatory return type for 'fn' stmt 
+# add mandatory return type for 'anonymous_fn' stmt
 
 mod demo {
 

@@ -6,41 +6,20 @@
 #include "pdm/ast/stmt/stmt.hh"
 #include "pdm/ast/pattern/lpattern.hh"
 
-namespace pdm::ast {
-
-    class Manager;
-
-}
+#include "vax.hh"
 
 namespace pdm::ast {
 
-    class ValStmt: public Stmt {
+    class ValStmt: public VaxStmt {
         friend Manager;
-
-      private:
-        LPattern* m_lhs_lpattern;
-        Exp*      m_rhs_body;
 
       protected:
         ValStmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp);
-      
-      public:
-        [[nodiscard]] LPattern* lhs_lpattern() const;
-        [[nodiscard]] Exp* rhs_exp() const;
     };
 
     inline ValStmt::ValStmt(source::Loc loc, LPattern* lhs_lpattern, Exp* rhs_exp)
-    :   Stmt(loc, Kind::ValStmt),
-        m_lhs_lpattern(lhs_lpattern),
-        m_rhs_body(rhs_exp) {}
-
-    inline LPattern* ValStmt::lhs_lpattern() const {
-        return m_lhs_lpattern;
-    }
-
-    inline Exp* ValStmt::rhs_exp() const {
-        return m_rhs_body;
-    }
+    :   VaxStmt(loc, Kind::ValStmt, lhs_lpattern, rhs_exp)
+    {}
 
 }
 

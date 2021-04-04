@@ -1,19 +1,19 @@
 mod scene1 {
-    Scene = {
+    let Scene = {
         name String,
         impl fancy_engine[impl]::Engine
     };
 
-    new = fn () Scene {
+    let new () Scene = {
         name = "Scene1",
         impl = impl
     };
 };
 
 mod impl {
-    x = 0;
+    let x = 0;
 
-    hello = fn () Int32 {
+    let hello () Int32 = {
         x
     };
 };

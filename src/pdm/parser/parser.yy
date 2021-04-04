@@ -207,8 +207,9 @@
 %token KW_CONST "const"
 %token KW_VAL "val"
 %token KW_VAR "var"
+%token KW_LET "let"
 %token KW_SET "set"
-%token KW_FN "fn"
+%token KW_FN "anonymous_fn"
 %token KW_AND "and"
 %token KW_XOR "xor" 
 %token KW_OR "or" 
@@ -312,10 +313,19 @@ mod_field_sl
     | mod_field_sl mod_field SEMICOLON  { $$ = std::move($1); $$.push_back($2); }
     ;
 mod_field
-    : vid BIND long_exp    { $$ = mgr->new_value_field_for_mod_exp(@$, $1.ID_intstr, $3); }
-    | tid BIND type_spec   { $$ = mgr->new_type_field_for_mod_exp(@$, $1.ID_intstr, $3); }
-    | cid BIND class_spec  { $$ = mgr->new_class_field_for_mod_exp(@$, $1.ID_intstr, $3); }
+    : KW_LET vid BIND long_exp    { $$ = mgr->new_value_field_for_mod_exp(@$, $2.ID_intstr, $4); }
+    | KW_LET tid BIND type_spec   { $$ = mgr->new_type_field_for_mod_exp(@$, $2.ID_intstr, $4); }
+    | KW_LET cid BIND class_spec  { $$ = mgr->new_class_field_for_mod_exp(@$, $2.ID_intstr, $4); }
     | KW_MOD vid native_mod_exp   { $$ = mgr->new_mod_field_for_mod_exp(@$, $2.ID_intstr, $3); }
+    | KW_LET vid vpattern type_spec BIND bracketed_exp {
+        auto desugared_type_spec = mgr->new_fn_type_spec(@$, $3, $4);
+        auto desugared_exp = mgr->new_lambda_exp(@$, desugared_type_spec, $6);
+        $$ = mgr->new_value_field_for_mod_exp(@$, $2.ID_intstr, desugared_exp);
+      }
+    | KW_LET cid LPAREN tid class_spec RPAREN BIND LCYBRK type_query_exp_sl0 RCYBRK {
+         auto class_spec = mgr->new_class_exp_class_spec(@$, $4.ID_intstr, $5, std::move($9));
+         $$ = mgr->new_class_field_for_mod_exp(@$, $2.ID_intstr, class_spec);
+      }
     ;
 
 /*
@@ -627,7 +637,7 @@ enum_type_spec
     : KW_ENUM LCYBRK enum_type_spec_field_cl RCYBRK     { $$ = mgr->new_enum_type_spec(@$, std::move($3)); }
     ;
 fn_type_spec
-    : KW_FN vpattern type_spec { $$ = mgr->new_fn_type_spec(@$, std::move($2), $3); }
+    : KW_FN vpattern type_spec { $$ = mgr->new_fn_type_spec(@$, $2, $3); }
     ;
 
 targ: type_spec { $$ = mgr->new_targ_type_spec(@$, $1); }

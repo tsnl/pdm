@@ -13,7 +13,7 @@
 #include "pdm/printer/printer.hh"
 #include "pdm/ast/arg/varg.hh"
 
-#include "var_archetype.hh"
+#include "var-archetype.hh"
 #include "kind.hh"
 
 //

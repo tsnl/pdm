@@ -1,4 +1,4 @@
-#include "var_invariant.hh"
+#include "var-invariant.hh"
 
 #include "relation.hh"
 

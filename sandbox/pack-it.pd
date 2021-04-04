@@ -4,11 +4,11 @@ imports {
 };
 
 mod pack_it {
-    main = fn () Int32 {
+    let main () Int32 = {
         # val uid_tuple = (alice::about.uid, brittany::about::uid, charlie::about::uid);
-        val uid_tuple = (brittany::about::uid, charlie::about::uid);
-        val random_int = greetings::random();
-        val arbitrary_sum = uid_tuple.0 + random_int;
+        var uid_tuple = (brittany::about::uid, charlie::about::uid);
+        var random_int = greetings::random();
+        var arbitrary_sum = uid_tuple.0 + random_int;
         arbitrary_sum
     };
 };

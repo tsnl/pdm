@@ -1,6 +1,6 @@
 mod fibonacci [NumType SIGNED_INT] {
 
-    nth = fn (x NumType) NumType {
+    let nth (x NumType) NumType = {
         if (x == 0 or x == 1) then {
             x
         } else {

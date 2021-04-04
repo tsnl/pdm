@@ -1,5 +1,5 @@
 mod test_scoper_undef {
-    fn test_scoper_undef (x Float32) -> Float32 = {
+    anonymous_fn test_scoper_undef (x Float32) -> Float32 = {
         # use an undefined symbol 'y'
         y
     };

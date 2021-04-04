@@ -7,6 +7,8 @@
 #include <filesystem>
 #include <cassert>
 
+#include <clang-c/Index.h>
+
 #include "pdm/compiler/compiler.hh"
 
 #include "pdm/ast/manager.hh"
@@ -194,6 +196,24 @@ namespace pdm::dependency_dispatcher {
         }
 
         // LLVM dispatches C dependencies from here.
+        // see: https://shaharmike.com/cpp/libclang/
+        {
+            // each 'index' collects multiple compilation units.
+            CXIndex index = clang_createIndex(0, 0);
+
+            // todo: figure out how to add all source, include, and lib files
+            //  - send each source, lib to LLVM as a unit
+            //  - '#include' each header into a unit to translate to PD
+            CXTranslationUnit unit = clang_parseTranslationUnit(
+                index,
+                "temporary_header.hh",
+                nullptr, 0,
+                nullptr, 0,
+                CXTranslationUnit_None
+            );
+
+            assert(0 && "NotImplemented: emitting LLVM IR modules for extern C module");
+        }
 
         // todo: initialize interface_fields from C source code here!
         std::vector<ast::BaseModExp::Field*> interface_fields;

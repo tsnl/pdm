@@ -42,7 +42,7 @@ namespace pdm::ast {
             [[nodiscard]] types::TypeVar* x_defn_tv() const;
             void x_defn_tv(types::TypeVar* defn_tv);
         };
-      
+
       private:
         std::vector<VPattern::Field*> m_fields;
 

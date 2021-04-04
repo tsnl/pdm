@@ -4,7 +4,7 @@
 
 mod fibonacci {
 
-    fib = fn (x Int32) Int32 {
+    let fib (x Int32) Int32 = {
         val result = (
             if (x == 0 or x == 1) then {
                 x

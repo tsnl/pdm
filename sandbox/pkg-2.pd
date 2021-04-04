@@ -3,7 +3,7 @@ imports {
 };
 
 mod module {
-    module_field = fn (x Int32) {Int32,Int32} {
+    let module_field (x Int32) {Int32,Int32} = {
         (x, alice::about::id)
     };
 };

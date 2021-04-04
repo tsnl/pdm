@@ -10,7 +10,7 @@
 
 #include "var.hh"
 #include "type.hh"
-#include "typeop_result.hh"
+#include "typeop-result.hh"
 
 namespace pdm {
     class Compiler;

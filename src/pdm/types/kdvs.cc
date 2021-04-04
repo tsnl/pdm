@@ -14,7 +14,7 @@
 #include "pdm/ast/arg/varg.hh"
 
 #include "var.hh"
-#include "var_invariant.hh"
+#include "var-invariant.hh"
 #include "kind.hh"
 
 

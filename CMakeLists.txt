@@ -18,7 +18,7 @@ set(CMAKE_C_STANDARD 11)
 # configuring VCPkg, dependencies:
 # from https://github.com/microsoft/vcpkg/README.md
 # from http://cpptruths.blogspot.com/2019/03/bootstrapping-vcpkg-based-cmake-project.html
-set(PDM_DEPENDENCIES llvm[clang])
+set(PDM_DEPENDENCIES llvm[clang,enable-assertions,enable-abi-breaking-checks])
 
 # load vcpkg toolchain:
 if(NOT DEFINED ${CMAKE_TOOLCHAIN_FILE})
@@ -26,10 +26,10 @@ if(NOT DEFINED ${CMAKE_TOOLCHAIN_FILE})
 
     if(WIN32)
         set(VCPKG_EXEC ${VCPKG_ROOT}/vcpkg.exe)
-        set(VCPKG_BOOTSTRAP ${VCPKG_ROOT}/bootstrap-vcpkg.bat)
+        set(VCPKG_BOOTSTRAP ${VCPKG_ROOT}/bootstrap-vcpkg.bat -disableMetrics)
     else()
         set(VCPKG_EXEC ${VCPKG_ROOT}/vcpkg)
-        set(VCPKG_BOOTSTRAP ${VCPKG_ROOT}/bootstrap-vcpkg.sh)
+        set(VCPKG_BOOTSTRAP ${VCPKG_ROOT}/bootstrap-vcpkg.sh  -disableMetrics)
     endif()
 
     if(NOT EXISTS ${VCPKG_EXEC})
@@ -42,8 +42,8 @@ if(NOT DEFINED ${CMAKE_TOOLCHAIN_FILE})
     endif()
 
     message(STATUS "Installing ${PDM_DEPENDENCIES} in ${VCPKG_ROOT}")
-    execute_process(COMMAND ${VCPKG_EXEC} update)
-    execute_process(COMMAND ${VCPKG_EXEC} install ${PDM_DEPENDENCIES} WORKING_DIRECTORY ${VCPKG_ROOT})
+    execute_process(COMMAND ${VCPKG_EXEC} update --disable-metrics)
+    execute_process(COMMAND ${VCPKG_EXEC} install ${PDM_DEPENDENCIES} --disable-metrics WORKING_DIRECTORY ${VCPKG_ROOT})
 endif()
 
 # finding dependencies: libclang, llvm
@@ -230,9 +230,7 @@ add_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/ast/type_spec/array.hh
 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/emitter/llvm-emitter.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/emitter/base_emitter.hh
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/pdm/emitter/base_emitter.cc
-)
+        src/pdm/ast/stmt/vax.hh)
 
 # link pdm <- llvm
 # - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt

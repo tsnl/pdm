@@ -22,11 +22,11 @@ namespace pdm::scoper {
         RootDefs,             // contains all primitives, builtins in one context
         ScriptDefs,           // contains all modules in a script in one context
         PackageDefs,          // contains all modules in a package in one context
-        ModuleDefs,           // contains all constants/defns in a module in one context (out of order query) [fn,const]
+        ModuleDefs,           // contains all constants/defns in a module in one context (out of order query) [anonymous_fn,const]
         TPatternDefs,         // contains all defns in a TPattern
         VPatternDefs,         // contains all defns in a VPattern
         LPatternDefs,         // contains all defns in an LPattern
-        FnRhsStart,           // start of fn defn (rhs, incl. targs and vargs).
+        FnRhsStart,           // start of anonymous_fn defn (rhs, incl. targs and vargs).
         TypeRhsStart,         // start of type defn (rhs, incl. targs).
         EnumRhsStart,         // start of enum defn (rhs, incl. targs).
         TypeclassRhsStart,    // start of typeclass defn (rhs, incl. targs).

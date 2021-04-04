@@ -1,31 +1,32 @@
 mod greetings {
-#    Vec3f = {
-#        x Float32,
-#        y Float32,
-#        z Float32
-#    };
-#    hello = fn () Vec3f {
-#        val hello = {
-#            x = 0.0,
-#            y = 0.0
-#        };
-#        hello
-#    };
-#    howdy = fn () Float32 {
-#        val vector = hello();
-#        vector.x + vector.y + vector.z
-#    };
-    random = fn (out x Int32) Int64 {
+    let Vec3f = {
+        x Float32,
+        y Float32,
+        z Float32
+    };
+    let hello () Vec3f = {
+        val hello = {
+            x = 0.0,
+            y = 0.0
+        };
+        hello
+    };
+    let howdy () Float32 = {
+        val vector = hello();
+        vector.x + vector.y + vector.z
+    };
+    let random (out x Int32) Int64 = {
         val parametric_spoken_word_poem = (
             "$ is a cool dance form (?)\n"
             "Sometimes, I feel sad, but then I remember\n"
             "$ is the answer--\n"
             "$ is always the answer."
         );
+        set x = 42;
         0
     };
-#    weird_sgn = fn () {x Float32, y Float32} {
-#        x = 0.0,
-#        y = 1.0
-#    };
+    let weird_sgn () {x Float32, y Float32} = {
+        x = 0.0,
+        y = 1.0
+    };
 };

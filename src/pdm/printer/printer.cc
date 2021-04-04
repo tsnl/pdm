@@ -720,7 +720,7 @@ namespace pdm::printer {
         }
     }
     void Printer::print_lambda_exp(ast::LambdaExp* node) {
-        print_c_str("fn ");
+        print_c_str("anonymous_fn ");
         print_node(node->lhs_vpattern());
         print_c_str(" ");
         if (node->opt_ret_typespec() != nullptr) {

@@ -371,7 +371,7 @@ How does the heap interact with inout/out params?
 - `ptr(out value)' gets the pointer to a value.
 - `malloc` returns a `Ptr` instance
 - `var x from ptr` to create variable from pointer!
-  - compare with `fn ... from`
+  - compare with `anonymous_fn ... from`
 
 TODO: introduce `var <lpattern> from <ptr_exp>` to load a variable from a pointer.
 - raw pointers can unwrap to anything
@@ -495,7 +495,7 @@ match (__platform) {
 # note that templates can be used, and that multiple symbols can link against the same definition using
 # type translation (T const* -> T, T const -> T, etc...)
 mod sdl {
-    fn init(flags I32) -> I32
+    anonymous_fn init(flags I32) -> I32
     from csdl "SDL_Init";
 
     type Event from csdl "SDL_Event";
@@ -575,7 +575,7 @@ powerful the language is.
 
           type Event from "SDL_Event";
 
-          fn init (flags U32) -> U32 from "SDL_Init";
+          anonymous_fn init (flags U32) -> U32 from "SDL_Init";
       }
       ```
 - **IMPORTANT: prefices when emitting**
@@ -948,7 +948,7 @@ Templates within reach
 * end result very similar to Go! Array[T,n] copied in block but accessed 
   with array[...] operator's analogue
 
-- use `->` for 'def' statements to line up 'def' with lambdas, connote fn
+- use `->` for 'def' statements to line up 'def' with lambdas, connote anonymous_fn
   definition.
 - use binary `->` operator for function typing
   - lpattern and typespec are mutually exclusive, so no conflict between 

@@ -12,8 +12,8 @@
 #include "pdm/ast/pattern/tpattern.hh"
 
 #include "var.hh"
-#include "typeop_result.hh"
-#include "var_invariant.hh"
+#include "typeop-result.hh"
+#include "var-invariant.hh"
 
 //
 // forward declarations:
@@ -165,7 +165,7 @@ namespace pdm::types {
         m_rhs_subclass_of_lhs_relation(node, rhs_cv, lhs_cv)
     {}
 
-    // LetValueRelation is used for const, val, var, and fn statements
+    // LetValueRelation is used for const, val, var, and anonymous_fn statements
     class LetValueRelation: public Relation {
       private:
         TypeVar* m_typeof_lhs_tv;

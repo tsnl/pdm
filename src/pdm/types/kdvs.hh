@@ -9,8 +9,8 @@
 #include "pdm/printer/printer.hh"
 
 #include "solve_result.hh"
-#include "var_archetype.hh"
-#include "var_invariant.hh"
+#include "var-archetype.hh"
+#include "var-invariant.hh"
 #include "type.hh"
 
 namespace pdm::types {

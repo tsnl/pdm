@@ -1,0 +1,9 @@
+# GOAL: test fn argument conversion, esp. inout/out
+# TODO (next): get 'val/var' working
+
+mod module {
+    let test1 (x Int32, inout y Int32) Int32 = {
+        val omega = 24;
+        omega
+    };
+};

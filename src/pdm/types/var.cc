@@ -13,9 +13,9 @@
 #include "pdm/feedback/letter.hh"
 #include "pdm/feedback/manager.hh"
 
-#include "var_archetype.hh"
-#include "var_invariant.hh"
-#include "typeop_result.hh"
+#include "var-archetype.hh"
+#include "var-invariant.hh"
+#include "typeop-result.hh"
 
 namespace pdm::types {
     inline Var::Var(
