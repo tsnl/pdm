@@ -6,24 +6,29 @@ cmake_minimum_required(VERSION 3.16)
 
 # creating project, setting langs:
 project(pandemonium C CXX)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
 
 # finding LLVM's package:
-# see: https://llvm.org/docs/CMake.html
-list(APPEND CMAKE_PREFIX_PATH "dep/build-llvm/cmake/modules/CMakeFiles")
-find_package(LLVM REQUIRED)
+# see: https://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
+list(APPEND CMAKE_PREFIX_PATH "dep/llvm-project/llvm/cmake/modules/")
+set(BUILD_SHARED_LIBS OFF)
+set(PDM_LLVM_BINARY_DIR ${CMAKE_BINARY_DIR}/build-llvm)
+add_subdirectory(
+    dep/llvm-project/llvm
+    "${PDM_LLVM_BINARY_DIR}"
+)
+# list(APPEND CMAKE_MODULE_PATH $"{LLVM_CMAKE_DIR}")
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+message(STATUS "See LLVM_CMAKE_DIR: ${LLVM_CMAKE_DIR}")
+message(STATUS "See PDM_LLVM_BINARY_DIR: ${PDM_LLVM_BINARY_DIR}")
 
 # we build llvm & clang from source in the driver script.
 # the following paths are hard-coded:
 set(PDM_LLVM_INCLUDE_DIR  "dep/llvm-project/llvm/include")
-set(PDM_LLVM_BUILD_INCLUDE_DIR "dep/build-llvm/include")
+set(PDM_LLVM_BUILD_INCLUDE_DIR "${PDM_LLVM_BINARY_DIR}/include")
 set(PDM_CLANG_INCLUDE_DIR "dep/llvm-project/clang/include")
-message("include (1): ${PDM_LLVM_INCLUDE_DIR}")
+# message(STATUS "include (1): ${PDM_LLVM_INCLUDE_DIR}")
 
 # including directories:
 include_directories(
@@ -205,32 +210,28 @@ add_library(
 # link pdm <- llvm
 # - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt
 llvm_map_components_to_libnames(
-    llvm_libs 
-    Core ExecutionEngine Interpreter MCJIT Support nativecodegen IRReader
+    llvm_libs
+    Core Clang ExecutionEngine Interpreter MCJIT Support nativecodegen IRReader
 )
 add_definitions(
     ${LLVM_DEFINITIONS}
     ${CLANG_DEFINITIONS}
 )
-target_link_libraries(pdm PRIVATE 
-    ${llvm_libs} clang
+target_link_libraries(pdm PUBLIC
+    ${llvm_libs}
 )
-include_directories(
+target_include_directories(pdm PUBLIC
     "${PDM_LLVM_INCLUDE_DIR}"
     "${PDM_LLVM_BUILD_INCLUDE_DIR}"
     "${PDM_CLANG_INCLUDE_DIR}"
-    "${LLVM_INCLUDE_DIRS}"
 )
-
-message(
-    "debug:\n"
-    "- '${llvm_libs}'"
-)
-
-# link pdm <- intern :- C lib for interned string support
-set(BUILD_STATIC ON)
-add_subdirectory(dep/intern)
-target_link_libraries(pdm PRIVATE intern)
+# WARNING: C++20 introduces reversed comparison operators that create a compile-time
+# error in LLVM.
+# see: https://stackoverflow.com/questions/60386792/c20-comparison-warning-about-ambiguous-reversed-operator
+# thus, CXX standard must be set ONLY for our source code.
+set_property(TARGET pdm PROPERTY CXX_STANDARD 20)
+set_property(TARGET pdm PROPERTY C_STANDARD   11)
+# set_property(TARGET pdm PROPERTY CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
 
 # link pdm <- utf8proc :- C lib for Unicode support
 add_library(utf8proc
@@ -239,16 +240,22 @@ add_library(utf8proc
 )
 target_link_libraries(pdm PRIVATE utf8proc)
 
-# PDM Sandbox: toy driver for PDM
+# 'porch' => *Pdm Orch*estrator.
+# connotes an entry to a larger building/home.
 add_executable(
-    pdm_sandbox
+    porch
     src/pdm_sandbox/main.cc
     src/pdm_sandbox/typer_demo.cc
     src/pdm_sandbox/typer_demo.hh
     src/pdm_sandbox/feedback_demo.cc
     src/pdm_sandbox/feedback_demo.hh
 )
-target_link_libraries(pdm_sandbox pdm)
+target_link_libraries(porch PUBLIC
+    pdm
+    ${llvm_libs}
+)
+set_property(TARGET porch PROPERTY CXX_STANDARD 20)
+set_property(TARGET porch PROPERTY C_STANDARD   11)
 
 #
 #
