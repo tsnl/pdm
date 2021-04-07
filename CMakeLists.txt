@@ -9,37 +9,58 @@ project(pandemonium C CXX)
 
 # finding LLVM's package:
 # see: https://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
-list(APPEND CMAKE_PREFIX_PATH "dep/llvm-project/llvm/cmake/modules/")
-set(BUILD_SHARED_LIBS OFF)
-set(PDM_LLVM_BINARY_DIR ${CMAKE_BINARY_DIR}/build-llvm)
-add_subdirectory(
-    dep/llvm-project/llvm
-    "${PDM_LLVM_BINARY_DIR}"
-)
-# list(APPEND CMAKE_MODULE_PATH $"{LLVM_CMAKE_DIR}")
+# set(PDM_LLVM_CMAKE_DIR "dep/llvm-project/llvm/cmake/modules/")
+# list(APPEND CMAKE_MODULE_PATH $"{PDM_LLVM_CMAKE_DIR}")
+# find_package(LLVM REQUIRED CONFIG PATHS "${PDM_LLVM_CMAKE_DIR}")
+# set(LLVM_ENABLE_PROJECTS "clang;clang-tools-extra;compiler-rt")
+set(LLVM_ENABLE_ASSERTIONS ON)
 
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-message(STATUS "See LLVM_CMAKE_DIR: ${LLVM_CMAKE_DIR}")
-message(STATUS "See PDM_LLVM_BINARY_DIR: ${PDM_LLVM_BINARY_DIR}")
+set(PDM_LLVM_INSTALL_DIR "./build/llvm/install/")
+list(APPEND CMAKE_PREFIX_PATH "${PDM_LLVM_INSTALL_DIR}/lib/cmake/clang")
+list(APPEND CMAKE_PREFIX_PATH "${PDM_LLVM_INSTALL_DIR}/lib/cmake/llvm")
 
-# we build llvm & clang from source in the driver script.
-# the following paths are hard-coded:
-set(PDM_LLVM_INCLUDE_DIR  "dep/llvm-project/llvm/include")
-set(PDM_LLVM_BUILD_INCLUDE_DIR "${PDM_LLVM_BINARY_DIR}/include")
-set(PDM_CLANG_INCLUDE_DIR "dep/llvm-project/clang/include")
-# message(STATUS "include (1): ${PDM_LLVM_INCLUDE_DIR}")
+find_package(LLVM REQUIRED CONFIG)
+find_package(Clang REQUIRED)
+# include("${CMAKE_BINARY_DIR}/dep/llvm-project/llvm/lib/cmake/llvm/LLVM-Config.cmake")
+# set(PDM_LLVM_BINARY_DIR ${CMAKE_BINARY_DIR}/build-llvm)
+# set(PDM_LLVM_INSTALL_DIR ${CMAKE_BINARY_DIR}/install-llvm)
+
+message(STATUS "Enable string: '${LLVM_ENABLE_PROJECTS}'")
+
+# set(CMAKE_INSTALL_PREFIX "${PDM_LLVM_INSTALL_DIR}")
+
+# add_subdirectory(
+#     dep/llvm-project/llvm
+#     "${PDM_LLVM_BINARY_DIR}"
+# )
+
+message(STATUS "find_package @ LLVM: ${LLVM_FOUND}")
+message(STATUS "    - LLVM_DIR: ${LLVM_DIR}")
+message(STATUS "find_package @ Clang: ${Clang_FOUND}")
+message(STATUS "    - Clang_DIR: ${Clang_DIR}")
+message(STATUS "Found LLVM version '${LLVM_PACKAGE_VERSION}'")
+message(STATUS "Using LLVM-Config.cmake in: ${LLVM_DIR}")
 
 # including directories:
 include_directories(
     src
     dep
 )
+link_directories("${PDM_LLVM_INSTALL_DIR}/lib/")
+
+# preparing to link llvm
+# - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt
+add_definitions(${LLVM_DEFINITIONS})
+add_definitions(${CLANG_DEFINITIONS})
+
+# set(LLVM_ENABLE_PROJECTS "clang;clang-tools-extra;compiler-rt")
+llvm_map_components_to_libnames(
+    llvm_libs
+    Core ExecutionEngine Interpreter MCJIT Support nativecodegen IRReader
+)
 
 # adding 'pdm': core library for compiler, other tools:
-add_library(
-    pdm
-
+add_library(pdm STATIC
     src/pdm/ast/manager.cc
     src/pdm/ast/manager.hh
     src/pdm/ast/kind.cc
@@ -205,25 +226,21 @@ add_library(
     src/pdm/ast/type_spec/array.hh
 
     src/pdm/emitter/llvm-emitter.cc
+
+    # adding utf8proc as a source-level dependency
+    # WARNING: volatile! may change as utf8proc changes,
+    #   we should eliminate this dependency ASAP.
+    dep/utf8proc/utf8proc.c
+    dep/utf8proc/utf8proc.h
 )
 
-# link pdm <- llvm
-# - see: https://github.com/MWGuy/llvm-hello/blob/master/CMakeLists.txt
-llvm_map_components_to_libnames(
-    llvm_libs
-    Core Clang ExecutionEngine Interpreter MCJIT Support nativecodegen IRReader
-)
-add_definitions(
-    ${LLVM_DEFINITIONS}
-    ${CLANG_DEFINITIONS}
-)
 target_link_libraries(pdm PUBLIC
-    ${llvm_libs}
+    ${llvm_libs} 
+    libclang
 )
-target_include_directories(pdm PUBLIC
-    "${PDM_LLVM_INCLUDE_DIR}"
-    "${PDM_LLVM_BUILD_INCLUDE_DIR}"
-    "${PDM_CLANG_INCLUDE_DIR}"
+target_include_directories(pdm PRIVATE
+    "${LLVM_INCLUDE_DIRS}"
+    "${CLANG_INCLUDE_DIRS}"
 )
 # WARNING: C++20 introduces reversed comparison operators that create a compile-time
 # error in LLVM.
@@ -233,15 +250,10 @@ set_property(TARGET pdm PROPERTY CXX_STANDARD 20)
 set_property(TARGET pdm PROPERTY C_STANDARD   11)
 # set_property(TARGET pdm PROPERTY CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
 
-# link pdm <- utf8proc :- C lib for Unicode support
-add_library(utf8proc
-    dep/utf8proc/utf8proc.c
-    dep/utf8proc/utf8proc.h
-)
-target_link_libraries(pdm PRIVATE utf8proc)
+# target_link_libraries(pdm PRIVATE utf8proc)
 
 # 'porch' => *Pdm Orch*estrator.
-# connotes an entry to a larger building/home.
+# connotes an entryway to a larger building/home.
 add_executable(
     porch
     src/pdm_sandbox/main.cc
@@ -250,9 +262,12 @@ add_executable(
     src/pdm_sandbox/feedback_demo.cc
     src/pdm_sandbox/feedback_demo.hh
 )
-target_link_libraries(porch PUBLIC
+add_definitions(
+    ${LLVM_DEFINITIONS}
+    ${CLANG_DEFINITIONS}
+)
+target_link_libraries(porch PRIVATE
     pdm
-    ${llvm_libs}
 )
 set_property(TARGET porch PROPERTY CXX_STANDARD 20)
 set_property(TARGET porch PROPERTY C_STANDARD   11)
