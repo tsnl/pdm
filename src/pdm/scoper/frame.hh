@@ -115,12 +115,12 @@ namespace pdm::scoper {
         }
 
         // define a symbol in the topmost Defn
-        bool define(scoper::Defn defn) {
+        bool define(scoper::Defn* defn) {
             return m_last_context->define(defn);
         }
 
       public:
-        void print(printer::Printer& p) const;
+        void print(printer::Printer* p) const;
     };
 
 }

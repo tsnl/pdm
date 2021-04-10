@@ -1,5 +1,8 @@
 #include "import_stmt.hh"
 
+#include "pdm/scoper/defn.hh"
+#include "pdm/types/var.hh"
+
 namespace pdm::ast {
 
     ImportStmt::ImportStmt(
@@ -12,6 +15,12 @@ namespace pdm::ast {
         for (FieldGroup* group: m_field_groups) {
             group->m_parent_import_stmt = this;
         }
+    }
+
+    types::TypeVar* ImportStmt::Field::x_exported_tv() const {
+        auto tv = dynamic_cast<types::TypeVar*>(m_x_defn->var());
+        assert(tv && "Expected TypeVar of Defn Var");
+        return tv;
     }
 
 }

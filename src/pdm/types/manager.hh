@@ -118,7 +118,7 @@ namespace pdm::types {
 
       // dump:
       public:
-        void print(printer::Printer& p, std::string const& title) const;
+        void print(printer::Printer* p, std::string const& title) const;
     };
 
 }   // namespace pdm::typer

@@ -8,7 +8,7 @@
 #include "pdm/ast/node.hh"
 #include "pdm/ast/type_spec/type_spec.hh"
 
-#include "base_field.hh"
+#include "base-field.hh"
 
 namespace pdm::scoper {
     class Defn;
@@ -34,10 +34,9 @@ namespace pdm::ast {
             friend Manager;
           
           private:
-            FieldKind       m_field_kind;
-            TypeSpec*       m_opt_rhs_typespec;
-            types::TypeVar* m_x_defn_tv;
-            
+            FieldKind m_field_kind;
+            TypeSpec* m_opt_rhs_typespec;
+
           protected:
             Field(source::Loc loc, FieldKind field_kind, intern::String name, TypeSpec* opt_rhs_typespec = nullptr)
             :   BaseField(loc, Kind::Aux_LPatternField, name),
@@ -58,7 +57,6 @@ namespace pdm::ast {
 
           public:
             [[nodiscard]] types::TypeVar* x_defn_tv() const;
-            void x_defn_tv(types::TypeVar* defn_tv);
         };
       
       private:
@@ -92,14 +90,6 @@ namespace pdm::ast {
 
     inline TypeSpec* LPattern::Field::opt_rhs_typespec() const {
         return m_opt_rhs_typespec;
-    }
-
-    inline types::TypeVar* LPattern::Field::x_defn_tv() const {
-        return m_x_defn_tv;
-    }
-
-    inline void LPattern::Field::x_defn_tv(types::TypeVar* defn_tv) {
-        m_x_defn_tv = defn_tv;
     }
 
 }

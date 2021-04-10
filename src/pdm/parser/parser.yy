@@ -112,6 +112,9 @@
 // Expression Nonterminals:
 //
 
+%type <pdm::ast::Exp*> mut_expr
+%type <std::vector<pdm::ast::Exp*>> mut_expr_cl1
+
 %type <pdm::ast::Exp*> expr long_exp
 %type <std::vector<pdm::ast::Exp*>> /* expr_cl0 */ expr_cl2
 
@@ -366,7 +369,7 @@ var_stmt
     : KW_VAR lpattern BIND expr   { $$ = mgr->new_var_stmt(@$, $2, $4); }
     ;
 set_stmt
-    : KW_SET expr BIND expr   { $$ = mgr->new_set_stmt(@$, $2, $4); }
+    : KW_SET mut_expr BIND expr   { $$ = mgr->new_set_stmt(@$, $2, $4); }
     ; 
 discard_stmt
     : KW_DISCARD expr   { $$ = mgr->new_discard_stmt(@$, $2); }
@@ -388,15 +391,24 @@ stringl
     | DQSTRING_LIT
     ;
 mod_prefix
-    :            vid                       DBL_COLON  { $$ = mgr->new_mod_address(@$, nullptr, $1.ID_intstr, std::move(std::vector<ast::TArg*>{})); }
-    |            vid LSQBRK targ_cl RSQBRK DBL_COLON  { $$ = mgr->new_mod_address(@$, nullptr, $1.ID_intstr, std::move($3)); }
-    | mod_prefix vid                       DBL_COLON  { $$ = mgr->new_mod_address(@$, $1, $2.ID_intstr, std::move(std::vector<ast::TArg*>{})); }
-    | mod_prefix vid LSQBRK targ_cl RSQBRK DBL_COLON  { $$ = mgr->new_mod_address(@$, $1, $2.ID_intstr, std::move($4)); }
+    :            vid                       COLON  { $$ = mgr->new_mod_address(@$, nullptr, $1.ID_intstr, std::move(std::vector<ast::TArg*>{})); }
+    |            vid LSQBRK targ_cl RSQBRK COLON  { $$ = mgr->new_mod_address(@$, nullptr, $1.ID_intstr, std::move($3)); }
+    | mod_prefix vid                       COLON  { $$ = mgr->new_mod_address(@$, $1, $2.ID_intstr, std::move(std::vector<ast::TArg*>{})); }
+    | mod_prefix vid LSQBRK targ_cl RSQBRK COLON  { $$ = mgr->new_mod_address(@$, $1, $2.ID_intstr, std::move($4)); }
     ;
 
 /*
  * Expressions:
  */
+
+mut_expr
+    : vid                           { $$ = mgr->new_id_exp(@$, $1.ID_intstr); }
+    | LPAREN mut_expr_cl1 RPAREN    { $$ = mgr->new_tuple_exp(@$, std::move($2)); }
+    ;
+mut_expr_cl1
+    : mut_expr                      { $$.push_back($1); }
+    | mut_expr_cl1 COMMA mut_expr   { $$ = std::move($1); $$.push_back($3); }
+    ;
 
 expr: binary_exp
     ;
@@ -648,8 +660,8 @@ targ_cl
     | targ_cl COMMA targ    { $$ = std::move($1); $$.push_back($3); }
     ;
 varg: expr                  { $$ = mgr->new_varg(@$, $1, ast::VArgAccessSpec::In); }
-    | KW_OUT expr           { $$ = mgr->new_varg(@$, $2, ast::VArgAccessSpec::Out); }
-    | KW_INOUT expr         { $$ = mgr->new_varg(@$, $2, ast::VArgAccessSpec::InOut); }
+    | KW_OUT   mut_expr     { $$ = mgr->new_varg(@$, $2, ast::VArgAccessSpec::Out); }
+    | KW_INOUT mut_expr     { $$ = mgr->new_varg(@$, $2, ast::VArgAccessSpec::InOut); }
     ;
 varg_cl
     : varg                  { $$.push_back($1); }

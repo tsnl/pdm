@@ -112,7 +112,7 @@ namespace pdm::scoper {
                     }
                 }
             }
-            Defn defn {
+            auto defn = new Defn {
                 defn_kind,
                 base_export_field->name(),
                 base_export_field,
@@ -382,11 +382,11 @@ namespace pdm::scoper {
     }
 
     // debug:
-    void Scoper::print(printer::Printer& printer) {
-        printer.print_c_str("Scoper dump");
-        printer.print_newline_indent();
+    void Scoper::print(printer::Printer* printer) {
+        printer::print_c_str(printer, "Scoper dump");
+        printer::print_newline_indent(printer);
         m_root_frame->print(printer);
-        printer.print_newline_exdent();
+        printer::print_newline_exdent(printer);
     }
 
     //
@@ -448,24 +448,24 @@ namespace pdm::scoper {
         scoper()->m_mod_address_orders.push_back(order);
     }
 
-    void ScriptScoperVisitor::post_overlapping_defn_error(std::string defn_kind, Defn const& new_defn) {
+    void ScriptScoperVisitor::post_overlapping_defn_error(std::string defn_kind, Defn const* new_defn) {
         Context* tried_context = top_frame()->last_context();
         post_overlapping_defn_error(std::move(defn_kind), new_defn, tried_context);
     }
-    void ScriptScoperVisitor::post_overlapping_defn_error(std::string defn_kind, Defn const& new_defn, Context* tried_context) {
-        Defn const& old_defn = *tried_context->lookup_until(new_defn.name(), tried_context);
+    void ScriptScoperVisitor::post_overlapping_defn_error(std::string defn_kind, Defn const* new_defn, Context* tried_context) {
+        Defn const* old_defn = tried_context->lookup_until(new_defn->name(), tried_context);
         help_post_defn_failure(std::move(defn_kind), new_defn, old_defn);
     }
-    void ScriptScoperVisitor::help_post_defn_failure(std::string defn_kind, Defn const& new_defn, Defn const& old_defn) {
-        std::string headline = "Symbol '" + std::string(new_defn.name().content()) + "' conflicts with an existing definition in the same context.";
+    void ScriptScoperVisitor::help_post_defn_failure(std::string defn_kind, Defn const* new_defn, Defn const* old_defn) {
+        std::string headline = "Symbol '" + std::string(new_defn->name().content()) + "' conflicts with an existing definition in the same context.";
         std::string more = (
             "Note that symbols in the same " + defn_kind + " cannot shadow."
         );
         std::vector<feedback::Note*> notes{2}; {
             std::string old_desc = "Symbol was first defined here...";
-            notes[0] = new feedback::SourceLocNote(std::move(old_desc), old_defn.defn_node()->loc());
+            notes[0] = new feedback::SourceLocNote(std::move(old_desc), old_defn->defn_node()->loc());
             std::string new_desc = "Overlapping symbol defined here...";
-            notes[1] = new feedback::SourceLocNote(std::move(new_desc), new_defn.defn_node()->loc());
+            notes[1] = new feedback::SourceLocNote(std::move(new_desc), new_defn->defn_node()->loc());
         }
         feedback::post(new feedback::Letter(
             feedback::Severity::Error,
@@ -545,7 +545,7 @@ namespace pdm::scoper {
                 std::string tv_name = "ScriptField(akaMod)";
                 script_field_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name));
             }
-            Defn new_defn {
+            auto new_defn = new Defn {
                 DefnKind::Module,
                 field->name(),
                 field,
@@ -574,7 +574,7 @@ namespace pdm::scoper {
     // Modules:
     //
 
-    bool ScriptScoperVisitor::on_visit_mod_exp(ast::NativeModExp* node, VisitOrder visit_order) {
+    bool ScriptScoperVisitor::on_visit_native_mod_exp(ast::NativeModExp* node, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // storing the Frame and TV on the module for later:
             // node->x_module_frame(module_frame);
@@ -603,7 +603,7 @@ namespace pdm::scoper {
             }
 
             // adding the new defn:
-            Defn new_defn {
+            auto new_defn = new Defn {
                 DefnKind::Module,
                 node->name(),
                 node,
@@ -616,7 +616,7 @@ namespace pdm::scoper {
             }
 
             // storing result on the node:
-            node->x_defn_var(mod_val_var);
+            node->x_defn(new_defn);
 
             push_frame(FrameKind::ValueModFieldRhs);
         } else {
@@ -635,7 +635,7 @@ namespace pdm::scoper {
             type_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
 
             // defining the var in the current context:
-            Defn new_defn {
+            auto new_defn = new Defn {
                 DefnKind::Val,
                 node->name(),
                 node,
@@ -648,7 +648,7 @@ namespace pdm::scoper {
             }
 
             // storing the var on the node:
-            node->x_defn_var(type_var);
+            node->x_defn(new_defn);
 
             // pushing attribs/frames for nested defns:
             push_frame(FrameKind::TypeModFieldRhs);
@@ -668,7 +668,7 @@ namespace pdm::scoper {
             type_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name));
 
             // defining the var in the current context:
-            Defn new_defn {
+            auto new_defn = new Defn {
                 DefnKind::Type,
                 node->name(),
                 node,
@@ -681,7 +681,7 @@ namespace pdm::scoper {
             }
 
             // storing the var on the node:
-            node->x_defn_var(type_var);
+            node->x_defn(new_defn);
 
             // pushing attribs/frames for nested defns:
             push_frame(FrameKind::TypeModFieldRhs);
@@ -700,7 +700,7 @@ namespace pdm::scoper {
             }
 
             // defining the defn var in the current context:
-            Defn new_defn {
+            auto new_defn = new Defn {
                 DefnKind::Typeclass,
                 node->name(),
                 node,
@@ -713,7 +713,7 @@ namespace pdm::scoper {
             }
 
             // storing the defn var on the node:
-            node->x_defn_var(typeclass_var);
+            node->x_defn(new_defn);
 
             // pushing attribs/frames for nested defns:
             push_frame(FrameKind::ClassModFieldRhs);
@@ -725,7 +725,7 @@ namespace pdm::scoper {
                 );
                 assert(candidate_var != nullptr);
 
-                Defn candidate_defn {
+                auto candidate_defn = new Defn {
                     DefnKind::TypeclassCandidate,
                     node->name(),
                     node,
@@ -813,12 +813,14 @@ namespace pdm::scoper {
                 std::string tv_name = std::move(tv_prefix) + node->ext_mod_name().content();
                 ext_mod_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
             }
-            bool defn_ok = top_frame()->define(Defn(
+            auto new_defn = new Defn(
                 DefnKind::Package_ExternModule,
                 node->ext_mod_name(),
                 node,
                 ext_mod_tv
-            ));
+            );
+            assert(0 && "DISABLED: 'extern_stmt'");
+            bool defn_ok = top_frame()->define(new_defn);
             if (!defn_ok) {
                 // post feedback here
             }
@@ -835,7 +837,7 @@ namespace pdm::scoper {
                         std::string tv_name = std::move(tv_prefix) + field->import_name().content();
                         mod_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
                     }
-                    Defn new_defn {
+                    auto new_defn = new Defn {
                         DefnKind::ImportModule,
                         field->import_name(),
                         field,
@@ -846,9 +848,10 @@ namespace pdm::scoper {
                         post_overlapping_defn_error("import", new_defn);
                         return false;
                     }
+                    field->x_defn(new_defn);
 
                     // storing the exported TV to link against later, placing an order to link:
-                    field->x_exported_tv(mod_tv);
+                    // field->x_exported_tv(mod_tv);
                     place_import_lookup_order(field);
                 }
             }
@@ -957,7 +960,7 @@ namespace pdm::scoper {
                 std::string field_name = field->lhs_name().content();
                 std::string tv_name = "VPattern(" + field_prefix + "):" + field_name;
                 types::TypeVar* field_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
-                Defn new_defn {
+                auto new_defn = new Defn {
                     m_vpattern_defn_kind_stack.top(),
                     field->lhs_name(),
                     field,
@@ -972,7 +975,7 @@ namespace pdm::scoper {
                         post_overlapping_defn_error(field_prefix, new_defn);
                         return false;
                     }
-                    field->x_defn_tv(field_tv);
+                    field->x_defn(new_defn);
                 }
             }
         }
@@ -997,7 +1000,7 @@ namespace pdm::scoper {
                 
                 assert(field_var != nullptr && "Unknown TPattern Field Kind or bad var.");
 
-                Defn new_defn {
+                auto new_defn = new Defn {
                     DefnKind::FormalTArg,
                     field->lhs_name(),
                     field,
@@ -1009,7 +1012,7 @@ namespace pdm::scoper {
                     post_overlapping_defn_error(field_prefix, new_defn);
                     return false;
                 }
-                field->x_defn_var(field_var);
+                field->x_defn(new_defn);
             }
         }
         return true;
@@ -1021,7 +1024,7 @@ namespace pdm::scoper {
                 std::string field_name = field->lhs_name().content();
                 std::string tv_name = "LPattern(" + field_prefix + "):" + field_name;
                 types::TypeVar* field_tv = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
-                Defn new_defn {
+                auto new_defn = new Defn {
                     m_lpattern_defn_kind_stack.top(),
                     field->lhs_name(),
                     field,
@@ -1032,7 +1035,8 @@ namespace pdm::scoper {
                     post_overlapping_defn_error("let-pattern", new_defn);
                     return false;
                 }
-                field->x_defn_tv(field_tv);
+                field->x_defn(new_defn);
+                // field->x_defn_tv(field_tv);
             }
         }
         return true;

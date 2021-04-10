@@ -32,14 +32,14 @@ namespace pdm::dependency_dispatcher {
 
       public:
         ScriptDDVisitor(Compiler* compiler_ref, ast::Script* this_script)
-            : m_compiler_ref(compiler_ref),
-              m_this_script(this_script) {}
+        : m_compiler_ref(compiler_ref),
+          m_this_script(this_script) {}
 
       public:
-        virtual bool on_visit(ast::Node* node, VisitOrder visit_order) override;
+        [[nodiscard]] virtual bool on_visit(ast::Node* node, VisitOrder visit_order) override;
 
       protected:
-        virtual bool on_visit_import_stmt(ast::ImportStmt* node, VisitOrder visit_order) override;
+        [[nodiscard]] virtual bool on_visit_import_stmt(ast::ImportStmt* node, VisitOrder visit_order) override;
     };
 
     bool ScriptDDVisitor::on_visit(ast::Node* node, VisitOrder visit_order) {

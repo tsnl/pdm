@@ -100,11 +100,11 @@ namespace pdm::types {
         return true;
     }
 
-    void Type::print(printer::Printer& p) const {
-        p.print_c_str("Type ");
-        p.print_c_str(type_kind_as_str(m_type_kind));
-        p.print_c_str(" ");
-        p.print_c_str(m_name.c_str());
+    void Type::print(printer::Printer* p) const {
+        printer::print_c_str(p, "Type ");
+        printer::print_c_str(p, type_kind_as_str(m_type_kind));
+        printer::print_c_str(p, " ");
+        printer::print_c_str(p, m_name.c_str());
     }
 
     VoidType VoidType::s_singleton {};

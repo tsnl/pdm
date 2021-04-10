@@ -1,9 +1,31 @@
-# GOAL: test fn argument conversion, esp. inout/out
-# TODO (next): get 'val/var' working
+# TODO:
+#   1. implement function calls (V-call)
+#   2. implement unary, binary operators
+
+mod entry_point {
+
+    let entry_point_without_args () Int32 = {
+        # module:main()
+        0
+    };
+
+};
 
 mod module {
+
     let test1 (x Int32, inout y Int32) Int32 = {
-        val omega = 24;
-        omega
+        var variable Int32 = x;
+        set variable = 42;
+        set y = 42;
+        variable
     };
+
+    let main () Int32 = {
+        var foo = 0;
+        val baz = 1;
+        val bar = test1(foo, inout baz);
+        # val bar = 10;
+        bar
+    };
+
 };

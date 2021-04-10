@@ -6,6 +6,7 @@
 #include <algorithm>
 
 #include <llvm-c/Core.h>
+#include <llvm-c/Analysis.h>
 
 #include "pdm/core/intern.hh"
 #include "pdm/core/config.hh"
@@ -64,7 +65,7 @@ namespace pdm {
     }
 
     Compiler::~Compiler() {
-        LLVMDisposeBuilder(m_llvm_builder);
+        LLVMDisposeBuilder(static_cast<LLVMBuilderRef>(m_llvm_builder));
     }
 
     ast::ISourceNode* Compiler::import(std::string const& abs_from_path, std::string const& reason) {
@@ -84,7 +85,7 @@ namespace pdm {
     ast::BuiltinStmt* Compiler::help_define_builtin_type(scoper::Scoper& scoper, intern::String name, types::Var* typer_var) {
         std::string debug_name = std::string("RootType:") + std::string(name.content());
         ast::BuiltinStmt* stmt = m_ast_mgr.new_builtin_stmt(std::move(debug_name));
-        scoper::Defn defn {scoper::DefnKind::BuiltinType, name, stmt, typer_var};
+        auto defn = new scoper::Defn {scoper::DefnKind::BuiltinType, name, stmt, typer_var};
         assert(scoper.root_frame()->define(defn) && "Bad builtins setup.");
         return stmt;
     }
@@ -289,17 +290,17 @@ namespace pdm {
     }
 
     void Compiler::postpass1_print1_code() {
-        printer::Printer p{std::cout, target_name()};
+        printer::Printer* p = printer::create(std::cout, target_name());
         for (ast::ISourceNode* source_node: all_source_nodes()) {
-            p.print_node(source_node);
+            printer::print_node(p, source_node);
         }
     }
     void Compiler::postpass1_print2_scopes(scoper::Scoper& scoper) {
-        printer::Printer p{std::cout, target_name()};
+        printer::Printer* p = printer::create(std::cout, target_name());
         scoper.print(p);
     }
     void Compiler::postpass2_print1_types() {
-        printer::Printer p{std::cout, target_name()};
+        printer::Printer* p = printer::create(std::cout, target_name());
         m_types_mgr.print(p, "After pass2");
     }
 

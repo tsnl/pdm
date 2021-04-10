@@ -29,16 +29,16 @@ namespace pdm::scoper {
         return nullptr;
     }
 
-    void Frame::print(printer::Printer& p) const {
-        p.print_c_str("Frame ");
-        p.print_c_str(frame_kind_as_text(kind()));
-        p.print_c_str(" at ");
-        p.print_uint_hex(reinterpret_cast<u64>(this));
-        p.print_c_str(" {");
-        p.print_newline_indent();
+    void Frame::print(printer::Printer* p) const {
+        printer::print_c_str(p, "Frame ");
+        printer::print_c_str(p, frame_kind_as_text(kind()));
+        printer::print_c_str(p, " at ");
+        printer::print_uint_hex(p, reinterpret_cast<u64>(this));
+        printer::print_c_str(p, " {");
+        printer::print_newline_indent(p);
         {
-            p.print_c_str("Contexts:");
-            p.print_newline_indent();
+            printer::print_c_str(p, "Contexts:");
+            printer::print_newline_indent(p);
             {
                 // reading all contexts into a stack...
                 std::stack<Context*> ctx_stack;
@@ -57,37 +57,37 @@ namespace pdm::scoper {
                     ctx = ctx_stack.top();
                     ctx->print(p);
                     if (ctx_stack.size() > 1) {
-                        p.print_newline();
+                        printer::print_newline(p);
                     }
                     ctx_stack.pop();
                 }
             }
-            p.print_newline_exdent();
+            printer::print_newline_exdent(p);
 
             // newline spacer
-            // p.print_newline();
+            // printer::print_newline(p);
 
             // child frames:
-            p.print_c_str("Sub-frames: (");
-            p.print_uint_dec(m_child_frames.size());
-            p.print_c_str(") ...");
+            printer::print_c_str(p, "Sub-frames: (");
+            printer::print_uint_dec(p, m_child_frames.size());
+            printer::print_c_str(p, ") ...");
             if (m_child_frames.empty()) {
-                // p.print_newline();
+                // printer::print_newline(p);
             } else {
-                p.print_newline();
+                printer::print_newline(p);
 
                 int child_frame_count = m_child_frames.size();
                 for (int index = 0; index < child_frame_count; index++) {
                     Frame* frame = m_child_frames[index];
                     frame->print(p);
                     if (index+1 != child_frame_count) {
-                        p.print_newline();
+                        printer::print_newline(p);
                     }
                 }
             }
         }
-        p.print_newline_exdent();
-        p.print_c_str("}");
+        printer::print_newline_exdent(p);
+        printer::print_c_str(p, "}");
     }
 
 }

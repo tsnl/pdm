@@ -49,10 +49,10 @@ namespace pdm::types {
         }
     }
 
-    void Manager::print(printer::Printer& p, std::string const& title) const {
-        p.print_c_str("-- Type Manager Dump: ");
-        p.print_str(title);
-        p.print_newline_indent();
+    void Manager::print(printer::Printer* p, std::string const& title) const {
+        printer::print_c_str(p, "-- Type Manager Dump: ");
+        printer::print_str(p, title);
+        printer::print_newline_indent(p);
         {
             // fixed types:
             m_void_tv.print(p);
@@ -87,7 +87,7 @@ namespace pdm::types {
 
             // todo: print all Relations with pointers to referenced TVs.
         }
-        p.print_newline_exdent();
+        printer::print_newline_exdent(p);
     }
 
     TypeVar* Manager::new_unknown_type_var(std::string&& name, ast::Node* opt_client_ast_node) {
@@ -124,7 +124,7 @@ namespace pdm::types {
         auto last_iter_solve_res = SolveResult::CompilerError;
         {
             bool debug_print_on_each_iter = false;
-            printer::Printer debug_printer{std::cerr};
+            printer::Printer* debug_printer = printer::create(std::cerr, {});
             bool fixed = false;
             size_t const max_iter_count = 8 * 1024;
             size_t iter_count = 0;

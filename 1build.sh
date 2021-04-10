@@ -13,7 +13,7 @@ pushd ./build/llvm/
 cmake ../../dep/llvm-project/llvm \
     -DLLVM_ENABLE_PROJECTS='clang;compiler-rt' \
     -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-    -DLLVM_BUILD_LLVM_DYLIB="OFF"
+    -DLLVM_BUILD_LLVM_DYLIB="OFF" \
     -GNinja
 cmake --build .
 cmake -DCMAKE_INSTALL_PREFIX="./install" -P cmake_install.cmake

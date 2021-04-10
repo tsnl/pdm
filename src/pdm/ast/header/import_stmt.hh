@@ -14,6 +14,10 @@ namespace pdm::ast {
 namespace pdm::types {
     class TypeVar;
 }
+namespace pdm::scoper {
+    class Defn;
+}
+
 namespace pdm::ast {
 
     class ImportStmt: public HeaderStmt {
@@ -29,7 +33,7 @@ namespace pdm::ast {
           private:
             ISourceNode* m_x_source_node;
             ast::BaseModExp* m_x_origin_mod_exp;
-            types::TypeVar* m_x_exported_tv;
+            scoper::Defn const* m_x_defn;
             FieldGroup* m_parent_group;
             intern::String m_import_name;
 
@@ -42,11 +46,12 @@ namespace pdm::ast {
 
             [[nodiscard]] ISourceNode* x_origin_source_node() const;
             [[nodiscard]] ast::BaseModExp* x_origin_mod_exp() const;
+            [[nodiscard]] scoper::Defn const* x_defn() const;
             [[nodiscard]] types::TypeVar* x_exported_tv() const;
 
             void x_origin_source_node(ISourceNode* source_node);
             void x_origin_mod_exp(ast::BaseModExp* set_mod_stmt);
-            void x_exported_tv(types::TypeVar* set_exported_tv);
+            void x_defn(scoper::Defn const* defn);
         };
         class FieldGroup {
             friend ImportStmt;
@@ -81,7 +86,7 @@ namespace pdm::ast {
     :   Node(loc, Kind::ImportStmt_Field),
         m_x_source_node(nullptr),
         m_x_origin_mod_exp(nullptr),
-        m_x_exported_tv(nullptr),
+        m_x_defn(nullptr),
         m_parent_group(nullptr),
         m_import_name(import_name)
     {}
@@ -125,20 +130,20 @@ namespace pdm::ast {
         return m_x_source_node;
     }
 
-    inline types::TypeVar* ImportStmt::Field::x_exported_tv() const {
-        return m_x_exported_tv;
-    }
-
     inline ast::BaseModExp* ImportStmt::Field::x_origin_mod_exp() const {
         return m_x_origin_mod_exp;
     }
 
-    inline void ImportStmt::Field::x_origin_mod_exp(ast::BaseModExp *set_mod_stmt) {
-        m_x_origin_mod_exp = set_mod_stmt;
+    inline scoper::Defn const* ImportStmt::Field::x_defn() const {
+        return m_x_defn;
     }
 
-    inline void ImportStmt::Field::x_exported_tv(types::TypeVar *exported_tv) {
-        m_x_exported_tv = exported_tv;
+    inline void ImportStmt::Field::x_defn(scoper::Defn const* defn) {
+        m_x_defn = defn;
+    }
+
+    inline void ImportStmt::Field::x_origin_mod_exp(ast::BaseModExp *set_mod_stmt) {
+        m_x_origin_mod_exp = set_mod_stmt;
     }
 
     inline void ImportStmt::Field::x_origin_source_node(ISourceNode* source_node) {

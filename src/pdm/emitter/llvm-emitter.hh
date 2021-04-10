@@ -3,8 +3,6 @@
 
 #include <string>
 
-#include <llvm-c/Core.h>
-
 #include "pdm/compiler/compiler.hh"
 
 namespace pdm::emitter {
@@ -15,18 +13,17 @@ namespace pdm::emitter {
     // 3. load from the ptr of the formal parameter
     // A similar **indirection** applies while 'storing'.
     enum class DimKind {
+        Global_Val,
+        Global_Fn,
         Arg_In,
         Arg_InOut,
         Arg_Out,
         Val,
         Var
     };
-    struct Dim {
-        DimKind dim_kind;
-        LLVMTypeRef llvm_user_dim_type;
-        LLVMValueRef llvm_stack_ptr;
-        LLVMTypeRef llvm_true_dim_type;
-    };
+    struct Dim;
+
+    DimKind dim_kind(Dim* dim);
 
     bool emit_llvm(Compiler* compiler_with_loaded_sources);
 

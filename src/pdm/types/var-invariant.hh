@@ -55,7 +55,7 @@ namespace pdm::types {
         void supermost_arg(Var* supermost_arg);
 
       public:
-        virtual void print(printer::Printer& printer) const = 0;
+        virtual void print(printer::Printer* printer) const = 0;
     };
     inline VarInvariant::VarInvariant(Relation* parent_relation, VarArchetype domain_var_kind, std::string name)
     :   m_parent_relation(parent_relation),
@@ -105,7 +105,7 @@ namespace pdm::types {
         [[nodiscard]] TypeVar* supertype_tv() const;
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
 
     inline SubtypeOfInvariant::SubtypeOfInvariant(Relation* parent_relation, TypeVar* supertype_tv)
@@ -129,7 +129,7 @@ namespace pdm::types {
         [[nodiscard]] ClassVar* superclass_cv() const;
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
 
     inline SubclassOfInvariant::SubclassOfInvariant(Relation* parent_relation, ClassVar* superclass_cv)
@@ -151,7 +151,7 @@ namespace pdm::types {
         [[nodiscard]] TypeVar* member_tv() const;
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
     inline ClassOfInvariant::ClassOfInvariant(Relation* parent_relation, TypeVar* member_tv)
     : KindIndependentVarInvariant(parent_relation, VarArchetype::Class, "ClassOfInvariant"),
@@ -168,7 +168,7 @@ namespace pdm::types {
         explicit inline IsNumberVarInvariant(Relation* parent_relation);
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
 
     inline IsNumberVarInvariant::IsNumberVarInvariant(Relation *parent_relation)
@@ -203,7 +203,7 @@ namespace pdm::types {
         IsVoidInvariant(Relation* parent_relation, VarArchetype domain_var_kind);
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
     inline IsVoidInvariant::IsVoidInvariant(Relation* parent_relation, VarArchetype domain_var_kind)
     :   KindDependentInvariant(parent_relation, domain_var_kind, Kind::Void, "IsVoid")
@@ -215,7 +215,7 @@ namespace pdm::types {
         IsStringInvariant(Relation* parent_relation, VarArchetype domain_var_kind);
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
     inline IsStringInvariant::IsStringInvariant(Relation* parent_relation, VarArchetype domain_var_kind)
     :   KindDependentInvariant(parent_relation, domain_var_kind, Kind::String, "IsString")
@@ -237,7 +237,7 @@ namespace pdm::types {
         inline int max_width_in_bits() const;
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
     inline IsIntInvariant::IsIntInvariant(Relation* parent_relation, VarArchetype domain_var_kind, int min_width_in_bits, int max_width_in_bits, bool uses_sign_extension)
     :   KindDependentInvariant(
@@ -277,7 +277,7 @@ namespace pdm::types {
         inline int max_width_in_bits() const;
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
     inline IsFloatInvariant::IsFloatInvariant(Relation* parent_relation, VarArchetype domain_var_kind, int opt_min_width_in_bits, int opt_max_width_in_bits)
     :   KindDependentInvariant(
@@ -308,7 +308,7 @@ namespace pdm::types {
         [[nodiscard]] inline std::vector<TypeVar*> const& typeof_items_tvs() const;
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
     inline IsTupleInvariant::IsTupleInvariant(Relation* parent_relation, VarArchetype domain_var_kind, std::vector<TypeVar*>&& typeof_items_tvs)
     :   KindDependentInvariant(parent_relation, domain_var_kind, Kind::Tuple, "IsTuple"),
@@ -348,7 +348,7 @@ namespace pdm::types {
         );
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
     class IsEnumInvariant: public IsFieldCollectionInvariant {
       public:
@@ -360,7 +360,7 @@ namespace pdm::types {
         );
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
     class IsModuleInvariant: public IsFieldCollectionInvariant {
       public:
@@ -372,7 +372,7 @@ namespace pdm::types {
         );
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
     
     // array
@@ -392,7 +392,7 @@ namespace pdm::types {
         [[nodiscard]] inline TypeVar* item_tv() const;
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
 
     inline TypeVar* IsArrayInvariant::item_tv() const {
@@ -448,7 +448,7 @@ namespace pdm::types {
         [[nodiscard]] TypeVar* typeof_ret_tv() const;
 
       public:
-        void print(printer::Printer &printer) const override;
+        void print(printer::Printer* printer) const override;
     };
     inline IsVCallableInvariant::IsVCallableInvariant(
         VCallInvariantStrength strength,

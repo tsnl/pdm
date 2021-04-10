@@ -77,7 +77,12 @@ In order to build PDM, you will require:
 **Building**
 
 In all the following examples, `.` refers to the root of this repository.
-Ensure you have CMake installed.
+
+0. First, ensure you have the following tools installed:
+    1.  A `git` client to download this repository and its dependencies. 
+    2.  CMake
+    3.  Ninja
+    4.  A C compiler and a C++ compiler (often provided in one bundle, e.g. clang/clang++ or gcc/g++)
 
 1. Clone this repository using 'git'. Initialize submodules.
 

@@ -20,6 +20,27 @@
 
 namespace pdm::emitter {
 
+    struct Dim {
+        DimKind dim_kind;
+
+        // for each dim, two values are guaranteed to exist on the stack:
+        // 1. 'storage' (accessed by loading llvm_ptr_to_storage): the space for data of the user type.
+        // 2. for only Global_Fn: 'ptr_to_storage' actually contains the value of the function
+        union {
+            LLVMValueRef llvm_ptr_to_storage;
+            LLVMValueRef llvm_fn_ptr;
+        } data_as;
+        LLVMTypeRef llvm_storage_type;
+    };
+
+    DimKind dim_kind(Dim* dim) {
+        return dim->dim_kind;
+    }
+
+}
+
+namespace pdm::emitter {
+
     LLVMModuleRef emit_llvm_for_package(Compiler *compiler, ast::Package *package);
     LLVMModuleRef emit_llvm_for_script(Compiler *compiler, ast::Script *script);
 
@@ -149,7 +170,7 @@ namespace pdm::emitter {
 
                     // The 'user type' refers to the type of data the user expects to pass
                     // in and out of this parameter.
-                    // For 'out' and 'inout' parameters, pointers to the user type are passed
+                    // For 'out' and 'inout' parameters, pointers to the user type are passed **to functions/operators**
                     // under the hood.
                     // This conversion is made here for function signatures:
                     auto user_type = emit_llvm_type_for(arg_info.type);
@@ -217,9 +238,19 @@ namespace pdm::emitter {
 
     //
     // Emitting headers:
+    // Everything GLOBAL and STATIC is emitted during the header.
     //
 
     class EmitHeadersVisitor: public BaseScriptVisitor {
+      private:
+        static std::string const s_root_module_name;
+        static std::string const s_module_name_separator;
+
+      private:
+        // this stack stores the WHOLE module prefix to use, e.g.
+        // module_a, module_a:home, module_a:home:cfg
+        std::vector<std::string> m_module_prefix_stack;
+
       public:
         EmitHeadersVisitor(
             Compiler* compiler,
@@ -228,28 +259,118 @@ namespace pdm::emitter {
         );
 
       public:
-        [[nodiscard]] bool on_visit_lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) override;
+        [[nodiscard]] bool on_visit_script_field(ast::Script::Field* field, VisitOrder visit_order) override;
+        [[nodiscard]] bool on_visit_value_mod_field(ast::NativeModExp::ValueField* node, VisitOrder visit_order) override;
+        [[nodiscard]] bool on_visit_type_mod_field(ast::NativeModExp::TypeField* node, VisitOrder visit_order) override;
+        [[nodiscard]] bool on_visit_class_mod_field(ast::NativeModExp::ClassField* node, VisitOrder visit_order) override;
+        [[nodiscard]] bool on_visit_mod_mod_field(ast::NativeModExp::ModuleField* node, VisitOrder visit_order) override;
         [[nodiscard]] bool on_visit_string_exp(ast::StringExp *node, VisitOrder visit_order) override;
+
+      private:
+        void push_module_name(intern::String name);
+        void pop_module_name();
     };
+
+    std::string const EmitHeadersVisitor::s_root_module_name = "root";
+    std::string const EmitHeadersVisitor::s_module_name_separator = ":";
 
     EmitHeadersVisitor::EmitHeadersVisitor(
         Compiler* compiler,
         ast::ISourceNode* source_node,
         LLVMModuleRef output_module
     )
-    :   BaseScriptVisitor(compiler, source_node, output_module)
+    :   BaseScriptVisitor(compiler, source_node, output_module),
+        m_module_prefix_stack(1, s_root_module_name)
     {}
 
-    bool EmitHeadersVisitor::on_visit_lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) {
-        if (visit_order == VisitOrder::Post) {
-            std::string lambda_name = (
-                "lambda @ " + node->loc().cpp_str()
+    void EmitHeadersVisitor::push_module_name(intern::String mod_name) {
+        std::string module_prefix = (
+            m_module_prefix_stack.back() +
+            s_module_name_separator +
+            mod_name.cpp_str()
+        );
+        m_module_prefix_stack.push_back(module_prefix);
+    }
+    void EmitHeadersVisitor::pop_module_name() {
+        m_module_prefix_stack.pop_back();
+    }
+
+    bool EmitHeadersVisitor::on_visit_script_field(ast::Script::Field* field, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            push_module_name(field->name());
+            return true;
+        } else if (visit_order == VisitOrder::Post) {
+            pop_module_name();
+            return true;
+        } else {
+            assert(0 && "NotImplemented: unknown visit order");
+            return false;
+        }
+    }
+
+    bool EmitHeadersVisitor::on_visit_value_mod_field(ast::NativeModExp::ValueField* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            std::string emit_name = (
+                m_module_prefix_stack.back() +
+                s_module_name_separator +
+                node->name().cpp_str()
             );
-            auto fn_type = node->x_type_of_var()->get_type_soln();
-            assert(fn_type && "Expected 'soln' type after typer for 'lambda-exp' in 'EmitHeaders'");
-            LLVMTypeRef llvm_fn_type = emit_llvm_type_for(fn_type);
-            LLVMValueRef llvm_fn = LLVMAddFunction(m_output_module, lambda_name.c_str(), llvm_fn_type);
-            node->x_llvm_fn(llvm_fn);
+            intern::String emit_name_int_str = emit_name;
+            types::Type* global_type = node->rhs_exp()->x_type_of_var()->get_type_soln();
+
+            if (node->rhs_exp()->kind() == ast::Kind::LambdaExp) {
+                // defining a function
+                auto lambda_node = dynamic_cast<ast::LambdaExp*>(node->rhs_exp());
+                assert(lambda_node && "Expected Lambda RHS based on 'Kind'");
+
+                std::string lambda_name = (
+                    "lambda @ " + lambda_node->loc().cpp_str()
+                );
+                auto fn_type = dynamic_cast<types::FnType*>(global_type);
+                assert(fn_type && "Expected 'soln' type after typer for 'lambda-exp' in 'EmitHeaders'");
+                LLVMTypeRef llvm_fn_type = emit_llvm_type_for(fn_type);
+                LLVMValueRef llvm_fn = LLVMAddFunction(m_output_module, lambda_name.c_str(), llvm_fn_type);
+
+                auto dim = new Dim{};
+                dim->dim_kind = DimKind::Global_Fn;
+                dim->data_as.llvm_fn_ptr = llvm_fn;
+                dim->llvm_storage_type = llvm_fn_type;
+                node->x_defn()->x_llvm_dim(dim);
+            } else {
+                // defining a global variable with an initializer
+                LLVMTypeRef llvm_global_type = emit_llvm_type_for(global_type);
+                LLVMValueRef llvm_global_ptr = LLVMAddGlobal(
+                    m_output_module,
+                    llvm_global_type,
+                    emit_name.c_str()
+                );
+
+                // defining a 'dim' with the correct info:
+                auto new_dim = new Dim{};
+                new_dim->dim_kind = DimKind::Global_Val;
+                new_dim->data_as.llvm_ptr_to_storage = llvm_global_ptr;
+                new_dim->llvm_storage_type = llvm_global_type;
+                node->x_defn()->x_llvm_dim(new_dim);
+            }
+        } else if (visit_order == VisitOrder::Post) {
+            // do nothing
+        }
+        return true;
+    }
+
+    bool EmitHeadersVisitor::on_visit_type_mod_field(ast::NativeModExp::TypeField* node, VisitOrder visit_order) {
+        // emit nothing
+        return true;
+    }
+    bool EmitHeadersVisitor::on_visit_class_mod_field(ast::NativeModExp::ClassField* node, VisitOrder visit_order) {
+        // emit nothing
+        return true;
+    }
+    bool EmitHeadersVisitor::on_visit_mod_mod_field(ast::NativeModExp::ModuleField* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            push_module_name(node->name());
+        } else if (visit_order == VisitOrder::Post) {
+            pop_module_name();
         }
         return true;
     }
@@ -286,22 +407,135 @@ namespace pdm::emitter {
 namespace pdm::emitter {
 
     //
-    // Emitting module defs:
+    // Emitting module defs: 3 parts
+    // 1. RValues
+    // 2. LValues
+    // 3. EmitDefsVisitor
     //
+
+    enum class LValueKind;
+    class LValue;
+    class IdLValue;
+    class TupleLValue;
+
+    enum class RValueKind;
+    class RValue;
+
+    // L-Values: read + write
+
+    enum class LValueKind {
+        Id,
+        Tuple
+    };
+
+    class LValue {
+        LValueKind m_kind;
+        ast::Exp* m_exp;
+
+      protected:
+        inline explicit
+        LValue(LValueKind kind, ast::Exp* exp)
+        :   m_kind(kind),
+            m_exp(exp)
+        {}
+
+        virtual ~LValue() = default;
+
+      public:
+        [[nodiscard]]
+        inline
+        LValueKind l_value_kind() const {
+            return m_kind;
+        }
+
+        [[nodiscard]]
+        inline
+        ast::Exp* exp() const {
+            return m_exp;
+        }
+    };
+
+    class IdLValue: public LValue {
+        Dim* m_dim;
+
+      public:
+        inline explicit
+        IdLValue(ast::Exp* exp, Dim* dim)
+        :   LValue(LValueKind::Id, exp),
+            m_dim(dim)
+        {}
+
+      public:
+        [[nodiscard]]
+        inline
+        LLVMValueRef llvm_storage_ptr() const {
+            return m_dim->data_as.llvm_ptr_to_storage;
+        }
+    };
+
+    class TupleLValue: public LValue {
+        std::vector<LValue*> m_l_value_vec;
+
+      public:
+        inline explicit
+        TupleLValue(ast::Exp* exp, std::vector<LValue*>&& l_value_vec)
+        : LValue(LValueKind::Tuple, exp),
+          m_l_value_vec(std::move(l_value_vec))
+        {}
+
+      public:
+        [[nodiscard]]
+        inline
+        std::vector<LValue*> const& ptr_vec() const {
+            return m_l_value_vec;
+        }
+    };
+
+
+    // R-Values: read-only values
+    class RValue {
+        LLVMValueRef m_llvm_value;
+        LLVMValueRef m_opt_llvm_stack_ptr;
+        ast::Exp* m_exp;
+
+      public:
+        inline
+        RValue(ast::Exp* exp, LLVMValueRef llvm_value, LLVMValueRef llvm_stack_ptr = nullptr)
+        : m_llvm_value(llvm_value),
+          m_opt_llvm_stack_ptr(llvm_stack_ptr),
+          m_exp(exp)
+        {}
+
+      public:
+        [[nodiscard]]
+        LLVMValueRef llvm_value() const {
+            return m_llvm_value;
+        }
+
+        [[nodiscard]]
+        LLVMValueRef opt_llvm_stack_ptr() const {
+            return m_opt_llvm_stack_ptr;
+        }
+
+        [[nodiscard]]
+        ast::Exp* exp() const {
+            return m_exp;
+        }
+    };
+
+    // EmitDefsVisitor: ties together prior emitters to emit defs for a **script**, headers already generated.
 
     class EmitDefsVisitor: public BaseScriptVisitor {
       public:
         struct Frame {
             LLVMValueRef anonymous_fn;
             LLVMBasicBlockRef last_bb;
-            std::map<intern::String, Dim*> symbols;
             ast::LambdaExp* defn_lambda_exp;
         };
 
       private:
         void fn_push(ast::LambdaExp* node, LLVMValueRef anonymous_llvm_header_fn);
         Dim* fn_dim(DimKind, intern::String name, types::Type* content_type);
-        Dim* fn_lookup(intern::String name, bool read_enabled, bool write_enabled);
         void fn_pop();
 
       private:
@@ -318,13 +552,17 @@ namespace pdm::emitter {
             LLVMModuleRef output_module
         );
 
-        bool emit_fn(ast::LambdaExp* lambda_node, LLVMValueRef llvm_fn);
+        bool fn_emit(ast::LambdaExp* lambda_node, LLVMValueRef llvm_fn);
 
       public:
-        [[nodiscard]] bool on_visit_lambda_exp(ast::LambdaExp* node, VisitOrder visit_order) override;
+        [[nodiscard]] bool on_visit_value_mod_field(ast::NativeModExp::ValueField* node, VisitOrder visit_order) override;
 
       public:
-        [[nodiscard]] LLVMValueRef emit_llvm_value_for(ast::Exp* exp);
+        [[nodiscard]] RValue* emit_ro_llvm_value_for(ast::Exp* exp);
+        [[nodiscard]] LValue* emit_rw_llvm_value_for(ast::Exp* exp);
+
+      public:
+        void help_assign_exp_to_l_value(LValue* lhs, ast::Exp* rhs);
     };
 
     inline EmitDefsVisitor::EmitDefsVisitor(
@@ -335,13 +573,35 @@ namespace pdm::emitter {
     :   BaseScriptVisitor(compiler, source_node, output_module),
         m_compiler(compiler),
         m_fn_stack()
-    {}
+    {
+        auto new_frame = new Frame{}; {
+            new_frame->anonymous_fn = nullptr;
+            new_frame->last_bb = nullptr;
+            new_frame->defn_lambda_exp = nullptr;
+        }
+        m_fn_stack.push_back(new_frame);
+    }
+
+    bool EmitDefsVisitor::on_visit_value_mod_field(ast::NativeModExp::ValueField* node, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Post) {
+            if (node->rhs_exp()->kind() == ast::Kind::LambdaExp) {
+                // emitting the function body:
+                auto lambda_exp = dynamic_cast<ast::LambdaExp*>(node->rhs_exp());
+                auto llvm_fn_ptr = node->x_defn()->x_llvm_dim()->data_as.llvm_fn_ptr;
+                if (!fn_emit(lambda_exp, llvm_fn_ptr)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
     void EmitDefsVisitor::fn_push(ast::LambdaExp* node, LLVMValueRef anonymous_llvm_header_fn) {
         auto frame = new Frame{};
         frame->anonymous_fn = anonymous_llvm_header_fn;
         frame->last_bb = nullptr;
         frame->defn_lambda_exp = node;
+        // `frame->symbols` is default-initialized.
 
         // pushing to the stack:
         m_fn_stack.push_back(frame);
@@ -352,85 +612,58 @@ namespace pdm::emitter {
         assert(!m_fn_stack.empty() && "Cannot invoke `fn_dim` before `fn_push`");
         Frame* top_frame = m_fn_stack.back();
 
-        LLVMTypeRef user_dim_type = emit_llvm_type_for(content_type);
-        LLVMTypeRef true_dim_type = nullptr; {
-            switch (dim_kind) {
-                case DimKind::Arg_InOut:
-                case DimKind::Arg_Out: {
-                    // passing the pointer type
-                    true_dim_type = LLVMPointerType(user_dim_type, 0);
-                    break;
-                }
-                default: {
-                    // passing the type as it is
-                    true_dim_type = user_dim_type;
-                    break;
-                }
+        // identifying the type of storage:
+        LLVMTypeRef dim_storage_type = emit_llvm_type_for(content_type);
+
+        // pushing memory to the stack for this argument:
+        // - Arg_InOut, Arg_Out do not push any memory to the stack at all; we already have a ptr from an argument.
+        // - for Arg_In (non-reference), we push memory and copy the argument into it (relying on LLVM optimization) so
+        //   we have a local stack ptr and can generalize all our code.
+        //   - the alternative is a 'get_value' function that checks what kind of value there is, loads from a pointer,
+        //     and then returns
+        // - only Val and Var do push memory to the stack.
+        // - NOTE: if the caller dims arguments, they must set `llvm_ptr_to_storage` themselves.
+        LLVMValueRef dim_storage_ptr = nullptr;
+        switch (dim_kind) {
+            case DimKind::Global_Fn:
+            case DimKind::Global_Val:
+            case DimKind::Arg_InOut:
+            case DimKind::Arg_Out: {
+                // do nothing!
+                break;
+            }
+            case DimKind::Arg_In:
+            case DimKind::Var:
+            case DimKind::Val: {
+                // allocate space:
+                std::string dim_kind_string = ([dim_kind] () {
+                    switch (dim_kind) {
+                        case DimKind::Arg_In: return "arg-in";
+                        case DimKind::Arg_Out: return "arg-out";
+                        case DimKind::Arg_InOut: return "arg-inout";
+                        case DimKind::Var: return "var";
+                        case DimKind::Val: return "val";
+                        case DimKind::Global_Val: return "global-val";
+                        case DimKind::Global_Fn: return "global-fn";
+                    }
+                }());
+                std::string dim_name = "dim-ptr[" + dim_kind_string + "]:" + name.cpp_str();
+                // assert(true_dim_type && "BUG: expected `actual_dim_content` != nullptr");
+                dim_storage_ptr = LLVMBuildAlloca(
+                    static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()),
+                    dim_storage_type,
+                    dim_name.c_str()
+                );
             }
         }
-
-        std::string dim_kind_string = ([dim_kind] () {
-            switch (dim_kind) {
-                case DimKind::Arg_In: return "arg-in";
-                case DimKind::Arg_Out: return "arg-out";
-                case DimKind::Arg_InOut: return "arg-inout";
-                case DimKind::Var: return "var";
-                case DimKind::Val: return "val";
-            }
-        }());
-        std::string dim_name = "dim[" + dim_kind_string + "]:" + name.cpp_str();
-
-        assert(true_dim_type && "BUG: expected `actual_dim_content` != nullptr");
-        LLVMValueRef stack_ptr = LLVMBuildAlloca(
-            m_compiler->llvm_builder(),
-            true_dim_type,
-            dim_name.c_str()
-        );
 
         auto dim = new Dim{}; {
             dim->dim_kind = dim_kind;
-            dim->llvm_stack_ptr = stack_ptr;
-            dim->llvm_user_dim_type = user_dim_type;
-            dim->llvm_true_dim_type = true_dim_type;
+            dim->data_as.llvm_ptr_to_storage = dim_storage_ptr;
+            dim->llvm_storage_type = dim_storage_type;
         }
-
-        // NOTE: symbols can overwrite each-other, in which case emitting garbage collection
-        // for shadowed symbols should occur here:
-        if (top_frame->symbols.contains(name)) {
-            // todo: invoke destructor for shadowed, and now concealed symbol
-        }
-        top_frame->symbols[name] = dim;
 
         return dim;
-    }
-
-    Dim* EmitDefsVisitor::fn_lookup(intern::String name, bool read_enabled, bool write_enabled) {
-        // NOTE:
-        //   - looking up in a symbol table is not required, since all lookups have already
-        //     been resolved in the scoper.
-        //   - however, this approach easily enables defining symbols not defined by user code,
-        //     so I'm sticking to the more flexible approach for now.
-
-        // retrieving the 'dim':
-        Dim* found_dim = nullptr; {
-            for (
-                int scan_index = static_cast<int>(m_fn_stack.size()) - 1;
-                scan_index >= 0;
-                scan_index--
-            ) {
-                Frame* scan_frame = m_fn_stack[scan_index];
-                auto scan_it = scan_frame->symbols.find(name);
-                if (scan_it != scan_frame->symbols.end()) {
-                    // symbol found!
-                    found_dim = scan_it->second;
-                } else {
-                    // symbol not found in this frame, keep scanning.
-                    continue;
-                }
-            }
-        }
-        assert(found_dim && "Expected to catch undefined symbols in the 'scoper'.");
-        return found_dim;
     }
 
     void EmitDefsVisitor::fn_pop() {
@@ -444,23 +677,21 @@ namespace pdm::emitter {
         if (!m_fn_stack.empty()) {
             Frame* top_frame = m_fn_stack.back();
 
-            if (top_frame->last_bb == nullptr) {
+            if (top_frame->anonymous_fn && top_frame->last_bb == nullptr) {
                 top_frame->last_bb = LLVMAppendBasicBlock(top_frame->anonymous_fn, "fn_entry_point");
             }
 
-            LLVMPositionBuilderAtEnd(m_compiler->llvm_builder(), top_frame->last_bb);
+            LLVMPositionBuilderAtEnd(static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()), top_frame->last_bb);
         } else {
-            LLVMClearInsertionPosition(m_compiler->llvm_builder());
+            LLVMClearInsertionPosition(static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()));
         }
     }
 
-    bool EmitDefsVisitor::emit_fn(ast::LambdaExp* lambda_node, LLVMValueRef llvm_fn) {
+    bool EmitDefsVisitor::fn_emit(ast::LambdaExp* lambda_node, LLVMValueRef llvm_fn) {
         // creating a basic block for an entry point:
         fn_push(lambda_node, llvm_fn);
 
-        // alloca-ing space for each argument:
-        // - arguments are always copied into on-stack space using 'dim'
-        // - inout and out params copy a pointer to the actual arg rather than a value
+        // alloca-ing space for each argument if required:
         std::vector<ast::VPattern::Field*> const& fields = lambda_node->lhs_vpattern()->fields();
         for (size_t arg_index = 0; arg_index < fields.size(); arg_index++) {
 
@@ -471,14 +702,45 @@ namespace pdm::emitter {
                     case ast::VArgAccessSpec::In: return DimKind::Arg_In;
                     case ast::VArgAccessSpec::Out: return DimKind::Arg_Out;
                     case ast::VArgAccessSpec::InOut: return DimKind::Arg_InOut;
+                    default: {
+                        assert(0 && "Invalid dim_kind in formal arg.");
+                    }
                 }
             }());
             Dim* dim = fn_dim(dim_kind, arg_field->lhs_name(), arg_field->x_defn_tv()->get_type_soln());
             assert(dim && "Failed to 'dim' for fn-arg.");
+            arg_field->x_defn()->x_llvm_dim(dim);
 
             // storing the argument into this stack variable:
-            LLVMValueRef init_store_value = LLVMGetParam(llvm_fn, arg_index);
-            LLVMBuildStore(m_compiler->llvm_builder(), init_store_value, dim->llvm_stack_ptr);
+            switch (arg_field->accepted_varg_kind()) {
+                case ast::VArgAccessSpec::In: {
+                    // 'in' arguments have space pushed just like 'val' or 'var'
+                    // here, we store (copy) the value in the argument to the stack, relying on mem2reg to optimize
+                    // if required.
+                    assert(dim->data_as.llvm_ptr_to_storage && "expected non-nullptr to storage after fn_dim for Arg_In.");
+                    LLVMValueRef init_store_value = LLVMGetParam(llvm_fn, arg_index);
+                    LLVMBuildStore(
+                        static_cast<LLVMBuilderRef>(
+                            m_compiler->llvm_builder()
+                        ),
+                        init_store_value,
+                        dim->data_as.llvm_ptr_to_storage
+                    );
+                    break;
+                }
+                case ast::VArgAccessSpec::Out:
+                case ast::VArgAccessSpec::InOut: {
+                    // 'ref' arguments do not occupy any stack space.
+                    // instead, the pointer is the argument itself.
+                    assert(
+                        dim->data_as.llvm_ptr_to_storage == nullptr &&
+                        "expected nullptr to storage after fn_dim for ref arg"
+                    );
+                    LLVMValueRef llvm_ptr_to_storage = LLVMGetParam(llvm_fn, arg_index);
+                    dim->data_as.llvm_ptr_to_storage = llvm_ptr_to_storage;
+                    break;
+                }
+            }
         }
 
 
@@ -490,7 +752,7 @@ namespace pdm::emitter {
         //   'void' expressions return a 'nullptr' handle when emitting.
 
         // body:
-        LLVMValueRef llvm_return_value = emit_llvm_value_for(lambda_node->rhs_body());
+        RValue* llvm_return_value = emit_ro_llvm_value_for(lambda_node->rhs_body());
 
         // return instruction:
         types::Type* return_type = lambda_node->x_type_of_var()->get_type_soln();
@@ -499,13 +761,13 @@ namespace pdm::emitter {
                 llvm_return_value != nullptr &&
                 "LlvmEmitter: expected nullptr llvm_return_value for void return"
             );
-            LLVMBuildRetVoid(m_compiler->llvm_builder());
+            LLVMBuildRetVoid(static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()));
         } else {
             assert(
                 llvm_return_value != nullptr &&
                 "LlvmEmitter: expected non-nullptr llvm_return_value for non-void return"
             );
-            LLVMBuildRet(m_compiler->llvm_builder(), llvm_return_value);
+            LLVMBuildRet(static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()), llvm_return_value->llvm_value());
         }
 
         // popping the frame
@@ -513,61 +775,77 @@ namespace pdm::emitter {
         return true;
     }
 
-    bool EmitDefsVisitor::on_visit_lambda_exp(ast::LambdaExp* node, ast::Visitor::VisitOrder visit_order) {
-        auto lambda_ok = TinyVisitor::on_visit_lambda_exp(node, visit_order);
-        if (!lambda_ok) {
-            return false;
-        }
-        if (visit_order == VisitOrder::Pre) {
-            auto lambda_node = dynamic_cast<ast::LambdaExp*>(node);
-            LLVMValueRef llvm_fn = lambda_node->x_llvm_fn();
-
-            if (!emit_fn(lambda_node, llvm_fn)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    LLVMValueRef EmitDefsVisitor::emit_llvm_value_for(ast::Exp* exp) {
+    RValue* EmitDefsVisitor::emit_ro_llvm_value_for(ast::Exp* exp) {
         types::Type* exp_type = exp->x_type_of_var()->get_type_soln();
 
+        // pattern-matching to emit values:
         switch (exp->kind()) {
             case ast::Kind::UnitExp: {
-                return LLVMGetUndef(LLVMVoidType());
+                return new RValue(exp, LLVMGetUndef(LLVMVoidType()));
             }
             case ast::Kind::IntExp: {
                 auto int_exp = dynamic_cast<ast::IntExp*>(exp);
                 auto int_type = dynamic_cast<types::IntType*>(exp_type);
                 assert(int_exp && int_type && "Incorrect datatypes in int-exp.");
-                return LLVMConstInt(
+                return new RValue(exp, LLVMConstInt(
                     emit_llvm_type_for(exp_type),
                     int_exp->value(),
                     int_type->using_sign_ext()
-                );
+                ));
             }
             case ast::Kind::FloatExp: {
                 auto float_exp = dynamic_cast<ast::FloatExp*>(exp);
                 assert(float_exp && "Incorrect datatypes in float-exp.");
-                return LLVMConstReal(
+                return new RValue(exp, LLVMConstReal(
                     emit_llvm_type_for(exp_type),
                     static_cast<double>(float_exp->value())
-                );
+                ));
                 break;
             }
             case ast::Kind::IdExp: {
                 auto id_exp = dynamic_cast<ast::IdExp*>(exp);
                 auto id_type = exp_type;
                 if (id_type->type_kind() != types::Kind::Void) {
-                    std::string id_name = "loaded:" + id_exp->name().cpp_str();
-                    auto dim = fn_lookup(id_exp->name(), true, false);
-                    return LLVMBuildLoad(
-                        m_compiler->llvm_builder(),
-                        dim->llvm_stack_ptr,
-                        id_name.c_str()
-                    );
+                    Dim* dim = id_exp->x_defn()->x_llvm_dim();
+                    assert(dim && "Could not emit LLVM IR for ID: `x_llvm_dim` unset.");
+
+                    switch (dim->dim_kind) {
+                        case DimKind::Global_Fn: {
+                            // no load required: just access the value directly.
+                            return new RValue(
+                                exp,
+                                dim->data_as.llvm_fn_ptr
+                            );
+                        }
+                        case DimKind::Global_Val:
+                        case DimKind::Arg_In:
+                        case DimKind::Arg_InOut:
+                        case DimKind::Var:
+                        case DimKind::Val: {
+                            // loading from the pointer:
+                            std::string id_name = "loaded:" + id_exp->name().cpp_str();
+                            return new RValue(
+                                exp,
+                                LLVMBuildLoad(
+                                    static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()),
+                                    dim->data_as.llvm_ptr_to_storage,
+                                    id_name.c_str()
+                                ),
+                                dim->data_as.llvm_ptr_to_storage
+                            );
+                            break;
+                        }
+                        case DimKind::Arg_Out: {
+                            // not allowed
+                            assert(0 && "NotImplemented: report 'cannot read from Arg_Out'");
+                            break;
+                        }
+                    }
                 } else {
-                    return LLVMGetUndef(LLVMVoidType());
+                    return new RValue(
+                        exp,
+                        LLVMGetUndef(LLVMVoidType())
+                    );
                 }
             }
 //            case ast::Kind::StringExp: {
@@ -576,18 +854,71 @@ namespace pdm::emitter {
 //            case ast::Kind::UnaryExp: {
 //                break;
 //            }
-//            case ast::Kind::BinaryExp: {
-//                break;
-//            }
+            case ast::Kind::BinaryExp: {
+                assert(0 && "NotImplemented: emitting LLVM for BinaryExp");
+                break;
+            }
 //            case ast::Kind::LambdaExp: {
 //                break;
 //            }
 //            case ast::Kind::IfExp: {
 //                break;
 //            }
-//            case ast::Kind::VCallExp: {
-//                break;
-//            }
+            case ast::Kind::ModuleDotExp: {
+                assert(0 && "NotImplemented: emitting LLVM for ModuleDotExp");
+                break;
+            }
+            case ast::Kind::VCallExp: {
+                auto call_exp = dynamic_cast<ast::VCallExp*>(exp);
+                auto call_type = dynamic_cast<types::FnType*>(exp_type);
+
+                // translating the called expression:
+                auto llvm_lhs_called_exp = emit_ro_llvm_value_for(call_exp->lhs_called());
+
+                // translating the arguments:
+                std::vector<LLVMValueRef> actual_args;
+                actual_args.reserve(call_exp->args().size());
+                for (ast::VArg* arg: call_exp->args()) {
+                    switch (arg->access_spec()) {
+                        case ast::VArgAccessSpec::In: {
+                            RValue* actual_arg_r_value = emit_ro_llvm_value_for(arg->arg_exp());
+                            actual_args.push_back(actual_arg_r_value->llvm_value());
+                            break;
+                        }
+                        case ast::VArgAccessSpec::InOut:
+                        case ast::VArgAccessSpec::Out: {
+                            LValue* actual_arg_l_value = emit_rw_llvm_value_for(arg->arg_exp());
+                            switch (actual_arg_l_value->l_value_kind()) {
+                                case LValueKind::Id: {
+                                    auto id_l_value = dynamic_cast<IdLValue*>(actual_arg_l_value);
+                                    actual_args.push_back(id_l_value->llvm_storage_ptr());
+                                    break;
+                                }
+                                case LValueKind::Tuple: {
+                                    auto tuple_l_value = dynamic_cast<IdLValue*>(actual_arg_l_value);
+                                    assert(0 && "NotImplemented: passing a tuple as an inout/out argument");
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                // building a call expression:
+                std::string returned_value_name = "returned";
+                LLVMValueRef returned_value = LLVMBuildCall(
+                    static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()),
+                    llvm_lhs_called_exp->llvm_value(),
+                    actual_args.data(), actual_args.size(),
+                    returned_value_name.c_str()
+                );
+
+                return new RValue(
+                    call_exp,
+                    returned_value
+                );
+            }
             case ast::Kind::ChainExp: {
                 auto chain_exp = dynamic_cast<ast::ChainExp*>(exp);
 
@@ -599,13 +930,13 @@ namespace pdm::emitter {
                             assert(vax_stmt && "LlvmEmitter: Invalid 'var' stmt datatype in chain-exp.");
 
                             // evaluating the RHS exp:
-                            auto rhs_value = emit_llvm_value_for(vax_stmt->rhs_exp());
+                            auto rhs_value = emit_ro_llvm_value_for(vax_stmt->rhs_exp());
 
                             // storing into LHS variables:
                             if (vax_stmt->lhs_lpattern()->destructure()) {
                                 assert(0 && "NotImplemented: emitting LLVM IR for de-structured lpatterns.");
                             } else {
-                                auto sole_field = vax_stmt->lhs_lpattern()->fields()[0];
+                                ast::LPattern::Field* sole_field = vax_stmt->lhs_lpattern()->fields()[0];
                                 assert(sole_field && "LlvmEmitter: nullptr field in lpattern");
 
                                 auto sole_field_type = sole_field->x_defn_tv()->get_type_soln();
@@ -615,11 +946,12 @@ namespace pdm::emitter {
                                     sole_field_type
                                 );
                                 assert(dim && "LlvmEmitter: Failed to 'dim' for 'var' statement.");
+                                sole_field->x_defn()->x_llvm_dim(dim);
 
                                 LLVMBuildStore(
-                                    m_compiler->llvm_builder(),
-                                    rhs_value,
-                                    dim->llvm_stack_ptr
+                                    static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()),
+                                    rhs_value->llvm_value(),
+                                    dim->data_as.llvm_ptr_to_storage
                                 );
                             }
                             break;
@@ -629,7 +961,7 @@ namespace pdm::emitter {
                             assert(vax_stmt && "Invalid 'vax' stmt datatype in chain-exp.");
 
                             // evaluating the RHS exp:
-                            auto rhs_value = emit_llvm_value_for(vax_stmt->rhs_exp());
+                            auto rhs_value = emit_ro_llvm_value_for(vax_stmt->rhs_exp());
 
                             // storing into LHS variables:
                             if (vax_stmt->lhs_lpattern()->destructure()) {
@@ -645,11 +977,12 @@ namespace pdm::emitter {
                                     sole_field_type
                                 );
                                 assert(dim && "LlvmEmitter: Failed to 'dim' for 'var' statement.");
+                                sole_field->x_defn()->x_llvm_dim(dim);
 
                                 LLVMBuildStore(
-                                    m_compiler->llvm_builder(),
-                                    rhs_value,
-                                    dim->llvm_stack_ptr
+                                    static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()),
+                                    rhs_value->llvm_value(),
+                                    dim->data_as.llvm_ptr_to_storage
                                 );
                             }
                             break;
@@ -659,14 +992,25 @@ namespace pdm::emitter {
 
                             // evaluating the discarded expression:
                             auto discarded_exp = discard_stmt->discarded_exp();
-                            LLVMValueRef discarded_llvm_value = emit_llvm_value_for(discarded_exp);
+                            auto discarded_llvm_value = emit_ro_llvm_value_for(discarded_exp);
 
                             // discarding it by setting it to a variable named discard ...:
                             // NOTE:
                             // - discard does not mean this expression is safe to optimize out.
                             // - on the contrary, it means this expression's result MUST be evaluated and discarded.
                             std::string discard_var_name = "discard @ " + discard_stmt->loc().cpp_str();
-                            LLVMSetValueName(discarded_llvm_value, discard_var_name.c_str());
+                            LLVMSetValueName(discarded_llvm_value->llvm_value(), discard_var_name.c_str());
+
+                            break;
+                        }
+                        case ast::Kind::SetStmt: {
+                            auto set_stmt = dynamic_cast<ast::SetStmt*>(stmt);
+
+                            auto lhs_exp = set_stmt->lhs_exp();
+                            auto rhs_exp = set_stmt->rhs_exp();
+
+                            auto lhs_l_value = emit_rw_llvm_value_for(lhs_exp);
+                            help_assign_exp_to_l_value(lhs_l_value, rhs_exp);
 
                             break;
                         }
@@ -677,10 +1021,109 @@ namespace pdm::emitter {
                 }
 
                 // emitting the chain suffix:
-                return emit_llvm_value_for(chain_exp->suffix());
+                return emit_ro_llvm_value_for(chain_exp->suffix());
             }
             default: {
                 assert(0 && "NotImplemented: emitting LLVM for unknown expression kind.");
+            }
+        }
+    }
+
+    LValue* EmitDefsVisitor::emit_rw_llvm_value_for(ast::Exp* exp) {
+        // NOTE on set-stmt/enable_write: (from dependency dispatcher)
+        // - set X = Y means that X is an lvalue/writable value.
+        // - in DD, we check that X is either a tuple or an ID.
+        //   - spec accepts either ID or tuple of IDs.
+
+        // - this lets us assume X = Tuple | Id
+        //   - anything else is a DependencyDispatcher error
+        //   - DD doubles as a syntax checker here, poor separation of concerns => should alter grammar
+
+        // - here, must check that...
+        //   - if (enable_write), each ID has mutable DimKind
+        //   - if (enable_write), each Tuple must actually export an array of pointers.
+
+        // - note that the type system does not verify mutability (for some bizarre reason).
+        //   - adding mutability rules would further complicate the type solver
+        //   - it is possible to check this here.
+
+        types::Type* exp_type = exp->x_type_of_var()->get_type_soln();
+
+        switch (exp->kind()) {
+            case ast::Kind::IdExp: {
+                auto id_exp = dynamic_cast<ast::IdExp*>(exp);
+                auto id_type = exp_type;
+
+                if (id_type->type_kind() != types::Kind::Void) {
+                    std::string id_name = "loaded:" + id_exp->name().cpp_str();
+                    auto dim = id_exp->x_defn()->x_llvm_dim();
+
+                    // not all dims are writable.
+                    bool is_dim_writable = ([dim] () {
+                        switch (dim->dim_kind) {
+                            case DimKind::Arg_InOut:
+                            case DimKind::Arg_Out:
+                            case DimKind::Var: {
+                                return true;
+                            }
+                            default: {
+                                return false;
+                            }
+                        }
+                    })();
+                    if (!is_dim_writable) {
+                        assert(0 && "NotImplemented: posting feedback on `set-stmt` to non-writable IdExp.");
+                    }
+
+                    return new IdLValue(id_exp, dim);
+                } else {
+                    // we need not look up the ID again, since the scoper checks that all used IDs are defined first,
+                    // and no memory is 'dim'-ed for 'void' type IDs.
+                    return new IdLValue(id_exp, nullptr);
+                }
+            }
+            case ast::Kind::TupleExp: {
+                auto tuple_exp = dynamic_cast<ast::TupleExp*>(exp);
+                auto tuple_type = exp_type;
+
+                assert(0 && "NotImplemented: emit LValue* for ast::TupleExp");
+
+                break;
+            }
+            default: {
+                assert(0 && "NotImplemented: `emit_rw_llvm_value_for(exp)`");
+                return nullptr;
+            }
+        }
+    }
+
+    //
+    // Helpers:
+    //
+
+    void EmitDefsVisitor::help_assign_exp_to_l_value(LValue* lhs, ast::Exp* rhs) {
+        switch (lhs->l_value_kind()) {
+            case LValueKind::Id: {
+                auto lhs_value = dynamic_cast<IdLValue*>(lhs);
+                auto rhs_value = emit_ro_llvm_value_for(rhs);
+
+                auto lhs_type = lhs->exp()->x_type_of_var()->get_type_soln();
+                if (lhs_type->type_kind() == types::Kind::Void) {
+                    // do nothing!
+                } else {
+                    LLVMBuildStore(
+                        static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()),
+                        rhs_value->llvm_value(),
+                        lhs_value->llvm_storage_ptr()
+                    );
+                }
+
+                break;
+            }
+            case LValueKind::Tuple: {
+                // todo: expect rhs is of tuple type and destructure assignment.
+                assert(0 && "NotImplemented: assigning to a tuple LValue");
+                break;
             }
         }
     }

@@ -8,7 +8,7 @@
 #include "pdm/core/intern.hh"
 #include "pdm/ast/arg/varg.hh"
 
-#include "base_field.hh"
+#include "base-field.hh"
 
 namespace pdm::ast {
     class Manager;
@@ -29,7 +29,6 @@ namespace pdm::ast {
           private:
             TypeSpec*       m_typespec;
             VArgAccessSpec  m_accepted_varg_kind;
-            types::TypeVar* m_x_defn_tv;
 
           protected:
             Field(source::Loc loc, intern::String lhs_name, TypeSpec* rhs_typespec, VArgAccessSpec accepted_varg_kind);
@@ -40,7 +39,6 @@ namespace pdm::ast {
 
           public:
             [[nodiscard]] types::TypeVar* x_defn_tv() const;
-            void x_defn_tv(types::TypeVar* defn_tv);
         };
 
       private:
@@ -61,14 +59,6 @@ namespace pdm::ast {
     :   Node(loc, Kind::VPattern),
         m_fields(std::move(fields)) {}
 
-    inline void VPattern::Field::x_defn_tv(types::TypeVar* defn_tv) {
-        m_x_defn_tv = defn_tv;
-    }
-
-    inline types::TypeVar* VPattern::Field::x_defn_tv() const {
-        return m_x_defn_tv;
-    }
-
     inline VArgAccessSpec VPattern::Field::accepted_varg_kind() const {
         return m_accepted_varg_kind;
     }
@@ -85,8 +75,7 @@ namespace pdm::ast {
     )
     :   BaseField(loc, Kind::Aux_VPatternField, lhs_name),
         m_typespec(rhs_typespec),
-        m_accepted_varg_kind(accepted_varg_kind),
-        m_x_defn_tv(nullptr)
+        m_accepted_varg_kind(accepted_varg_kind)
     {}
 
 }

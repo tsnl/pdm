@@ -11,10 +11,10 @@ mod next {
         };
     };
 
-    mod linked_list [Node ll_base::LL_NODE, impl NodeImpl] {
+    mod linked_list [Node ll_base:LL_NODE, impl NodeImpl] {
 
         let add (node1 Node, node2 Node) Node = {
-            index = impl.allocator(rtti[Node]::size),
+            index = impl.allocator(rtti[Node]:size),
             value = node1.value + node2.value
         };
 

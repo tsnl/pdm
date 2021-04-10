@@ -25,39 +25,39 @@ namespace pdm::types {
     //
 
     void KindDependentVarSolver::help_print_common_and_start_indented_block(
-        printer::Printer& printer,
+        printer::Printer* printer,
         std::string const& name
     ) const {
         // headline:
-        printer.print_str("KDVS ");
-        printer.print_str(name);
-        printer.print_c_str(" (tk: ");
-        printer.print_c_str(type_kind_as_str(m_required_type_kind));
-        printer.print_c_str(", vk: ");
-        printer.print_c_str(var_archetype_as_str(m_var_kind));
-        printer.print_c_str(") {");
+        printer::print_str(printer, "KDVS ");
+        printer::print_str(printer, name);
+        printer::print_c_str(printer, " (tk: ");
+        printer::print_c_str(printer, type_kind_as_str(m_required_type_kind));
+        printer::print_c_str(printer, ", vk: ");
+        printer::print_c_str(printer, var_archetype_as_str(m_var_kind));
+        printer::print_c_str(printer, ") {");
 
         // indent + body:
-        printer.print_newline_indent();
+        printer::print_newline_indent(printer);
         {
             // printing all added kind-dependent invariants:
             u64 invariant_count = m_added_invariants.size();
-            printer.print_c_str("- Invariants (");
-            printer.print_uint_dec(invariant_count);
-            printer.print_c_str(")");
+            printer::print_c_str(printer, "- Invariants (");
+            printer::print_uint_dec(printer, invariant_count);
+            printer::print_c_str(printer, ")");
             if (!m_added_invariants.empty()) {
-                printer.print_newline_indent();
+                printer::print_newline_indent(printer);
 
                 for (auto it = m_added_invariants.begin(); it != m_added_invariants.end(); it++) {
                     if (it != m_added_invariants.begin()) {
-                        printer.print_newline();
+                        printer::print_newline(printer);
                     }
-                    printer.print_c_str("- ");
+                    printer::print_c_str(printer, "- ");
                     (*it)->print(printer);
                 }
-                printer.print_newline_exdent();
+                printer::print_newline_exdent(printer);
             } else {
-                printer.print_newline();
+                printer::print_newline(printer);
             }
         }
 
@@ -86,7 +86,7 @@ namespace pdm::types {
         Type* reify_impl(Var* var) override;
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
 
     inline SimplestKDVS::SimplestKDVS(VarArchetype var_kind, Kind required_type_kind)
@@ -133,11 +133,11 @@ namespace pdm::types {
         }
     }
 
-    void SimplestKDVS::print(printer::Printer& printer) const {
+    void SimplestKDVS::print(printer::Printer* printer) const {
         help_print_common_and_start_indented_block(printer, "Simplest");
         {}
-        printer.print_newline_exdent();
-        printer.print_c_str("}");
+        printer::print_newline_exdent(printer);
+        printer::print_c_str(printer, "}");
     }
 
     // NumberKDVS is used to typecheck sets of numbers:
@@ -156,7 +156,7 @@ namespace pdm::types {
         Type* reify_impl(Var* var) override;
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
 
     NumberKDVS::NumberKDVS(VarArchetype var_kind, Kind type_kind)
@@ -317,26 +317,26 @@ namespace pdm::types {
         }
     }
 
-    void NumberKDVS::print(printer::Printer &printer) const {
+    void NumberKDVS::print(printer::Printer* printer) const {
         help_print_common_and_start_indented_block(printer, "Number");
         {
-            printer.print_c_str("- Min-WidthInBits: ");
+            printer::print_c_str(printer, "- Min-WidthInBits: ");
             if (m_opt_min_width_in_bits >= 0) {
-                printer.print_uint_dec(m_opt_min_width_in_bits);
+                printer::print_uint_dec(printer, m_opt_min_width_in_bits);
             } else {
-                printer.print_c_str("Any");
+                printer::print_c_str(printer, "Any");
             }
 
-            printer.print_newline();
-            printer.print_c_str("- Max-WidthInBits: ");
+            printer::print_newline(printer);
+            printer::print_c_str(printer, "- Max-WidthInBits: ");
             if (m_opt_max_width_in_bits >= 0) {
-                printer.print_uint_dec(m_opt_max_width_in_bits);
+                printer::print_uint_dec(printer, m_opt_max_width_in_bits);
             } else {
-                printer.print_c_str("Any");
+                printer::print_c_str(printer, "Any");
             }
         }
-        printer.print_newline_exdent();
-        printer.print_c_str("}");
+        printer::print_newline_exdent(printer);
+        printer::print_c_str(printer, "}");
     }
 
     // TupleKDVS is used to typecheck tuples.
@@ -354,7 +354,7 @@ namespace pdm::types {
         Type* reify_impl(Var* var) override;
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
 
     TupleKDVS::TupleKDVS(VarArchetype var_kind)
@@ -409,29 +409,29 @@ namespace pdm::types {
         return TupleType::get(construct_fields);
     }
 
-    void TupleKDVS::print(printer::Printer& printer) const {
+    void TupleKDVS::print(printer::Printer* printer) const {
         help_print_common_and_start_indented_block(printer, "TupleKDVS");
         {
-            printer.print_c_str("- Items (");
-            printer.print_uint_dec(m_typeof_items_tvs.size());
-            printer.print_c_str("):");
-            printer.print_newline();
+            printer::print_c_str(printer, "- Items (");
+            printer::print_uint_dec(printer, m_typeof_items_tvs.size());
+            printer::print_c_str(printer, "):");
+            printer::print_newline(printer);
             {
                 size_t count = m_typeof_items_tvs.size();
                 for (size_t i = 0; i < count; i++) {
-                    printer.print_c_str("- Field ");
-                    printer.print_uint_dec(i);
-                    printer.print_c_str(": ");
+                    printer::print_c_str(printer, "- Field ");
+                    printer::print_uint_dec(printer, i);
+                    printer::print_c_str(printer, ": ");
                     m_typeof_items_tvs[i]->print_title(printer);
 
                     if (i+1 != count) {
-                        printer.print_newline();
+                        printer::print_newline(printer);
                     }
                 }
             }
         }
-        printer.print_newline_exdent();
-        printer.print_c_str("}");
+        printer::print_newline_exdent(printer);
+        printer::print_c_str(printer, "}");
     }
 
     // FieldCollectionKDVS is used to typecheck types with items a dictionary of fields:
@@ -454,7 +454,7 @@ namespace pdm::types {
         Type* reify_impl(Var* var) override;
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
 
     FieldCollectionKDVS::FieldCollectionKDVS(VarArchetype var_kind, Kind type_kind)
@@ -668,26 +668,26 @@ namespace pdm::types {
         return nullptr;
     }
 
-    void FieldCollectionKDVS::print(printer::Printer& printer) const {
+    void FieldCollectionKDVS::print(printer::Printer* printer) const {
         help_print_common_and_start_indented_block(printer, "FieldCollection");
         {
-            printer.print_newline();
-            printer.print_c_str("- Fields (");
-            printer.print_uint_dec(m_fields.size());
-            printer.print_c_str(")");
+            printer::print_newline(printer);
+            printer::print_c_str(printer, "- Fields (");
+            printer::print_uint_dec(printer, m_fields.size());
+            printer::print_c_str(printer, ")");
             // each field prints its own prefix newline, incl. one extra for here.
             if (!m_fields.empty()) {
                 for (auto it: m_fields) {
-                    printer.print_newline();
-                    printer.print_c_str("- Field '");
-                    printer.print_int_str(it.first);
-                    printer.print_c_str("': ");
+                    printer::print_newline(printer);
+                    printer::print_c_str(printer, "- Field '");
+                    printer::print_int_str(printer, it.first);
+                    printer::print_c_str(printer, "': ");
                     it.second->print_title(printer);
                 }
             }
         }
-        printer.print_newline_exdent();
-        printer.print_c_str("}");
+        printer::print_newline_exdent(printer);
+        printer::print_c_str(printer, "}");
     }
 
     // FnKDVS is used to typecheck TypeVars that contain functions.
@@ -711,7 +711,7 @@ namespace pdm::types {
         Type* reify_impl(Var* var) override;
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
 
     FnKDVS::FnKDVS(VarArchetype var_kind)
@@ -888,20 +888,20 @@ namespace pdm::types {
         return FnType::get(fn_tt_node_arg_fields);
     }
 
-    void FnKDVS::print(printer::Printer& printer) const {
+    void FnKDVS::print(printer::Printer* printer) const {
         help_print_common_and_start_indented_block(printer, "Fn");
         {
-            // printer.print_newline();
-            printer.print_c_str("- Args (");
-            printer.print_uint_dec(m_args.size());
-            printer.print_c_str(")");
+            // printer::print_newline(printer);
+            printer::print_c_str(printer, "- Args (");
+            printer::print_uint_dec(printer, m_args.size());
+            printer::print_c_str(printer, ")");
             if (!m_args.empty()) {
-                printer.print_newline_indent();
+                printer::print_newline_indent(printer);
                 for (size_t arg_index = 0; arg_index < m_args.size(); arg_index++) {
                     VCallArg const& arg = m_args[arg_index];
 
                     // printing a list item prefix:
-                    printer.print_c_str("- ");
+                    printer::print_c_str(printer, "- ");
 
                     // printing the access spec:
                     switch (arg.varg_access_spec)
@@ -911,44 +911,44 @@ namespace pdm::types {
                             break;
                         }
                         case ast::VArgAccessSpec::Out: {
-                            printer.print_c_str("out ");
+                            printer::print_c_str(printer, "out ");
                             break;
                         }
                         case ast::VArgAccessSpec::InOut: {
-                            printer.print_c_str("inout ");
+                            printer::print_c_str(printer, "inout ");
                             break;
                         }
                     }
 
                     // printing arg name:
                     if (arg.name.has_value()) {
-                        printer.print_int_str(arg.name.value());
+                        printer::print_int_str(printer, arg.name.value());
                     } else {
-                        printer.print_c_str("*");
+                        printer::print_c_str(printer, "*");
                     }
 
                     // printing arg type var:
-                    printer.print_c_str(": ");
+                    printer::print_c_str(printer, ": ");
                     arg.typeof_arg_tv->print_title(printer);
 
                     if (arg_index+1 != m_args.size()) {
-                        printer.print_newline();
+                        printer::print_newline(printer);
                     }
                 }
-                printer.print_newline_exdent();
+                printer::print_newline_exdent(printer);
             } else {
-                printer.print_newline();
+                printer::print_newline(printer);
             }
 
-            printer.print_c_str("- Returns: ");
+            printer::print_c_str(printer, "- Returns: ");
             if (m_typeof_ret_tv) {
                 m_typeof_ret_tv->print_title(printer);
             } else {
-                printer.print_c_str("<Unknown>");
+                printer::print_c_str(printer, "<Unknown>");
             }
         }
-        printer.print_newline_exdent();
-        printer.print_c_str("}");
+        printer::print_newline_exdent(printer);
+        printer::print_c_str(printer, "}");
     }
 
 
@@ -969,7 +969,7 @@ namespace pdm::types {
         Type* reify_impl(Var* var) override;
 
       public:
-        void print(printer::Printer& printer) const override;
+        void print(printer::Printer* printer) const override;
     };
     
     inline ArrayKDVS::ArrayKDVS(VarArchetype var_kind)
@@ -1003,14 +1003,14 @@ namespace pdm::types {
         return nullptr;
     }
 
-    void ArrayKDVS::print(printer::Printer& printer) const {
+    void ArrayKDVS::print(printer::Printer* printer) const {
         help_print_common_and_start_indented_block(printer, "Array");
         {
-            printer.print_c_str("- ItemType: ");
+            printer::print_c_str(printer, "- ItemType: ");
             m_opt_typeof_element_tv->print_title(printer);
         }
-        printer.print_newline_exdent();
-        printer.print_c_str("}");
+        printer::print_newline_exdent(printer);
+        printer::print_c_str(printer, "}");
     }
 
 }

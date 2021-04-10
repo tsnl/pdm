@@ -426,6 +426,7 @@ namespace pdm { namespace parser {
       // enum_type_spec_field
       char dummy7[sizeof (pdm::ast::EnumTypeSpec::Field*)];
 
+      // mut_expr
       // expr
       // long_exp
       // bracketed_exp
@@ -536,6 +537,7 @@ namespace pdm { namespace parser {
       // enum_type_spec_field_cl
       char dummy32[sizeof (std::vector<pdm::ast::EnumTypeSpec::Field*>)];
 
+      // mut_expr_cl1
       // expr_cl2
       char dummy33[sizeof (std::vector<pdm::ast::Exp*>)];
 
@@ -819,73 +821,75 @@ namespace pdm { namespace parser {
         S_floatl = 99,                           // floatl
         S_stringl = 100,                         // stringl
         S_mod_prefix = 101,                      // mod_prefix
-        S_expr = 102,                            // expr
-        S_long_exp = 103,                        // long_exp
-        S_expr_cl2 = 104,                        // expr_cl2
-        S_type_query_exp_sl0 = 105,              // type_query_exp_sl0
-        S_bracketed_exp = 106,                   // bracketed_exp
-        S_paren_exp = 107,                       // paren_exp
-        S_vtupleExpr = 108,                      // vtupleExpr
-        S_vstructExpr = 109,                     // vstructExpr
-        S_primary_exp = 110,                     // primary_exp
-        S_int_expr = 111,                        // int_expr
-        S_stringls = 112,                        // stringls
-        S_if_exp = 113,                          // if_exp
-        S_chain_exp = 114,                       // chain_exp
-        S_chain_prefix = 115,                    // chain_prefix
-        S_lambda_exp = 116,                      // lambda_exp
-        S_postfix_exp = 117,                     // postfix_exp
-        S_vcall_exp = 118,                       // vcall_exp
-        S_dot_name_exp = 119,                    // dot_name_exp
-        S_dot_index_exp = 120,                   // dot_index_exp
-        S_unary_exp = 121,                       // unary_exp
-        S_unary_op = 122,                        // unary_op
-        S_binary_exp = 123,                      // binary_exp
-        S_mul_binary_op = 124,                   // mul_binary_op
-        S_mul_binary_exp = 125,                  // mul_binary_exp
-        S_add_binary_op = 126,                   // add_binary_op
-        S_add_binary_exp = 127,                  // add_binary_exp
-        S_cmp_binary_op = 128,                   // cmp_binary_op
-        S_cmp_binary_exp = 129,                  // cmp_binary_exp
-        S_eq_binary_op = 130,                    // eq_binary_op
-        S_eq_binary_exp = 131,                   // eq_binary_exp
-        S_and_binary_exp = 132,                  // and_binary_exp
-        S_xor_binary_exp = 133,                  // xor_binary_exp
-        S_or_binary_exp = 134,                   // or_binary_exp
-        S_type_query_exp = 135,                  // type_query_exp
-        S_type_query_op = 136,                   // type_query_op
-        S_type_spec_cl2 = 137,                   // type_spec_cl2
-        S_type_spec = 138,                       // type_spec
-        S_mod_prefix_tid = 139,                  // mod_prefix_tid
-        S_tuple_type_spec = 140,                 // tuple_type_spec
-        S_array_type_spec = 141,                 // array_type_spec
-        S_struct_type_spec = 142,                // struct_type_spec
-        S_struct_type_spec_field_cl = 143,       // struct_type_spec_field_cl
-        S_struct_type_spec_field = 144,          // struct_type_spec_field
-        S_enum_type_spec_field = 145,            // enum_type_spec_field
-        S_enum_type_spec_field_cl = 146,         // enum_type_spec_field_cl
-        S_enum_type_spec = 147,                  // enum_type_spec
-        S_fn_type_spec = 148,                    // fn_type_spec
-        S_targ = 149,                            // targ
-        S_targ_cl = 150,                         // targ_cl
-        S_varg = 151,                            // varg
-        S_varg_cl = 152,                         // varg_cl
-        S_class_spec = 153,                      // class_spec
-        S_primary_class_spec = 154,              // primary_class_spec
-        S_mod_prefix_cid_class_spec = 155,       // mod_prefix_cid_class_spec
-        S_class_exp_class_spec = 156,            // class_exp_class_spec
-        S_struct_exp_field = 157,                // struct_exp_field
-        S_vpattern_field = 158,                  // vpattern_field
-        S_lpattern_field = 159,                  // lpattern_field
-        S_tpattern_field = 160,                  // tpattern_field
-        S_destructured_lpattern = 161,           // destructured_lpattern
-        S_lpattern = 162,                        // lpattern
-        S_vpattern = 163,                        // vpattern
-        S_tpattern = 164,                        // tpattern
-        S_vpattern_field_cl = 165,               // vpattern_field_cl
-        S_lpattern_field_cl = 166,               // lpattern_field_cl
-        S_tpattern_field_cl1 = 167,              // tpattern_field_cl1
-        S_struct_exp_field_cl = 168              // struct_exp_field_cl
+        S_mut_expr = 102,                        // mut_expr
+        S_mut_expr_cl1 = 103,                    // mut_expr_cl1
+        S_expr = 104,                            // expr
+        S_long_exp = 105,                        // long_exp
+        S_expr_cl2 = 106,                        // expr_cl2
+        S_type_query_exp_sl0 = 107,              // type_query_exp_sl0
+        S_bracketed_exp = 108,                   // bracketed_exp
+        S_paren_exp = 109,                       // paren_exp
+        S_vtupleExpr = 110,                      // vtupleExpr
+        S_vstructExpr = 111,                     // vstructExpr
+        S_primary_exp = 112,                     // primary_exp
+        S_int_expr = 113,                        // int_expr
+        S_stringls = 114,                        // stringls
+        S_if_exp = 115,                          // if_exp
+        S_chain_exp = 116,                       // chain_exp
+        S_chain_prefix = 117,                    // chain_prefix
+        S_lambda_exp = 118,                      // lambda_exp
+        S_postfix_exp = 119,                     // postfix_exp
+        S_vcall_exp = 120,                       // vcall_exp
+        S_dot_name_exp = 121,                    // dot_name_exp
+        S_dot_index_exp = 122,                   // dot_index_exp
+        S_unary_exp = 123,                       // unary_exp
+        S_unary_op = 124,                        // unary_op
+        S_binary_exp = 125,                      // binary_exp
+        S_mul_binary_op = 126,                   // mul_binary_op
+        S_mul_binary_exp = 127,                  // mul_binary_exp
+        S_add_binary_op = 128,                   // add_binary_op
+        S_add_binary_exp = 129,                  // add_binary_exp
+        S_cmp_binary_op = 130,                   // cmp_binary_op
+        S_cmp_binary_exp = 131,                  // cmp_binary_exp
+        S_eq_binary_op = 132,                    // eq_binary_op
+        S_eq_binary_exp = 133,                   // eq_binary_exp
+        S_and_binary_exp = 134,                  // and_binary_exp
+        S_xor_binary_exp = 135,                  // xor_binary_exp
+        S_or_binary_exp = 136,                   // or_binary_exp
+        S_type_query_exp = 137,                  // type_query_exp
+        S_type_query_op = 138,                   // type_query_op
+        S_type_spec_cl2 = 139,                   // type_spec_cl2
+        S_type_spec = 140,                       // type_spec
+        S_mod_prefix_tid = 141,                  // mod_prefix_tid
+        S_tuple_type_spec = 142,                 // tuple_type_spec
+        S_array_type_spec = 143,                 // array_type_spec
+        S_struct_type_spec = 144,                // struct_type_spec
+        S_struct_type_spec_field_cl = 145,       // struct_type_spec_field_cl
+        S_struct_type_spec_field = 146,          // struct_type_spec_field
+        S_enum_type_spec_field = 147,            // enum_type_spec_field
+        S_enum_type_spec_field_cl = 148,         // enum_type_spec_field_cl
+        S_enum_type_spec = 149,                  // enum_type_spec
+        S_fn_type_spec = 150,                    // fn_type_spec
+        S_targ = 151,                            // targ
+        S_targ_cl = 152,                         // targ_cl
+        S_varg = 153,                            // varg
+        S_varg_cl = 154,                         // varg_cl
+        S_class_spec = 155,                      // class_spec
+        S_primary_class_spec = 156,              // primary_class_spec
+        S_mod_prefix_cid_class_spec = 157,       // mod_prefix_cid_class_spec
+        S_class_exp_class_spec = 158,            // class_exp_class_spec
+        S_struct_exp_field = 159,                // struct_exp_field
+        S_vpattern_field = 160,                  // vpattern_field
+        S_lpattern_field = 161,                  // lpattern_field
+        S_tpattern_field = 162,                  // tpattern_field
+        S_destructured_lpattern = 163,           // destructured_lpattern
+        S_lpattern = 164,                        // lpattern
+        S_vpattern = 165,                        // vpattern
+        S_tpattern = 166,                        // tpattern
+        S_vpattern_field_cl = 167,               // vpattern_field_cl
+        S_lpattern_field_cl = 168,               // lpattern_field_cl
+        S_tpattern_field_cl1 = 169,              // tpattern_field_cl1
+        S_struct_exp_field_cl = 170              // struct_exp_field_cl
       };
     };
 
@@ -971,6 +975,7 @@ namespace pdm { namespace parser {
         value.move< pdm::ast::EnumTypeSpec::Field* > (std::move (that.value));
         break;
 
+      case symbol_kind::S_mut_expr: // mut_expr
       case symbol_kind::S_expr: // expr
       case symbol_kind::S_long_exp: // long_exp
       case symbol_kind::S_bracketed_exp: // bracketed_exp
@@ -1106,6 +1111,7 @@ namespace pdm { namespace parser {
         value.move< std::vector<pdm::ast::EnumTypeSpec::Field*> > (std::move (that.value));
         break;
 
+      case symbol_kind::S_mut_expr_cl1: // mut_expr_cl1
       case symbol_kind::S_expr_cl2: // expr_cl2
         value.move< std::vector<pdm::ast::Exp*> > (std::move (that.value));
         break;
@@ -1900,6 +1906,7 @@ switch (yykind)
         value.template destroy< pdm::ast::EnumTypeSpec::Field* > ();
         break;
 
+      case symbol_kind::S_mut_expr: // mut_expr
       case symbol_kind::S_expr: // expr
       case symbol_kind::S_long_exp: // long_exp
       case symbol_kind::S_bracketed_exp: // bracketed_exp
@@ -2035,6 +2042,7 @@ switch (yykind)
         value.template destroy< std::vector<pdm::ast::EnumTypeSpec::Field*> > ();
         break;
 
+      case symbol_kind::S_mut_expr_cl1: // mut_expr_cl1
       case symbol_kind::S_expr_cl2: // expr_cl2
         value.template destroy< std::vector<pdm::ast::Exp*> > ();
         break;
@@ -3706,8 +3714,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 646,     ///< Last index in yytable_.
-      yynnts_ = 92,  ///< Number of nonterminal symbols.
+      yylast_ = 659,     ///< Last index in yytable_.
+      yynnts_ = 94,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
 
@@ -3723,20 +3731,20 @@ switch (yykind)
 
 #line 11 "parser.yy"
 } } // pdm::parser
-#line 3727 "parser.tab.hh"
+#line 3735 "parser.tab.hh"
 
 
 // "%code provides" blocks.
 #line 39 "parser.yy"
 
     using Tk = pdm::parser::parser::token_kind_type;
-#line 183 "parser.yy"
+#line 186 "parser.yy"
 
     // int yylex(pdm::parser::TokenInfo *lvalp, pdm::source::Loc *llocp, pdm::source::ISource* source, pdm::parser::Lexer* lexer);
     int yylex(pdm::parser::parser::semantic_type* st, pdm::source::Loc* llocp, pdm::source::ISource* source, pdm::parser::Lexer* lexer);
     void yyerror(pdm::source::Loc* llocp, char const* message, pdm::source::ISource* source, pdm::parser::Lexer* lexer);
 
-#line 3740 "parser.tab.hh"
+#line 3748 "parser.tab.hh"
 
 
 #endif // !YY_YY_PARSER_TAB_HH_INCLUDED

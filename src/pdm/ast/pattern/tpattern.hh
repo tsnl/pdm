@@ -7,7 +7,7 @@
 #include "pdm/ast/node.hh"
 #include "pdm/ast/type_spec/type_spec.hh"
 
-#include "base_field.hh"
+#include "base-field.hh"
 
 namespace pdm::ast {
     class Manager;
@@ -33,7 +33,6 @@ namespace pdm::ast {
           private:
             FieldKind m_field_kind;
             Node* m_set_spec;
-            types::Var* m_x_defn_var;
 
           protected:
             Field(source::Loc loc, FieldKind kind, intern::String name, Node* rhs_set_spec);
@@ -44,7 +43,6 @@ namespace pdm::ast {
           
           public:
             [[nodiscard]] types::Var* x_defn_var() const;
-            void x_defn_var(types::Var* defn_var);
         };
 
       private:
@@ -78,8 +76,7 @@ namespace pdm::ast {
     )
     :   BaseField(loc, Kind::Aux_TPatternField, name),
         m_field_kind(field_kind),
-        m_set_spec(rhs_set_spec),
-        m_x_defn_var(nullptr)
+        m_set_spec(rhs_set_spec)
     {}
 
     inline TPattern::FieldKind TPattern::Field::field_kind() const {
@@ -90,13 +87,6 @@ namespace pdm::ast {
         return m_set_spec;
     }
 
-    inline types::Var* TPattern::Field::x_defn_var() const {
-        return m_x_defn_var;
-    }
-
-    inline void TPattern::Field::x_defn_var(types::Var* defn_var) {
-        m_x_defn_var = defn_var;
-    }
 }
 
 #endif  // INCLUDED_PDM_AST_PATTERN_TPATTERN_HH

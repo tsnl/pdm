@@ -90,7 +90,7 @@ add_library(pdm STATIC
     src/pdm/ast/exp/unit.hh
     src/pdm/ast/exp/vcall.hh
 
-    src/pdm/ast/pattern/base_field.hh
+        src/pdm/ast/pattern/base-field.hh
     src/pdm/ast/pattern/lpattern.hh
     src/pdm/ast/pattern/tpattern.hh
     src/pdm/ast/pattern/vpattern.hh
@@ -232,7 +232,7 @@ add_library(pdm STATIC
     #   we should eliminate this dependency ASAP.
     dep/utf8proc/utf8proc.c
     dep/utf8proc/utf8proc.h
-)
+        src/pdm/ast/pattern/lpattern.cc src/pdm/ast/pattern/vpattern.cc src/pdm/ast/pattern/tpattern.cc src/pdm/ast/module/base-mod-exp.cc)
 
 target_link_libraries(pdm PUBLIC
     ${llvm_libs} 
@@ -256,11 +256,11 @@ set_property(TARGET pdm PROPERTY C_STANDARD   11)
 # connotes an entryway to a larger building/home.
 add_executable(
     porch
-    src/pdm_sandbox/main.cc
-    src/pdm_sandbox/typer_demo.cc
-    src/pdm_sandbox/typer_demo.hh
-    src/pdm_sandbox/feedback_demo.cc
-    src/pdm_sandbox/feedback_demo.hh
+    src/porch/main.cc
+    src/porch/typer_demo.cc
+    src/porch/typer_demo.hh
+    src/porch/feedback_demo.cc
+    src/porch/feedback_demo.hh
 )
 add_definitions(
     ${LLVM_DEFINITIONS}

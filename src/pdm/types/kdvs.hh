@@ -44,9 +44,9 @@ namespace pdm::types {
         [[nodiscard]] inline Kind required_type_kind() const;
 
       public:
-        virtual void print(printer::Printer& printer) const = 0;
+        virtual void print(printer::Printer* printer) const = 0;
       protected:
-        void help_print_common_and_start_indented_block(printer::Printer& printer, std::string const& name) const;
+        void help_print_common_and_start_indented_block(printer::Printer* printer, std::string const& name) const;
     };
     inline KindDependentVarSolver::KindDependentVarSolver(VarArchetype var_kind, Kind required_type_kind)
     :   m_var_kind(var_kind),

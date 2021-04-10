@@ -25,13 +25,13 @@ namespace pdm::scoper {
     // define
     //
 
-    bool Context::define(Defn new_defn) {
-        for (Defn const& old_defn: m_defns) {
-            if (old_defn.name() == new_defn.name()) {
+    bool Context::define(Defn* new_defn) {
+        for (Defn const* old_defn: m_defns) {
+            if (old_defn->name() == new_defn->name()) {
                 return false;
             }
         }
-        new_defn.container_context(this);
+        new_defn->container_context(this);
         m_defns.push_back(new_defn);
         return true;
     }
@@ -92,9 +92,9 @@ namespace pdm::scoper {
     //
 
     Defn const* Context::help_lookup_shallow(intern::String name) {
-        for (Defn const& my_defn: m_defns) {
-            if (my_defn.name() == name) {
-                return &my_defn;
+        for (Defn const* my_defn: m_defns) {
+            if (my_defn->name() == name) {
+                return my_defn;
             }
         }
         return nullptr;
@@ -121,21 +121,21 @@ namespace pdm::scoper {
     // debug
     //
 
-    void Context::print(printer::Printer& p) const {
-        p.print_c_str(context_kind_as_text(kind()));
-        p.print_c_str(" {");
+    void Context::print(printer::Printer* p) const {
+        printer::print_c_str(p, context_kind_as_text(kind()));
+        printer::print_c_str(p, " {");
         for (int defn_index = 0; defn_index < m_defns.size(); defn_index++) {
-            Defn const& defn = m_defns[defn_index];
-            defn.print(p);
+            Defn const* defn = m_defns[defn_index];
+            defn->print(p);
             if (defn_index+1 != m_defns.size()) {
-                p.print_c_str(", ");
+                printer::print_c_str(p, ", ");
             }
         }
-        p.print_c_str("}");
+        printer::print_c_str(p, "}");
         if (m_opt_link) {
-            p.print_c_str(" link_to (Frame at ");
-            p.print_uint_hex(reinterpret_cast<u64>(m_opt_link));
-            p.print_c_str(")");
+            printer::print_c_str(p, " link_to (Frame at ");
+            printer::print_uint_hex(p, reinterpret_cast<u64>(m_opt_link));
+            printer::print_c_str(p, ")");
         }
     }
 

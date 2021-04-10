@@ -69,7 +69,7 @@ namespace pdm::ast {
         m_name(name),
         m_opt_type_spec(opt_type_spec)
     {
-        assert(m_name != intern::String{} && "Invalid Enum Field name");
+        assert(!m_name.is_nil() && "Invalid Enum Field name");
     }
 
     inline source::Loc EnumTypeSpec::Field::loc() const {

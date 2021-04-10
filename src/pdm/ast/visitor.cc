@@ -423,10 +423,10 @@ namespace pdm::ast {
             );
 
             // native modules:
-            case Kind::NativeModExp: return on_visit_mod_exp(
-                dynamic_cast<NativeModExp*>(node),
-                visit_order
-            );
+            case Kind::NativeModExp: return on_visit_native_mod_exp(
+                    dynamic_cast<NativeModExp *>(node),
+                    visit_order
+                );
             case Kind::NativeModExp_ModField: return on_visit_mod_mod_field(
                 dynamic_cast<NativeModExp::ModuleField*>(node),
                 visit_order

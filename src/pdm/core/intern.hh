@@ -1,7 +1,7 @@
 #ifndef INCLUDED_PDM_CORE_INTERNSTR_HH
 #define INCLUDED_PDM_CORE_INTERNSTR_HH
 
-#include <intern/strings.h>
+#include <map>
 #include <string>
 
 #include "integer.hh"
@@ -10,9 +10,18 @@ namespace pdm::intern {
     
     class String {
       private:
-        struct Manager {
-            strings* m_strings_repository;
-            Manager();
+        class Manager {
+            // todo: can be significantly optimized:
+            //  - since interned strings are immutable (cannot be deleted, recycled)
+            //  - push new IDs to a flat array of strings instead of using 2 maps.
+            friend String;
+          
+          private:
+            std::map<std::string const, u32> m_ids;
+            std::map<u32, std::string const> m_strings;
+
+          public:
+            Manager() noexcept;
             ~Manager();
 
             void ensure_init();
@@ -29,11 +38,12 @@ namespace pdm::intern {
       public:
         String() = default;
         String(String const& other) = default;
+        String(std::string const& str);
         String(char const* str);
 
       public:
         [[nodiscard]] char const* content() const;
-        [[nodiscard]] inline std::string cpp_str() const;
+        [[nodiscard]] std::string const& cpp_str() const;
 
       public:
         inline bool operator== (String const& other) const {
@@ -52,11 +62,12 @@ namespace pdm::intern {
         inline bool operator>= (String const& other) const {
             return m_id >= other.m_id;
         }
-    };
 
-    std::string String::cpp_str() const {
-        return content();
-    }
+      public:
+        inline bool is_nil() const {
+            return m_id == 0;
+        }
+    };
 
 }
 

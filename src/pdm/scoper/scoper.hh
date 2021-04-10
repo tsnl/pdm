@@ -65,7 +65,7 @@ namespace pdm::scoper {
         bool finish();
 
       public:
-        void print(printer::Printer& printer);
+        void print(printer::Printer* printer);
     };
 
     class ScriptScoperVisitor: public ast::Visitor {
@@ -87,7 +87,7 @@ namespace pdm::scoper {
         }
 
       private:
-        bool in_chain_exp() const { return m_overhead_chain_exp_count > 0; }
+        [[nodiscard]] bool in_chain_exp() const { return m_overhead_chain_exp_count > 0; }
         void inc_overhead_chain_exp_count() { ++m_overhead_chain_exp_count; }
         void dec_overhead_chain_exp_count() { --m_overhead_chain_exp_count; }
 
@@ -107,9 +107,9 @@ namespace pdm::scoper {
         void place_mod_address_lookup_order(ast::ModAddress* mod_address);
 
       private:
-        void post_overlapping_defn_error(std::string defn_kind, Defn const& failed_defn);
-        static void post_overlapping_defn_error(std::string defn_kind, Defn const& failed_defn, Context* tried_context) ;
-        static void help_post_defn_failure(std::string defn_kind, Defn const& failed_new_defn, Defn const& old_defn) ;
+        void post_overlapping_defn_error(std::string defn_kind, Defn const* failed_defn);
+        static void post_overlapping_defn_error(std::string defn_kind, Defn const* failed_defn, Context* tried_context);
+        static void help_post_defn_failure(std::string defn_kind, Defn const* failed_new_defn, Defn const* old_defn);
 
       protected:
         // scripts:
@@ -117,7 +117,7 @@ namespace pdm::scoper {
         bool on_visit_script_field(ast::Script::Field* field, VisitOrder visit_order) override;
 
         // modules:
-        bool on_visit_mod_exp(ast::NativeModExp* node, VisitOrder visit_order) override;
+        bool on_visit_native_mod_exp(ast::NativeModExp* node, VisitOrder visit_order) override;
         bool on_visit_value_mod_field(ast::NativeModExp::ValueField* node, VisitOrder visit_order) override;
         bool on_visit_type_mod_field(ast::NativeModExp::TypeField* node, VisitOrder visit_order) override;
         bool on_visit_class_mod_field(ast::NativeModExp::ClassField* node, VisitOrder visit_order) override;

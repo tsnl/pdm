@@ -571,165 +571,165 @@ namespace pdm::types {
     // Printing:
     //
 
-    void Var::print(printer::Printer& p) const {
+    void Var::print(printer::Printer* p) const {
         print_title(p);
-        p.print_c_str(" {");
-        p.print_newline_indent();
+        printer::print_c_str(p, " {");
+        printer::print_newline_indent(p);
         {
             help_print_assumed_kind_bitset(p);
-            p.print_newline();
+            printer::print_newline(p);
             help_print_assumed_common_invariants(p);
-            p.print_newline();
+            printer::print_newline(p);
             help_print_assumed_kind_dependent_invariants(p);
-            p.print_newline();
+            printer::print_newline(p);
             help_print_assumed_sub_vars(p);
-            p.print_newline();
+            printer::print_newline(p);
             help_print_assumed_super_vars(p);
-            p.print_newline();
+            printer::print_newline(p);
             help_print_opt_client_ast_node(p);
-            p.print_newline();
+            printer::print_newline(p);
             help_print_kdvs(p);
-            p.print_newline();
+            printer::print_newline(p);
             help_print_soln(p);
         }
-        p.print_newline_exdent();
-        p.print_c_str("}");
-        p.print_newline();
+        printer::print_newline_exdent(p);
+        printer::print_c_str(p, "}");
+        printer::print_newline(p);
     }
 
-    void Var::print_title(printer::Printer& p) const {
+    void Var::print_title(printer::Printer* p) const {
         // printing a prefix denoting var_archetype():
         switch (var_archetype())
         {
             case VarArchetype::Type:
             {
-                p.print_c_str("Type");
+                printer::print_c_str(p, "Type");
                 break;
             }
             case VarArchetype::Class:
             {
-                p.print_c_str("Class");
+                printer::print_c_str(p, "Class");
                 break;
             }
             default:
             {
-                p.print_c_str("Var(?)");
+                printer::print_c_str(p, "Var(?)");
                 break;
             }
         }
-        p.print_c_str(" ");
+        printer::print_c_str(p, " ");
 
         // printing the var name:
-        p.print_str(name());
+        printer::print_str(p, name());
 
         // printing last kdr changed:
         switch (m_prev_solve_iter_result)
         {
             case SolveResult::UpdatedOrFresh:
             {
-                p.print_c_str(" (UpdatedOrFresh)");
+                printer::print_c_str(p, " (UpdatedOrFresh)");
                 break;
             }
             case SolveResult::NoChange:
             {
-                p.print_c_str(" (NoChange)");
+                printer::print_c_str(p, " (NoChange)");
                 break;
             }
             case SolveResult::TypingError:
             {
-                p.print_c_str(" (TypingError)");
+                printer::print_c_str(p, " (TypingError)");
                 break;
             }
             case SolveResult::CompilerError:
             {
-                p.print_c_str(" (CompilerError)");
+                printer::print_c_str(p, " (CompilerError)");
                 break;
             }
         }
 
         // printing the var addr:
-        p.print_c_str(" @ ");
-        p.print_uint_hex(reinterpret_cast<u64>(this));
+        printer::print_c_str(p, " @ ");
+        printer::print_uint_hex(p, reinterpret_cast<u64>(this));
     }
-    void Var::help_print_assumed_kind_bitset(printer::Printer& p) const {
-        p.print_c_str("assume TypeKind: ");
-        p.print_c_str(type_kind_as_str(m_assumed_kind));
+    void Var::help_print_assumed_kind_bitset(printer::Printer* p) const {
+        printer::print_c_str(p, "assume TypeKind: ");
+        printer::print_c_str(p, type_kind_as_str(m_assumed_kind));
     }
-    void Var::help_print_assumed_common_invariants(printer::Printer& p) const {
-        p.print_c_str("assume CommonInvariants:");
+    void Var::help_print_assumed_common_invariants(printer::Printer* p) const {
+        printer::print_c_str(p, "assume CommonInvariants:");
         if (assumed_common_invariants().empty()) {
-            p.print_c_str(" None");
+            printer::print_c_str(p, " None");
         } else {
             for (VarInvariant* invariant: assumed_common_invariants()) {
-                p.print_newline();
-                p.print_c_str("- ");
-                p.print_str(invariant->name());
+                printer::print_newline(p);
+                printer::print_c_str(p, "- ");
+                printer::print_str(p, invariant->name());
             }
         }
     }
-    void Var::help_print_assumed_kind_dependent_invariants(printer::Printer& p) const {
-        p.print_c_str("assume KindDependentInvariants:");
+    void Var::help_print_assumed_kind_dependent_invariants(printer::Printer* p) const {
+        printer::print_c_str(p, "assume KindDependentInvariants:");
         if (assumed_kind_dependent_invariants().empty()) {
-            p.print_c_str(" None");
+            printer::print_c_str(p, " None");
         } else {
             for (VarInvariant* invariant: assumed_kind_dependent_invariants()) {
-                p.print_newline();
-                p.print_c_str("- ");
-                p.print_str(invariant->name());
+                printer::print_newline(p);
+                printer::print_c_str(p, "- ");
+                printer::print_str(p, invariant->name());
             }
         }
     }
-    void Var::help_print_assumed_sub_vars(printer::Printer& p) const {
-        p.print_c_str("assume Sub-vars:");
+    void Var::help_print_assumed_sub_vars(printer::Printer* p) const {
+        printer::print_c_str(p, "assume Sub-vars:");
         if (assumed_sub_var_edges().empty()) {
-            p.print_c_str(" None");
+            printer::print_c_str(p, " None");
         } else {
             for (Var::Edge const& edge: m_assumed_sub_var_edges) {
                 Var* assumed_sub_var = edge.var;
-                p.print_newline();
-                p.print_c_str("- ");
+                printer::print_newline(p);
+                printer::print_c_str(p, "- ");
                 assumed_sub_var->print_title(p);
             }
         }
     }
-    void Var::help_print_assumed_super_vars(printer::Printer& p) const {
-        p.print_c_str("assume Super-vars:");
+    void Var::help_print_assumed_super_vars(printer::Printer* p) const {
+        printer::print_c_str(p, "assume Super-vars:");
         if (assumed_super_var_edges().empty()) {
-            p.print_c_str(" None");
+            printer::print_c_str(p, " None");
         } else {
             for (auto assumed_super_var_edge: m_assumed_super_var_edges) {
-                p.print_newline();
-                p.print_c_str("- ");
+                printer::print_newline(p);
+                printer::print_c_str(p, "- ");
                 assumed_super_var_edge.var->print_title(p);
             }
         }
     }
-    void Var::help_print_kdvs(printer::Printer& p) const {
-        p.print_c_str("kdvs: ");
+    void Var::help_print_kdvs(printer::Printer* p) const {
+        printer::print_c_str(p, "kdvs: ");
         if (m_kdvs != nullptr) {
             m_kdvs->print(p);
         } else {
-            p.print_c_str("None");
+            printer::print_c_str(p, "None");
         }
     }
-    void Var::help_print_opt_client_ast_node(printer::Printer& p) const {
-        p.print_c_str("client: ");
+    void Var::help_print_opt_client_ast_node(printer::Printer* p) const {
+        printer::print_c_str(p, "client: ");
         if (m_opt_client_ast_node != nullptr) {
-            p.print_c_str(ast::kind_as_text(m_opt_client_ast_node->kind()));
-            p.print_c_str(" @ ");
-            p.print_uint_hex(reinterpret_cast<u64>(m_opt_client_ast_node));
+            printer::print_c_str(p, ast::kind_as_text(m_opt_client_ast_node->kind()));
+            printer::print_c_str(p, " @ ");
+            printer::print_uint_hex(p, reinterpret_cast<u64>(m_opt_client_ast_node));
         } else {
-            p.print_c_str("N/A");
+            printer::print_c_str(p, "N/A");
         }
     }
-    void Var::help_print_soln(printer::Printer &p) const {
-        p.print_c_str("soln: ");
+    void Var::help_print_soln(printer::Printer* p) const {
+        printer::print_c_str(p, "soln: ");
         if (m_opt_type_soln) {
             m_opt_type_soln->print(p);
         } else if (var_archetype() != VarArchetype::Type) {
-            p.print_c_str("N/A (Exempt-archetype)");
+            printer::print_c_str(p, "N/A (Exempt-archetype)");
         } else {
-            p.print_c_str("NULL");
+            printer::print_c_str(p, "NULL");
         }
     }
 

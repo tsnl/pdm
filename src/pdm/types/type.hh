@@ -44,7 +44,7 @@ namespace pdm::types {
         [[nodiscard]] Kind type_kind() const;
 
       public:
-        void print(printer::Printer& p) const;
+        void print(printer::Printer* p) const;
 
       public:
         bool check_finite() const;

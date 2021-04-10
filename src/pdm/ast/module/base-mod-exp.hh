@@ -1,15 +1,22 @@
-#ifndef PDM__AST__MODULE__BASE_MOD_HH
-#define PDM__AST__MODULE__BASE_MOD_HH
+#ifndef INCLUDED__PDM__AST__MODULE__BASE_MOD_HH
+#define INCLUDED__PDM__AST__MODULE__BASE_MOD_HH
+
+#include <vector>
 
 #include "pdm/ast/node.hh"
+#include "pdm/core/intern.hh"
 
 namespace pdm::ast {
     class Exp;
     class TypeSpec;
     class ClassSpec;
 }
+namespace pdm::scoper {
+    class Defn;
+}
 namespace pdm::types {
     class Var;
+    class TypeVar;
 }
 
 namespace pdm::ast {
@@ -20,14 +27,20 @@ namespace pdm::ast {
         class Field: public Node {
           private:
             intern::String m_name;
-            types::Var* m_x_defn_var;
+            scoper::Defn* m_x_defn;
+
           protected:
             Field(source::Loc field_loc, ast::Kind field_kind, intern::String field_name);
+
           public:
             [[nodiscard]] intern::String name() const;
+
+          public:
+            [[nodiscard]] scoper::Defn* x_defn() const;
+            void x_defn(scoper::Defn* new_defn);
+
           public:
             [[nodiscard]] types::Var* x_defn_var() const;
-            void x_defn_var(types::Var* set_defn_var);
         };
 
       public:
@@ -115,19 +128,11 @@ namespace pdm::ast {
     inline BaseModExp::Field::Field(source::Loc field_loc, ast::Kind field_kind, intern::String field_name)
     :   Node{field_loc, field_kind},
         m_name{field_name},
-        m_x_defn_var{nullptr}
+        m_x_defn{nullptr}
     {}
 
     inline intern::String BaseModExp::Field::name() const {
         return m_name;
-    }
-
-    inline types::Var* BaseModExp::Field::x_defn_var() const {
-        return m_x_defn_var;
-    }
-
-    inline void BaseModExp::Field::x_defn_var(types::Var* set_defn_var) {
-        m_x_defn_var = set_defn_var;
     }
 
     inline BaseModExp::ValueField::ValueField(source::Loc field_loc, intern::String name, Exp *rhs_exp)
@@ -164,6 +169,14 @@ namespace pdm::ast {
         return m_fields;
     }
 
+    inline scoper::Defn* BaseModExp::Field::x_defn() const {
+        return m_x_defn;
+    }
+
+    inline void BaseModExp::Field::x_defn(scoper::Defn* new_defn) {
+        m_x_defn = new_defn;
+    }
+
 }
 
-#endif  // PDM__AST__MODULE__BASE_MOD_HH
+#endif  // INCLUDED__PDM__AST__MODULE__BASE_MOD_HH

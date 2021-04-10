@@ -68,12 +68,7 @@ namespace pdm::utf8 {
             std::stringstream ss;
             for (int index = 0; index < m_count; index++) {
                 Char ch = m_data[index];
-                if (0 < ch && ch < 128) {
-                    ss << static_cast<char>(ch);
-                } else {
-                    // todo: store a UTF-8 encoding instead.
-                    ss << "<u?>";
-                }
+                ss << static_cast<char>(ch);
             }
             return ss.str();
         }

@@ -122,17 +122,17 @@ namespace pdm::types {
 
       // debug printing:
       public:
-        void print(printer::Printer& p) const;
-        void print_title(printer::Printer& p) const;
+        void print(printer::Printer* p) const;
+        void print_title(printer::Printer* p) const;
       private:
-        void help_print_assumed_kind_bitset(printer::Printer& p) const;
-        void help_print_assumed_common_invariants(printer::Printer& p) const;
-        void help_print_assumed_kind_dependent_invariants(printer::Printer& p) const;
-        void help_print_assumed_sub_vars(printer::Printer& p) const;
-        void help_print_assumed_super_vars(printer::Printer& p) const;
-        void help_print_opt_client_ast_node(printer::Printer& p) const;
-        void help_print_kdvs(printer::Printer& p) const;
-        void help_print_soln(printer::Printer& p) const;
+        void help_print_assumed_kind_bitset(printer::Printer* p) const;
+        void help_print_assumed_common_invariants(printer::Printer* p) const;
+        void help_print_assumed_kind_dependent_invariants(printer::Printer* p) const;
+        void help_print_assumed_sub_vars(printer::Printer* p) const;
+        void help_print_assumed_super_vars(printer::Printer* p) const;
+        void help_print_opt_client_ast_node(printer::Printer* p) const;
+        void help_print_kdvs(printer::Printer* p) const;
+        void help_print_soln(printer::Printer* p) const;
     };
 
     inline std::string const& Var::name() const {

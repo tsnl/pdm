@@ -4,66 +4,66 @@
 
 namespace pdm::types {
 
-    void SubtypeOfInvariant::print(printer::Printer& printer) const {
-        printer.print_c_str("SubtypeOfInvariant: ");
+    void SubtypeOfInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "SubtypeOfInvariant: ");
         m_supertype_tv->print_title(printer);
     }
 
-    void SubclassOfInvariant::print(printer::Printer &printer) const {
-        printer.print_c_str("SubclassOfInvariant: ");
+    void SubclassOfInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "SubclassOfInvariant: ");
         m_superclass_cv->print_title(printer);
     }
 
-    void ClassOfInvariant::print(printer::Printer &printer) const {
-        printer.print_c_str("ClassOfInvariant: ");
+    void ClassOfInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "ClassOfInvariant: ");
         m_member_tv->print_title(printer);
     }
 
-    void IsNumberVarInvariant::print(printer::Printer& printer) const {
-        printer.print_c_str("IsNumberInvariant");
+    void IsNumberVarInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "IsNumberInvariant");
     }
 
-    void IsVoidInvariant::print(printer::Printer &printer) const {
-        printer.print_c_str("(KD) IsVoidInvariant");
+    void IsVoidInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "(KD) IsVoidInvariant");
     }
 
-    void IsStringInvariant::print(printer::Printer &printer) const {
-        printer.print_c_str("(KD) IsStringInvariant");
+    void IsStringInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "(KD) IsStringInvariant");
     }
 
-    void IsIntInvariant::print(printer::Printer &printer) const {
-        printer.print_c_str("(KD) IsIntInvariant[");
+    void IsIntInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "(KD) IsIntInvariant[");
         if (m_uses_sign_extension) {
-            printer.print_c_str("signed,");
+            printer::print_c_str(printer, "signed,");
         } else {
-            printer.print_c_str("unsigned,");
+            printer::print_c_str(printer, "unsigned,");
         }
         if (m_max_width_in_bits >= 0) {
-            printer.print_uint_dec(m_min_width_in_bits);
+            printer::print_uint_dec(printer, m_min_width_in_bits);
         }
-        printer.print_c_str(":");
+        printer::print_c_str(printer, ":");
         if (m_max_width_in_bits >= 0) {
-            printer.print_uint_dec(m_max_width_in_bits);
+            printer::print_uint_dec(printer, m_max_width_in_bits);
         }
-        printer.print_c_str("]");
+        printer::print_c_str(printer, "]");
     }
 
-    void IsFloatInvariant::print(printer::Printer &printer) const {
-        printer.print_c_str("(KD) IsFloatInvariant[");
+    void IsFloatInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "(KD) IsFloatInvariant[");
         if (m_max_width_in_bits >= 0) {
-            printer.print_uint_dec(m_min_width_in_bits);
+            printer::print_uint_dec(printer, m_min_width_in_bits);
         }
-        printer.print_c_str(":");
+        printer::print_c_str(printer, ":");
         if (m_max_width_in_bits >= 0) {
-            printer.print_uint_dec(m_max_width_in_bits);
+            printer::print_uint_dec(printer, m_max_width_in_bits);
         }
-        printer.print_c_str("]");
+        printer::print_c_str(printer, "]");
     }
 
-    void IsTupleInvariant::print(printer::Printer &printer) const {
-        printer.print_c_str("(KD) IsTupleInvariant[length=");
-        printer.print_uint_dec(m_typeof_items_tvs.size());
-        printer.print_c_str("]");
+    void IsTupleInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "(KD) IsTupleInvariant[length=");
+        printer::print_uint_dec(printer, m_typeof_items_tvs.size());
+        printer::print_c_str(printer, "]");
     }
 
     IsFieldCollectionInvariant::IsFieldCollectionInvariant(
@@ -89,15 +89,15 @@ namespace pdm::types {
         )
     {}
 
-    void IsStructInvariant::print(printer::Printer &printer) const {
-        printer.print_c_str("(KD) IsStructInvariant{");
+    void IsStructInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "(KD) IsStructInvariant{");
         for (auto const& field: fields()) {
-            printer.print_int_str(field.first);
-            printer.print_c_str(":");
+            printer::print_int_str(printer, field.first);
+            printer::print_c_str(printer, ":");
             field.second->print_title(printer);
-            printer.print_c_str(",");
+            printer::print_c_str(printer, ",");
         }
-        printer.print_c_str("}");
+        printer::print_c_str(printer, "}");
     }
 
     IsEnumInvariant::IsEnumInvariant(
@@ -113,15 +113,15 @@ namespace pdm::types {
     )
     {}
 
-    void IsEnumInvariant::print(printer::Printer &printer) const {
-        printer.print_c_str("(KD) IsEnumInvariant{");
+    void IsEnumInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "(KD) IsEnumInvariant{");
         for (auto const& field: fields()) {
-            printer.print_int_str(field.first);
-            printer.print_c_str(":");
+            printer::print_int_str(printer, field.first);
+            printer::print_c_str(printer, ":");
             field.second->print_title(printer);
-            printer.print_c_str(",");
+            printer::print_c_str(printer, ",");
         }
-        printer.print_c_str("}");
+        printer::print_c_str(printer, "}");
     }
 
     IsModuleInvariant::IsModuleInvariant(
@@ -137,15 +137,15 @@ namespace pdm::types {
     )
     {}
 
-    void IsModuleInvariant::print(printer::Printer &printer) const {
-        printer.print_c_str("(KD) IsModuleInvariant{");
+    void IsModuleInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "(KD) IsModuleInvariant{");
         for (auto const& field: fields()) {
-            printer.print_int_str(field.first);
-            printer.print_c_str(":");
+            printer::print_int_str(printer, field.first);
+            printer::print_c_str(printer, ":");
             field.second->print_title(printer);
-            printer.print_c_str(",");
+            printer::print_c_str(printer, ",");
         }
-        printer.print_c_str("}");
+        printer::print_c_str(printer, "}");
     }
 
     IsArrayInvariant::IsArrayInvariant(
@@ -158,23 +158,23 @@ namespace pdm::types {
         m_item_tv(item_tv)
     {}
 
-    void IsArrayInvariant::print(printer::Printer &printer) const {
-        printer.print_c_str("(KD) IsArrayOf: ");
+    void IsArrayInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "(KD) IsArrayOf: ");
         m_item_tv->print_title(printer);
     }
 
-    void IsVCallableInvariant::print(printer::Printer &printer) const {
-        printer.print_c_str("(KD) ");
+    void IsVCallableInvariant::print(printer::Printer* printer) const {
+        printer::print_c_str(printer, "(KD) ");
         if (m_strength == VCallInvariantStrength::Formal) {
-            printer.print_c_str("Formal:");
+            printer::print_c_str(printer, "Formal:");
         } else if (m_strength == VCallInvariantStrength::Actual) {
-            printer.print_c_str("Actual:");
+            printer::print_c_str(printer, "Actual:");
         } else {
-            printer.print_c_str("Misc:");
+            printer::print_c_str(printer, "Misc:");
         }
-        printer.print_c_str("IsVCallable (");
-        printer.print_uint_dec(m_formal_args.size());
-        printer.print_c_str(") -> ");
+        printer::print_c_str(printer, "IsVCallable (");
+        printer::print_uint_dec(printer, m_formal_args.size());
+        printer::print_c_str(printer, ") -> ");
         m_typeof_ret_tv->print_title(printer);
     }
 

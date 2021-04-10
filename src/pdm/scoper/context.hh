@@ -2,7 +2,6 @@
 #define INCLUDED_PDM_SCOPER_CONTEXT_HH
 
 #include <vector>
-#include <deque>
 #include <string>
 
 #include "pdm/core/config.hh"
@@ -55,12 +54,12 @@ namespace pdm::scoper {
         friend Frame;
 
       private:
-        ContextKind      m_kind;
-        Frame*           m_frame;
-        Context*         m_opt_parent_context;
-        Frame*           m_opt_link;
-        std::string      m_opt_link_filter_prefix;
-        std::deque<Defn> m_defns;
+        ContextKind        m_kind;
+        Frame*             m_frame;
+        Context*           m_opt_parent_context;
+        Frame*             m_opt_link;
+        std::string        m_opt_link_filter_prefix;
+        std::vector<Defn*> m_defns;
 
       // protected constructor, intended for 'Frame'
       private:
@@ -68,20 +67,20 @@ namespace pdm::scoper {
 
       // public property getters:
       public:
-        ContextKind kind() const {
+        [[nodiscard]] ContextKind kind() const {
             return m_kind;
         }
-        Context* opt_parent_context() const {
+        [[nodiscard]] Context* opt_parent_context() const {
             return m_opt_parent_context;
         }
-        std::deque<Defn> const& defns() const {
+        [[nodiscard]] std::vector<Defn*> const& defns() const {
             return m_defns;
         }
 
       // define / shadow
       protected:
         // define tries to add a new symbol to this context.
-        bool define(Defn new_defn);
+        bool define(Defn* new_defn);
 
         // shadow creates a new child context
         static Context* shadow(Context* parent_context, ContextKind context_kind, Frame* frame);
@@ -104,7 +103,7 @@ namespace pdm::scoper {
 
       // debug printing:
       public:
-        void print(printer::Printer& out) const;
+        void print(printer::Printer* out) const;
     };
 
 }

@@ -57,7 +57,7 @@ namespace pdm::types {
         bool on_visit_script_field(ast::Script::Field* script_field, VisitOrder visit_order) override;
 
         // module:
-        bool on_visit_mod_exp(ast::NativeModExp* mod_exp, VisitOrder visit_order) override;
+        bool on_visit_native_mod_exp(ast::NativeModExp* mod_exp, VisitOrder visit_order) override;
         bool on_visit_mod_mod_field(ast::NativeModExp::ModuleField* module_field, VisitOrder visit_order) override;
         bool on_visit_value_mod_field(ast::NativeModExp::ValueField* value_field, VisitOrder visit_order) override;
         bool on_visit_type_mod_field(ast::NativeModExp::TypeField* type_field, VisitOrder visit_order) override;
@@ -184,11 +184,11 @@ namespace pdm::types {
     }
 
     // modules:
-    bool TyperVisitor::on_visit_mod_exp(ast::NativeModExp* mod_exp, VisitOrder visit_order) {
+    bool TyperVisitor::on_visit_native_mod_exp(ast::NativeModExp* mod_exp, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
             // TODO: implement typing for templates.
             if (mod_exp->opt_template_pattern()) {
-                assert(0 && "NotImplemented: 'TyperVisitor::on_visit_mod_exp' with template args.");
+                assert(0 && "NotImplemented: 'TyperVisitor::on_visit_native_mod_exp' with template args.");
             }
 
             // all ok:
@@ -381,8 +381,16 @@ namespace pdm::types {
         return true;
     }
     bool TyperVisitor::on_visit_set_stmt(ast::SetStmt* node, VisitOrder visit_order) {
-        // todo: implement this typer.
-        assert(0 && "NotImplemented: TyperVisitor::on_visit_set_stmt");
+        if (visit_order == VisitOrder::Post) {
+            auto lhs_tv = dynamic_cast<types::TypeVar*>(node->lhs_exp()->x_type_of_var());
+            auto rhs_tv = dynamic_cast<types::TypeVar*>(node->rhs_exp()->x_type_of_var());
+            assert(lhs_tv && rhs_tv && "Could not type set-stmt: TVs unset");
+            auto solve_res = m_types_mgr->assume_relation_holds(new types::TypeEqualsRelation(
+                node,
+                lhs_tv, rhs_tv
+            ));
+            return !types::result_is_error(solve_res);
+        }
         return true;
     }
     bool TyperVisitor::on_visit_discard_stmt(ast::DiscardStmt* node, VisitOrder visit_order) {
@@ -1672,11 +1680,11 @@ namespace pdm::types {
             auto relation = new SubtypeOfRelation(node, typeof_rhs_tv, typeof_lhs_tv);
             SolveResult assume_op_result1 = m_types_mgr->assume_relation_holds(relation);
             
-            // if typespec, ensure exact type equality
+            // if type-spec, ensure exact type equality
             SolveResult assume_op_result2 = SolveResult::NoChange; {
                 if (field->opt_rhs_typespec()) {
                     TypeVar* typespec_tv = expect_type_var(
-                            field->opt_rhs_typespec()->x_spec_var(),
+                        field->opt_rhs_typespec()->x_spec_var(),
                         std::move(std::string("a type specifier")),
                         std::move(std::string("an L-pattern field")),
                         node->loc()
@@ -1696,8 +1704,11 @@ namespace pdm::types {
             }
 
             std::string source_desc = "see const/val/var statement here...";
-            post_feedback_from_first_kd_res(result_and(assume_op_result1, assume_op_result2), std::move(source_desc),
-                                            node->loc());
+            post_feedback_from_first_kd_res(
+                result_and(assume_op_result1, assume_op_result2),
+                std::move(source_desc),
+                node->loc()
+            );
         }
         return true;
     }

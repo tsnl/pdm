@@ -15,7 +15,7 @@ mod greetings {
         val vector = hello();
         vector.x + vector.y + vector.z
     };
-    let random (out x Int32) Int64 = {
+    let random (x out Int32) Int64 = {
         val parametric_spoken_word_poem = (
             "$ is a cool dance form (?)\n"
             "Sometimes, I feel sad, but then I remember\n"

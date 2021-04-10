@@ -6,8 +6,6 @@
 #include "pdm/ast/exp/exp.hh"
 #include "pdm/ast/type_spec/fn.hh"
 
-#include <llvm-c/Core.h>
-
 namespace pdm::ast {
     class Manager;
     class VPattern;
@@ -22,8 +20,7 @@ namespace pdm::ast {
       private:
         FnTypeSpec* m_fn_type_spec;
         Exp* m_body;
-        LLVMValueRef m_x_llvm_fn;
-    
+
       protected:
         LambdaExp(source::Loc loc, FnTypeSpec* fn_type_spec, Exp* body)
         :   Exp(loc, Kind::LambdaExp),
@@ -35,10 +32,6 @@ namespace pdm::ast {
         [[nodiscard]] VPattern* lhs_vpattern() const;
         [[nodiscard]] TypeSpec* opt_ret_typespec() const;
         [[nodiscard]] Exp* rhs_body() const;
-
-      public:
-        [[nodiscard]] LLVMValueRef x_llvm_fn() const;
-        void x_llvm_fn(LLVMValueRef value_ref);
     };
 
     inline FnTypeSpec* LambdaExp::fn_type_spec() const {
@@ -55,14 +48,6 @@ namespace pdm::ast {
 
     inline Exp* LambdaExp::rhs_body() const {
         return m_body;
-    }
-
-    inline LLVMValueRef LambdaExp::x_llvm_fn() const {
-        return m_x_llvm_fn;
-    }
-
-    inline void LambdaExp::x_llvm_fn(LLVMValueRef value_ref) {
-        m_x_llvm_fn = value_ref;
     }
 
 }

@@ -101,7 +101,7 @@ namespace pdm::ast {
         virtual bool on_visit_script_field(Script::Field* field, VisitOrder visit_order) = 0;
 
         // modules:
-        virtual bool on_visit_mod_exp(NativeModExp* node, VisitOrder visit_order) = 0;
+        virtual bool on_visit_native_mod_exp(NativeModExp* node, VisitOrder visit_order) = 0;
         virtual bool on_visit_value_mod_field(NativeModExp::ValueField* node, VisitOrder visit_order) = 0;
         virtual bool on_visit_type_mod_field(NativeModExp::TypeField* node, VisitOrder visit_order) = 0;
         virtual bool on_visit_class_mod_field(NativeModExp::ClassField* node, VisitOrder visit_order) = 0;
@@ -178,7 +178,7 @@ namespace pdm::ast {
         }
 
         // modules:
-        bool on_visit_mod_exp(NativeModExp* mod_exp, VisitOrder visit_order) override {
+        bool on_visit_native_mod_exp(NativeModExp* mod_exp, VisitOrder visit_order) override {
             return true;
         }
         bool on_visit_value_mod_field(NativeModExp::ValueField* node, VisitOrder visit_order) override {

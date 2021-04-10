@@ -9,11 +9,6 @@
 #include <cassert>
 #include <cstring>
 
-extern "C" {
-    #include <intern/strings.h>
-    #include <stb/stretchy_buffer.h>
-}
-
 #include "pdm/source/pos.hh"
 #include "pdm/source/loc.hh"
 

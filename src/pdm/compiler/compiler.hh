@@ -52,7 +52,7 @@ namespace pdm {
         ast::Manager   m_ast_mgr;
 
         intern::String m_target_name;
-        LLVMBuilderRef m_llvm_builder;
+        void* m_llvm_builder;
 
       // builtin type stmts:
       private:
@@ -123,10 +123,10 @@ namespace pdm {
         }
 
       public:
-        [[nodiscard]] LLVMBuilderRef llvm_builder() const;
+        [[nodiscard]] void* llvm_builder() const;
     };
 
-    inline LLVMBuilderRef Compiler::llvm_builder() const {
+    inline void* Compiler::llvm_builder() const {
         return m_llvm_builder;
     }
 

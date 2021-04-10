@@ -1,7 +1,7 @@
 mod scene1 {
     let Scene = {
         name String,
-        impl fancy_engine[impl]::Engine
+        impl fancy_engine(impl):Engine
     };
 
     let new () Scene = {

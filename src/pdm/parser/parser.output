@@ -11,7 +11,6 @@ Terminals unused in grammar
     "CORE_PROFILE"
     "BROWSER_PROFILE"
     "NATIVE_PROFILE"
-    ":"
     "->"
     "^"
     "&"
@@ -74,7 +73,7 @@ Grammar
 
    33 var_stmt: "var" lpattern "=" expr
 
-   34 set_stmt: "set" expr "=" expr
+   34 set_stmt: "set" mut_expr "=" expr
 
    35 discard_stmt: "discard" expr
 
@@ -89,241 +88,247 @@ Grammar
    40 stringl: "'sq-string-literal'"
    41        | "\"dq-string-literal\""
 
-   42 mod_prefix: vid "::"
-   43           | vid "[" targ_cl "]" "::"
-   44           | mod_prefix vid "::"
-   45           | mod_prefix vid "[" targ_cl "]" "::"
+   42 mod_prefix: vid ":"
+   43           | vid "[" targ_cl "]" ":"
+   44           | mod_prefix vid ":"
+   45           | mod_prefix vid "[" targ_cl "]" ":"
 
-   46 expr: binary_exp
+   46 mut_expr: vid
+   47         | "(" mut_expr_cl1 ")"
 
-   47 long_exp: expr
-   48         | lambda_exp
+   48 mut_expr_cl1: mut_expr
+   49             | mut_expr_cl1 "," mut_expr
 
-   49 expr_cl2: expr "," expr
-   50         | expr_cl2 "," expr
+   50 expr: binary_exp
 
-   51 type_query_exp_sl0: %empty
-   52                   | type_query_exp_sl0 type_query_exp ";"
+   51 long_exp: expr
+   52         | lambda_exp
 
-   53 bracketed_exp: paren_exp
-   54              | vtupleExpr
-   55              | vstructExpr
-   56              | chain_exp
+   53 expr_cl2: expr "," expr
+   54         | expr_cl2 "," expr
 
-   57 paren_exp: "(" long_exp ")"
+   55 type_query_exp_sl0: %empty
+   56                   | type_query_exp_sl0 type_query_exp ";"
 
-   58 vtupleExpr: "(" ")"
-   59           | "(" expr "," ")"
-   60           | "(" expr_cl2 ")"
+   57 bracketed_exp: paren_exp
+   58              | vtupleExpr
+   59              | vstructExpr
+   60              | chain_exp
 
-   61 vstructExpr: "{" struct_exp_field_cl "}"
+   61 paren_exp: "(" long_exp ")"
 
-   62 primary_exp: bracketed_exp
-   63            | vid
-   64            | int_expr
-   65            | floatl
-   66            | stringls
-   67            | if_exp
-   68            | mod_prefix vid
+   62 vtupleExpr: "(" ")"
+   63           | "(" expr "," ")"
+   64           | "(" expr_cl2 ")"
 
-   69 int_expr: "42"
-   70         | "0x2a"
-   71         | "42u"
-   72         | "0x2Au"
+   65 vstructExpr: "{" struct_exp_field_cl "}"
 
-   73 stringls: "'sq-string-literal'"
-   74         | "\"dq-string-literal\""
-   75         | stringls "'sq-string-literal'"
-   76         | stringls "\"dq-string-literal\""
+   66 primary_exp: bracketed_exp
+   67            | vid
+   68            | int_expr
+   69            | floatl
+   70            | stringls
+   71            | if_exp
+   72            | mod_prefix vid
 
-   77 if_exp: "if" bracketed_exp bracketed_exp
-   78       | "if" bracketed_exp bracketed_exp "else" primary_exp
+   73 int_expr: "42"
+   74         | "0x2a"
+   75         | "42u"
+   76         | "0x2Au"
 
-   79 chain_exp: "{" "}"
-   80          | "{" long_exp "}"
-   81          | "{" chain_prefix "}"
-   82          | "{" chain_prefix long_exp "}"
+   77 stringls: "'sq-string-literal'"
+   78         | "\"dq-string-literal\""
+   79         | stringls "'sq-string-literal'"
+   80         | stringls "\"dq-string-literal\""
 
-   83 chain_prefix: chain_prefix_stmt ";"
-   84             | chain_prefix chain_prefix_stmt ";"
+   81 if_exp: "if" bracketed_exp bracketed_exp
+   82       | "if" bracketed_exp bracketed_exp "else" primary_exp
 
-   85 lambda_exp: fn_type_spec bracketed_exp
+   83 chain_exp: "{" "}"
+   84          | "{" long_exp "}"
+   85          | "{" chain_prefix "}"
+   86          | "{" chain_prefix long_exp "}"
 
-   86 postfix_exp: primary_exp
-   87            | vcall_exp
-   88            | dot_name_exp
-   89            | dot_index_exp
+   87 chain_prefix: chain_prefix_stmt ";"
+   88             | chain_prefix chain_prefix_stmt ";"
 
-   90 vcall_exp: postfix_exp "(" ")"
-   91          | postfix_exp "(" varg_cl ")"
+   89 lambda_exp: fn_type_spec bracketed_exp
 
-   92 dot_name_exp: postfix_exp "." "val_id"
-   93             | type_spec "::" "TypeId"
-   94             | type_spec "::" "TypeId" "using" paren_exp
+   90 postfix_exp: primary_exp
+   91            | vcall_exp
+   92            | dot_name_exp
+   93            | dot_index_exp
 
-   95 dot_index_exp: postfix_exp "." int_expr
-   96              | postfix_exp "." bracketed_exp
+   94 vcall_exp: postfix_exp "(" ")"
+   95          | postfix_exp "(" varg_cl ")"
 
-   97 unary_exp: postfix_exp
-   98          | unary_op unary_exp
+   96 dot_name_exp: postfix_exp "." "val_id"
+   97             | type_spec "::" "TypeId"
+   98             | type_spec "::" "TypeId" "using" paren_exp
 
-   99 unary_op: "+"
-  100         | "-"
-  101         | "not"
+   99 dot_index_exp: postfix_exp "." int_expr
+  100              | postfix_exp "." bracketed_exp
 
-  102 binary_exp: or_binary_exp
+  101 unary_exp: postfix_exp
+  102          | unary_op unary_exp
 
-  103 mul_binary_op: "*"
-  104              | "/"
-  105              | "%"
+  103 unary_op: "+"
+  104         | "-"
+  105         | "not"
 
-  106 mul_binary_exp: unary_exp
-  107               | mul_binary_exp mul_binary_op unary_exp
+  106 binary_exp: or_binary_exp
 
-  108 add_binary_op: "+"
-  109              | "-"
+  107 mul_binary_op: "*"
+  108              | "/"
+  109              | "%"
 
-  110 add_binary_exp: mul_binary_exp
-  111               | add_binary_exp add_binary_op mul_binary_exp
+  110 mul_binary_exp: unary_exp
+  111               | mul_binary_exp mul_binary_op unary_exp
 
-  112 cmp_binary_op: "<"
-  113              | "<="
-  114              | ">"
-  115              | ">="
+  112 add_binary_op: "+"
+  113              | "-"
 
-  116 cmp_binary_exp: add_binary_exp
-  117               | cmp_binary_exp cmp_binary_op add_binary_exp
+  114 add_binary_exp: mul_binary_exp
+  115               | add_binary_exp add_binary_op mul_binary_exp
 
-  118 eq_binary_op: "=="
-  119             | "!="
+  116 cmp_binary_op: "<"
+  117              | "<="
+  118              | ">"
+  119              | ">="
 
-  120 eq_binary_exp: cmp_binary_exp
-  121              | eq_binary_exp eq_binary_op cmp_binary_exp
+  120 cmp_binary_exp: add_binary_exp
+  121               | cmp_binary_exp cmp_binary_op add_binary_exp
 
-  122 and_binary_exp: eq_binary_exp
-  123               | and_binary_exp "and" eq_binary_exp
+  122 eq_binary_op: "=="
+  123             | "!="
 
-  124 xor_binary_exp: and_binary_exp
-  125               | xor_binary_exp "xor" and_binary_exp
+  124 eq_binary_exp: cmp_binary_exp
+  125              | eq_binary_exp eq_binary_op cmp_binary_exp
 
-  126 or_binary_exp: xor_binary_exp
-  127              | or_binary_exp "or" xor_binary_exp
+  126 and_binary_exp: eq_binary_exp
+  127               | and_binary_exp "and" eq_binary_exp
 
-  128 type_query_exp: type_spec type_query_op type_spec
+  128 xor_binary_exp: and_binary_exp
+  129               | xor_binary_exp "xor" and_binary_exp
 
-  129 type_query_op: ":<"
-  130              | ">:"
-  131              | "=="
+  130 or_binary_exp: xor_binary_exp
+  131              | or_binary_exp "or" xor_binary_exp
 
-  132 type_spec_cl2: type_spec "," type_spec
-  133              | type_spec_cl2 "," type_spec
+  132 type_query_exp: type_spec type_query_op type_spec
 
-  134 type_spec: tid
-  135          | mod_prefix_tid
-  136          | tuple_type_spec
-  137          | array_type_spec
-  138          | struct_type_spec
-  139          | enum_type_spec
-  140          | fn_type_spec
+  133 type_query_op: ":<"
+  134              | ">:"
+  135              | "=="
 
-  141 mod_prefix_tid: mod_prefix tid
+  136 type_spec_cl2: type_spec "," type_spec
+  137              | type_spec_cl2 "," type_spec
 
-  142 tuple_type_spec: "{" type_spec "}"
-  143                | "{" type_spec_cl2 "}"
+  138 type_spec: tid
+  139          | mod_prefix_tid
+  140          | tuple_type_spec
+  141          | array_type_spec
+  142          | struct_type_spec
+  143          | enum_type_spec
+  144          | fn_type_spec
 
-  144 array_type_spec: "[" type_spec "*" expr "]"
+  145 mod_prefix_tid: mod_prefix tid
 
-  145 struct_type_spec: "{" struct_type_spec_field_cl "}"
+  146 tuple_type_spec: "{" type_spec "}"
+  147                | "{" type_spec_cl2 "}"
 
-  146 struct_type_spec_field_cl: struct_type_spec_field
-  147                          | struct_type_spec_field_cl "," struct_type_spec_field
+  148 array_type_spec: "[" type_spec "*" expr "]"
 
-  148 struct_type_spec_field: vid type_spec
+  149 struct_type_spec: "{" struct_type_spec_field_cl "}"
 
-  149 enum_type_spec_field: tid
-  150                     | tid type_spec
+  150 struct_type_spec_field_cl: struct_type_spec_field
+  151                          | struct_type_spec_field_cl "," struct_type_spec_field
 
-  151 enum_type_spec_field_cl: enum_type_spec_field
-  152                        | enum_type_spec_field_cl "," enum_type_spec_field
+  152 struct_type_spec_field: vid type_spec
 
-  153 enum_type_spec: "enum" "{" enum_type_spec_field_cl "}"
+  153 enum_type_spec_field: tid
+  154                     | tid type_spec
 
-  154 fn_type_spec: "anonymous_fn" vpattern type_spec
+  155 enum_type_spec_field_cl: enum_type_spec_field
+  156                        | enum_type_spec_field_cl "," enum_type_spec_field
 
-  155 targ: type_spec
-  156     | expr
+  157 enum_type_spec: "enum" "{" enum_type_spec_field_cl "}"
 
-  157 targ_cl: targ
-  158        | targ_cl "," targ
+  158 fn_type_spec: "anonymous_fn" vpattern type_spec
 
-  159 varg: expr
-  160     | "out" expr
-  161     | "inout" expr
+  159 targ: type_spec
+  160     | expr
 
-  162 varg_cl: varg
-  163        | varg_cl "," varg
+  161 targ_cl: targ
+  162        | targ_cl "," targ
 
-  164 class_spec: primary_class_spec
+  163 varg: expr
+  164     | "out" mut_expr
+  165     | "inout" mut_expr
 
-  165 primary_class_spec: cid
-  166                   | mod_prefix_cid_class_spec
-  167                   | class_exp_class_spec
+  166 varg_cl: varg
+  167        | varg_cl "," varg
 
-  168 mod_prefix_cid_class_spec: mod_prefix cid
+  168 class_spec: primary_class_spec
 
-  169 class_exp_class_spec: "typeclass" "(" tid class_spec ")" "{" type_query_exp_sl0 "}"
+  169 primary_class_spec: cid
+  170                   | mod_prefix_cid_class_spec
+  171                   | class_exp_class_spec
 
-  170 struct_exp_field: vid "=" expr
+  172 mod_prefix_cid_class_spec: mod_prefix cid
 
-  171 vpattern_field: vid type_spec
-  172               | "out" vid type_spec
-  173               | "inout" vid type_spec
+  173 class_exp_class_spec: "typeclass" "(" tid class_spec ")" "{" type_query_exp_sl0 "}"
 
-  174 lpattern_field: vid type_spec
-  175               | vid
+  174 struct_exp_field: vid "=" expr
 
-  176 tpattern_field: vid type_spec
-  177               | tid class_spec
+  175 vpattern_field: vid type_spec
+  176               | "out" vid type_spec
+  177               | "inout" vid type_spec
 
-  178 destructured_lpattern: "{" lpattern_field_cl "}"
+  178 lpattern_field: vid type_spec
+  179               | vid
 
-  179 lpattern: lpattern_field
-  180         | destructured_lpattern
+  180 tpattern_field: vid type_spec
+  181               | tid class_spec
 
-  181 vpattern: "(" vpattern_field_cl ")"
-  182         | "(" ")"
+  182 destructured_lpattern: "{" lpattern_field_cl "}"
 
-  183 tpattern: "[" tpattern_field_cl1 "]"
+  183 lpattern: lpattern_field
+  184         | destructured_lpattern
 
-  184 vpattern_field_cl: vpattern_field
-  185                  | vpattern_field_cl "," vpattern_field
+  185 vpattern: "(" vpattern_field_cl ")"
+  186         | "(" ")"
 
-  186 lpattern_field_cl: lpattern_field
-  187                  | lpattern_field_cl "," lpattern_field
+  187 tpattern: "[" tpattern_field_cl1 "]"
 
-  188 tpattern_field_cl1: tpattern_field
-  189                   | tpattern_field_cl1 "," tpattern_field
+  188 vpattern_field_cl: vpattern_field
+  189                  | vpattern_field_cl "," vpattern_field
 
-  190 struct_exp_field_cl: struct_exp_field
-  191                    | struct_exp_field_cl "," struct_exp_field
+  190 lpattern_field_cl: lpattern_field
+  191                  | lpattern_field_cl "," lpattern_field
+
+  192 tpattern_field_cl1: tpattern_field
+  193                   | tpattern_field_cl1 "," tpattern_field
+
+  194 struct_exp_field_cl: struct_exp_field
+  195                    | struct_exp_field_cl "," struct_exp_field
 
 
 Terminals, with rules where they appear
 
     $end (0) 0
     error (256)
-    "val_id" <TokenInfo> (258) 37 92
-    "TypeId" <TokenInfo> (259) 36 93 94
+    "val_id" <TokenInfo> (258) 37 96
+    "TypeId" <TokenInfo> (259) 36 97 98
     "CLS_ID" <TokenInfo> (260) 38
     "__42__" <TokenInfo> (261)
-    "using" (262) 94
+    "using" (262) 98
     "mod" (263) 5 17
     "struct" (264)
-    "enum" (265) 153
-    "typeclass" (266) 169
-    "if" (267) 77 78
+    "enum" (265) 157
+    "typeclass" (266) 173
+    "if" (267) 81 82
     "then" (268)
-    "else" (269) 78
+    "else" (269) 82
     "match" (270)
     "with" (271)
     "imports" (272) 20
@@ -334,57 +339,57 @@ Terminals, with rules where they appear
     "var" (277) 33
     "let" (278) 14 15 16 18 19
     "set" (279) 34
-    "anonymous_fn" (280) 154
-    "and" (281) 123
-    "xor" (282) 125
-    "or" (283) 127
-    "not" (284) 101
-    "out" (285) 160 172
-    "inout" (286) 161 173
+    "anonymous_fn" (280) 158
+    "and" (281) 127
+    "xor" (282) 129
+    "or" (283) 131
+    "not" (284) 105
+    "out" (285) 164 176
+    "inout" (286) 165 177
     "discard" (287) 35
     "as" (288)
     "for" (289)
     "CORE_PROFILE" (290)
     "BROWSER_PROFILE" (291)
     "NATIVE_PROFILE" (292)
-    "42" <TokenInfo> (293) 69
-    "0x2a" <TokenInfo> (294) 70
-    "42u" <TokenInfo> (295) 71
-    "0x2Au" <TokenInfo> (296) 72
+    "42" <TokenInfo> (293) 73
+    "0x2a" <TokenInfo> (294) 74
+    "42u" <TokenInfo> (295) 75
+    "0x2Au" <TokenInfo> (296) 76
     "4.2" <TokenInfo> (297) 39
-    "\"dq-string-literal\"" <TokenInfo> (298) 41 74 76
-    "'sq-string-literal'" <TokenInfo> (299) 40 73 75
-    "." (300) 92 95 96
-    ":" (301)
-    "," (302) 25 49 50 59 132 133 147 152 158 163 185 187 189 191
-    ";" (303) 3 6 7 12 13 22 52 83 84
-    "::" (304) 42 43 44 45 93 94
-    "(" (305) 19 57 58 59 60 90 91 169 181 182
-    ")" (306) 19 57 58 59 60 90 91 169 181 182
-    "[" (307) 43 45 144 183
-    "]" (308) 43 45 144 183
-    "{" (309) 8 9 10 11 19 20 61 79 80 81 82 142 143 145 153 169 178
-    "}" (310) 8 9 10 11 19 20 61 79 80 81 82 142 143 145 153 169 178
+    "\"dq-string-literal\"" <TokenInfo> (298) 41 78 80
+    "'sq-string-literal'" <TokenInfo> (299) 40 77 79
+    "." (300) 96 99 100
+    ":" (301) 42 43 44 45
+    "," (302) 25 49 53 54 63 136 137 151 156 162 167 189 191 193 195
+    ";" (303) 3 6 7 12 13 22 56 87 88
+    "::" (304) 97 98
+    "(" (305) 19 47 61 62 63 64 94 95 173 185 186
+    ")" (306) 19 47 61 62 63 64 94 95 173 185 186
+    "[" (307) 43 45 148 187
+    "]" (308) 43 45 148 187
+    "{" (309) 8 9 10 11 19 20 65 83 84 85 86 146 147 149 157 173 182
+    "}" (310) 8 9 10 11 19 20 65 83 84 85 86 146 147 149 157 173 182
     "->" (311)
-    "*" (312) 103 144
-    "/" (313) 104
-    "%" (314) 105
-    "+" (315) 99 108
-    "-" (316) 100 109
-    "<" (317) 112
-    "<=" (318) 113
-    ">" (319) 114
-    ">=" (320) 115
-    "=" (321) 14 15 16 18 19 31 32 33 34 170
-    "==" (322) 118 131
-    "!=" (323) 119
+    "*" (312) 107 148
+    "/" (313) 108
+    "%" (314) 109
+    "+" (315) 103 112
+    "-" (316) 104 113
+    "<" (317) 116
+    "<=" (318) 117
+    ">" (319) 118
+    ">=" (320) 119
+    "=" (321) 14 15 16 18 19 31 32 33 34 174
+    "==" (322) 122 135
+    "!=" (323) 123
     "^" (324)
     "&" (325)
     "!" (326)
     "|" (327)
     "EOS" (328)
-    ":<" (329) 129
-    ">:" (330) 130
+    ":<" (329) 133
+    ">:" (330) 134
     "<null>" (331)
 
 
@@ -430,7 +435,7 @@ Nonterminals, with rules where they appear
         on right: 23 25
     chain_prefix_stmt <pdm::ast::Stmt*> (90)
         on left: 26 27 28 29 30
-        on right: 83 84
+        on right: 87 88
     const_stmt <pdm::ast::Stmt*> (91)
         on left: 31
         on right: 26
@@ -448,223 +453,229 @@ Nonterminals, with rules where they appear
         on right: 30
     tid <TokenInfo> (96)
         on left: 36
-        on right: 15 19 134 141 149 150 169 177
+        on right: 15 19 138 145 153 154 173 181
     vid <TokenInfo> (97)
         on left: 37
-        on right: 5 14 17 18 24 25 42 43 44 45 63 68 148 170 171 172 173 174 175 176
+        on right: 5 14 17 18 24 25 42 43 44 45 46 67 72 152 174 175 176 177 178 179 180
     cid <TokenInfo> (98)
         on left: 38
-        on right: 16 19 165 168
+        on right: 16 19 169 172
     floatl <TokenInfo> (99)
         on left: 39
-        on right: 65
+        on right: 69
     stringl <TokenInfo> (100)
         on left: 40 41
         on right: 23
     mod_prefix <pdm::ast::ModAddress*> (101)
         on left: 42 43 44 45
-        on right: 44 45 68 141 168
-    expr <pdm::ast::Exp*> (102)
-        on left: 46
-        on right: 31 32 33 34 35 47 49 50 59 144 156 159 160 161 170
-    long_exp <pdm::ast::Exp*> (103)
-        on left: 47 48
-        on right: 14 57 80 82
-    expr_cl2 <std::vector<pdm::ast::Exp*>> (104)
-        on left: 49 50
-        on right: 50 60
-    type_query_exp_sl0 <std::vector<pdm::ast::TypeQueryExp*>> (105)
+        on right: 44 45 72 145 172
+    mut_expr <pdm::ast::Exp*> (102)
+        on left: 46 47
+        on right: 34 48 49 164 165
+    mut_expr_cl1 <std::vector<pdm::ast::Exp*>> (103)
+        on left: 48 49
+        on right: 47 49
+    expr <pdm::ast::Exp*> (104)
+        on left: 50
+        on right: 31 32 33 34 35 51 53 54 63 148 160 163 174
+    long_exp <pdm::ast::Exp*> (105)
         on left: 51 52
-        on right: 19 52 169
-    bracketed_exp <pdm::ast::Exp*> (106)
-        on left: 53 54 55 56
-        on right: 18 62 77 78 85 96
-    paren_exp <pdm::ast::Exp*> (107)
-        on left: 57
-        on right: 53 94
-    vtupleExpr <pdm::ast::Exp*> (108)
-        on left: 58 59 60
-        on right: 54
-    vstructExpr <pdm::ast::Exp*> (109)
+        on right: 14 61 84 86
+    expr_cl2 <std::vector<pdm::ast::Exp*>> (106)
+        on left: 53 54
+        on right: 54 64
+    type_query_exp_sl0 <std::vector<pdm::ast::TypeQueryExp*>> (107)
+        on left: 55 56
+        on right: 19 56 173
+    bracketed_exp <pdm::ast::Exp*> (108)
+        on left: 57 58 59 60
+        on right: 18 66 81 82 89 100
+    paren_exp <pdm::ast::Exp*> (109)
         on left: 61
-        on right: 55
-    primary_exp <pdm::ast::Exp*> (110)
-        on left: 62 63 64 65 66 67 68
-        on right: 78 86
-    int_expr <pdm::ast::Exp*> (111)
-        on left: 69 70 71 72
-        on right: 64 95
-    stringls <std::vector<pdm::ast::StringExp::Piece>> (112)
+        on right: 57 98
+    vtupleExpr <pdm::ast::Exp*> (110)
+        on left: 62 63 64
+        on right: 58
+    vstructExpr <pdm::ast::Exp*> (111)
+        on left: 65
+        on right: 59
+    primary_exp <pdm::ast::Exp*> (112)
+        on left: 66 67 68 69 70 71 72
+        on right: 82 90
+    int_expr <pdm::ast::Exp*> (113)
         on left: 73 74 75 76
-        on right: 66 75 76
-    if_exp <pdm::ast::Exp*> (113)
-        on left: 77 78
-        on right: 67
-    chain_exp <pdm::ast::Exp*> (114)
-        on left: 79 80 81 82
-        on right: 56
-    chain_prefix <std::vector<pdm::ast::Stmt*>> (115)
-        on left: 83 84
-        on right: 81 82 84
-    lambda_exp <pdm::ast::Exp*> (116)
-        on left: 85
-        on right: 48
-    postfix_exp <pdm::ast::Exp*> (117)
-        on left: 86 87 88 89
-        on right: 90 91 92 95 96 97
-    vcall_exp <pdm::ast::Exp*> (118)
-        on left: 90 91
-        on right: 87
-    dot_name_exp <pdm::ast::Exp*> (119)
-        on left: 92 93 94
-        on right: 88
-    dot_index_exp <pdm::ast::Exp*> (120)
-        on left: 95 96
-        on right: 89
-    unary_exp <pdm::ast::Exp*> (121)
-        on left: 97 98
-        on right: 98 106 107
-    unary_op <pdm::ast::UnaryOperator> (122)
-        on left: 99 100 101
-        on right: 98
-    binary_exp <pdm::ast::Exp*> (123)
-        on left: 102
-        on right: 46
-    mul_binary_op <pdm::ast::BinaryOperator> (124)
+        on right: 68 99
+    stringls <std::vector<pdm::ast::StringExp::Piece>> (114)
+        on left: 77 78 79 80
+        on right: 70 79 80
+    if_exp <pdm::ast::Exp*> (115)
+        on left: 81 82
+        on right: 71
+    chain_exp <pdm::ast::Exp*> (116)
+        on left: 83 84 85 86
+        on right: 60
+    chain_prefix <std::vector<pdm::ast::Stmt*>> (117)
+        on left: 87 88
+        on right: 85 86 88
+    lambda_exp <pdm::ast::Exp*> (118)
+        on left: 89
+        on right: 52
+    postfix_exp <pdm::ast::Exp*> (119)
+        on left: 90 91 92 93
+        on right: 94 95 96 99 100 101
+    vcall_exp <pdm::ast::Exp*> (120)
+        on left: 94 95
+        on right: 91
+    dot_name_exp <pdm::ast::Exp*> (121)
+        on left: 96 97 98
+        on right: 92
+    dot_index_exp <pdm::ast::Exp*> (122)
+        on left: 99 100
+        on right: 93
+    unary_exp <pdm::ast::Exp*> (123)
+        on left: 101 102
+        on right: 102 110 111
+    unary_op <pdm::ast::UnaryOperator> (124)
         on left: 103 104 105
-        on right: 107
-    mul_binary_exp <pdm::ast::Exp*> (125)
-        on left: 106 107
-        on right: 107 110 111
-    add_binary_op <pdm::ast::BinaryOperator> (126)
-        on left: 108 109
+        on right: 102
+    binary_exp <pdm::ast::Exp*> (125)
+        on left: 106
+        on right: 50
+    mul_binary_op <pdm::ast::BinaryOperator> (126)
+        on left: 107 108 109
         on right: 111
-    add_binary_exp <pdm::ast::Exp*> (127)
+    mul_binary_exp <pdm::ast::Exp*> (127)
         on left: 110 111
-        on right: 111 116 117
-    cmp_binary_op <pdm::ast::BinaryOperator> (128)
-        on left: 112 113 114 115
-        on right: 117
-    cmp_binary_exp <pdm::ast::Exp*> (129)
-        on left: 116 117
-        on right: 117 120 121
-    eq_binary_op <pdm::ast::BinaryOperator> (130)
-        on left: 118 119
+        on right: 111 114 115
+    add_binary_op <pdm::ast::BinaryOperator> (128)
+        on left: 112 113
+        on right: 115
+    add_binary_exp <pdm::ast::Exp*> (129)
+        on left: 114 115
+        on right: 115 120 121
+    cmp_binary_op <pdm::ast::BinaryOperator> (130)
+        on left: 116 117 118 119
         on right: 121
-    eq_binary_exp <pdm::ast::Exp*> (131)
+    cmp_binary_exp <pdm::ast::Exp*> (131)
         on left: 120 121
-        on right: 121 122 123
-    and_binary_exp <pdm::ast::Exp*> (132)
+        on right: 121 124 125
+    eq_binary_op <pdm::ast::BinaryOperator> (132)
         on left: 122 123
-        on right: 123 124 125
-    xor_binary_exp <pdm::ast::Exp*> (133)
+        on right: 125
+    eq_binary_exp <pdm::ast::Exp*> (133)
         on left: 124 125
         on right: 125 126 127
-    or_binary_exp <pdm::ast::Exp*> (134)
+    and_binary_exp <pdm::ast::Exp*> (134)
         on left: 126 127
-        on right: 102 127
-    type_query_exp <pdm::ast::TypeQueryExp*> (135)
-        on left: 128
-        on right: 52
-    type_query_op <pdm::ast::TypeQueryKind> (136)
-        on left: 129 130 131
-        on right: 128
-    type_spec_cl2 <std::vector<pdm::ast::TypeSpec*>> (137)
-        on left: 132 133
-        on right: 133 143
-    type_spec <pdm::ast::TypeSpec*> (138)
-        on left: 134 135 136 137 138 139 140
-        on right: 15 18 93 94 128 132 133 142 144 148 150 154 155 171 172 173 174 176
-    mod_prefix_tid <pdm::ast::TypeSpec*> (139)
-        on left: 141
-        on right: 135
-    tuple_type_spec <pdm::ast::TypeSpec*> (140)
-        on left: 142 143
-        on right: 136
-    array_type_spec <pdm::ast::TypeSpec*> (141)
-        on left: 144
-        on right: 137
-    struct_type_spec <pdm::ast::TypeSpec*> (142)
+        on right: 127 128 129
+    xor_binary_exp <pdm::ast::Exp*> (135)
+        on left: 128 129
+        on right: 129 130 131
+    or_binary_exp <pdm::ast::Exp*> (136)
+        on left: 130 131
+        on right: 106 131
+    type_query_exp <pdm::ast::TypeQueryExp*> (137)
+        on left: 132
+        on right: 56
+    type_query_op <pdm::ast::TypeQueryKind> (138)
+        on left: 133 134 135
+        on right: 132
+    type_spec_cl2 <std::vector<pdm::ast::TypeSpec*>> (139)
+        on left: 136 137
+        on right: 137 147
+    type_spec <pdm::ast::TypeSpec*> (140)
+        on left: 138 139 140 141 142 143 144
+        on right: 15 18 97 98 132 136 137 146 148 152 154 158 159 175 176 177 178 180
+    mod_prefix_tid <pdm::ast::TypeSpec*> (141)
         on left: 145
-        on right: 138
-    struct_type_spec_field_cl <std::vector<pdm::ast::StructTypeSpec::Field*>> (143)
-        on left: 146 147
-        on right: 145 147
-    struct_type_spec_field <pdm::ast::StructTypeSpec::Field*> (144)
-        on left: 148
-        on right: 146 147
-    enum_type_spec_field <pdm::ast::EnumTypeSpec::Field*> (145)
-        on left: 149 150
-        on right: 151 152
-    enum_type_spec_field_cl <std::vector<pdm::ast::EnumTypeSpec::Field*>> (146)
-        on left: 151 152
-        on right: 152 153
-    enum_type_spec <pdm::ast::TypeSpec*> (147)
-        on left: 153
         on right: 139
-    fn_type_spec <pdm::ast::FnTypeSpec*> (148)
-        on left: 154
-        on right: 85 140
-    targ <pdm::ast::TArg*> (149)
+    tuple_type_spec <pdm::ast::TypeSpec*> (142)
+        on left: 146 147
+        on right: 140
+    array_type_spec <pdm::ast::TypeSpec*> (143)
+        on left: 148
+        on right: 141
+    struct_type_spec <pdm::ast::TypeSpec*> (144)
+        on left: 149
+        on right: 142
+    struct_type_spec_field_cl <std::vector<pdm::ast::StructTypeSpec::Field*>> (145)
+        on left: 150 151
+        on right: 149 151
+    struct_type_spec_field <pdm::ast::StructTypeSpec::Field*> (146)
+        on left: 152
+        on right: 150 151
+    enum_type_spec_field <pdm::ast::EnumTypeSpec::Field*> (147)
+        on left: 153 154
+        on right: 155 156
+    enum_type_spec_field_cl <std::vector<pdm::ast::EnumTypeSpec::Field*>> (148)
         on left: 155 156
-        on right: 157 158
-    targ_cl <std::vector<pdm::ast::TArg*>> (150)
-        on left: 157 158
-        on right: 43 45 158
-    varg <pdm::ast::VArg*> (151)
-        on left: 159 160 161
-        on right: 162 163
-    varg_cl <std::vector<pdm::ast::VArg*>> (152)
-        on left: 162 163
-        on right: 91 163
-    class_spec <pdm::ast::ClassSpec*> (153)
-        on left: 164
-        on right: 16 19 169 177
-    primary_class_spec <pdm::ast::ClassSpec*> (154)
-        on left: 165 166 167
-        on right: 164
-    mod_prefix_cid_class_spec <pdm::ast::ClassSpec*> (155)
+        on right: 156 157
+    enum_type_spec <pdm::ast::TypeSpec*> (149)
+        on left: 157
+        on right: 143
+    fn_type_spec <pdm::ast::FnTypeSpec*> (150)
+        on left: 158
+        on right: 89 144
+    targ <pdm::ast::TArg*> (151)
+        on left: 159 160
+        on right: 161 162
+    targ_cl <std::vector<pdm::ast::TArg*>> (152)
+        on left: 161 162
+        on right: 43 45 162
+    varg <pdm::ast::VArg*> (153)
+        on left: 163 164 165
+        on right: 166 167
+    varg_cl <std::vector<pdm::ast::VArg*>> (154)
+        on left: 166 167
+        on right: 95 167
+    class_spec <pdm::ast::ClassSpec*> (155)
         on left: 168
-        on right: 166
-    class_exp_class_spec <pdm::ast::ClassSpec*> (156)
-        on left: 169
-        on right: 167
-    struct_exp_field <pdm::ast::StructExp::Field*> (157)
-        on left: 170
-        on right: 190 191
-    vpattern_field <pdm::ast::VPattern::Field*> (158)
-        on left: 171 172 173
-        on right: 184 185
-    lpattern_field <pdm::ast::LPattern::Field*> (159)
-        on left: 174 175
-        on right: 179 186 187
-    tpattern_field <pdm::ast::TPattern::Field*> (160)
-        on left: 176 177
+        on right: 16 19 173 181
+    primary_class_spec <pdm::ast::ClassSpec*> (156)
+        on left: 169 170 171
+        on right: 168
+    mod_prefix_cid_class_spec <pdm::ast::ClassSpec*> (157)
+        on left: 172
+        on right: 170
+    class_exp_class_spec <pdm::ast::ClassSpec*> (158)
+        on left: 173
+        on right: 171
+    struct_exp_field <pdm::ast::StructExp::Field*> (159)
+        on left: 174
+        on right: 194 195
+    vpattern_field <pdm::ast::VPattern::Field*> (160)
+        on left: 175 176 177
         on right: 188 189
-    destructured_lpattern <pdm::ast::LPattern*> (161)
-        on left: 178
-        on right: 180
-    lpattern <pdm::ast::LPattern*> (162)
-        on left: 179 180
+    lpattern_field <pdm::ast::LPattern::Field*> (161)
+        on left: 178 179
+        on right: 183 190 191
+    tpattern_field <pdm::ast::TPattern::Field*> (162)
+        on left: 180 181
+        on right: 192 193
+    destructured_lpattern <pdm::ast::LPattern*> (163)
+        on left: 182
+        on right: 184
+    lpattern <pdm::ast::LPattern*> (164)
+        on left: 183 184
         on right: 31 32 33
-    vpattern <pdm::ast::VPattern*> (163)
-        on left: 181 182
-        on right: 18 154
-    tpattern <pdm::ast::TPattern*> (164)
-        on left: 183
+    vpattern <pdm::ast::VPattern*> (165)
+        on left: 185 186
+        on right: 18 158
+    tpattern <pdm::ast::TPattern*> (166)
+        on left: 187
         on right: 9 11
-    vpattern_field_cl <std::vector<pdm::ast::VPattern::Field*>> (165)
-        on left: 184 185
-        on right: 181 185
-    lpattern_field_cl <std::vector<pdm::ast::LPattern::Field*>> (166)
-        on left: 186 187
-        on right: 178 187
-    tpattern_field_cl1 <std::vector<pdm::ast::TPattern::Field*>> (167)
+    vpattern_field_cl <std::vector<pdm::ast::VPattern::Field*>> (167)
         on left: 188 189
-        on right: 183 189
-    struct_exp_field_cl <std::vector<pdm::ast::StructExp::Field*>> (168)
+        on right: 185 189
+    lpattern_field_cl <std::vector<pdm::ast::LPattern::Field*>> (168)
         on left: 190 191
-        on right: 61 191
+        on right: 182 191
+    tpattern_field_cl1 <std::vector<pdm::ast::TPattern::Field*>> (169)
+        on left: 192 193
+        on right: 187 193
+    struct_exp_field_cl <std::vector<pdm::ast::StructExp::Field*>> (170)
+        on left: 194 195
+        on right: 65 195
 
 
 State 0
@@ -804,7 +815,7 @@ State 15
 
 State 16
 
-  183 tpattern: "[" • tpattern_field_cl1 "]"
+  187 tpattern: "[" • tpattern_field_cl1 "]"
 
     "val_id"  shift, and go to state 10
     "TypeId"  shift, and go to state 22
@@ -872,7 +883,7 @@ State 22
 
 State 23
 
-  177 tpattern_field: tid • class_spec
+  181 tpattern_field: tid • class_spec
 
     "val_id"     shift, and go to state 10
     "CLS_ID"     shift, and go to state 37
@@ -889,7 +900,7 @@ State 23
 
 State 24
 
-  176 tpattern_field: vid • type_spec
+  180 tpattern_field: vid • type_spec
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -912,15 +923,15 @@ State 24
 
 State 25
 
-  188 tpattern_field_cl1: tpattern_field •
+  192 tpattern_field_cl1: tpattern_field •
 
-    $default  reduce using rule 188 (tpattern_field_cl1)
+    $default  reduce using rule 192 (tpattern_field_cl1)
 
 
 State 26
 
-  183 tpattern: "[" tpattern_field_cl1 • "]"
-  189 tpattern_field_cl1: tpattern_field_cl1 • "," tpattern_field
+  187 tpattern: "[" tpattern_field_cl1 • "]"
+  193 tpattern_field_cl1: tpattern_field_cl1 • "," tpattern_field
 
     ","  shift, and go to state 59
     "]"  shift, and go to state 60
@@ -1030,32 +1041,32 @@ State 37
 
 State 38
 
-  169 class_exp_class_spec: "typeclass" • "(" tid class_spec ")" "{" type_query_exp_sl0 "}"
+  173 class_exp_class_spec: "typeclass" • "(" tid class_spec ")" "{" type_query_exp_sl0 "}"
 
     "("  shift, and go to state 73
 
 
 State 39
 
-   42 mod_prefix: vid • "::"
-   43           | vid • "[" targ_cl "]" "::"
+   42 mod_prefix: vid • ":"
+   43           | vid • "[" targ_cl "]" ":"
 
-    "::"  shift, and go to state 74
-    "["   shift, and go to state 75
+    ":"  shift, and go to state 74
+    "["  shift, and go to state 75
 
 
 State 40
 
-  165 primary_class_spec: cid •
+  169 primary_class_spec: cid •
 
-    $default  reduce using rule 165 (primary_class_spec)
+    $default  reduce using rule 169 (primary_class_spec)
 
 
 State 41
 
-   44 mod_prefix: mod_prefix • vid "::"
-   45           | mod_prefix • vid "[" targ_cl "]" "::"
-  168 mod_prefix_cid_class_spec: mod_prefix • cid
+   44 mod_prefix: mod_prefix • vid ":"
+   45           | mod_prefix • vid "[" targ_cl "]" ":"
+  172 mod_prefix_cid_class_spec: mod_prefix • cid
 
     "val_id"  shift, and go to state 10
     "CLS_ID"  shift, and go to state 37
@@ -1066,42 +1077,42 @@ State 41
 
 State 42
 
-  177 tpattern_field: tid class_spec •
+  181 tpattern_field: tid class_spec •
 
-    $default  reduce using rule 177 (tpattern_field)
+    $default  reduce using rule 181 (tpattern_field)
 
 
 State 43
 
-  164 class_spec: primary_class_spec •
+  168 class_spec: primary_class_spec •
 
-    $default  reduce using rule 164 (class_spec)
+    $default  reduce using rule 168 (class_spec)
 
 
 State 44
 
-  166 primary_class_spec: mod_prefix_cid_class_spec •
+  170 primary_class_spec: mod_prefix_cid_class_spec •
 
-    $default  reduce using rule 166 (primary_class_spec)
+    $default  reduce using rule 170 (primary_class_spec)
 
 
 State 45
 
-  167 primary_class_spec: class_exp_class_spec •
+  171 primary_class_spec: class_exp_class_spec •
 
-    $default  reduce using rule 167 (primary_class_spec)
+    $default  reduce using rule 171 (primary_class_spec)
 
 
 State 46
 
-  153 enum_type_spec: "enum" • "{" enum_type_spec_field_cl "}"
+  157 enum_type_spec: "enum" • "{" enum_type_spec_field_cl "}"
 
     "{"  shift, and go to state 78
 
 
 State 47
 
-  154 fn_type_spec: "anonymous_fn" • vpattern type_spec
+  158 fn_type_spec: "anonymous_fn" • vpattern type_spec
 
     "("  shift, and go to state 79
 
@@ -1110,7 +1121,7 @@ State 47
 
 State 48
 
-  144 array_type_spec: "[" • type_spec "*" expr "]"
+  148 array_type_spec: "[" • type_spec "*" expr "]"
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -1133,9 +1144,9 @@ State 48
 
 State 49
 
-  142 tuple_type_spec: "{" • type_spec "}"
-  143                | "{" • type_spec_cl2 "}"
-  145 struct_type_spec: "{" • struct_type_spec_field_cl "}"
+  146 tuple_type_spec: "{" • type_spec "}"
+  147                | "{" • type_spec_cl2 "}"
+  149 struct_type_spec: "{" • struct_type_spec_field_cl "}"
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -1161,16 +1172,16 @@ State 49
 
 State 50
 
-  134 type_spec: tid •
+  138 type_spec: tid •
 
-    $default  reduce using rule 134 (type_spec)
+    $default  reduce using rule 138 (type_spec)
 
 
 State 51
 
-   44 mod_prefix: mod_prefix • vid "::"
-   45           | mod_prefix • vid "[" targ_cl "]" "::"
-  141 mod_prefix_tid: mod_prefix • tid
+   44 mod_prefix: mod_prefix • vid ":"
+   45           | mod_prefix • vid "[" targ_cl "]" ":"
+  145 mod_prefix_tid: mod_prefix • tid
 
     "val_id"  shift, and go to state 10
     "TypeId"  shift, and go to state 22
@@ -1181,56 +1192,56 @@ State 51
 
 State 52
 
-  176 tpattern_field: vid type_spec •
+  180 tpattern_field: vid type_spec •
 
-    $default  reduce using rule 176 (tpattern_field)
+    $default  reduce using rule 180 (tpattern_field)
 
 
 State 53
 
-  135 type_spec: mod_prefix_tid •
-
-    $default  reduce using rule 135 (type_spec)
-
-
-State 54
-
-  136 type_spec: tuple_type_spec •
-
-    $default  reduce using rule 136 (type_spec)
-
-
-State 55
-
-  137 type_spec: array_type_spec •
-
-    $default  reduce using rule 137 (type_spec)
-
-
-State 56
-
-  138 type_spec: struct_type_spec •
-
-    $default  reduce using rule 138 (type_spec)
-
-
-State 57
-
-  139 type_spec: enum_type_spec •
+  139 type_spec: mod_prefix_tid •
 
     $default  reduce using rule 139 (type_spec)
 
 
-State 58
+State 54
 
-  140 type_spec: fn_type_spec •
+  140 type_spec: tuple_type_spec •
 
     $default  reduce using rule 140 (type_spec)
 
 
+State 55
+
+  141 type_spec: array_type_spec •
+
+    $default  reduce using rule 141 (type_spec)
+
+
+State 56
+
+  142 type_spec: struct_type_spec •
+
+    $default  reduce using rule 142 (type_spec)
+
+
+State 57
+
+  143 type_spec: enum_type_spec •
+
+    $default  reduce using rule 143 (type_spec)
+
+
+State 58
+
+  144 type_spec: fn_type_spec •
+
+    $default  reduce using rule 144 (type_spec)
+
+
 State 59
 
-  189 tpattern_field_cl1: tpattern_field_cl1 "," • tpattern_field
+  193 tpattern_field_cl1: tpattern_field_cl1 "," • tpattern_field
 
     "val_id"  shift, and go to state 10
     "TypeId"  shift, and go to state 22
@@ -1242,9 +1253,9 @@ State 59
 
 State 60
 
-  183 tpattern: "[" tpattern_field_cl1 "]" •
+  187 tpattern: "[" tpattern_field_cl1 "]" •
 
-    $default  reduce using rule 183 (tpattern)
+    $default  reduce using rule 187 (tpattern)
 
 
 State 61
@@ -1353,7 +1364,7 @@ State 72
 
 State 73
 
-  169 class_exp_class_spec: "typeclass" "(" • tid class_spec ")" "{" type_query_exp_sl0 "}"
+  173 class_exp_class_spec: "typeclass" "(" • tid class_spec ")" "{" type_query_exp_sl0 "}"
 
     "TypeId"  shift, and go to state 22
 
@@ -1362,14 +1373,14 @@ State 73
 
 State 74
 
-   42 mod_prefix: vid "::" •
+   42 mod_prefix: vid ":" •
 
     $default  reduce using rule 42 (mod_prefix)
 
 
 State 75
 
-   43 mod_prefix: vid "[" • targ_cl "]" "::"
+   43 mod_prefix: vid "[" • targ_cl "]" ":"
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -1431,23 +1442,23 @@ State 75
 
 State 76
 
-   44 mod_prefix: mod_prefix vid • "::"
-   45           | mod_prefix vid • "[" targ_cl "]" "::"
+   44 mod_prefix: mod_prefix vid • ":"
+   45           | mod_prefix vid • "[" targ_cl "]" ":"
 
-    "::"  shift, and go to state 145
-    "["   shift, and go to state 146
+    ":"  shift, and go to state 145
+    "["  shift, and go to state 146
 
 
 State 77
 
-  168 mod_prefix_cid_class_spec: mod_prefix cid •
+  172 mod_prefix_cid_class_spec: mod_prefix cid •
 
-    $default  reduce using rule 168 (mod_prefix_cid_class_spec)
+    $default  reduce using rule 172 (mod_prefix_cid_class_spec)
 
 
 State 78
 
-  153 enum_type_spec: "enum" "{" • enum_type_spec_field_cl "}"
+  157 enum_type_spec: "enum" "{" • enum_type_spec_field_cl "}"
 
     "TypeId"  shift, and go to state 22
 
@@ -1458,8 +1469,8 @@ State 78
 
 State 79
 
-  181 vpattern: "(" • vpattern_field_cl ")"
-  182         | "(" • ")"
+  185 vpattern: "(" • vpattern_field_cl ")"
+  186         | "(" • ")"
 
     "val_id"  shift, and go to state 10
     "out"     shift, and go to state 150
@@ -1473,7 +1484,7 @@ State 79
 
 State 80
 
-  154 fn_type_spec: "anonymous_fn" vpattern • type_spec
+  158 fn_type_spec: "anonymous_fn" vpattern • type_spec
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -1496,22 +1507,22 @@ State 80
 
 State 81
 
-  144 array_type_spec: "[" type_spec • "*" expr "]"
+  148 array_type_spec: "[" type_spec • "*" expr "]"
 
     "*"  shift, and go to state 157
 
 
 State 82
 
-   42 mod_prefix: vid • "::"
-   43           | vid • "[" targ_cl "]" "::"
-  148 struct_type_spec_field: vid • type_spec
+   42 mod_prefix: vid • ":"
+   43           | vid • "[" targ_cl "]" ":"
+  152 struct_type_spec_field: vid • type_spec
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
     "enum"          shift, and go to state 46
     "anonymous_fn"  shift, and go to state 47
-    "::"            shift, and go to state 74
+    ":"             shift, and go to state 74
     "["             shift, and go to state 158
     "{"             shift, and go to state 49
 
@@ -1529,8 +1540,8 @@ State 82
 
 State 83
 
-  133 type_spec_cl2: type_spec_cl2 • "," type_spec
-  143 tuple_type_spec: "{" type_spec_cl2 • "}"
+  137 type_spec_cl2: type_spec_cl2 • "," type_spec
+  147 tuple_type_spec: "{" type_spec_cl2 • "}"
 
     ","  shift, and go to state 160
     "}"  shift, and go to state 161
@@ -1538,8 +1549,8 @@ State 83
 
 State 84
 
-  132 type_spec_cl2: type_spec • "," type_spec
-  142 tuple_type_spec: "{" type_spec • "}"
+  136 type_spec_cl2: type_spec • "," type_spec
+  146 tuple_type_spec: "{" type_spec • "}"
 
     ","  shift, and go to state 162
     "}"  shift, and go to state 163
@@ -1547,8 +1558,8 @@ State 84
 
 State 85
 
-  145 struct_type_spec: "{" struct_type_spec_field_cl • "}"
-  147 struct_type_spec_field_cl: struct_type_spec_field_cl • "," struct_type_spec_field
+  149 struct_type_spec: "{" struct_type_spec_field_cl • "}"
+  151 struct_type_spec_field_cl: struct_type_spec_field_cl • "," struct_type_spec_field
 
     ","  shift, and go to state 164
     "}"  shift, and go to state 165
@@ -1556,23 +1567,23 @@ State 85
 
 State 86
 
-  146 struct_type_spec_field_cl: struct_type_spec_field •
+  150 struct_type_spec_field_cl: struct_type_spec_field •
 
-    $default  reduce using rule 146 (struct_type_spec_field_cl)
+    $default  reduce using rule 150 (struct_type_spec_field_cl)
 
 
 State 87
 
-  141 mod_prefix_tid: mod_prefix tid •
+  145 mod_prefix_tid: mod_prefix tid •
 
-    $default  reduce using rule 141 (mod_prefix_tid)
+    $default  reduce using rule 145 (mod_prefix_tid)
 
 
 State 88
 
-  189 tpattern_field_cl1: tpattern_field_cl1 "," tpattern_field •
+  193 tpattern_field_cl1: tpattern_field_cl1 "," tpattern_field •
 
-    $default  reduce using rule 189 (tpattern_field_cl1)
+    $default  reduce using rule 193 (tpattern_field_cl1)
 
 
 State 89
@@ -1760,7 +1771,7 @@ State 100
 
 State 101
 
-  169 class_exp_class_spec: "typeclass" "(" tid • class_spec ")" "{" type_query_exp_sl0 "}"
+  173 class_exp_class_spec: "typeclass" "(" tid • class_spec ")" "{" type_query_exp_sl0 "}"
 
     "val_id"     shift, and go to state 10
     "CLS_ID"     shift, and go to state 37
@@ -1777,8 +1788,8 @@ State 101
 
 State 102
 
-   77 if_exp: "if" • bracketed_exp bracketed_exp
-   78       | "if" • bracketed_exp bracketed_exp "else" primary_exp
+   81 if_exp: "if" • bracketed_exp bracketed_exp
+   82       | "if" • bracketed_exp bracketed_exp "else" primary_exp
 
     "("  shift, and go to state 111
     "{"  shift, and go to state 176
@@ -1792,37 +1803,37 @@ State 102
 
 State 103
 
-  101 unary_op: "not" •
+  105 unary_op: "not" •
 
-    $default  reduce using rule 101 (unary_op)
+    $default  reduce using rule 105 (unary_op)
 
 
 State 104
 
-   69 int_expr: "42" •
+   73 int_expr: "42" •
 
-    $default  reduce using rule 69 (int_expr)
+    $default  reduce using rule 73 (int_expr)
 
 
 State 105
 
-   70 int_expr: "0x2a" •
+   74 int_expr: "0x2a" •
 
-    $default  reduce using rule 70 (int_expr)
+    $default  reduce using rule 74 (int_expr)
 
 
 State 106
 
-   71 int_expr: "42u" •
+   75 int_expr: "42u" •
 
-    $default  reduce using rule 71 (int_expr)
+    $default  reduce using rule 75 (int_expr)
 
 
 State 107
 
-   72 int_expr: "0x2Au" •
+   76 int_expr: "0x2Au" •
 
-    $default  reduce using rule 72 (int_expr)
+    $default  reduce using rule 76 (int_expr)
 
 
 State 108
@@ -1834,24 +1845,24 @@ State 108
 
 State 109
 
-   74 stringls: "\"dq-string-literal\"" •
+   78 stringls: "\"dq-string-literal\"" •
 
-    $default  reduce using rule 74 (stringls)
+    $default  reduce using rule 78 (stringls)
 
 
 State 110
 
-   73 stringls: "'sq-string-literal'" •
+   77 stringls: "'sq-string-literal'" •
 
-    $default  reduce using rule 73 (stringls)
+    $default  reduce using rule 77 (stringls)
 
 
 State 111
 
-   57 paren_exp: "(" • long_exp ")"
-   58 vtupleExpr: "(" • ")"
-   59           | "(" • expr "," ")"
-   60           | "(" • expr_cl2 ")"
+   61 paren_exp: "(" • long_exp ")"
+   62 vtupleExpr: "(" • ")"
+   63           | "(" • expr "," ")"
+   64           | "(" • expr_cl2 ")"
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -1915,14 +1926,14 @@ State 111
 
 State 112
 
-   61 vstructExpr: "{" • struct_exp_field_cl "}"
-   79 chain_exp: "{" • "}"
-   80          | "{" • long_exp "}"
-   81          | "{" • chain_prefix "}"
-   82          | "{" • chain_prefix long_exp "}"
-  142 tuple_type_spec: "{" • type_spec "}"
-  143                | "{" • type_spec_cl2 "}"
-  145 struct_type_spec: "{" • struct_type_spec_field_cl "}"
+   65 vstructExpr: "{" • struct_exp_field_cl "}"
+   83 chain_exp: "{" • "}"
+   84          | "{" • long_exp "}"
+   85          | "{" • chain_prefix "}"
+   86          | "{" • chain_prefix long_exp "}"
+  146 tuple_type_spec: "{" • type_spec "}"
+  147                | "{" • type_spec_cl2 "}"
+  149 struct_type_spec: "{" • struct_type_spec_field_cl "}"
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -2002,43 +2013,43 @@ State 112
 
 State 113
 
-   99 unary_op: "+" •
+  103 unary_op: "+" •
 
-    $default  reduce using rule 99 (unary_op)
+    $default  reduce using rule 103 (unary_op)
 
 
 State 114
 
-  100 unary_op: "-" •
+  104 unary_op: "-" •
 
-    $default  reduce using rule 100 (unary_op)
+    $default  reduce using rule 104 (unary_op)
 
 
 State 115
 
-   42 mod_prefix: vid • "::"
-   43           | vid • "[" targ_cl "]" "::"
-   63 primary_exp: vid •
+   42 mod_prefix: vid • ":"
+   43           | vid • "[" targ_cl "]" ":"
+   67 primary_exp: vid •
 
-    "::"  shift, and go to state 74
-    "["   shift, and go to state 75
+    ":"  shift, and go to state 74
+    "["  shift, and go to state 75
 
-    $default  reduce using rule 63 (primary_exp)
+    $default  reduce using rule 67 (primary_exp)
 
 
 State 116
 
-   65 primary_exp: floatl •
+   69 primary_exp: floatl •
 
-    $default  reduce using rule 65 (primary_exp)
+    $default  reduce using rule 69 (primary_exp)
 
 
 State 117
 
-   44 mod_prefix: mod_prefix • vid "::"
-   45           | mod_prefix • vid "[" targ_cl "]" "::"
-   68 primary_exp: mod_prefix • vid
-  141 mod_prefix_tid: mod_prefix • tid
+   44 mod_prefix: mod_prefix • vid ":"
+   45           | mod_prefix • vid "[" targ_cl "]" ":"
+   72 primary_exp: mod_prefix • vid
+  145 mod_prefix_tid: mod_prefix • tid
 
     "val_id"  shift, and go to state 10
     "TypeId"  shift, and go to state 22
@@ -2049,125 +2060,125 @@ State 117
 
 State 118
 
-  156 targ: expr •
+  160 targ: expr •
 
-    $default  reduce using rule 156 (targ)
+    $default  reduce using rule 160 (targ)
 
 
 State 119
 
-   62 primary_exp: bracketed_exp •
-
-    $default  reduce using rule 62 (primary_exp)
-
-
-State 120
-
-   53 bracketed_exp: paren_exp •
-
-    $default  reduce using rule 53 (bracketed_exp)
-
-
-State 121
-
-   54 bracketed_exp: vtupleExpr •
-
-    $default  reduce using rule 54 (bracketed_exp)
-
-
-State 122
-
-   55 bracketed_exp: vstructExpr •
-
-    $default  reduce using rule 55 (bracketed_exp)
-
-
-State 123
-
-   86 postfix_exp: primary_exp •
-
-    $default  reduce using rule 86 (postfix_exp)
-
-
-State 124
-
-   64 primary_exp: int_expr •
-
-    $default  reduce using rule 64 (primary_exp)
-
-
-State 125
-
-   66 primary_exp: stringls •
-   75 stringls: stringls • "'sq-string-literal'"
-   76         | stringls • "\"dq-string-literal\""
-
-    "\"dq-string-literal\""  shift, and go to state 201
-    "'sq-string-literal'"    shift, and go to state 202
+   66 primary_exp: bracketed_exp •
 
     $default  reduce using rule 66 (primary_exp)
 
 
+State 120
+
+   57 bracketed_exp: paren_exp •
+
+    $default  reduce using rule 57 (bracketed_exp)
+
+
+State 121
+
+   58 bracketed_exp: vtupleExpr •
+
+    $default  reduce using rule 58 (bracketed_exp)
+
+
+State 122
+
+   59 bracketed_exp: vstructExpr •
+
+    $default  reduce using rule 59 (bracketed_exp)
+
+
+State 123
+
+   90 postfix_exp: primary_exp •
+
+    $default  reduce using rule 90 (postfix_exp)
+
+
+State 124
+
+   68 primary_exp: int_expr •
+
+    $default  reduce using rule 68 (primary_exp)
+
+
+State 125
+
+   70 primary_exp: stringls •
+   79 stringls: stringls • "'sq-string-literal'"
+   80         | stringls • "\"dq-string-literal\""
+
+    "\"dq-string-literal\""  shift, and go to state 201
+    "'sq-string-literal'"    shift, and go to state 202
+
+    $default  reduce using rule 70 (primary_exp)
+
+
 State 126
 
-   67 primary_exp: if_exp •
+   71 primary_exp: if_exp •
 
-    $default  reduce using rule 67 (primary_exp)
+    $default  reduce using rule 71 (primary_exp)
 
 
 State 127
 
-   56 bracketed_exp: chain_exp •
+   60 bracketed_exp: chain_exp •
 
-    $default  reduce using rule 56 (bracketed_exp)
+    $default  reduce using rule 60 (bracketed_exp)
 
 
 State 128
 
-   90 vcall_exp: postfix_exp • "(" ")"
-   91          | postfix_exp • "(" varg_cl ")"
-   92 dot_name_exp: postfix_exp • "." "val_id"
-   95 dot_index_exp: postfix_exp • "." int_expr
-   96              | postfix_exp • "." bracketed_exp
-   97 unary_exp: postfix_exp •
+   94 vcall_exp: postfix_exp • "(" ")"
+   95          | postfix_exp • "(" varg_cl ")"
+   96 dot_name_exp: postfix_exp • "." "val_id"
+   99 dot_index_exp: postfix_exp • "." int_expr
+  100              | postfix_exp • "." bracketed_exp
+  101 unary_exp: postfix_exp •
 
     "."  shift, and go to state 203
     "("  shift, and go to state 204
 
-    $default  reduce using rule 97 (unary_exp)
+    $default  reduce using rule 101 (unary_exp)
 
 
 State 129
 
-   87 postfix_exp: vcall_exp •
+   91 postfix_exp: vcall_exp •
 
-    $default  reduce using rule 87 (postfix_exp)
+    $default  reduce using rule 91 (postfix_exp)
 
 
 State 130
 
-   88 postfix_exp: dot_name_exp •
+   92 postfix_exp: dot_name_exp •
 
-    $default  reduce using rule 88 (postfix_exp)
+    $default  reduce using rule 92 (postfix_exp)
 
 
 State 131
 
-   89 postfix_exp: dot_index_exp •
+   93 postfix_exp: dot_index_exp •
 
-    $default  reduce using rule 89 (postfix_exp)
+    $default  reduce using rule 93 (postfix_exp)
 
 
 State 132
 
-  106 mul_binary_exp: unary_exp •
+  110 mul_binary_exp: unary_exp •
 
-    $default  reduce using rule 106 (mul_binary_exp)
+    $default  reduce using rule 110 (mul_binary_exp)
 
 
 State 133
 
-   98 unary_exp: unary_op • unary_exp
+  102 unary_exp: unary_op • unary_exp
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -2218,118 +2229,118 @@ State 133
 
 State 134
 
-   46 expr: binary_exp •
+   50 expr: binary_exp •
 
-    $default  reduce using rule 46 (expr)
+    $default  reduce using rule 50 (expr)
 
 
 State 135
 
-  107 mul_binary_exp: mul_binary_exp • mul_binary_op unary_exp
-  110 add_binary_exp: mul_binary_exp •
+  111 mul_binary_exp: mul_binary_exp • mul_binary_op unary_exp
+  114 add_binary_exp: mul_binary_exp •
 
     "*"  shift, and go to state 206
     "/"  shift, and go to state 207
     "%"  shift, and go to state 208
 
-    $default  reduce using rule 110 (add_binary_exp)
+    $default  reduce using rule 114 (add_binary_exp)
 
     mul_binary_op  go to state 209
 
 
 State 136
 
-  111 add_binary_exp: add_binary_exp • add_binary_op mul_binary_exp
-  116 cmp_binary_exp: add_binary_exp •
+  115 add_binary_exp: add_binary_exp • add_binary_op mul_binary_exp
+  120 cmp_binary_exp: add_binary_exp •
 
     "+"  shift, and go to state 210
     "-"  shift, and go to state 211
 
-    $default  reduce using rule 116 (cmp_binary_exp)
+    $default  reduce using rule 120 (cmp_binary_exp)
 
     add_binary_op  go to state 212
 
 
 State 137
 
-  117 cmp_binary_exp: cmp_binary_exp • cmp_binary_op add_binary_exp
-  120 eq_binary_exp: cmp_binary_exp •
+  121 cmp_binary_exp: cmp_binary_exp • cmp_binary_op add_binary_exp
+  124 eq_binary_exp: cmp_binary_exp •
 
     "<"   shift, and go to state 213
     "<="  shift, and go to state 214
     ">"   shift, and go to state 215
     ">="  shift, and go to state 216
 
-    $default  reduce using rule 120 (eq_binary_exp)
+    $default  reduce using rule 124 (eq_binary_exp)
 
     cmp_binary_op  go to state 217
 
 
 State 138
 
-  121 eq_binary_exp: eq_binary_exp • eq_binary_op cmp_binary_exp
-  122 and_binary_exp: eq_binary_exp •
+  125 eq_binary_exp: eq_binary_exp • eq_binary_op cmp_binary_exp
+  126 and_binary_exp: eq_binary_exp •
 
     "=="  shift, and go to state 218
     "!="  shift, and go to state 219
 
-    $default  reduce using rule 122 (and_binary_exp)
+    $default  reduce using rule 126 (and_binary_exp)
 
     eq_binary_op  go to state 220
 
 
 State 139
 
-  123 and_binary_exp: and_binary_exp • "and" eq_binary_exp
-  124 xor_binary_exp: and_binary_exp •
+  127 and_binary_exp: and_binary_exp • "and" eq_binary_exp
+  128 xor_binary_exp: and_binary_exp •
 
     "and"  shift, and go to state 221
 
-    $default  reduce using rule 124 (xor_binary_exp)
+    $default  reduce using rule 128 (xor_binary_exp)
 
 
 State 140
 
-  125 xor_binary_exp: xor_binary_exp • "xor" and_binary_exp
-  126 or_binary_exp: xor_binary_exp •
+  129 xor_binary_exp: xor_binary_exp • "xor" and_binary_exp
+  130 or_binary_exp: xor_binary_exp •
 
     "xor"  shift, and go to state 222
 
-    $default  reduce using rule 126 (or_binary_exp)
+    $default  reduce using rule 130 (or_binary_exp)
 
 
 State 141
 
-  102 binary_exp: or_binary_exp •
-  127 or_binary_exp: or_binary_exp • "or" xor_binary_exp
+  106 binary_exp: or_binary_exp •
+  131 or_binary_exp: or_binary_exp • "or" xor_binary_exp
 
     "or"  shift, and go to state 223
 
-    $default  reduce using rule 102 (binary_exp)
+    $default  reduce using rule 106 (binary_exp)
 
 
 State 142
 
-   93 dot_name_exp: type_spec • "::" "TypeId"
-   94             | type_spec • "::" "TypeId" "using" paren_exp
-  155 targ: type_spec •
+   97 dot_name_exp: type_spec • "::" "TypeId"
+   98             | type_spec • "::" "TypeId" "using" paren_exp
+  159 targ: type_spec •
 
     "::"  shift, and go to state 224
 
-    $default  reduce using rule 155 (targ)
+    $default  reduce using rule 159 (targ)
 
 
 State 143
 
-  157 targ_cl: targ •
+  161 targ_cl: targ •
 
-    $default  reduce using rule 157 (targ_cl)
+    $default  reduce using rule 161 (targ_cl)
 
 
 State 144
 
-   43 mod_prefix: vid "[" targ_cl • "]" "::"
-  158 targ_cl: targ_cl • "," targ
+   43 mod_prefix: vid "[" targ_cl • "]" ":"
+  162 targ_cl: targ_cl • "," targ
 
     ","  shift, and go to state 225
     "]"  shift, and go to state 226
@@ -2337,14 +2348,14 @@ State 144
 
 State 145
 
-   44 mod_prefix: mod_prefix vid "::" •
+   44 mod_prefix: mod_prefix vid ":" •
 
     $default  reduce using rule 44 (mod_prefix)
 
 
 State 146
 
-   45 mod_prefix: mod_prefix vid "[" • targ_cl "]" "::"
+   45 mod_prefix: mod_prefix vid "[" • targ_cl "]" ":"
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -2406,8 +2417,8 @@ State 146
 
 State 147
 
-  149 enum_type_spec_field: tid •
-  150                     | tid • type_spec
+  153 enum_type_spec_field: tid •
+  154                     | tid • type_spec
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -2416,7 +2427,7 @@ State 147
     "["             shift, and go to state 48
     "{"             shift, and go to state 49
 
-    $default  reduce using rule 149 (enum_type_spec_field)
+    $default  reduce using rule 153 (enum_type_spec_field)
 
     tid               go to state 50
     vid               go to state 39
@@ -2432,15 +2443,15 @@ State 147
 
 State 148
 
-  151 enum_type_spec_field_cl: enum_type_spec_field •
+  155 enum_type_spec_field_cl: enum_type_spec_field •
 
-    $default  reduce using rule 151 (enum_type_spec_field_cl)
+    $default  reduce using rule 155 (enum_type_spec_field_cl)
 
 
 State 149
 
-  152 enum_type_spec_field_cl: enum_type_spec_field_cl • "," enum_type_spec_field
-  153 enum_type_spec: "enum" "{" enum_type_spec_field_cl • "}"
+  156 enum_type_spec_field_cl: enum_type_spec_field_cl • "," enum_type_spec_field
+  157 enum_type_spec: "enum" "{" enum_type_spec_field_cl • "}"
 
     ","  shift, and go to state 229
     "}"  shift, and go to state 230
@@ -2448,7 +2459,7 @@ State 149
 
 State 150
 
-  172 vpattern_field: "out" • vid type_spec
+  176 vpattern_field: "out" • vid type_spec
 
     "val_id"  shift, and go to state 10
 
@@ -2457,7 +2468,7 @@ State 150
 
 State 151
 
-  173 vpattern_field: "inout" • vid type_spec
+  177 vpattern_field: "inout" • vid type_spec
 
     "val_id"  shift, and go to state 10
 
@@ -2466,14 +2477,14 @@ State 151
 
 State 152
 
-  182 vpattern: "(" ")" •
+  186 vpattern: "(" ")" •
 
-    $default  reduce using rule 182 (vpattern)
+    $default  reduce using rule 186 (vpattern)
 
 
 State 153
 
-  171 vpattern_field: vid • type_spec
+  175 vpattern_field: vid • type_spec
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -2496,15 +2507,15 @@ State 153
 
 State 154
 
-  184 vpattern_field_cl: vpattern_field •
+  188 vpattern_field_cl: vpattern_field •
 
-    $default  reduce using rule 184 (vpattern_field_cl)
+    $default  reduce using rule 188 (vpattern_field_cl)
 
 
 State 155
 
-  181 vpattern: "(" vpattern_field_cl • ")"
-  185 vpattern_field_cl: vpattern_field_cl • "," vpattern_field
+  185 vpattern: "(" vpattern_field_cl • ")"
+  189 vpattern_field_cl: vpattern_field_cl • "," vpattern_field
 
     ","  shift, and go to state 234
     ")"  shift, and go to state 235
@@ -2512,14 +2523,14 @@ State 155
 
 State 156
 
-  154 fn_type_spec: "anonymous_fn" vpattern type_spec •
+  158 fn_type_spec: "anonymous_fn" vpattern type_spec •
 
-    $default  reduce using rule 154 (fn_type_spec)
+    $default  reduce using rule 158 (fn_type_spec)
 
 
 State 157
 
-  144 array_type_spec: "[" type_spec "*" • expr "]"
+  148 array_type_spec: "[" type_spec "*" • expr "]"
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -2579,8 +2590,8 @@ State 157
 
 State 158
 
-   43 mod_prefix: vid "[" • targ_cl "]" "::"
-  144 array_type_spec: "[" • type_spec "*" expr "]"
+   43 mod_prefix: vid "[" • targ_cl "]" ":"
+  148 array_type_spec: "[" • type_spec "*" expr "]"
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -2642,14 +2653,14 @@ State 158
 
 State 159
 
-  148 struct_type_spec_field: vid type_spec •
+  152 struct_type_spec_field: vid type_spec •
 
-    $default  reduce using rule 148 (struct_type_spec_field)
+    $default  reduce using rule 152 (struct_type_spec_field)
 
 
 State 160
 
-  133 type_spec_cl2: type_spec_cl2 "," • type_spec
+  137 type_spec_cl2: type_spec_cl2 "," • type_spec
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -2672,14 +2683,14 @@ State 160
 
 State 161
 
-  143 tuple_type_spec: "{" type_spec_cl2 "}" •
+  147 tuple_type_spec: "{" type_spec_cl2 "}" •
 
-    $default  reduce using rule 143 (tuple_type_spec)
+    $default  reduce using rule 147 (tuple_type_spec)
 
 
 State 162
 
-  132 type_spec_cl2: type_spec "," • type_spec
+  136 type_spec_cl2: type_spec "," • type_spec
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -2702,14 +2713,14 @@ State 162
 
 State 163
 
-  142 tuple_type_spec: "{" type_spec "}" •
+  146 tuple_type_spec: "{" type_spec "}" •
 
-    $default  reduce using rule 142 (tuple_type_spec)
+    $default  reduce using rule 146 (tuple_type_spec)
 
 
 State 164
 
-  147 struct_type_spec_field_cl: struct_type_spec_field_cl "," • struct_type_spec_field
+  151 struct_type_spec_field_cl: struct_type_spec_field_cl "," • struct_type_spec_field
 
     "val_id"  shift, and go to state 10
 
@@ -2719,9 +2730,9 @@ State 164
 
 State 165
 
-  145 struct_type_spec: "{" struct_type_spec_field_cl "}" •
+  149 struct_type_spec: "{" struct_type_spec_field_cl "}" •
 
-    $default  reduce using rule 145 (struct_type_spec)
+    $default  reduce using rule 149 (struct_type_spec)
 
 
 State 166
@@ -2733,9 +2744,9 @@ State 166
 
 State 167
 
-   47 long_exp: expr •
+   51 long_exp: expr •
 
-    $default  reduce using rule 47 (long_exp)
+    $default  reduce using rule 51 (long_exp)
 
 
 State 168
@@ -2747,28 +2758,28 @@ State 168
 
 State 169
 
-   48 long_exp: lambda_exp •
+   52 long_exp: lambda_exp •
 
-    $default  reduce using rule 48 (long_exp)
+    $default  reduce using rule 52 (long_exp)
 
 
 State 170
 
-   93 dot_name_exp: type_spec • "::" "TypeId"
-   94             | type_spec • "::" "TypeId" "using" paren_exp
+   97 dot_name_exp: type_spec • "::" "TypeId"
+   98             | type_spec • "::" "TypeId" "using" paren_exp
 
     "::"  shift, and go to state 224
 
 
 State 171
 
-   85 lambda_exp: fn_type_spec • bracketed_exp
-  140 type_spec: fn_type_spec •
+   89 lambda_exp: fn_type_spec • bracketed_exp
+  144 type_spec: fn_type_spec •
 
     "("  shift, and go to state 111
     "{"  shift, and go to state 176
 
-    $default  reduce using rule 140 (type_spec)
+    $default  reduce using rule 144 (type_spec)
 
     bracketed_exp  go to state 242
     paren_exp      go to state 120
@@ -2810,18 +2821,18 @@ State 174
 
 State 175
 
-  169 class_exp_class_spec: "typeclass" "(" tid class_spec • ")" "{" type_query_exp_sl0 "}"
+  173 class_exp_class_spec: "typeclass" "(" tid class_spec • ")" "{" type_query_exp_sl0 "}"
 
     ")"  shift, and go to state 245
 
 
 State 176
 
-   61 vstructExpr: "{" • struct_exp_field_cl "}"
-   79 chain_exp: "{" • "}"
-   80          | "{" • long_exp "}"
-   81          | "{" • chain_prefix "}"
-   82          | "{" • chain_prefix long_exp "}"
+   65 vstructExpr: "{" • struct_exp_field_cl "}"
+   83 chain_exp: "{" • "}"
+   84          | "{" • long_exp "}"
+   85          | "{" • chain_prefix "}"
+   86          | "{" • chain_prefix long_exp "}"
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -2898,8 +2909,8 @@ State 176
 
 State 177
 
-   77 if_exp: "if" bracketed_exp • bracketed_exp
-   78       | "if" bracketed_exp • bracketed_exp "else" primary_exp
+   81 if_exp: "if" bracketed_exp • bracketed_exp
+   82       | "if" bracketed_exp • bracketed_exp "else" primary_exp
 
     "("  shift, and go to state 111
     "{"  shift, and go to state 176
@@ -2913,33 +2924,33 @@ State 177
 
 State 178
 
-   58 vtupleExpr: "(" ")" •
+   62 vtupleExpr: "(" ")" •
 
-    $default  reduce using rule 58 (vtupleExpr)
+    $default  reduce using rule 62 (vtupleExpr)
 
 
 State 179
 
-   47 long_exp: expr •
-   49 expr_cl2: expr • "," expr
-   59 vtupleExpr: "(" expr • "," ")"
+   51 long_exp: expr •
+   53 expr_cl2: expr • "," expr
+   63 vtupleExpr: "(" expr • "," ")"
 
     ","  shift, and go to state 248
 
-    $default  reduce using rule 47 (long_exp)
+    $default  reduce using rule 51 (long_exp)
 
 
 State 180
 
-   57 paren_exp: "(" long_exp • ")"
+   61 paren_exp: "(" long_exp • ")"
 
     ")"  shift, and go to state 249
 
 
 State 181
 
-   50 expr_cl2: expr_cl2 • "," expr
-   60 vtupleExpr: "(" expr_cl2 • ")"
+   54 expr_cl2: expr_cl2 • "," expr
+   64 vtupleExpr: "(" expr_cl2 • ")"
 
     ","  shift, and go to state 250
     ")"  shift, and go to state 251
@@ -2986,62 +2997,13 @@ State 184
 
 State 185
 
-   34 set_stmt: "set" • expr "=" expr
+   34 set_stmt: "set" • mut_expr "=" expr
 
-    "val_id"                 shift, and go to state 10
-    "TypeId"                 shift, and go to state 22
-    "enum"                   shift, and go to state 46
-    "if"                     shift, and go to state 102
-    "anonymous_fn"           shift, and go to state 47
-    "not"                    shift, and go to state 103
-    "42"                     shift, and go to state 104
-    "0x2a"                   shift, and go to state 105
-    "42u"                    shift, and go to state 106
-    "0x2Au"                  shift, and go to state 107
-    "4.2"                    shift, and go to state 108
-    "\"dq-string-literal\""  shift, and go to state 109
-    "'sq-string-literal'"    shift, and go to state 110
-    "("                      shift, and go to state 111
-    "["                      shift, and go to state 48
-    "{"                      shift, and go to state 112
-    "+"                      shift, and go to state 113
-    "-"                      shift, and go to state 114
+    "val_id"  shift, and go to state 10
+    "("       shift, and go to state 259
 
-    tid               go to state 50
-    vid               go to state 115
-    floatl            go to state 116
-    mod_prefix        go to state 117
-    expr              go to state 259
-    bracketed_exp     go to state 119
-    paren_exp         go to state 120
-    vtupleExpr        go to state 121
-    vstructExpr       go to state 122
-    primary_exp       go to state 123
-    int_expr          go to state 124
-    stringls          go to state 125
-    if_exp            go to state 126
-    chain_exp         go to state 127
-    postfix_exp       go to state 128
-    vcall_exp         go to state 129
-    dot_name_exp      go to state 130
-    dot_index_exp     go to state 131
-    unary_exp         go to state 132
-    unary_op          go to state 133
-    binary_exp        go to state 134
-    mul_binary_exp    go to state 135
-    add_binary_exp    go to state 136
-    cmp_binary_exp    go to state 137
-    eq_binary_exp     go to state 138
-    and_binary_exp    go to state 139
-    xor_binary_exp    go to state 140
-    or_binary_exp     go to state 141
-    type_spec         go to state 170
-    mod_prefix_tid    go to state 53
-    tuple_type_spec   go to state 54
-    array_type_spec   go to state 55
-    struct_type_spec  go to state 56
-    enum_type_spec    go to state 57
-    fn_type_spec      go to state 58
+    vid       go to state 260
+    mut_expr  go to state 261
 
 
 State 186
@@ -3071,7 +3033,7 @@ State 186
     vid               go to state 115
     floatl            go to state 116
     mod_prefix        go to state 117
-    expr              go to state 260
+    expr              go to state 262
     bracketed_exp     go to state 119
     paren_exp         go to state 120
     vtupleExpr        go to state 121
@@ -3106,16 +3068,16 @@ State 186
 
 State 187
 
-   79 chain_exp: "{" "}" •
+   83 chain_exp: "{" "}" •
 
-    $default  reduce using rule 79 (chain_exp)
+    $default  reduce using rule 83 (chain_exp)
 
 
 State 188
 
-   83 chain_prefix: chain_prefix_stmt • ";"
+   87 chain_prefix: chain_prefix_stmt • ";"
 
-    ";"  shift, and go to state 261
+    ";"  shift, and go to state 263
 
 
 State 189
@@ -3155,22 +3117,22 @@ State 193
 
 State 194
 
-   42 mod_prefix: vid • "::"
-   43           | vid • "[" targ_cl "]" "::"
-   63 primary_exp: vid •
-  148 struct_type_spec_field: vid • type_spec
-  170 struct_exp_field: vid • "=" expr
+   42 mod_prefix: vid • ":"
+   43           | vid • "[" targ_cl "]" ":"
+   67 primary_exp: vid •
+  152 struct_type_spec_field: vid • type_spec
+  174 struct_exp_field: vid • "=" expr
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
     "enum"          shift, and go to state 46
     "anonymous_fn"  shift, and go to state 47
-    "::"            shift, and go to state 74
+    ":"             shift, and go to state 74
     "["             shift, and go to state 158
     "{"             shift, and go to state 49
-    "="             shift, and go to state 262
+    "="             shift, and go to state 264
 
-    $default  reduce using rule 63 (primary_exp)
+    $default  reduce using rule 67 (primary_exp)
 
     tid               go to state 50
     vid               go to state 39
@@ -3186,16 +3148,16 @@ State 194
 
 State 195
 
-   80 chain_exp: "{" long_exp • "}"
+   84 chain_exp: "{" long_exp • "}"
 
-    "}"  shift, and go to state 263
+    "}"  shift, and go to state 265
 
 
 State 196
 
-   81 chain_exp: "{" chain_prefix • "}"
-   82          | "{" chain_prefix • long_exp "}"
-   84 chain_prefix: chain_prefix • chain_prefix_stmt ";"
+   85 chain_exp: "{" chain_prefix • "}"
+   86          | "{" chain_prefix • long_exp "}"
+   88 chain_prefix: chain_prefix • chain_prefix_stmt ";"
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -3218,11 +3180,11 @@ State 196
     "("                      shift, and go to state 111
     "["                      shift, and go to state 48
     "{"                      shift, and go to state 112
-    "}"                      shift, and go to state 264
+    "}"                      shift, and go to state 266
     "+"                      shift, and go to state 113
     "-"                      shift, and go to state 114
 
-    chain_prefix_stmt  go to state 265
+    chain_prefix_stmt  go to state 267
     const_stmt         go to state 189
     val_stmt           go to state 190
     var_stmt           go to state 191
@@ -3233,7 +3195,7 @@ State 196
     floatl             go to state 116
     mod_prefix         go to state 117
     expr               go to state 167
-    long_exp           go to state 266
+    long_exp           go to state 268
     bracketed_exp      go to state 119
     paren_exp          go to state 120
     vtupleExpr         go to state 121
@@ -3269,10 +3231,10 @@ State 196
 
 State 197
 
-   93 dot_name_exp: type_spec • "::" "TypeId"
-   94             | type_spec • "::" "TypeId" "using" paren_exp
-  132 type_spec_cl2: type_spec • "," type_spec
-  142 tuple_type_spec: "{" type_spec • "}"
+   97 dot_name_exp: type_spec • "::" "TypeId"
+   98             | type_spec • "::" "TypeId" "using" paren_exp
+  136 type_spec_cl2: type_spec • "," type_spec
+  146 tuple_type_spec: "{" type_spec • "}"
 
     ","   shift, and go to state 162
     "::"  shift, and go to state 224
@@ -3281,53 +3243,53 @@ State 197
 
 State 198
 
-  190 struct_exp_field_cl: struct_exp_field •
+  194 struct_exp_field_cl: struct_exp_field •
 
-    $default  reduce using rule 190 (struct_exp_field_cl)
+    $default  reduce using rule 194 (struct_exp_field_cl)
 
 
 State 199
 
-   61 vstructExpr: "{" struct_exp_field_cl • "}"
-  191 struct_exp_field_cl: struct_exp_field_cl • "," struct_exp_field
+   65 vstructExpr: "{" struct_exp_field_cl • "}"
+  195 struct_exp_field_cl: struct_exp_field_cl • "," struct_exp_field
 
-    ","  shift, and go to state 267
-    "}"  shift, and go to state 268
+    ","  shift, and go to state 269
+    "}"  shift, and go to state 270
 
 
 State 200
 
-   44 mod_prefix: mod_prefix vid • "::"
-   45           | mod_prefix vid • "[" targ_cl "]" "::"
-   68 primary_exp: mod_prefix vid •
+   44 mod_prefix: mod_prefix vid • ":"
+   45           | mod_prefix vid • "[" targ_cl "]" ":"
+   72 primary_exp: mod_prefix vid •
 
-    "::"  shift, and go to state 145
-    "["   shift, and go to state 146
+    ":"  shift, and go to state 145
+    "["  shift, and go to state 146
 
-    $default  reduce using rule 68 (primary_exp)
+    $default  reduce using rule 72 (primary_exp)
 
 
 State 201
 
-   76 stringls: stringls "\"dq-string-literal\"" •
+   80 stringls: stringls "\"dq-string-literal\"" •
 
-    $default  reduce using rule 76 (stringls)
+    $default  reduce using rule 80 (stringls)
 
 
 State 202
 
-   75 stringls: stringls "'sq-string-literal'" •
+   79 stringls: stringls "'sq-string-literal'" •
 
-    $default  reduce using rule 75 (stringls)
+    $default  reduce using rule 79 (stringls)
 
 
 State 203
 
-   92 dot_name_exp: postfix_exp "." • "val_id"
-   95 dot_index_exp: postfix_exp "." • int_expr
-   96              | postfix_exp "." • bracketed_exp
+   96 dot_name_exp: postfix_exp "." • "val_id"
+   99 dot_index_exp: postfix_exp "." • int_expr
+  100              | postfix_exp "." • bracketed_exp
 
-    "val_id"  shift, and go to state 269
+    "val_id"  shift, and go to state 271
     "42"      shift, and go to state 104
     "0x2a"    shift, and go to state 105
     "42u"     shift, and go to state 106
@@ -3335,18 +3297,18 @@ State 203
     "("       shift, and go to state 111
     "{"       shift, and go to state 176
 
-    bracketed_exp  go to state 270
+    bracketed_exp  go to state 272
     paren_exp      go to state 120
     vtupleExpr     go to state 121
     vstructExpr    go to state 122
-    int_expr       go to state 271
+    int_expr       go to state 273
     chain_exp      go to state 127
 
 
 State 204
 
-   90 vcall_exp: postfix_exp "(" • ")"
-   91          | postfix_exp "(" • varg_cl ")"
+   94 vcall_exp: postfix_exp "(" • ")"
+   95          | postfix_exp "(" • varg_cl ")"
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -3354,8 +3316,8 @@ State 204
     "if"                     shift, and go to state 102
     "anonymous_fn"           shift, and go to state 47
     "not"                    shift, and go to state 103
-    "out"                    shift, and go to state 272
-    "inout"                  shift, and go to state 273
+    "out"                    shift, and go to state 274
+    "inout"                  shift, and go to state 275
     "42"                     shift, and go to state 104
     "0x2a"                   shift, and go to state 105
     "42u"                    shift, and go to state 106
@@ -3364,7 +3326,7 @@ State 204
     "\"dq-string-literal\""  shift, and go to state 109
     "'sq-string-literal'"    shift, and go to state 110
     "("                      shift, and go to state 111
-    ")"                      shift, and go to state 274
+    ")"                      shift, and go to state 276
     "["                      shift, and go to state 48
     "{"                      shift, and go to state 112
     "+"                      shift, and go to state 113
@@ -3374,7 +3336,7 @@ State 204
     vid               go to state 115
     floatl            go to state 116
     mod_prefix        go to state 117
-    expr              go to state 275
+    expr              go to state 277
     bracketed_exp     go to state 119
     paren_exp         go to state 120
     vtupleExpr        go to state 121
@@ -3405,41 +3367,41 @@ State 204
     struct_type_spec  go to state 56
     enum_type_spec    go to state 57
     fn_type_spec      go to state 58
-    varg              go to state 276
-    varg_cl           go to state 277
+    varg              go to state 278
+    varg_cl           go to state 279
 
 
 State 205
 
-   98 unary_exp: unary_op unary_exp •
+  102 unary_exp: unary_op unary_exp •
 
-    $default  reduce using rule 98 (unary_exp)
+    $default  reduce using rule 102 (unary_exp)
 
 
 State 206
 
-  103 mul_binary_op: "*" •
+  107 mul_binary_op: "*" •
 
-    $default  reduce using rule 103 (mul_binary_op)
+    $default  reduce using rule 107 (mul_binary_op)
 
 
 State 207
 
-  104 mul_binary_op: "/" •
+  108 mul_binary_op: "/" •
 
-    $default  reduce using rule 104 (mul_binary_op)
+    $default  reduce using rule 108 (mul_binary_op)
 
 
 State 208
 
-  105 mul_binary_op: "%" •
+  109 mul_binary_op: "%" •
 
-    $default  reduce using rule 105 (mul_binary_op)
+    $default  reduce using rule 109 (mul_binary_op)
 
 
 State 209
 
-  107 mul_binary_exp: mul_binary_exp mul_binary_op • unary_exp
+  111 mul_binary_exp: mul_binary_exp mul_binary_op • unary_exp
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -3477,7 +3439,7 @@ State 209
     vcall_exp         go to state 129
     dot_name_exp      go to state 130
     dot_index_exp     go to state 131
-    unary_exp         go to state 278
+    unary_exp         go to state 280
     unary_op          go to state 133
     type_spec         go to state 170
     mod_prefix_tid    go to state 53
@@ -3490,21 +3452,21 @@ State 209
 
 State 210
 
-  108 add_binary_op: "+" •
+  112 add_binary_op: "+" •
 
-    $default  reduce using rule 108 (add_binary_op)
+    $default  reduce using rule 112 (add_binary_op)
 
 
 State 211
 
-  109 add_binary_op: "-" •
+  113 add_binary_op: "-" •
 
-    $default  reduce using rule 109 (add_binary_op)
+    $default  reduce using rule 113 (add_binary_op)
 
 
 State 212
 
-  111 add_binary_exp: add_binary_exp add_binary_op • mul_binary_exp
+  115 add_binary_exp: add_binary_exp add_binary_op • mul_binary_exp
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -3544,7 +3506,7 @@ State 212
     dot_index_exp     go to state 131
     unary_exp         go to state 132
     unary_op          go to state 133
-    mul_binary_exp    go to state 279
+    mul_binary_exp    go to state 281
     type_spec         go to state 170
     mod_prefix_tid    go to state 53
     tuple_type_spec   go to state 54
@@ -3556,35 +3518,35 @@ State 212
 
 State 213
 
-  112 cmp_binary_op: "<" •
+  116 cmp_binary_op: "<" •
 
-    $default  reduce using rule 112 (cmp_binary_op)
+    $default  reduce using rule 116 (cmp_binary_op)
 
 
 State 214
 
-  113 cmp_binary_op: "<=" •
+  117 cmp_binary_op: "<=" •
 
-    $default  reduce using rule 113 (cmp_binary_op)
+    $default  reduce using rule 117 (cmp_binary_op)
 
 
 State 215
 
-  114 cmp_binary_op: ">" •
+  118 cmp_binary_op: ">" •
 
-    $default  reduce using rule 114 (cmp_binary_op)
+    $default  reduce using rule 118 (cmp_binary_op)
 
 
 State 216
 
-  115 cmp_binary_op: ">=" •
+  119 cmp_binary_op: ">=" •
 
-    $default  reduce using rule 115 (cmp_binary_op)
+    $default  reduce using rule 119 (cmp_binary_op)
 
 
 State 217
 
-  117 cmp_binary_exp: cmp_binary_exp cmp_binary_op • add_binary_exp
+  121 cmp_binary_exp: cmp_binary_exp cmp_binary_op • add_binary_exp
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -3625,7 +3587,7 @@ State 217
     unary_exp         go to state 132
     unary_op          go to state 133
     mul_binary_exp    go to state 135
-    add_binary_exp    go to state 280
+    add_binary_exp    go to state 282
     type_spec         go to state 170
     mod_prefix_tid    go to state 53
     tuple_type_spec   go to state 54
@@ -3637,21 +3599,21 @@ State 217
 
 State 218
 
-  118 eq_binary_op: "==" •
+  122 eq_binary_op: "==" •
 
-    $default  reduce using rule 118 (eq_binary_op)
+    $default  reduce using rule 122 (eq_binary_op)
 
 
 State 219
 
-  119 eq_binary_op: "!=" •
+  123 eq_binary_op: "!=" •
 
-    $default  reduce using rule 119 (eq_binary_op)
+    $default  reduce using rule 123 (eq_binary_op)
 
 
 State 220
 
-  121 eq_binary_exp: eq_binary_exp eq_binary_op • cmp_binary_exp
+  125 eq_binary_exp: eq_binary_exp eq_binary_op • cmp_binary_exp
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -3693,7 +3655,7 @@ State 220
     unary_op          go to state 133
     mul_binary_exp    go to state 135
     add_binary_exp    go to state 136
-    cmp_binary_exp    go to state 281
+    cmp_binary_exp    go to state 283
     type_spec         go to state 170
     mod_prefix_tid    go to state 53
     tuple_type_spec   go to state 54
@@ -3705,7 +3667,7 @@ State 220
 
 State 221
 
-  123 and_binary_exp: and_binary_exp "and" • eq_binary_exp
+  127 and_binary_exp: and_binary_exp "and" • eq_binary_exp
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -3748,7 +3710,7 @@ State 221
     mul_binary_exp    go to state 135
     add_binary_exp    go to state 136
     cmp_binary_exp    go to state 137
-    eq_binary_exp     go to state 282
+    eq_binary_exp     go to state 284
     type_spec         go to state 170
     mod_prefix_tid    go to state 53
     tuple_type_spec   go to state 54
@@ -3760,7 +3722,7 @@ State 221
 
 State 222
 
-  125 xor_binary_exp: xor_binary_exp "xor" • and_binary_exp
+  129 xor_binary_exp: xor_binary_exp "xor" • and_binary_exp
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -3804,7 +3766,7 @@ State 222
     add_binary_exp    go to state 136
     cmp_binary_exp    go to state 137
     eq_binary_exp     go to state 138
-    and_binary_exp    go to state 283
+    and_binary_exp    go to state 285
     type_spec         go to state 170
     mod_prefix_tid    go to state 53
     tuple_type_spec   go to state 54
@@ -3816,7 +3778,7 @@ State 222
 
 State 223
 
-  127 or_binary_exp: or_binary_exp "or" • xor_binary_exp
+  131 or_binary_exp: or_binary_exp "or" • xor_binary_exp
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -3861,7 +3823,7 @@ State 223
     cmp_binary_exp    go to state 137
     eq_binary_exp     go to state 138
     and_binary_exp    go to state 139
-    xor_binary_exp    go to state 284
+    xor_binary_exp    go to state 286
     type_spec         go to state 170
     mod_prefix_tid    go to state 53
     tuple_type_spec   go to state 54
@@ -3873,15 +3835,15 @@ State 223
 
 State 224
 
-   93 dot_name_exp: type_spec "::" • "TypeId"
-   94             | type_spec "::" • "TypeId" "using" paren_exp
+   97 dot_name_exp: type_spec "::" • "TypeId"
+   98             | type_spec "::" • "TypeId" "using" paren_exp
 
-    "TypeId"  shift, and go to state 285
+    "TypeId"  shift, and go to state 287
 
 
 State 225
 
-  158 targ_cl: targ_cl "," • targ
+  162 targ_cl: targ_cl "," • targ
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -3937,52 +3899,52 @@ State 225
     struct_type_spec  go to state 56
     enum_type_spec    go to state 57
     fn_type_spec      go to state 58
-    targ              go to state 286
+    targ              go to state 288
 
 
 State 226
 
-   43 mod_prefix: vid "[" targ_cl "]" • "::"
+   43 mod_prefix: vid "[" targ_cl "]" • ":"
 
-    "::"  shift, and go to state 287
+    ":"  shift, and go to state 289
 
 
 State 227
 
-   45 mod_prefix: mod_prefix vid "[" targ_cl • "]" "::"
-  158 targ_cl: targ_cl • "," targ
+   45 mod_prefix: mod_prefix vid "[" targ_cl • "]" ":"
+  162 targ_cl: targ_cl • "," targ
 
     ","  shift, and go to state 225
-    "]"  shift, and go to state 288
+    "]"  shift, and go to state 290
 
 
 State 228
 
-  150 enum_type_spec_field: tid type_spec •
+  154 enum_type_spec_field: tid type_spec •
 
-    $default  reduce using rule 150 (enum_type_spec_field)
+    $default  reduce using rule 154 (enum_type_spec_field)
 
 
 State 229
 
-  152 enum_type_spec_field_cl: enum_type_spec_field_cl "," • enum_type_spec_field
+  156 enum_type_spec_field_cl: enum_type_spec_field_cl "," • enum_type_spec_field
 
     "TypeId"  shift, and go to state 22
 
     tid                   go to state 147
-    enum_type_spec_field  go to state 289
+    enum_type_spec_field  go to state 291
 
 
 State 230
 
-  153 enum_type_spec: "enum" "{" enum_type_spec_field_cl "}" •
+  157 enum_type_spec: "enum" "{" enum_type_spec_field_cl "}" •
 
-    $default  reduce using rule 153 (enum_type_spec)
+    $default  reduce using rule 157 (enum_type_spec)
 
 
 State 231
 
-  172 vpattern_field: "out" vid • type_spec
+  176 vpattern_field: "out" vid • type_spec
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -3994,7 +3956,7 @@ State 231
     tid               go to state 50
     vid               go to state 39
     mod_prefix        go to state 51
-    type_spec         go to state 290
+    type_spec         go to state 292
     mod_prefix_tid    go to state 53
     tuple_type_spec   go to state 54
     array_type_spec   go to state 55
@@ -4005,7 +3967,7 @@ State 231
 
 State 232
 
-  173 vpattern_field: "inout" vid • type_spec
+  177 vpattern_field: "inout" vid • type_spec
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -4017,7 +3979,7 @@ State 232
     tid               go to state 50
     vid               go to state 39
     mod_prefix        go to state 51
-    type_spec         go to state 291
+    type_spec         go to state 293
     mod_prefix_tid    go to state 53
     tuple_type_spec   go to state 54
     array_type_spec   go to state 55
@@ -4028,67 +3990,67 @@ State 232
 
 State 233
 
-  171 vpattern_field: vid type_spec •
+  175 vpattern_field: vid type_spec •
 
-    $default  reduce using rule 171 (vpattern_field)
+    $default  reduce using rule 175 (vpattern_field)
 
 
 State 234
 
-  185 vpattern_field_cl: vpattern_field_cl "," • vpattern_field
+  189 vpattern_field_cl: vpattern_field_cl "," • vpattern_field
 
     "val_id"  shift, and go to state 10
     "out"     shift, and go to state 150
     "inout"   shift, and go to state 151
 
     vid             go to state 153
-    vpattern_field  go to state 292
+    vpattern_field  go to state 294
 
 
 State 235
 
-  181 vpattern: "(" vpattern_field_cl ")" •
+  185 vpattern: "(" vpattern_field_cl ")" •
 
-    $default  reduce using rule 181 (vpattern)
+    $default  reduce using rule 185 (vpattern)
 
 
 State 236
 
-  144 array_type_spec: "[" type_spec "*" expr • "]"
+  148 array_type_spec: "[" type_spec "*" expr • "]"
 
-    "]"  shift, and go to state 293
+    "]"  shift, and go to state 295
 
 
 State 237
 
-   93 dot_name_exp: type_spec • "::" "TypeId"
-   94             | type_spec • "::" "TypeId" "using" paren_exp
-  144 array_type_spec: "[" type_spec • "*" expr "]"
-  155 targ: type_spec •
+   97 dot_name_exp: type_spec • "::" "TypeId"
+   98             | type_spec • "::" "TypeId" "using" paren_exp
+  148 array_type_spec: "[" type_spec • "*" expr "]"
+  159 targ: type_spec •
 
     "::"  shift, and go to state 224
     "*"   shift, and go to state 157
 
-    $default  reduce using rule 155 (targ)
+    $default  reduce using rule 159 (targ)
 
 
 State 238
 
-  133 type_spec_cl2: type_spec_cl2 "," type_spec •
+  137 type_spec_cl2: type_spec_cl2 "," type_spec •
 
-    $default  reduce using rule 133 (type_spec_cl2)
+    $default  reduce using rule 137 (type_spec_cl2)
 
 
 State 239
 
-  132 type_spec_cl2: type_spec "," type_spec •
+  136 type_spec_cl2: type_spec "," type_spec •
 
-    $default  reduce using rule 132 (type_spec_cl2)
+    $default  reduce using rule 136 (type_spec_cl2)
 
 
 State 240
 
-  148 struct_type_spec_field: vid • type_spec
+  152 struct_type_spec_field: vid • type_spec
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -4111,16 +4073,16 @@ State 240
 
 State 241
 
-  147 struct_type_spec_field_cl: struct_type_spec_field_cl "," struct_type_spec_field •
+  151 struct_type_spec_field_cl: struct_type_spec_field_cl "," struct_type_spec_field •
 
-    $default  reduce using rule 147 (struct_type_spec_field_cl)
+    $default  reduce using rule 151 (struct_type_spec_field_cl)
 
 
 State 242
 
-   85 lambda_exp: fn_type_spec bracketed_exp •
+   89 lambda_exp: fn_type_spec bracketed_exp •
 
-    $default  reduce using rule 85 (lambda_exp)
+    $default  reduce using rule 89 (lambda_exp)
 
 
 State 243
@@ -4130,7 +4092,7 @@ State 243
     "("  shift, and go to state 111
     "{"  shift, and go to state 176
 
-    bracketed_exp  go to state 294
+    bracketed_exp  go to state 296
     paren_exp      go to state 120
     vtupleExpr     go to state 121
     vstructExpr    go to state 122
@@ -4141,44 +4103,44 @@ State 244
 
    19 mod_field: "let" cid "(" tid class_spec • ")" "=" "{" type_query_exp_sl0 "}"
 
-    ")"  shift, and go to state 295
+    ")"  shift, and go to state 297
 
 
 State 245
 
-  169 class_exp_class_spec: "typeclass" "(" tid class_spec ")" • "{" type_query_exp_sl0 "}"
+  173 class_exp_class_spec: "typeclass" "(" tid class_spec ")" • "{" type_query_exp_sl0 "}"
 
-    "{"  shift, and go to state 296
+    "{"  shift, and go to state 298
 
 
 State 246
 
-   42 mod_prefix: vid • "::"
-   43           | vid • "[" targ_cl "]" "::"
-   63 primary_exp: vid •
-  170 struct_exp_field: vid • "=" expr
+   42 mod_prefix: vid • ":"
+   43           | vid • "[" targ_cl "]" ":"
+   67 primary_exp: vid •
+  174 struct_exp_field: vid • "=" expr
 
-    "::"  shift, and go to state 74
-    "["   shift, and go to state 75
-    "="   shift, and go to state 262
+    ":"  shift, and go to state 74
+    "["  shift, and go to state 75
+    "="  shift, and go to state 264
 
-    $default  reduce using rule 63 (primary_exp)
+    $default  reduce using rule 67 (primary_exp)
 
 
 State 247
 
-   77 if_exp: "if" bracketed_exp bracketed_exp •
-   78       | "if" bracketed_exp bracketed_exp • "else" primary_exp
+   81 if_exp: "if" bracketed_exp bracketed_exp •
+   82       | "if" bracketed_exp bracketed_exp • "else" primary_exp
 
-    "else"  shift, and go to state 297
+    "else"  shift, and go to state 299
 
-    $default  reduce using rule 77 (if_exp)
+    $default  reduce using rule 81 (if_exp)
 
 
 State 248
 
-   49 expr_cl2: expr "," • expr
-   59 vtupleExpr: "(" expr "," • ")"
+   53 expr_cl2: expr "," • expr
+   63 vtupleExpr: "(" expr "," • ")"
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -4194,7 +4156,7 @@ State 248
     "\"dq-string-literal\""  shift, and go to state 109
     "'sq-string-literal'"    shift, and go to state 110
     "("                      shift, and go to state 111
-    ")"                      shift, and go to state 298
+    ")"                      shift, and go to state 300
     "["                      shift, and go to state 48
     "{"                      shift, and go to state 112
     "+"                      shift, and go to state 113
@@ -4204,7 +4166,7 @@ State 248
     vid               go to state 115
     floatl            go to state 116
     mod_prefix        go to state 117
-    expr              go to state 299
+    expr              go to state 301
     bracketed_exp     go to state 119
     paren_exp         go to state 120
     vtupleExpr        go to state 121
@@ -4239,14 +4201,14 @@ State 248
 
 State 249
 
-   57 paren_exp: "(" long_exp ")" •
+   61 paren_exp: "(" long_exp ")" •
 
-    $default  reduce using rule 57 (paren_exp)
+    $default  reduce using rule 61 (paren_exp)
 
 
 State 250
 
-   50 expr_cl2: expr_cl2 "," • expr
+   54 expr_cl2: expr_cl2 "," • expr
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -4271,7 +4233,7 @@ State 250
     vid               go to state 115
     floatl            go to state 116
     mod_prefix        go to state 117
-    expr              go to state 300
+    expr              go to state 302
     bracketed_exp     go to state 119
     paren_exp         go to state 120
     vtupleExpr        go to state 121
@@ -4306,26 +4268,26 @@ State 250
 
 State 251
 
-   60 vtupleExpr: "(" expr_cl2 ")" •
+   64 vtupleExpr: "(" expr_cl2 ")" •
 
-    $default  reduce using rule 60 (vtupleExpr)
+    $default  reduce using rule 64 (vtupleExpr)
 
 
 State 252
 
-  178 destructured_lpattern: "{" • lpattern_field_cl "}"
+  182 destructured_lpattern: "{" • lpattern_field_cl "}"
 
     "val_id"  shift, and go to state 10
 
     vid                go to state 253
-    lpattern_field     go to state 301
-    lpattern_field_cl  go to state 302
+    lpattern_field     go to state 303
+    lpattern_field_cl  go to state 304
 
 
 State 253
 
-  174 lpattern_field: vid • type_spec
-  175               | vid •
+  178 lpattern_field: vid • type_spec
+  179               | vid •
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -4334,12 +4296,12 @@ State 253
     "["             shift, and go to state 48
     "{"             shift, and go to state 49
 
-    $default  reduce using rule 175 (lpattern_field)
+    $default  reduce using rule 179 (lpattern_field)
 
     tid               go to state 50
     vid               go to state 39
     mod_prefix        go to state 51
-    type_spec         go to state 303
+    type_spec         go to state 305
     mod_prefix_tid    go to state 53
     tuple_type_spec   go to state 54
     array_type_spec   go to state 55
@@ -4350,510 +4312,431 @@ State 253
 
 State 254
 
-  179 lpattern: lpattern_field •
+  183 lpattern: lpattern_field •
 
-    $default  reduce using rule 179 (lpattern)
+    $default  reduce using rule 183 (lpattern)
 
 
 State 255
 
-  180 lpattern: destructured_lpattern •
+  184 lpattern: destructured_lpattern •
 
-    $default  reduce using rule 180 (lpattern)
+    $default  reduce using rule 184 (lpattern)
 
 
 State 256
 
    31 const_stmt: "const" lpattern • "=" expr
 
-    "="  shift, and go to state 304
+    "="  shift, and go to state 306
 
 
 State 257
 
    32 val_stmt: "val" lpattern • "=" expr
 
-    "="  shift, and go to state 305
+    "="  shift, and go to state 307
 
 
 State 258
 
    33 var_stmt: "var" lpattern • "=" expr
 
-    "="  shift, and go to state 306
+    "="  shift, and go to state 308
 
 
 State 259
 
-   34 set_stmt: "set" expr • "=" expr
+   47 mut_expr: "(" • mut_expr_cl1 ")"
 
-    "="  shift, and go to state 307
+    "val_id"  shift, and go to state 10
+    "("       shift, and go to state 259
+
+    vid           go to state 260
+    mut_expr      go to state 309
+    mut_expr_cl1  go to state 310
 
 
 State 260
+
+   46 mut_expr: vid •
+
+    $default  reduce using rule 46 (mut_expr)
+
+
+State 261
+
+   34 set_stmt: "set" mut_expr • "=" expr
+
+    "="  shift, and go to state 311
+
+
+State 262
 
    35 discard_stmt: "discard" expr •
 
     $default  reduce using rule 35 (discard_stmt)
 
 
-State 261
-
-   83 chain_prefix: chain_prefix_stmt ";" •
-
-    $default  reduce using rule 83 (chain_prefix)
-
-
-State 262
-
-  170 struct_exp_field: vid "=" • expr
-
-    "val_id"                 shift, and go to state 10
-    "TypeId"                 shift, and go to state 22
-    "enum"                   shift, and go to state 46
-    "if"                     shift, and go to state 102
-    "anonymous_fn"           shift, and go to state 47
-    "not"                    shift, and go to state 103
-    "42"                     shift, and go to state 104
-    "0x2a"                   shift, and go to state 105
-    "42u"                    shift, and go to state 106
-    "0x2Au"                  shift, and go to state 107
-    "4.2"                    shift, and go to state 108
-    "\"dq-string-literal\""  shift, and go to state 109
-    "'sq-string-literal'"    shift, and go to state 110
-    "("                      shift, and go to state 111
-    "["                      shift, and go to state 48
-    "{"                      shift, and go to state 112
-    "+"                      shift, and go to state 113
-    "-"                      shift, and go to state 114
-
-    tid               go to state 50
-    vid               go to state 115
-    floatl            go to state 116
-    mod_prefix        go to state 117
-    expr              go to state 308
-    bracketed_exp     go to state 119
-    paren_exp         go to state 120
-    vtupleExpr        go to state 121
-    vstructExpr       go to state 122
-    primary_exp       go to state 123
-    int_expr          go to state 124
-    stringls          go to state 125
-    if_exp            go to state 126
-    chain_exp         go to state 127
-    postfix_exp       go to state 128
-    vcall_exp         go to state 129
-    dot_name_exp      go to state 130
-    dot_index_exp     go to state 131
-    unary_exp         go to state 132
-    unary_op          go to state 133
-    binary_exp        go to state 134
-    mul_binary_exp    go to state 135
-    add_binary_exp    go to state 136
-    cmp_binary_exp    go to state 137
-    eq_binary_exp     go to state 138
-    and_binary_exp    go to state 139
-    xor_binary_exp    go to state 140
-    or_binary_exp     go to state 141
-    type_spec         go to state 170
-    mod_prefix_tid    go to state 53
-    tuple_type_spec   go to state 54
-    array_type_spec   go to state 55
-    struct_type_spec  go to state 56
-    enum_type_spec    go to state 57
-    fn_type_spec      go to state 58
-
-
 State 263
 
-   80 chain_exp: "{" long_exp "}" •
+   87 chain_prefix: chain_prefix_stmt ";" •
 
-    $default  reduce using rule 80 (chain_exp)
+    $default  reduce using rule 87 (chain_prefix)
 
 
 State 264
 
-   81 chain_exp: "{" chain_prefix "}" •
+  174 struct_exp_field: vid "=" • expr
 
-    $default  reduce using rule 81 (chain_exp)
+    "val_id"                 shift, and go to state 10
+    "TypeId"                 shift, and go to state 22
+    "enum"                   shift, and go to state 46
+    "if"                     shift, and go to state 102
+    "anonymous_fn"           shift, and go to state 47
+    "not"                    shift, and go to state 103
+    "42"                     shift, and go to state 104
+    "0x2a"                   shift, and go to state 105
+    "42u"                    shift, and go to state 106
+    "0x2Au"                  shift, and go to state 107
+    "4.2"                    shift, and go to state 108
+    "\"dq-string-literal\""  shift, and go to state 109
+    "'sq-string-literal'"    shift, and go to state 110
+    "("                      shift, and go to state 111
+    "["                      shift, and go to state 48
+    "{"                      shift, and go to state 112
+    "+"                      shift, and go to state 113
+    "-"                      shift, and go to state 114
+
+    tid               go to state 50
+    vid               go to state 115
+    floatl            go to state 116
+    mod_prefix        go to state 117
+    expr              go to state 312
+    bracketed_exp     go to state 119
+    paren_exp         go to state 120
+    vtupleExpr        go to state 121
+    vstructExpr       go to state 122
+    primary_exp       go to state 123
+    int_expr          go to state 124
+    stringls          go to state 125
+    if_exp            go to state 126
+    chain_exp         go to state 127
+    postfix_exp       go to state 128
+    vcall_exp         go to state 129
+    dot_name_exp      go to state 130
+    dot_index_exp     go to state 131
+    unary_exp         go to state 132
+    unary_op          go to state 133
+    binary_exp        go to state 134
+    mul_binary_exp    go to state 135
+    add_binary_exp    go to state 136
+    cmp_binary_exp    go to state 137
+    eq_binary_exp     go to state 138
+    and_binary_exp    go to state 139
+    xor_binary_exp    go to state 140
+    or_binary_exp     go to state 141
+    type_spec         go to state 170
+    mod_prefix_tid    go to state 53
+    tuple_type_spec   go to state 54
+    array_type_spec   go to state 55
+    struct_type_spec  go to state 56
+    enum_type_spec    go to state 57
+    fn_type_spec      go to state 58
 
 
 State 265
 
-   84 chain_prefix: chain_prefix chain_prefix_stmt • ";"
+   84 chain_exp: "{" long_exp "}" •
 
-    ";"  shift, and go to state 309
+    $default  reduce using rule 84 (chain_exp)
 
 
 State 266
 
-   82 chain_exp: "{" chain_prefix long_exp • "}"
+   85 chain_exp: "{" chain_prefix "}" •
 
-    "}"  shift, and go to state 310
+    $default  reduce using rule 85 (chain_exp)
 
 
 State 267
 
-  191 struct_exp_field_cl: struct_exp_field_cl "," • struct_exp_field
+   88 chain_prefix: chain_prefix chain_prefix_stmt • ";"
 
-    "val_id"  shift, and go to state 10
-
-    vid               go to state 311
-    struct_exp_field  go to state 312
+    ";"  shift, and go to state 313
 
 
 State 268
 
-   61 vstructExpr: "{" struct_exp_field_cl "}" •
+   86 chain_exp: "{" chain_prefix long_exp • "}"
 
-    $default  reduce using rule 61 (vstructExpr)
+    "}"  shift, and go to state 314
 
 
 State 269
 
-   92 dot_name_exp: postfix_exp "." "val_id" •
+  195 struct_exp_field_cl: struct_exp_field_cl "," • struct_exp_field
 
-    $default  reduce using rule 92 (dot_name_exp)
+    "val_id"  shift, and go to state 10
+
+    vid               go to state 315
+    struct_exp_field  go to state 316
 
 
 State 270
 
-   96 dot_index_exp: postfix_exp "." bracketed_exp •
+   65 vstructExpr: "{" struct_exp_field_cl "}" •
 
-    $default  reduce using rule 96 (dot_index_exp)
+    $default  reduce using rule 65 (vstructExpr)
 
 
 State 271
 
-   95 dot_index_exp: postfix_exp "." int_expr •
+   96 dot_name_exp: postfix_exp "." "val_id" •
 
-    $default  reduce using rule 95 (dot_index_exp)
+    $default  reduce using rule 96 (dot_name_exp)
 
 
 State 272
 
-  160 varg: "out" • expr
+  100 dot_index_exp: postfix_exp "." bracketed_exp •
 
-    "val_id"                 shift, and go to state 10
-    "TypeId"                 shift, and go to state 22
-    "enum"                   shift, and go to state 46
-    "if"                     shift, and go to state 102
-    "anonymous_fn"           shift, and go to state 47
-    "not"                    shift, and go to state 103
-    "42"                     shift, and go to state 104
-    "0x2a"                   shift, and go to state 105
-    "42u"                    shift, and go to state 106
-    "0x2Au"                  shift, and go to state 107
-    "4.2"                    shift, and go to state 108
-    "\"dq-string-literal\""  shift, and go to state 109
-    "'sq-string-literal'"    shift, and go to state 110
-    "("                      shift, and go to state 111
-    "["                      shift, and go to state 48
-    "{"                      shift, and go to state 112
-    "+"                      shift, and go to state 113
-    "-"                      shift, and go to state 114
-
-    tid               go to state 50
-    vid               go to state 115
-    floatl            go to state 116
-    mod_prefix        go to state 117
-    expr              go to state 313
-    bracketed_exp     go to state 119
-    paren_exp         go to state 120
-    vtupleExpr        go to state 121
-    vstructExpr       go to state 122
-    primary_exp       go to state 123
-    int_expr          go to state 124
-    stringls          go to state 125
-    if_exp            go to state 126
-    chain_exp         go to state 127
-    postfix_exp       go to state 128
-    vcall_exp         go to state 129
-    dot_name_exp      go to state 130
-    dot_index_exp     go to state 131
-    unary_exp         go to state 132
-    unary_op          go to state 133
-    binary_exp        go to state 134
-    mul_binary_exp    go to state 135
-    add_binary_exp    go to state 136
-    cmp_binary_exp    go to state 137
-    eq_binary_exp     go to state 138
-    and_binary_exp    go to state 139
-    xor_binary_exp    go to state 140
-    or_binary_exp     go to state 141
-    type_spec         go to state 170
-    mod_prefix_tid    go to state 53
-    tuple_type_spec   go to state 54
-    array_type_spec   go to state 55
-    struct_type_spec  go to state 56
-    enum_type_spec    go to state 57
-    fn_type_spec      go to state 58
+    $default  reduce using rule 100 (dot_index_exp)
 
 
 State 273
 
-  161 varg: "inout" • expr
+   99 dot_index_exp: postfix_exp "." int_expr •
 
-    "val_id"                 shift, and go to state 10
-    "TypeId"                 shift, and go to state 22
-    "enum"                   shift, and go to state 46
-    "if"                     shift, and go to state 102
-    "anonymous_fn"           shift, and go to state 47
-    "not"                    shift, and go to state 103
-    "42"                     shift, and go to state 104
-    "0x2a"                   shift, and go to state 105
-    "42u"                    shift, and go to state 106
-    "0x2Au"                  shift, and go to state 107
-    "4.2"                    shift, and go to state 108
-    "\"dq-string-literal\""  shift, and go to state 109
-    "'sq-string-literal'"    shift, and go to state 110
-    "("                      shift, and go to state 111
-    "["                      shift, and go to state 48
-    "{"                      shift, and go to state 112
-    "+"                      shift, and go to state 113
-    "-"                      shift, and go to state 114
-
-    tid               go to state 50
-    vid               go to state 115
-    floatl            go to state 116
-    mod_prefix        go to state 117
-    expr              go to state 314
-    bracketed_exp     go to state 119
-    paren_exp         go to state 120
-    vtupleExpr        go to state 121
-    vstructExpr       go to state 122
-    primary_exp       go to state 123
-    int_expr          go to state 124
-    stringls          go to state 125
-    if_exp            go to state 126
-    chain_exp         go to state 127
-    postfix_exp       go to state 128
-    vcall_exp         go to state 129
-    dot_name_exp      go to state 130
-    dot_index_exp     go to state 131
-    unary_exp         go to state 132
-    unary_op          go to state 133
-    binary_exp        go to state 134
-    mul_binary_exp    go to state 135
-    add_binary_exp    go to state 136
-    cmp_binary_exp    go to state 137
-    eq_binary_exp     go to state 138
-    and_binary_exp    go to state 139
-    xor_binary_exp    go to state 140
-    or_binary_exp     go to state 141
-    type_spec         go to state 170
-    mod_prefix_tid    go to state 53
-    tuple_type_spec   go to state 54
-    array_type_spec   go to state 55
-    struct_type_spec  go to state 56
-    enum_type_spec    go to state 57
-    fn_type_spec      go to state 58
+    $default  reduce using rule 99 (dot_index_exp)
 
 
 State 274
 
-   90 vcall_exp: postfix_exp "(" ")" •
+  164 varg: "out" • mut_expr
 
-    $default  reduce using rule 90 (vcall_exp)
+    "val_id"  shift, and go to state 10
+    "("       shift, and go to state 259
+
+    vid       go to state 260
+    mut_expr  go to state 317
 
 
 State 275
 
-  159 varg: expr •
+  165 varg: "inout" • mut_expr
 
-    $default  reduce using rule 159 (varg)
+    "val_id"  shift, and go to state 10
+    "("       shift, and go to state 259
+
+    vid       go to state 260
+    mut_expr  go to state 318
 
 
 State 276
 
-  162 varg_cl: varg •
+   94 vcall_exp: postfix_exp "(" ")" •
 
-    $default  reduce using rule 162 (varg_cl)
+    $default  reduce using rule 94 (vcall_exp)
 
 
 State 277
 
-   91 vcall_exp: postfix_exp "(" varg_cl • ")"
-  163 varg_cl: varg_cl • "," varg
+  163 varg: expr •
 
-    ","  shift, and go to state 315
-    ")"  shift, and go to state 316
+    $default  reduce using rule 163 (varg)
 
 
 State 278
 
-  107 mul_binary_exp: mul_binary_exp mul_binary_op unary_exp •
+  166 varg_cl: varg •
 
-    $default  reduce using rule 107 (mul_binary_exp)
+    $default  reduce using rule 166 (varg_cl)
 
 
 State 279
 
-  107 mul_binary_exp: mul_binary_exp • mul_binary_op unary_exp
-  111 add_binary_exp: add_binary_exp add_binary_op mul_binary_exp •
+   95 vcall_exp: postfix_exp "(" varg_cl • ")"
+  167 varg_cl: varg_cl • "," varg
+
+    ","  shift, and go to state 319
+    ")"  shift, and go to state 320
+
+
+State 280
+
+  111 mul_binary_exp: mul_binary_exp mul_binary_op unary_exp •
+
+    $default  reduce using rule 111 (mul_binary_exp)
+
+
+State 281
+
+  111 mul_binary_exp: mul_binary_exp • mul_binary_op unary_exp
+  115 add_binary_exp: add_binary_exp add_binary_op mul_binary_exp •
 
     "*"  shift, and go to state 206
     "/"  shift, and go to state 207
     "%"  shift, and go to state 208
 
-    $default  reduce using rule 111 (add_binary_exp)
+    $default  reduce using rule 115 (add_binary_exp)
 
     mul_binary_op  go to state 209
 
 
-State 280
+State 282
 
-  111 add_binary_exp: add_binary_exp • add_binary_op mul_binary_exp
-  117 cmp_binary_exp: cmp_binary_exp cmp_binary_op add_binary_exp •
+  115 add_binary_exp: add_binary_exp • add_binary_op mul_binary_exp
+  121 cmp_binary_exp: cmp_binary_exp cmp_binary_op add_binary_exp •
 
     "+"  shift, and go to state 210
     "-"  shift, and go to state 211
 
-    $default  reduce using rule 117 (cmp_binary_exp)
+    $default  reduce using rule 121 (cmp_binary_exp)
 
     add_binary_op  go to state 212
 
 
-State 281
+State 283
 
-  117 cmp_binary_exp: cmp_binary_exp • cmp_binary_op add_binary_exp
-  121 eq_binary_exp: eq_binary_exp eq_binary_op cmp_binary_exp •
+  121 cmp_binary_exp: cmp_binary_exp • cmp_binary_op add_binary_exp
+  125 eq_binary_exp: eq_binary_exp eq_binary_op cmp_binary_exp •
 
     "<"   shift, and go to state 213
     "<="  shift, and go to state 214
     ">"   shift, and go to state 215
     ">="  shift, and go to state 216
 
-    $default  reduce using rule 121 (eq_binary_exp)
+    $default  reduce using rule 125 (eq_binary_exp)
 
     cmp_binary_op  go to state 217
 
 
-State 282
+State 284
 
-  121 eq_binary_exp: eq_binary_exp • eq_binary_op cmp_binary_exp
-  123 and_binary_exp: and_binary_exp "and" eq_binary_exp •
+  125 eq_binary_exp: eq_binary_exp • eq_binary_op cmp_binary_exp
+  127 and_binary_exp: and_binary_exp "and" eq_binary_exp •
 
     "=="  shift, and go to state 218
     "!="  shift, and go to state 219
 
-    $default  reduce using rule 123 (and_binary_exp)
+    $default  reduce using rule 127 (and_binary_exp)
 
     eq_binary_op  go to state 220
 
 
-State 283
+State 285
 
-  123 and_binary_exp: and_binary_exp • "and" eq_binary_exp
-  125 xor_binary_exp: xor_binary_exp "xor" and_binary_exp •
+  127 and_binary_exp: and_binary_exp • "and" eq_binary_exp
+  129 xor_binary_exp: xor_binary_exp "xor" and_binary_exp •
 
     "and"  shift, and go to state 221
 
-    $default  reduce using rule 125 (xor_binary_exp)
-
-
-State 284
-
-  125 xor_binary_exp: xor_binary_exp • "xor" and_binary_exp
-  127 or_binary_exp: or_binary_exp "or" xor_binary_exp •
-
-    "xor"  shift, and go to state 222
-
-    $default  reduce using rule 127 (or_binary_exp)
-
-
-State 285
-
-   93 dot_name_exp: type_spec "::" "TypeId" •
-   94             | type_spec "::" "TypeId" • "using" paren_exp
-
-    "using"  shift, and go to state 317
-
-    $default  reduce using rule 93 (dot_name_exp)
+    $default  reduce using rule 129 (xor_binary_exp)
 
 
 State 286
 
-  158 targ_cl: targ_cl "," targ •
+  129 xor_binary_exp: xor_binary_exp • "xor" and_binary_exp
+  131 or_binary_exp: or_binary_exp "or" xor_binary_exp •
 
-    $default  reduce using rule 158 (targ_cl)
+    "xor"  shift, and go to state 222
+
+    $default  reduce using rule 131 (or_binary_exp)
 
 
 State 287
 
-   43 mod_prefix: vid "[" targ_cl "]" "::" •
+   97 dot_name_exp: type_spec "::" "TypeId" •
+   98             | type_spec "::" "TypeId" • "using" paren_exp
 
-    $default  reduce using rule 43 (mod_prefix)
+    "using"  shift, and go to state 321
+
+    $default  reduce using rule 97 (dot_name_exp)
 
 
 State 288
 
-   45 mod_prefix: mod_prefix vid "[" targ_cl "]" • "::"
+  162 targ_cl: targ_cl "," targ •
 
-    "::"  shift, and go to state 318
+    $default  reduce using rule 162 (targ_cl)
 
 
 State 289
 
-  152 enum_type_spec_field_cl: enum_type_spec_field_cl "," enum_type_spec_field •
+   43 mod_prefix: vid "[" targ_cl "]" ":" •
 
-    $default  reduce using rule 152 (enum_type_spec_field_cl)
+    $default  reduce using rule 43 (mod_prefix)
 
 
 State 290
 
-  172 vpattern_field: "out" vid type_spec •
+   45 mod_prefix: mod_prefix vid "[" targ_cl "]" • ":"
 
-    $default  reduce using rule 172 (vpattern_field)
+    ":"  shift, and go to state 322
 
 
 State 291
 
-  173 vpattern_field: "inout" vid type_spec •
+  156 enum_type_spec_field_cl: enum_type_spec_field_cl "," enum_type_spec_field •
 
-    $default  reduce using rule 173 (vpattern_field)
+    $default  reduce using rule 156 (enum_type_spec_field_cl)
 
 
 State 292
 
-  185 vpattern_field_cl: vpattern_field_cl "," vpattern_field •
+  176 vpattern_field: "out" vid type_spec •
 
-    $default  reduce using rule 185 (vpattern_field_cl)
+    $default  reduce using rule 176 (vpattern_field)
 
 
 State 293
 
-  144 array_type_spec: "[" type_spec "*" expr "]" •
+  177 vpattern_field: "inout" vid type_spec •
 
-    $default  reduce using rule 144 (array_type_spec)
+    $default  reduce using rule 177 (vpattern_field)
 
 
 State 294
+
+  189 vpattern_field_cl: vpattern_field_cl "," vpattern_field •
+
+    $default  reduce using rule 189 (vpattern_field_cl)
+
+
+State 295
+
+  148 array_type_spec: "[" type_spec "*" expr "]" •
+
+    $default  reduce using rule 148 (array_type_spec)
+
+
+State 296
 
    18 mod_field: "let" vid vpattern type_spec "=" bracketed_exp •
 
     $default  reduce using rule 18 (mod_field)
 
 
-State 295
+State 297
 
    19 mod_field: "let" cid "(" tid class_spec ")" • "=" "{" type_query_exp_sl0 "}"
 
-    "="  shift, and go to state 319
+    "="  shift, and go to state 323
 
 
-State 296
+State 298
 
-  169 class_exp_class_spec: "typeclass" "(" tid class_spec ")" "{" • type_query_exp_sl0 "}"
+  173 class_exp_class_spec: "typeclass" "(" tid class_spec ")" "{" • type_query_exp_sl0 "}"
 
-    $default  reduce using rule 51 (type_query_exp_sl0)
+    $default  reduce using rule 55 (type_query_exp_sl0)
 
-    type_query_exp_sl0  go to state 320
+    type_query_exp_sl0  go to state 324
 
 
-State 297
+State 299
 
-   78 if_exp: "if" bracketed_exp bracketed_exp "else" • primary_exp
+   82 if_exp: "if" bracketed_exp bracketed_exp "else" • primary_exp
 
     "val_id"                 shift, and go to state 10
     "if"                     shift, and go to state 102
@@ -4869,63 +4752,63 @@ State 297
 
     vid            go to state 115
     floatl         go to state 116
-    mod_prefix     go to state 321
+    mod_prefix     go to state 325
     bracketed_exp  go to state 119
     paren_exp      go to state 120
     vtupleExpr     go to state 121
     vstructExpr    go to state 122
-    primary_exp    go to state 322
+    primary_exp    go to state 326
     int_expr       go to state 124
     stringls       go to state 125
     if_exp         go to state 126
     chain_exp      go to state 127
 
 
-State 298
-
-   59 vtupleExpr: "(" expr "," ")" •
-
-    $default  reduce using rule 59 (vtupleExpr)
-
-
-State 299
-
-   49 expr_cl2: expr "," expr •
-
-    $default  reduce using rule 49 (expr_cl2)
-
-
 State 300
 
-   50 expr_cl2: expr_cl2 "," expr •
+   63 vtupleExpr: "(" expr "," ")" •
 
-    $default  reduce using rule 50 (expr_cl2)
+    $default  reduce using rule 63 (vtupleExpr)
 
 
 State 301
 
-  186 lpattern_field_cl: lpattern_field •
+   53 expr_cl2: expr "," expr •
 
-    $default  reduce using rule 186 (lpattern_field_cl)
+    $default  reduce using rule 53 (expr_cl2)
 
 
 State 302
 
-  178 destructured_lpattern: "{" lpattern_field_cl • "}"
-  187 lpattern_field_cl: lpattern_field_cl • "," lpattern_field
+   54 expr_cl2: expr_cl2 "," expr •
 
-    ","  shift, and go to state 323
-    "}"  shift, and go to state 324
+    $default  reduce using rule 54 (expr_cl2)
 
 
 State 303
 
-  174 lpattern_field: vid type_spec •
+  190 lpattern_field_cl: lpattern_field •
 
-    $default  reduce using rule 174 (lpattern_field)
+    $default  reduce using rule 190 (lpattern_field_cl)
 
 
 State 304
+
+  182 destructured_lpattern: "{" lpattern_field_cl • "}"
+  191 lpattern_field_cl: lpattern_field_cl • "," lpattern_field
+
+    ","  shift, and go to state 327
+    "}"  shift, and go to state 328
+
+
+State 305
+
+  178 lpattern_field: vid type_spec •
+
+    $default  reduce using rule 178 (lpattern_field)
+
+
+State 306
 
    31 const_stmt: "const" lpattern "=" • expr
 
@@ -4952,127 +4835,7 @@ State 304
     vid               go to state 115
     floatl            go to state 116
     mod_prefix        go to state 117
-    expr              go to state 325
-    bracketed_exp     go to state 119
-    paren_exp         go to state 120
-    vtupleExpr        go to state 121
-    vstructExpr       go to state 122
-    primary_exp       go to state 123
-    int_expr          go to state 124
-    stringls          go to state 125
-    if_exp            go to state 126
-    chain_exp         go to state 127
-    postfix_exp       go to state 128
-    vcall_exp         go to state 129
-    dot_name_exp      go to state 130
-    dot_index_exp     go to state 131
-    unary_exp         go to state 132
-    unary_op          go to state 133
-    binary_exp        go to state 134
-    mul_binary_exp    go to state 135
-    add_binary_exp    go to state 136
-    cmp_binary_exp    go to state 137
-    eq_binary_exp     go to state 138
-    and_binary_exp    go to state 139
-    xor_binary_exp    go to state 140
-    or_binary_exp     go to state 141
-    type_spec         go to state 170
-    mod_prefix_tid    go to state 53
-    tuple_type_spec   go to state 54
-    array_type_spec   go to state 55
-    struct_type_spec  go to state 56
-    enum_type_spec    go to state 57
-    fn_type_spec      go to state 58
-
-
-State 305
-
-   32 val_stmt: "val" lpattern "=" • expr
-
-    "val_id"                 shift, and go to state 10
-    "TypeId"                 shift, and go to state 22
-    "enum"                   shift, and go to state 46
-    "if"                     shift, and go to state 102
-    "anonymous_fn"           shift, and go to state 47
-    "not"                    shift, and go to state 103
-    "42"                     shift, and go to state 104
-    "0x2a"                   shift, and go to state 105
-    "42u"                    shift, and go to state 106
-    "0x2Au"                  shift, and go to state 107
-    "4.2"                    shift, and go to state 108
-    "\"dq-string-literal\""  shift, and go to state 109
-    "'sq-string-literal'"    shift, and go to state 110
-    "("                      shift, and go to state 111
-    "["                      shift, and go to state 48
-    "{"                      shift, and go to state 112
-    "+"                      shift, and go to state 113
-    "-"                      shift, and go to state 114
-
-    tid               go to state 50
-    vid               go to state 115
-    floatl            go to state 116
-    mod_prefix        go to state 117
-    expr              go to state 326
-    bracketed_exp     go to state 119
-    paren_exp         go to state 120
-    vtupleExpr        go to state 121
-    vstructExpr       go to state 122
-    primary_exp       go to state 123
-    int_expr          go to state 124
-    stringls          go to state 125
-    if_exp            go to state 126
-    chain_exp         go to state 127
-    postfix_exp       go to state 128
-    vcall_exp         go to state 129
-    dot_name_exp      go to state 130
-    dot_index_exp     go to state 131
-    unary_exp         go to state 132
-    unary_op          go to state 133
-    binary_exp        go to state 134
-    mul_binary_exp    go to state 135
-    add_binary_exp    go to state 136
-    cmp_binary_exp    go to state 137
-    eq_binary_exp     go to state 138
-    and_binary_exp    go to state 139
-    xor_binary_exp    go to state 140
-    or_binary_exp     go to state 141
-    type_spec         go to state 170
-    mod_prefix_tid    go to state 53
-    tuple_type_spec   go to state 54
-    array_type_spec   go to state 55
-    struct_type_spec  go to state 56
-    enum_type_spec    go to state 57
-    fn_type_spec      go to state 58
-
-
-State 306
-
-   33 var_stmt: "var" lpattern "=" • expr
-
-    "val_id"                 shift, and go to state 10
-    "TypeId"                 shift, and go to state 22
-    "enum"                   shift, and go to state 46
-    "if"                     shift, and go to state 102
-    "anonymous_fn"           shift, and go to state 47
-    "not"                    shift, and go to state 103
-    "42"                     shift, and go to state 104
-    "0x2a"                   shift, and go to state 105
-    "42u"                    shift, and go to state 106
-    "0x2Au"                  shift, and go to state 107
-    "4.2"                    shift, and go to state 108
-    "\"dq-string-literal\""  shift, and go to state 109
-    "'sq-string-literal'"    shift, and go to state 110
-    "("                      shift, and go to state 111
-    "["                      shift, and go to state 48
-    "{"                      shift, and go to state 112
-    "+"                      shift, and go to state 113
-    "-"                      shift, and go to state 114
-
-    tid               go to state 50
-    vid               go to state 115
-    floatl            go to state 116
-    mod_prefix        go to state 117
-    expr              go to state 327
+    expr              go to state 329
     bracketed_exp     go to state 119
     paren_exp         go to state 120
     vtupleExpr        go to state 121
@@ -5107,7 +4870,7 @@ State 306
 
 State 307
 
-   34 set_stmt: "set" expr "=" • expr
+   32 val_stmt: "val" lpattern "=" • expr
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -5132,7 +4895,7 @@ State 307
     vid               go to state 115
     floatl            go to state 116
     mod_prefix        go to state 117
-    expr              go to state 328
+    expr              go to state 330
     bracketed_exp     go to state 119
     paren_exp         go to state 120
     vtupleExpr        go to state 121
@@ -5167,56 +4930,7 @@ State 307
 
 State 308
 
-  170 struct_exp_field: vid "=" expr •
-
-    $default  reduce using rule 170 (struct_exp_field)
-
-
-State 309
-
-   84 chain_prefix: chain_prefix chain_prefix_stmt ";" •
-
-    $default  reduce using rule 84 (chain_prefix)
-
-
-State 310
-
-   82 chain_exp: "{" chain_prefix long_exp "}" •
-
-    $default  reduce using rule 82 (chain_exp)
-
-
-State 311
-
-  170 struct_exp_field: vid • "=" expr
-
-    "="  shift, and go to state 262
-
-
-State 312
-
-  191 struct_exp_field_cl: struct_exp_field_cl "," struct_exp_field •
-
-    $default  reduce using rule 191 (struct_exp_field_cl)
-
-
-State 313
-
-  160 varg: "out" expr •
-
-    $default  reduce using rule 160 (varg)
-
-
-State 314
-
-  161 varg: "inout" expr •
-
-    $default  reduce using rule 161 (varg)
-
-
-State 315
-
-  163 varg_cl: varg_cl "," • varg
+   33 var_stmt: "var" lpattern "=" • expr
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -5224,8 +4938,6 @@ State 315
     "if"                     shift, and go to state 102
     "anonymous_fn"           shift, and go to state 47
     "not"                    shift, and go to state 103
-    "out"                    shift, and go to state 272
-    "inout"                  shift, and go to state 273
     "42"                     shift, and go to state 104
     "0x2a"                   shift, and go to state 105
     "42u"                    shift, and go to state 106
@@ -5243,7 +4955,7 @@ State 315
     vid               go to state 115
     floatl            go to state 116
     mod_prefix        go to state 117
-    expr              go to state 275
+    expr              go to state 331
     bracketed_exp     go to state 119
     paren_exp         go to state 120
     vtupleExpr        go to state 121
@@ -5274,57 +4986,76 @@ State 315
     struct_type_spec  go to state 56
     enum_type_spec    go to state 57
     fn_type_spec      go to state 58
-    varg              go to state 329
 
 
-State 316
+State 309
 
-   91 vcall_exp: postfix_exp "(" varg_cl ")" •
+   48 mut_expr_cl1: mut_expr •
 
-    $default  reduce using rule 91 (vcall_exp)
-
-
-State 317
-
-   94 dot_name_exp: type_spec "::" "TypeId" "using" • paren_exp
-
-    "("  shift, and go to state 330
-
-    paren_exp  go to state 331
+    $default  reduce using rule 48 (mut_expr_cl1)
 
 
-State 318
+State 310
 
-   45 mod_prefix: mod_prefix vid "[" targ_cl "]" "::" •
+   47 mut_expr: "(" mut_expr_cl1 • ")"
+   49 mut_expr_cl1: mut_expr_cl1 • "," mut_expr
 
-    $default  reduce using rule 45 (mod_prefix)
-
-
-State 319
-
-   19 mod_field: "let" cid "(" tid class_spec ")" "=" • "{" type_query_exp_sl0 "}"
-
-    "{"  shift, and go to state 332
+    ","  shift, and go to state 332
+    ")"  shift, and go to state 333
 
 
-State 320
+State 311
 
-   52 type_query_exp_sl0: type_query_exp_sl0 • type_query_exp ";"
-  169 class_exp_class_spec: "typeclass" "(" tid class_spec ")" "{" type_query_exp_sl0 • "}"
+   34 set_stmt: "set" mut_expr "=" • expr
 
-    "val_id"        shift, and go to state 10
-    "TypeId"        shift, and go to state 22
-    "enum"          shift, and go to state 46
-    "anonymous_fn"  shift, and go to state 47
-    "["             shift, and go to state 48
-    "{"             shift, and go to state 49
-    "}"             shift, and go to state 333
+    "val_id"                 shift, and go to state 10
+    "TypeId"                 shift, and go to state 22
+    "enum"                   shift, and go to state 46
+    "if"                     shift, and go to state 102
+    "anonymous_fn"           shift, and go to state 47
+    "not"                    shift, and go to state 103
+    "42"                     shift, and go to state 104
+    "0x2a"                   shift, and go to state 105
+    "42u"                    shift, and go to state 106
+    "0x2Au"                  shift, and go to state 107
+    "4.2"                    shift, and go to state 108
+    "\"dq-string-literal\""  shift, and go to state 109
+    "'sq-string-literal'"    shift, and go to state 110
+    "("                      shift, and go to state 111
+    "["                      shift, and go to state 48
+    "{"                      shift, and go to state 112
+    "+"                      shift, and go to state 113
+    "-"                      shift, and go to state 114
 
     tid               go to state 50
-    vid               go to state 39
-    mod_prefix        go to state 51
-    type_query_exp    go to state 334
-    type_spec         go to state 335
+    vid               go to state 115
+    floatl            go to state 116
+    mod_prefix        go to state 117
+    expr              go to state 334
+    bracketed_exp     go to state 119
+    paren_exp         go to state 120
+    vtupleExpr        go to state 121
+    vstructExpr       go to state 122
+    primary_exp       go to state 123
+    int_expr          go to state 124
+    stringls          go to state 125
+    if_exp            go to state 126
+    chain_exp         go to state 127
+    postfix_exp       go to state 128
+    vcall_exp         go to state 129
+    dot_name_exp      go to state 130
+    dot_index_exp     go to state 131
+    unary_exp         go to state 132
+    unary_op          go to state 133
+    binary_exp        go to state 134
+    mul_binary_exp    go to state 135
+    add_binary_exp    go to state 136
+    cmp_binary_exp    go to state 137
+    eq_binary_exp     go to state 138
+    and_binary_exp    go to state 139
+    xor_binary_exp    go to state 140
+    or_binary_exp     go to state 141
+    type_spec         go to state 170
     mod_prefix_tid    go to state 53
     tuple_type_spec   go to state 54
     array_type_spec   go to state 55
@@ -5333,79 +5064,265 @@ State 320
     fn_type_spec      go to state 58
 
 
+State 312
+
+  174 struct_exp_field: vid "=" expr •
+
+    $default  reduce using rule 174 (struct_exp_field)
+
+
+State 313
+
+   88 chain_prefix: chain_prefix chain_prefix_stmt ";" •
+
+    $default  reduce using rule 88 (chain_prefix)
+
+
+State 314
+
+   86 chain_exp: "{" chain_prefix long_exp "}" •
+
+    $default  reduce using rule 86 (chain_exp)
+
+
+State 315
+
+  174 struct_exp_field: vid • "=" expr
+
+    "="  shift, and go to state 264
+
+
+State 316
+
+  195 struct_exp_field_cl: struct_exp_field_cl "," struct_exp_field •
+
+    $default  reduce using rule 195 (struct_exp_field_cl)
+
+
+State 317
+
+  164 varg: "out" mut_expr •
+
+    $default  reduce using rule 164 (varg)
+
+
+State 318
+
+  165 varg: "inout" mut_expr •
+
+    $default  reduce using rule 165 (varg)
+
+
+State 319
+
+  167 varg_cl: varg_cl "," • varg
+
+    "val_id"                 shift, and go to state 10
+    "TypeId"                 shift, and go to state 22
+    "enum"                   shift, and go to state 46
+    "if"                     shift, and go to state 102
+    "anonymous_fn"           shift, and go to state 47
+    "not"                    shift, and go to state 103
+    "out"                    shift, and go to state 274
+    "inout"                  shift, and go to state 275
+    "42"                     shift, and go to state 104
+    "0x2a"                   shift, and go to state 105
+    "42u"                    shift, and go to state 106
+    "0x2Au"                  shift, and go to state 107
+    "4.2"                    shift, and go to state 108
+    "\"dq-string-literal\""  shift, and go to state 109
+    "'sq-string-literal'"    shift, and go to state 110
+    "("                      shift, and go to state 111
+    "["                      shift, and go to state 48
+    "{"                      shift, and go to state 112
+    "+"                      shift, and go to state 113
+    "-"                      shift, and go to state 114
+
+    tid               go to state 50
+    vid               go to state 115
+    floatl            go to state 116
+    mod_prefix        go to state 117
+    expr              go to state 277
+    bracketed_exp     go to state 119
+    paren_exp         go to state 120
+    vtupleExpr        go to state 121
+    vstructExpr       go to state 122
+    primary_exp       go to state 123
+    int_expr          go to state 124
+    stringls          go to state 125
+    if_exp            go to state 126
+    chain_exp         go to state 127
+    postfix_exp       go to state 128
+    vcall_exp         go to state 129
+    dot_name_exp      go to state 130
+    dot_index_exp     go to state 131
+    unary_exp         go to state 132
+    unary_op          go to state 133
+    binary_exp        go to state 134
+    mul_binary_exp    go to state 135
+    add_binary_exp    go to state 136
+    cmp_binary_exp    go to state 137
+    eq_binary_exp     go to state 138
+    and_binary_exp    go to state 139
+    xor_binary_exp    go to state 140
+    or_binary_exp     go to state 141
+    type_spec         go to state 170
+    mod_prefix_tid    go to state 53
+    tuple_type_spec   go to state 54
+    array_type_spec   go to state 55
+    struct_type_spec  go to state 56
+    enum_type_spec    go to state 57
+    fn_type_spec      go to state 58
+    varg              go to state 335
+
+
+State 320
+
+   95 vcall_exp: postfix_exp "(" varg_cl ")" •
+
+    $default  reduce using rule 95 (vcall_exp)
+
+
 State 321
 
-   44 mod_prefix: mod_prefix • vid "::"
-   45           | mod_prefix • vid "[" targ_cl "]" "::"
-   68 primary_exp: mod_prefix • vid
+   98 dot_name_exp: type_spec "::" "TypeId" "using" • paren_exp
+
+    "("  shift, and go to state 336
+
+    paren_exp  go to state 337
+
+
+State 322
+
+   45 mod_prefix: mod_prefix vid "[" targ_cl "]" ":" •
+
+    $default  reduce using rule 45 (mod_prefix)
+
+
+State 323
+
+   19 mod_field: "let" cid "(" tid class_spec ")" "=" • "{" type_query_exp_sl0 "}"
+
+    "{"  shift, and go to state 338
+
+
+State 324
+
+   56 type_query_exp_sl0: type_query_exp_sl0 • type_query_exp ";"
+  173 class_exp_class_spec: "typeclass" "(" tid class_spec ")" "{" type_query_exp_sl0 • "}"
+
+    "val_id"        shift, and go to state 10
+    "TypeId"        shift, and go to state 22
+    "enum"          shift, and go to state 46
+    "anonymous_fn"  shift, and go to state 47
+    "["             shift, and go to state 48
+    "{"             shift, and go to state 49
+    "}"             shift, and go to state 339
+
+    tid               go to state 50
+    vid               go to state 39
+    mod_prefix        go to state 51
+    type_query_exp    go to state 340
+    type_spec         go to state 341
+    mod_prefix_tid    go to state 53
+    tuple_type_spec   go to state 54
+    array_type_spec   go to state 55
+    struct_type_spec  go to state 56
+    enum_type_spec    go to state 57
+    fn_type_spec      go to state 58
+
+
+State 325
+
+   44 mod_prefix: mod_prefix • vid ":"
+   45           | mod_prefix • vid "[" targ_cl "]" ":"
+   72 primary_exp: mod_prefix • vid
 
     "val_id"  shift, and go to state 10
 
     vid  go to state 200
 
 
-State 322
+State 326
 
-   78 if_exp: "if" bracketed_exp bracketed_exp "else" primary_exp •
+   82 if_exp: "if" bracketed_exp bracketed_exp "else" primary_exp •
 
-    $default  reduce using rule 78 (if_exp)
+    $default  reduce using rule 82 (if_exp)
 
 
-State 323
+State 327
 
-  187 lpattern_field_cl: lpattern_field_cl "," • lpattern_field
+  191 lpattern_field_cl: lpattern_field_cl "," • lpattern_field
 
     "val_id"  shift, and go to state 10
 
     vid             go to state 253
-    lpattern_field  go to state 336
+    lpattern_field  go to state 342
 
 
-State 324
+State 328
 
-  178 destructured_lpattern: "{" lpattern_field_cl "}" •
+  182 destructured_lpattern: "{" lpattern_field_cl "}" •
 
-    $default  reduce using rule 178 (destructured_lpattern)
+    $default  reduce using rule 182 (destructured_lpattern)
 
 
-State 325
+State 329
 
    31 const_stmt: "const" lpattern "=" expr •
 
     $default  reduce using rule 31 (const_stmt)
 
 
-State 326
+State 330
 
    32 val_stmt: "val" lpattern "=" expr •
 
     $default  reduce using rule 32 (val_stmt)
 
 
-State 327
+State 331
 
    33 var_stmt: "var" lpattern "=" expr •
 
     $default  reduce using rule 33 (var_stmt)
 
 
-State 328
+State 332
 
-   34 set_stmt: "set" expr "=" expr •
+   49 mut_expr_cl1: mut_expr_cl1 "," • mut_expr
+
+    "val_id"  shift, and go to state 10
+    "("       shift, and go to state 259
+
+    vid       go to state 260
+    mut_expr  go to state 343
+
+
+State 333
+
+   47 mut_expr: "(" mut_expr_cl1 ")" •
+
+    $default  reduce using rule 47 (mut_expr)
+
+
+State 334
+
+   34 set_stmt: "set" mut_expr "=" expr •
 
     $default  reduce using rule 34 (set_stmt)
 
 
-State 329
+State 335
 
-  163 varg_cl: varg_cl "," varg •
+  167 varg_cl: varg_cl "," varg •
 
-    $default  reduce using rule 163 (varg_cl)
+    $default  reduce using rule 167 (varg_cl)
 
 
-State 330
+State 336
 
-   57 paren_exp: "(" • long_exp ")"
+   61 paren_exp: "(" • long_exp ")"
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -5465,111 +5382,118 @@ State 330
     fn_type_spec      go to state 171
 
 
-State 331
-
-   94 dot_name_exp: type_spec "::" "TypeId" "using" paren_exp •
-
-    $default  reduce using rule 94 (dot_name_exp)
-
-
-State 332
-
-   19 mod_field: "let" cid "(" tid class_spec ")" "=" "{" • type_query_exp_sl0 "}"
-
-    $default  reduce using rule 51 (type_query_exp_sl0)
-
-    type_query_exp_sl0  go to state 337
-
-
-State 333
-
-  169 class_exp_class_spec: "typeclass" "(" tid class_spec ")" "{" type_query_exp_sl0 "}" •
-
-    $default  reduce using rule 169 (class_exp_class_spec)
-
-
-State 334
-
-   52 type_query_exp_sl0: type_query_exp_sl0 type_query_exp • ";"
-
-    ";"  shift, and go to state 338
-
-
-State 335
-
-  128 type_query_exp: type_spec • type_query_op type_spec
-
-    "=="  shift, and go to state 339
-    ":<"  shift, and go to state 340
-    ">:"  shift, and go to state 341
-
-    type_query_op  go to state 342
-
-
-State 336
-
-  187 lpattern_field_cl: lpattern_field_cl "," lpattern_field •
-
-    $default  reduce using rule 187 (lpattern_field_cl)
-
-
 State 337
 
-   19 mod_field: "let" cid "(" tid class_spec ")" "=" "{" type_query_exp_sl0 • "}"
-   52 type_query_exp_sl0: type_query_exp_sl0 • type_query_exp ";"
+   98 dot_name_exp: type_spec "::" "TypeId" "using" paren_exp •
 
-    "val_id"        shift, and go to state 10
-    "TypeId"        shift, and go to state 22
-    "enum"          shift, and go to state 46
-    "anonymous_fn"  shift, and go to state 47
-    "["             shift, and go to state 48
-    "{"             shift, and go to state 49
-    "}"             shift, and go to state 343
-
-    tid               go to state 50
-    vid               go to state 39
-    mod_prefix        go to state 51
-    type_query_exp    go to state 334
-    type_spec         go to state 335
-    mod_prefix_tid    go to state 53
-    tuple_type_spec   go to state 54
-    array_type_spec   go to state 55
-    struct_type_spec  go to state 56
-    enum_type_spec    go to state 57
-    fn_type_spec      go to state 58
+    $default  reduce using rule 98 (dot_name_exp)
 
 
 State 338
 
-   52 type_query_exp_sl0: type_query_exp_sl0 type_query_exp ";" •
+   19 mod_field: "let" cid "(" tid class_spec ")" "=" "{" • type_query_exp_sl0 "}"
 
-    $default  reduce using rule 52 (type_query_exp_sl0)
+    $default  reduce using rule 55 (type_query_exp_sl0)
+
+    type_query_exp_sl0  go to state 344
 
 
 State 339
 
-  131 type_query_op: "==" •
+  173 class_exp_class_spec: "typeclass" "(" tid class_spec ")" "{" type_query_exp_sl0 "}" •
 
-    $default  reduce using rule 131 (type_query_op)
+    $default  reduce using rule 173 (class_exp_class_spec)
 
 
 State 340
 
-  129 type_query_op: ":<" •
+   56 type_query_exp_sl0: type_query_exp_sl0 type_query_exp • ";"
 
-    $default  reduce using rule 129 (type_query_op)
+    ";"  shift, and go to state 345
 
 
 State 341
 
-  130 type_query_op: ">:" •
+  132 type_query_exp: type_spec • type_query_op type_spec
 
-    $default  reduce using rule 130 (type_query_op)
+    "=="  shift, and go to state 346
+    ":<"  shift, and go to state 347
+    ">:"  shift, and go to state 348
+
+    type_query_op  go to state 349
 
 
 State 342
 
-  128 type_query_exp: type_spec type_query_op • type_spec
+  191 lpattern_field_cl: lpattern_field_cl "," lpattern_field •
+
+    $default  reduce using rule 191 (lpattern_field_cl)
+
+
+State 343
+
+   49 mut_expr_cl1: mut_expr_cl1 "," mut_expr •
+
+    $default  reduce using rule 49 (mut_expr_cl1)
+
+
+State 344
+
+   19 mod_field: "let" cid "(" tid class_spec ")" "=" "{" type_query_exp_sl0 • "}"
+   56 type_query_exp_sl0: type_query_exp_sl0 • type_query_exp ";"
+
+    "val_id"        shift, and go to state 10
+    "TypeId"        shift, and go to state 22
+    "enum"          shift, and go to state 46
+    "anonymous_fn"  shift, and go to state 47
+    "["             shift, and go to state 48
+    "{"             shift, and go to state 49
+    "}"             shift, and go to state 350
+
+    tid               go to state 50
+    vid               go to state 39
+    mod_prefix        go to state 51
+    type_query_exp    go to state 340
+    type_spec         go to state 341
+    mod_prefix_tid    go to state 53
+    tuple_type_spec   go to state 54
+    array_type_spec   go to state 55
+    struct_type_spec  go to state 56
+    enum_type_spec    go to state 57
+    fn_type_spec      go to state 58
+
+
+State 345
+
+   56 type_query_exp_sl0: type_query_exp_sl0 type_query_exp ";" •
+
+    $default  reduce using rule 56 (type_query_exp_sl0)
+
+
+State 346
+
+  135 type_query_op: "==" •
+
+    $default  reduce using rule 135 (type_query_op)
+
+
+State 347
+
+  133 type_query_op: ":<" •
+
+    $default  reduce using rule 133 (type_query_op)
+
+
+State 348
+
+  134 type_query_op: ">:" •
+
+    $default  reduce using rule 134 (type_query_op)
+
+
+State 349
+
+  132 type_query_exp: type_spec type_query_op • type_spec
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -5581,7 +5505,7 @@ State 342
     tid               go to state 50
     vid               go to state 39
     mod_prefix        go to state 51
-    type_spec         go to state 344
+    type_spec         go to state 351
     mod_prefix_tid    go to state 53
     tuple_type_spec   go to state 54
     array_type_spec   go to state 55
@@ -5590,15 +5514,15 @@ State 342
     fn_type_spec      go to state 58
 
 
-State 343
+State 350
 
    19 mod_field: "let" cid "(" tid class_spec ")" "=" "{" type_query_exp_sl0 "}" •
 
     $default  reduce using rule 19 (mod_field)
 
 
-State 344
+State 351
 
-  128 type_query_exp: type_spec type_query_op type_spec •
+  132 type_query_exp: type_spec type_query_op type_spec •
 
-    $default  reduce using rule 128 (type_query_exp)
+    $default  reduce using rule 132 (type_query_exp)

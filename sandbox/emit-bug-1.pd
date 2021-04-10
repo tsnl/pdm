@@ -1,0 +1,9 @@
+mod module {
+
+    let test1 (x Int32, y inout Int32) Int32 = {
+        # typer bug: should infer 'variable' as Int32, instead infers as Int64
+        var variable = x;
+        x
+    };
+
+};
