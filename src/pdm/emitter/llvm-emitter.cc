@@ -212,6 +212,73 @@ namespace pdm::emitter {
 }
 
 namespace pdm::emitter {
+    // This block emits a HEADER DIGEST
+    // - this code helps emit builtin inline definitions for operators,
+    //   like '+' or '=='
+    //      todo: switch to LLVM C++ API to avail of 'always-inline' attribute with LLVM IR before merging
+    // - this information is exported/sent to the body emitter using a HeaderDigest
+    // - cf EmitHeadersVisitor::emit_preamble
+
+    //
+    // Defining the Header Digest:
+    //
+
+    using UnaryOperatorArgKey = types::Type*;
+    using UnaryOperatorTable = std::map <
+        std::pair<ast::UnaryOperator, UnaryOperatorArgKey>,
+        LLVMValueRef
+    >;
+    using BinaryOperatorArgKey = std::pair<types::Type*, types::Type*>;
+    using BinaryOperatorTable = std::map <
+        // assume we read left to right, such that the left binary operator is first.
+        std::pair<ast::BinaryOperator, BinaryOperatorArgKey>,
+        LLVMValueRef
+    >;
+
+    struct HeaderDigest {
+        UnaryOperatorTable unary_operator_table;
+        BinaryOperatorTable binary_operator_table;
+    };
+
+    //
+    // Defining helper types
+    //
+
+    // these types are used to generate inline functions for builtin arithmetic operators:
+
+    enum class NumKind {
+        FloatingPoint,
+        SignedInt,
+        UnsignedInt
+    };
+    struct NumInfo {
+        types::Type* num_type;
+        std::string name;
+        NumKind num_kind;
+    };
+
+    typedef LLVMValueRef(*BuiltinBinaryOperatorBuilderCb)(
+        LLVMBuilderRef builder,
+        LLVMValueRef lhs,
+        LLVMValueRef rhs,
+        char const* name
+    );
+    typedef LLVMValueRef(*BuiltinUnaryOperatorBuilderCb)(
+        LLVMBuilderRef builder,
+        LLVMValueRef lhs,
+        char const* name
+    );
+    struct UnaryOpCbInfo {
+        ast::UnaryOperator op;
+        BuiltinUnaryOperatorBuilderCb cb;
+    };
+    struct BinaryOpCbInfo {
+        ast::BinaryOperator op;
+        BuiltinBinaryOperatorBuilderCb cb;
+    };
+}
+
+namespace pdm::emitter {
 
     class BaseScriptVisitor: public ast::TinyVisitor {
       protected:
@@ -250,6 +317,7 @@ namespace pdm::emitter {
         // this stack stores the WHOLE module prefix to use, e.g.
         // module_a, module_a:home, module_a:home:cfg
         std::vector<std::string> m_module_prefix_stack;
+        HeaderDigest m_digest;
 
       public:
         EmitHeadersVisitor(
@@ -259,6 +327,8 @@ namespace pdm::emitter {
         );
 
       public:
+        [[nodiscard]] bool on_visit_script(ast::Script* script, VisitOrder visit_order) override;
+        [[nodiscard]] bool on_visit_lambda_exp(ast::LambdaExp* lambda_exp, VisitOrder) override;
         [[nodiscard]] bool on_visit_script_field(ast::Script::Field* field, VisitOrder visit_order) override;
         [[nodiscard]] bool on_visit_value_mod_field(ast::NativeModExp::ValueField* node, VisitOrder visit_order) override;
         [[nodiscard]] bool on_visit_type_mod_field(ast::NativeModExp::TypeField* node, VisitOrder visit_order) override;
@@ -269,18 +339,23 @@ namespace pdm::emitter {
       private:
         void push_module_name(intern::String name);
         void pop_module_name();
+
+      private:
+        void emit_preamble();
+        void emit_postamble();
     };
 
     std::string const EmitHeadersVisitor::s_root_module_name = "root";
-    std::string const EmitHeadersVisitor::s_module_name_separator = ":";
+    std::string const EmitHeadersVisitor::s_module_name_separator = "_$_";
 
     EmitHeadersVisitor::EmitHeadersVisitor(
         Compiler* compiler,
         ast::ISourceNode* source_node,
         LLVMModuleRef output_module
     )
-    :   BaseScriptVisitor(compiler, source_node, output_module),
-        m_module_prefix_stack(1, s_root_module_name)
+    : BaseScriptVisitor(compiler, source_node, output_module),
+      m_module_prefix_stack(1, s_root_module_name),
+      m_digest{}
     {}
 
     void EmitHeadersVisitor::push_module_name(intern::String mod_name) {
@@ -293,6 +368,245 @@ namespace pdm::emitter {
     }
     void EmitHeadersVisitor::pop_module_name() {
         m_module_prefix_stack.pop_back();
+    }
+
+    void EmitHeadersVisitor::emit_preamble() {
+        // the preamble contains inline functions used by every script, such as:
+        // - arithmetic operator definitions
+
+        // generating symmetric binary operators for each `num_info`, i.e. each prime type:
+
+        //
+        // auxiliary data (tables, helper fns)
+        //
+
+        static std::string const name_prefix = "pdm_builtin_";
+
+        std::vector<NumInfo> const num_info_vec = {
+            // float:
+            {types::FloatType::get_f16(), "f16", NumKind::FloatingPoint},
+            {types::FloatType::get_f32(), "f32", NumKind::FloatingPoint},
+            {types::FloatType::get_f64(), "f64", NumKind::FloatingPoint},
+
+            // signed int:
+            {types::IntType::get_i8(), "i8", NumKind::SignedInt},
+            {types::IntType::get_i16(), "i16", NumKind::SignedInt},
+            {types::IntType::get_i32(), "i32", NumKind::SignedInt},
+            {types::IntType::get_i64(), "i64", NumKind::SignedInt},
+            {types::IntType::get_i128(), "i128", NumKind::SignedInt},
+
+            // unsigned int:
+            {types::IntType::get_u1(), "u1", NumKind::UnsignedInt},
+            {types::IntType::get_u8(), "u8", NumKind::UnsignedInt},
+            {types::IntType::get_u16(), "u16", NumKind::UnsignedInt},
+            {types::IntType::get_u32(), "u32", NumKind::UnsignedInt},
+            {types::IntType::get_u64(), "u64", NumKind::UnsignedInt},
+            {types::IntType::get_u128(), "u128", NumKind::UnsignedInt}
+        };
+
+        // unary operators are (1) arithmetic (return value closed) or (2) comparative (returns u1)
+        // binary operators are (1) arithmetic (return value closed) or (2) comparative (returns u1)
+        // todo: remove UOP_DEREF and UOP_GETREF from compiler.
+
+        std::vector<BinaryOpCbInfo> const si_arithmetic_bin_op_info_vec = {
+            {ast::BinaryOperator::Mul, LLVMBuildMul},
+            {ast::BinaryOperator::Div, LLVMBuildSDiv},
+            {ast::BinaryOperator::Rem, LLVMBuildSRem},
+            {ast::BinaryOperator::Add, LLVMBuildAdd},
+            {ast::BinaryOperator::Subtract, LLVMBuildSub},
+            {ast::BinaryOperator::And, LLVMBuildAnd},
+            {ast::BinaryOperator::XOr, LLVMBuildXor},
+            {ast::BinaryOperator::Or, LLVMBuildOr}
+        };
+
+        std::vector<BinaryOpCbInfo> const ui_arithmetic_bin_op_info_vec = {
+            {ast::BinaryOperator::Mul, LLVMBuildMul},
+            {ast::BinaryOperator::Div, LLVMBuildUDiv},
+            {ast::BinaryOperator::Rem, LLVMBuildURem},
+            {ast::BinaryOperator::Add, LLVMBuildAdd},
+            {ast::BinaryOperator::Subtract, LLVMBuildSub},
+            {ast::BinaryOperator::And, LLVMBuildAnd},
+            {ast::BinaryOperator::XOr, LLVMBuildXor},
+            {ast::BinaryOperator::Or, LLVMBuildOr}
+        };
+        std::vector<BinaryOpCbInfo> const fp_arithmetic_bin_op_info_vec = {
+            {ast::BinaryOperator::Mul, LLVMBuildFMul},
+            {ast::BinaryOperator::Div, LLVMBuildFDiv},
+            {ast::BinaryOperator::Rem, LLVMBuildFRem},
+            {ast::BinaryOperator::Add, LLVMBuildFAdd},
+            {ast::BinaryOperator::Subtract, LLVMBuildFSub}
+        };
+
+        //
+        // local function definitions:
+        //
+
+        auto const define_inline_fn =
+            [this] (std::string const& fn_name, types::Type* fn_type) -> LLVMValueRef {
+                LLVMTypeRef llvm_fn_type = emit_llvm_type_for(fn_type);
+                LLVMValueRef fn = LLVMAddFunction(
+                    this->m_output_module,
+                    fn_name.c_str(),
+                    llvm_fn_type
+                );
+
+                // setting the fn attributes (e.g. always-inline...)
+                // fixme: it appears we cannot use the 'always-inline' attribute through the C API, so we will have to
+                //        switch to the C++ API. Talk about technical debt...
+
+                // for now, just returning non-inline.
+                return fn;
+            };
+
+        auto const begin_inline_fn_def =
+            [this] (LLVMValueRef inline_fn) -> LLVMBasicBlockRef {
+                LLVMBasicBlockRef bb = LLVMAppendBasicBlock(
+                    inline_fn,
+                    "builtin-inline-fn-implementation"
+                );
+                LLVMPositionBuilderAtEnd(
+                    static_cast<LLVMBuilderRef>(this->m_compiler->llvm_builder()),
+                    bb
+                );
+                return bb;
+            };
+
+        auto const end_inline_fn_def = (
+            [this] (LLVMValueRef inline_fn) {
+                LLVMClearInsertionPosition(
+                    static_cast<LLVMBuilderRef>(this->m_compiler->llvm_builder())
+                );
+            }
+        );
+        auto const emit_arithmetic_bin_op_defs = (
+            [&] (
+                NumInfo const& num_info,
+                std::vector<BinaryOpCbInfo> const& arithmetic_bin_op_cb_info
+            ) {
+
+                // creating fn type: T x T -> T
+                types::FnType* binary_arithmetic_fn_type = nullptr;
+                {
+                    intern::String lhs_name = "left_operand";
+                    intern::String rhs_name = "right_operand";
+
+                    std::vector<types::tt::FnField> binary_arithmetic_fn_sgn_fields;
+                    binary_arithmetic_fn_sgn_fields.reserve(3); {
+                        // pushing the return type LAST
+                        binary_arithmetic_fn_sgn_fields.push_back({ast::VArgAccessSpec::In, lhs_name, num_info.num_type, false});
+                        binary_arithmetic_fn_sgn_fields.push_back({ast::VArgAccessSpec::In, lhs_name, num_info.num_type, false});
+                        binary_arithmetic_fn_sgn_fields.push_back({ast::VArgAccessSpec::Out, {}, num_info.num_type, true});
+                    }
+
+                    binary_arithmetic_fn_type = types::FnType::get(binary_arithmetic_fn_sgn_fields);
+                };
+                assert(binary_arithmetic_fn_type && "Expected `binary_arithmetic_fn_type` for builtin inline fn");
+
+                // defining all arithmetic binary operators:
+                for (BinaryOpCbInfo const& cb_info: arithmetic_bin_op_cb_info) {
+                    LLVMValueRef fn = define_inline_fn(
+                        name_prefix + num_info.name + "_" + ast::binary_operator_name(cb_info.op),
+                        binary_arithmetic_fn_type
+                    );
+                    LLVMBasicBlockRef bb = begin_inline_fn_def(fn);
+                    {
+                        LLVMValueRef return_value = cb_info.cb(
+                            static_cast<LLVMBuilderRef>(this->m_compiler->llvm_builder()),
+                            LLVMGetParam(fn, 0),
+                            LLVMGetParam(fn, 1),
+                            "return-value"
+                        );
+                        LLVMBuildRet(
+                            static_cast<LLVMBuilderRef>(this->m_compiler->llvm_builder()),
+                            return_value
+                        );
+                    }
+                    end_inline_fn_def(fn);
+
+                    std::pair<ast::BinaryOperator, std::pair<types::Type*, types::Type*>> key = {cb_info.op, {num_info.num_type, num_info.num_type}};
+
+                    if (pdm::DEBUG) {
+                        assert(
+                            !m_digest.binary_operator_table.contains(key) &&
+                            "Expected each insertion to be unique in builtin fn table"
+                        );
+                    }
+
+                    m_digest.binary_operator_table.insert({key, fn});
+                }
+            }
+        );
+
+        //
+        // implementation:
+        //
+
+        // emitting 'binary arithmetic' operators:
+        for (auto const& num_info: num_info_vec) {
+            // implementing each symmetric operator depending on the type's `num_kind`:
+            switch (num_info.num_kind) {
+                case NumKind::UnsignedInt: {
+                    emit_arithmetic_bin_op_defs(num_info, ui_arithmetic_bin_op_info_vec);
+                    break;
+                }
+                case NumKind::SignedInt: {
+                    emit_arithmetic_bin_op_defs(num_info, si_arithmetic_bin_op_info_vec);
+                    break;
+                }
+                case NumKind::FloatingPoint: {
+                    emit_arithmetic_bin_op_defs(num_info, fp_arithmetic_bin_op_info_vec);
+                    break;
+                }
+            }
+        }
+
+        // todo: emit 'binary comparison' operators using a similar scheme to above
+        // - cf typer/typer.cc with clear type rules
+        // - only for prime types: need to emit `==` operators for more complex data types later.
+
+        // todo: emit unary operators
+        // - only a handful exist for well-known types-- not as complex as above
+
+        // todo: save emitted values to the header digest @ m_digest
+        // todo: write 'export_header_digest' method to send tables to EmitDefsVisitor
+        // todo: update BinaryExp emitter to query these tables to select the right fn for each call.
+    }
+    void EmitHeadersVisitor::emit_postamble() {
+
+    }
+
+    bool EmitHeadersVisitor::on_visit_script(ast::Script* script, VisitOrder visit_order) {
+        if (visit_order == VisitOrder::Pre) {
+            emit_preamble();
+        } else if (visit_order == VisitOrder::Post) {
+            emit_postamble();
+        }
+        return true;
+    }
+
+    bool EmitHeadersVisitor::on_visit_lambda_exp(ast::LambdaExp* lambda_exp, VisitOrder) {
+        // NOTE:
+        // -  @me I KNOW YOU WILL WASTE TIME ON THIS SO HEED THIS ADVICE
+        // - for now, this visitor does nothing since...
+        //   1. every lambda is either top-level or within another function
+        //   2. closures are not yet supported
+        //   3. => all lambdas are top-level lambdas
+        //   4. => all lambdas are emitted by the
+        //      field (so they can be mapped to a global name and linked against other modules)
+        // - so WHEN CLOSURES ARE ADDED...
+        //   1. add 2 lambda_exp properties to check if it was...
+        //       1. expanded from a sugared lambda
+        //       2. if it was assigned to a module level symbol
+        //       3. Note (1) => (2), but (2) =/=> (1), so must be stored independently
+        // - if not assigned as top-level,
+        //   THEN DO THIS HERE:
+        //      1. generate closures
+        //          - every 'Defn' stores an 'fn' ptr where it was defined
+        //          - if a looked up symbol does not have 'fn' ptr same as current top 'fn', it is closed over.
+        //      2. emit an anonymous function with a strange (non-conflicting/rare) name
+        //      3. set ->x_llvm_fn appropriately
+        //      4. ensure it is emitted by `emit_ro_llvm_value...`
+        return true;
     }
 
     bool EmitHeadersVisitor::on_visit_script_field(ast::Script::Field* field, VisitOrder visit_order) {
@@ -323,13 +637,10 @@ namespace pdm::emitter {
                 auto lambda_node = dynamic_cast<ast::LambdaExp*>(node->rhs_exp());
                 assert(lambda_node && "Expected Lambda RHS based on 'Kind'");
 
-                std::string lambda_name = (
-                    "lambda @ " + lambda_node->loc().cpp_str()
-                );
                 auto fn_type = dynamic_cast<types::FnType*>(global_type);
                 assert(fn_type && "Expected 'soln' type after typer for 'lambda-exp' in 'EmitHeaders'");
                 LLVMTypeRef llvm_fn_type = emit_llvm_type_for(fn_type);
-                LLVMValueRef llvm_fn = LLVMAddFunction(m_output_module, lambda_name.c_str(), llvm_fn_type);
+                LLVMValueRef llvm_fn = LLVMAddFunction(m_output_module, emit_name.c_str(), llvm_fn_type);
 
                 auto dim = new Dim{};
                 dim->dim_kind = DimKind::Global_Fn;
@@ -411,6 +722,7 @@ namespace pdm::emitter {
     // 1. RValues
     // 2. LValues
     // 3. EmitDefsVisitor
+    //    - emitting things only in basic blocks
     //
 
     enum class LValueKind;
@@ -855,8 +1167,29 @@ namespace pdm::emitter {
 //                break;
 //            }
             case ast::Kind::BinaryExp: {
-                assert(0 && "NotImplemented: emitting LLVM for BinaryExp");
-                break;
+                auto binary_exp = dynamic_cast<ast::BinaryExp*>(exp);
+                auto binary_op = binary_exp->binary_operator();
+
+                auto ret_type = binary_exp->x_type_of_var()->get_type_soln();
+                assert(ret_type && "`ret_type` is nullptr");
+
+                // depending on the return type, we must cast arguments to the right type
+
+                auto lhs_exp = binary_exp->lhs_operand();
+                auto rhs_exp = binary_exp->rhs_operand();
+
+                auto lhs_exp_type = lhs_exp->x_type_of_var()->get_type_soln();
+                auto rhs_exp_type = rhs_exp->x_type_of_var()->get_type_soln();
+
+                auto llvm_lhs_operand = emit_ro_llvm_value_for(lhs_exp);
+                auto llvm_rhs_operand = emit_ro_llvm_value_for(rhs_exp);
+
+                // todo: determine if cast is required
+                // dangerously assuming all OK
+                // NOTE: cannot just compare with return type, consider '==' operator where arg type != ret type
+                //       except for arg type = U1
+
+                 assert(0 && "NotImplemented: looking up fn to use for binary operator in header digest");
             }
 //            case ast::Kind::LambdaExp: {
 //                break;
@@ -870,24 +1203,57 @@ namespace pdm::emitter {
             }
             case ast::Kind::VCallExp: {
                 auto call_exp = dynamic_cast<ast::VCallExp*>(exp);
-                auto call_type = dynamic_cast<types::FnType*>(exp_type);
+                auto call_type = exp_type;
 
                 // translating the called expression:
                 auto llvm_lhs_called_exp = emit_ro_llvm_value_for(call_exp->lhs_called());
+                auto fn_type = dynamic_cast<types::FnType*>(call_exp->lhs_called()->x_type_of_var()->get_type_soln());
+                auto fn_formal_arg_info = fn_type->args();
 
-                // translating the arguments:
+                // translating the arguments, casting/converting if required:
                 std::vector<LLVMValueRef> actual_args;
                 actual_args.reserve(call_exp->args().size());
-                for (ast::VArg* arg: call_exp->args()) {
-                    switch (arg->access_spec()) {
+                size_t args_count = call_exp->args().size();
+                for (size_t arg_index = 0; arg_index < args_count; arg_index++) {
+                    ast::VArg* actual_arg = call_exp->args()[arg_index];
+
+                    switch (actual_arg->access_spec()) {
                         case ast::VArgAccessSpec::In: {
-                            RValue* actual_arg_r_value = emit_ro_llvm_value_for(arg->arg_exp());
-                            actual_args.push_back(actual_arg_r_value->llvm_value());
+                            RValue* actual_arg_r_value = emit_ro_llvm_value_for(actual_arg->arg_exp());
+
+                            // whenever we call an operator, there is a chance the formal and actual type are not
+                            // identical.
+                            // when this happens, the emitter must cast/convert the actual value into another value
+                            // of the formal type before passing it.
+
+                            types::Type* formal_arg_type;
+                            types::Type* actual_arg_type;
+                            {
+                                types::FnType::ArgInfo& formal_arg_info = fn_formal_arg_info[arg_index];
+                                assert(
+                                    formal_arg_info.access_spec == actual_arg->access_spec() &&
+                                    "Typer error: mismatched access specifiers detected in call"
+                                );
+                                formal_arg_type = formal_arg_info.type;
+                                actual_arg_type = actual_arg_r_value->exp()->x_type_of_var()->get_type_soln();
+                            }
+
+                            // the past participle of 'cast' is 'cast', but in this case, the intuitive misspelling
+                            // 'casted' helps disambiguate.
+                            LLVMValueRef casted_value = nullptr;
+                            if (formal_arg_type != actual_arg_type) {
+                                casted_value = actual_arg_r_value->llvm_value();
+                            } else {
+                                assert(0 && "NotImplemented: casting input arguments for fn call");
+                            }
+                            assert(casted_value && "Expected non-nullptr casted value to pass to fn call");
+                            actual_args.push_back(casted_value);
                             break;
                         }
                         case ast::VArgAccessSpec::InOut:
                         case ast::VArgAccessSpec::Out: {
-                            LValue* actual_arg_l_value = emit_rw_llvm_value_for(arg->arg_exp());
+                            // note mutable values are always passed as pointers, which do not need to be cast.
+                            LValue* actual_arg_l_value = emit_rw_llvm_value_for(actual_arg->arg_exp());
                             switch (actual_arg_l_value->l_value_kind()) {
                                 case LValueKind::Id: {
                                     auto id_l_value = dynamic_cast<IdLValue*>(actual_arg_l_value);
@@ -1025,6 +1391,7 @@ namespace pdm::emitter {
             }
             default: {
                 assert(0 && "NotImplemented: emitting LLVM for unknown expression kind.");
+                return nullptr;
             }
         }
     }

@@ -232,7 +232,7 @@ add_library(pdm STATIC
     #   we should eliminate this dependency ASAP.
     dep/utf8proc/utf8proc.c
     dep/utf8proc/utf8proc.h
-        src/pdm/ast/pattern/lpattern.cc src/pdm/ast/pattern/vpattern.cc src/pdm/ast/pattern/tpattern.cc src/pdm/ast/module/base-mod-exp.cc)
+        src/pdm/ast/pattern/lpattern.cc src/pdm/ast/pattern/vpattern.cc src/pdm/ast/pattern/tpattern.cc src/pdm/ast/module/base-mod-exp.cc src/pdm/ast/exp/binary.cc src/pdm/ast/exp/unary.cc)
 
 target_link_libraries(pdm PUBLIC
     ${llvm_libs} 

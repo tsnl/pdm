@@ -1,5 +1,13 @@
+import {
+    raylib from "./raylib.pd-extern.json"
+}
+
 mod fib_helper {
     let register (x Int32, y Int32) Void = {
         # print, or something?
+        call_extern {
+            raylib,
+
+        }
     };
 };

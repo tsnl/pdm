@@ -19,8 +19,10 @@ namespace pdm::ast {
         Less, LessOrEq, Greater, GreaterOrEq,
         Equals, NotEquals,
         And, Or, XOr,
-        __Count
+        META_Count
     };
+
+    char const* binary_operator_name(BinaryOperator binary_operator);
 
     class BinaryExp: public Exp {
         friend Manager;

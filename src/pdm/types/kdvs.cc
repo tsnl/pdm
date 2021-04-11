@@ -870,7 +870,7 @@ namespace pdm::types {
             }
         }
 
-        // pushing the return type LAST:
+        // pushing the return type *LAST*:
         {
             Type* ret_type_soln = nullptr;
             if (m_typeof_ret_tv) {

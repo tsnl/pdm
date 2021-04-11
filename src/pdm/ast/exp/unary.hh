@@ -13,7 +13,7 @@ namespace pdm::ast {
         Not,    // UnsignedInt -> UnsignedInt
         Plus,   // UnsignedInt -> SignedInt
         Minus,  // SignedInt -> SignedInt
-        __Count
+        META_Count
     };
 
     class UnaryExp: public Exp {

@@ -16,15 +16,15 @@ mod module {
     let test1 (x Int32, inout y Int32) Int32 = {
         var variable Int32 = x;
         set variable = 42;
-        set y = 42;
-        variable
+        set y = 21;
+        y
     };
 
     let main () Int32 = {
         var foo = 0;
         val baz = 1;
-        val bar = test1(foo, inout baz);
-        # val bar = 10;
+        # val bar = test1(foo, inout baz);
+        val bar = 10;
         bar
     };
 
