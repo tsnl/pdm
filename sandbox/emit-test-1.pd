@@ -18,7 +18,7 @@ mod entry_point {
     };
 
     let main () Int32 = {
-        val m Int32 = 2;
+        val m Int32 = 1 * 2;
         val c Int32 = 12;
 
         var x1 Int32 = 15;

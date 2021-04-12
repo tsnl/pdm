@@ -468,19 +468,110 @@ namespace pdm::types {
             node->x_type_of_var(int_tv);
         } else {
             assert(visit_order == VisitOrder::Post);
+
             auto int_tv = dynamic_cast<TypeVar*>(node->x_type_of_var());
-            auto inferred_cv = (
-                (node->force_unsigned()) ?
-                m_types_mgr->get_unsigned_int_cv() :
-                m_types_mgr->get_signed_int_cv()
-            );
-            SolveResult sp2_result = (
-                m_types_mgr->assume_relation_holds(new ClassOfRelation(
-                    node,
-                    inferred_cv,
-                    int_tv
+
+            // setting a superclass:
+            // auto inferred_cv = (
+            //     (node->force_unsigned()) ?
+            //     m_types_mgr->get_unsigned_int_cv() :
+            //     m_types_mgr->get_signed_int_cv()
+            // );
+            // SolveResult sp2_result_1 = (
+            //     m_types_mgr->assume_relation_holds(new ClassOfRelation(
+            //         node,
+            //         inferred_cv,
+            //         int_tv
+            //     ))
+            // );
+
+            // setting a size based on the value size:
+            // - range from 2^3 = 8 bits to 2^6 = 64 bits
+            // - break when large enough to contain the value in this exp
+            size_t bit_count_lg2;
+            if (node->value() == 0 || node->value() == 1) {
+                bit_count_lg2 = 0;
+            } else {
+                for (bit_count_lg2 = 3; bit_count_lg2 <= 6; bit_count_lg2++) {
+                    size_t bit_count = (1 << bit_count_lg2);
+                    if (node->value() <= ((1 << bit_count_lg2) - 1)) {
+                        break;
+                    }
+                }
+            }
+
+            TypeVar* deduced_int_tv = nullptr;
+            if (node->force_unsigned()) {
+                switch (bit_count_lg2) {
+                    case 0: {
+                        deduced_int_tv = m_types_mgr->get_u1_tv();
+                        break;
+                    }
+                    case 3: {
+                        deduced_int_tv = m_types_mgr->get_u8_tv();
+                        break;
+                    }
+                    case 4: {
+                        deduced_int_tv = m_types_mgr->get_u16_tv();
+                        break;
+                    }
+                    case 5: {
+                        deduced_int_tv = m_types_mgr->get_u32_tv();
+                        break;
+                    }
+                    case 6: {
+                        deduced_int_tv = m_types_mgr->get_u64_tv();
+                        break;
+                    }
+                    case 7: {
+                        deduced_int_tv = m_types_mgr->get_u128_tv();
+                        break;
+                    }
+                    default: {
+                        assert(0 && "Invalid `bit_count_lg2` for unsigned int_exp when deducing width");
+                    }
+                }
+            } else {
+                switch (bit_count_lg2) {
+                    case 0:
+                    case 3:
+                    {
+                        deduced_int_tv = m_types_mgr->get_i8_tv();
+                        break;
+                    }
+                    case 4: {
+                        deduced_int_tv = m_types_mgr->get_i16_tv();
+                        break;
+                    }
+                    case 5: {
+                        deduced_int_tv = m_types_mgr->get_i32_tv();
+                        break;
+                    }
+                    case 6: {
+                        deduced_int_tv = m_types_mgr->get_i64_tv();
+                        break;
+                    }
+                    case 7: {
+                        deduced_int_tv = m_types_mgr->get_i128_tv();
+                        break;
+                    }
+                    default: {
+                        assert(0 && "Unknown `bit_count_lg2` for signed int_exp when deducing width");
+                    }
+                }
+            }
+            assert(deduced_int_tv && "Failed to deduce int type");
+
+            // setting the `deduced_int_tv` as a subtype of `int_tv`:
+            SolveResult sp2_result_2 = (
+                m_types_mgr->assume_relation_holds(new SubtypeOfRelation(
+                    node, deduced_int_tv, int_tv
                 ))
             );
+
+            // SolveResult sp2_result = result_and(sp2_result_1, sp2_result_2);
+            SolveResult sp2_result = sp2_result_2;
+
             std::string source_desc = "see integer expression here...";
             return post_feedback_from_first_kd_res(sp2_result, std::move(source_desc), node->loc());
         }
@@ -1006,17 +1097,17 @@ namespace pdm::types {
                     {
                         // (t1, t2) -> t
                         // (t IsNumber)
-                        // note t :< t1 and t :< t2, so t1 and t2 are converted (extended) to t before operation.
+                        // note t == t1 and t == t2, so t1 and t2 are converted (extended) to t before operation.
 
                         // ensuring return type is a number:
                         auto ret_number_relation = new IsNumberRelation(node, ret_tv);
                         auto res1 = m_types_mgr->assume_relation_holds(ret_number_relation);
 
                         // relating arg types to return type:
-                        // ret_tv :< type_of_lhs_tv
-                        // ret_tv :< type_of_rhs_tv
-                        auto eq_relation1 = new SubtypeOfRelation(node, ret_tv, type_of_lhs_tv);
-                        auto eq_relation2 = new SubtypeOfRelation(node, ret_tv, type_of_rhs_tv);
+                        // ret_tv == type_of_lhs_tv
+                        // ret_tv == type_of_rhs_tv
+                        auto eq_relation1 = new TypeEqualsRelation(node, ret_tv, type_of_lhs_tv);
+                        auto eq_relation2 = new TypeEqualsRelation(node, ret_tv, type_of_rhs_tv);
                         auto res2 = result_and(
                             m_types_mgr->assume_relation_holds(eq_relation1),
                             m_types_mgr->assume_relation_holds(eq_relation2)

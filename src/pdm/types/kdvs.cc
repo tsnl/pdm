@@ -183,10 +183,12 @@ namespace pdm::types {
                 // updating result if applied:
                 SolveResult result = SolveResult::NoChange;
                 {
+                    // updating if min-width is greater than the current min-width:
                     if (m_opt_min_width_in_bits < 0 || m_opt_min_width_in_bits < int_invariant->min_width_in_bits()) {
                         m_opt_min_width_in_bits = int_invariant->min_width_in_bits();
                         result = SolveResult::UpdatedOrFresh;
                     }
+                    // updating if the max-width is less than the current max-width:
                     if (m_opt_max_width_in_bits < 0 || m_opt_max_width_in_bits > int_invariant->max_width_in_bits()) {
                         m_opt_max_width_in_bits = int_invariant->max_width_in_bits();
                         result = SolveResult::UpdatedOrFresh;
@@ -244,6 +246,8 @@ namespace pdm::types {
             } else if (m_opt_max_width_in_bits != -1) {
                 width_in_bits = m_opt_max_width_in_bits;
             } else {
+                // If no typing information is present, this type can be eliminated-- pick the default size.
+                // std::cout << "WARNING: unable to type symbol-- should be eliminated" << std::endl;
                 width_in_bits = default_width_in_bits;
             }
         }
