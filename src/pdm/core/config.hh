@@ -4,7 +4,7 @@
 #define PDMSDK_REPO_URL_CMACRO "https://github.com/tsnl/pdm"
 
 namespace pdm {
-    bool const DEBUG = false;
+    bool const DEBUG = true;
 }
 
 #endif  // INCLUDED_PDM_CORE_CONFIG_HH

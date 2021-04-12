@@ -20,11 +20,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="397cbe04-447a-4447-b614-c2899ca2dc6b" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/WIP.md" beforeDir="false" afterPath="$PROJECT_DIR$/WIP.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dep/llvm-project" beforeDir="false" afterPath="$PROJECT_DIR$/dep/llvm-project" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/doc/packages-spec/2021-04-10 - 12 - Rev 5.md" beforeDir="false" afterPath="$PROJECT_DIR$/doc/packages-spec/2021-04-10 - 12 - Rev 5.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sandbox/emit-test-1.ll" beforeDir="false" afterPath="$PROJECT_DIR$/sandbox/emit-test-1.ll" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sandbox/emit-test-1.pd" beforeDir="false" afterPath="$PROJECT_DIR$/sandbox/emit-test-1.pd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pdm/compiler/compiler.cc" beforeDir="false" afterPath="$PROJECT_DIR$/src/pdm/compiler/compiler.cc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pdm/core/config.hh" beforeDir="false" afterPath="$PROJECT_DIR$/src/pdm/core/config.hh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pdm/emitter/llvm-emitter.cc" beforeDir="false" afterPath="$PROJECT_DIR$/src/pdm/emitter/llvm-emitter.cc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pdm/typer/typer.cc" beforeDir="false" afterPath="$PROJECT_DIR$/src/pdm/typer/typer.cc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pdm/types/type.hh" beforeDir="false" afterPath="$PROJECT_DIR$/src/pdm/types/type.hh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,7 +71,7 @@
     <property name="cf.first.check.clang-format" value="false" />
     <property name="cidr.known.project.marker" value="true" />
     <property name="cmake.loaded.for.project" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/sandbox" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.path.for.package.eslint" value="project" />
@@ -73,10 +81,15 @@
     <property name="nodejs_package_manager_path" value="npm" />
     <property name="settings.editor.selected.configurable" value="CMakeSettings" />
   </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/sandbox" />
+    </key>
+  </component>
   <component name="RunManager" selected="CMake Application.porch sandbox/emit-test-1.pd">
-    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
-        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
     <configuration name="acc_gen" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="pandemonium" TARGET_NAME="acc_gen" CONFIG_NAME="Debug">
@@ -140,7 +153,8 @@
       <workItem from="1618042463646" duration="24159000" />
       <workItem from="1618173392171" duration="194000" />
       <workItem from="1618173666249" duration="3963000" />
-      <workItem from="1618179607755" duration="185000" />
+      <workItem from="1618179607755" duration="3750000" />
+      <workItem from="1618183436192" duration="7146000" />
     </task>
     <servers />
   </component>
@@ -164,7 +178,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/pdm/emitter/llvm-emitter.cc</url>
-          <line>1126</line>
+          <line>1372</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
       </breakpoints>

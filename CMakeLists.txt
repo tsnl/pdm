@@ -89,11 +89,16 @@ add_library(pdm STATIC
     src/pdm/ast/exp/unary.hh
     src/pdm/ast/exp/unit.hh
     src/pdm/ast/exp/vcall.hh
+    src/pdm/ast/exp/binary.cc
+    src/pdm/ast/exp/unary.cc
 
-        src/pdm/ast/pattern/base-field.hh
+    src/pdm/ast/pattern/base-field.hh
     src/pdm/ast/pattern/lpattern.hh
     src/pdm/ast/pattern/tpattern.hh
     src/pdm/ast/pattern/vpattern.hh
+    src/pdm/ast/pattern/lpattern.cc
+    src/pdm/ast/pattern/vpattern.cc
+    src/pdm/ast/pattern/tpattern.cc
 
     src/pdm/ast/source-node/i-source-node.hh
     src/pdm/ast/source-node/script.cc
@@ -136,6 +141,7 @@ add_library(pdm STATIC
     src/pdm/ast/module/base-mod-exp.hh
     src/pdm/ast/module/extern-c-mod-exp.hh
     src/pdm/ast/module/pkg-bundle-mod-exp.hh
+    src/pdm/ast/module/base-mod-exp.cc
 
     src/pdm/compiler/compiler.cc
     src/pdm/compiler/compiler.hh
@@ -232,7 +238,7 @@ add_library(pdm STATIC
     #   we should eliminate this dependency ASAP.
     dep/utf8proc/utf8proc.c
     dep/utf8proc/utf8proc.h
-        src/pdm/ast/pattern/lpattern.cc src/pdm/ast/pattern/vpattern.cc src/pdm/ast/pattern/tpattern.cc src/pdm/ast/module/base-mod-exp.cc src/pdm/ast/exp/binary.cc src/pdm/ast/exp/unary.cc)
+)
 
 target_link_libraries(pdm PUBLIC
     ${llvm_libs} 
@@ -247,6 +253,9 @@ target_include_directories(pdm PRIVATE
 # see: https://stackoverflow.com/questions/60386792/c20-comparison-warning-about-ambiguous-reversed-operator
 # thus, CXX standard must be set ONLY for our source code.
 set_property(TARGET pdm PROPERTY CXX_STANDARD 20)
+if ($"{CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    set_property(TARGET pdm PROPERTY CXX_FLAGS "-glldb")
+endif()
 set_property(TARGET pdm PROPERTY C_STANDARD   11)
 # set_property(TARGET pdm PROPERTY CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g")
 

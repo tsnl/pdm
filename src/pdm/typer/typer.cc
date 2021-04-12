@@ -385,7 +385,7 @@ namespace pdm::types {
             auto lhs_tv = dynamic_cast<types::TypeVar*>(node->lhs_exp()->x_type_of_var());
             auto rhs_tv = dynamic_cast<types::TypeVar*>(node->rhs_exp()->x_type_of_var());
             assert(lhs_tv && rhs_tv && "Could not type set-stmt: TVs unset");
-            auto solve_res = m_types_mgr->assume_relation_holds(new types::TypeEqualsRelation(
+            auto solve_res = m_types_mgr->assume_relation_holds(new types::SubtypeOfRelation(
                 node,
                 lhs_tv, rhs_tv
             ));
@@ -1052,6 +1052,8 @@ namespace pdm::types {
                             // t IsNumber
                             m_types_mgr->assume_relation_holds(new IsNumberRelation(node, t))
                         );
+
+                        // note: storing 't' would help emit LLVM IR
 
                         return !result_is_error(result_and(t_result, ret_result));
                     }

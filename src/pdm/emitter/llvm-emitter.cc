@@ -10,6 +10,7 @@
 
 #include "pdm/ast/stmt/vax.hh"
 #include "pdm/types/type.hh"
+#include "pdm/printer/printer.hh"
 
 #include <llvm-c/Core.h>
 #include <llvm-c/ExecutionEngine.h>
@@ -212,73 +213,6 @@ namespace pdm::emitter {
 }
 
 namespace pdm::emitter {
-    // This block emits a HEADER DIGEST
-    // - this code helps emit builtin inline definitions for operators,
-    //   like '+' or '=='
-    //      todo: switch to LLVM C++ API to avail of 'always-inline' attribute with LLVM IR before merging
-    // - this information is exported/sent to the body emitter using a HeaderDigest
-    // - cf EmitHeadersVisitor::emit_preamble
-
-    //
-    // Defining the Header Digest:
-    //
-
-    using UnaryOperatorArgKey = types::Type*;
-    using UnaryOperatorTable = std::map <
-        std::pair<ast::UnaryOperator, UnaryOperatorArgKey>,
-        LLVMValueRef
-    >;
-    using BinaryOperatorArgKey = std::pair<types::Type*, types::Type*>;
-    using BinaryOperatorTable = std::map <
-        // assume we read left to right, such that the left binary operator is first.
-        std::pair<ast::BinaryOperator, BinaryOperatorArgKey>,
-        LLVMValueRef
-    >;
-
-    struct HeaderDigest {
-        UnaryOperatorTable unary_operator_table;
-        BinaryOperatorTable binary_operator_table;
-    };
-
-    //
-    // Defining helper types
-    //
-
-    // these types are used to generate inline functions for builtin arithmetic operators:
-
-    enum class NumKind {
-        FloatingPoint,
-        SignedInt,
-        UnsignedInt
-    };
-    struct NumInfo {
-        types::Type* num_type;
-        std::string name;
-        NumKind num_kind;
-    };
-
-    typedef LLVMValueRef(*BuiltinBinaryOperatorBuilderCb)(
-        LLVMBuilderRef builder,
-        LLVMValueRef lhs,
-        LLVMValueRef rhs,
-        char const* name
-    );
-    typedef LLVMValueRef(*BuiltinUnaryOperatorBuilderCb)(
-        LLVMBuilderRef builder,
-        LLVMValueRef lhs,
-        char const* name
-    );
-    struct UnaryOpCbInfo {
-        ast::UnaryOperator op;
-        BuiltinUnaryOperatorBuilderCb cb;
-    };
-    struct BinaryOpCbInfo {
-        ast::BinaryOperator op;
-        BuiltinBinaryOperatorBuilderCb cb;
-    };
-}
-
-namespace pdm::emitter {
 
     class BaseScriptVisitor: public ast::TinyVisitor {
       protected:
@@ -317,7 +251,6 @@ namespace pdm::emitter {
         // this stack stores the WHOLE module prefix to use, e.g.
         // module_a, module_a:home, module_a:home:cfg
         std::vector<std::string> m_module_prefix_stack;
-        HeaderDigest m_digest;
 
       public:
         EmitHeadersVisitor(
@@ -354,8 +287,7 @@ namespace pdm::emitter {
         LLVMModuleRef output_module
     )
     : BaseScriptVisitor(compiler, source_node, output_module),
-      m_module_prefix_stack(1, s_root_module_name),
-      m_digest{}
+      m_module_prefix_stack(1, s_root_module_name)
     {}
 
     void EmitHeadersVisitor::push_module_name(intern::String mod_name) {
@@ -370,210 +302,9 @@ namespace pdm::emitter {
         m_module_prefix_stack.pop_back();
     }
 
-    void EmitHeadersVisitor::emit_preamble() {
-        // the preamble contains inline functions used by every script, such as:
-        // - arithmetic operator definitions
+    void EmitHeadersVisitor::emit_preamble() {}
 
-        // generating symmetric binary operators for each `num_info`, i.e. each prime type:
-
-        //
-        // auxiliary data (tables, helper fns)
-        //
-
-        static std::string const name_prefix = "pdm_builtin_";
-
-        std::vector<NumInfo> const num_info_vec = {
-            // float:
-            {types::FloatType::get_f16(), "f16", NumKind::FloatingPoint},
-            {types::FloatType::get_f32(), "f32", NumKind::FloatingPoint},
-            {types::FloatType::get_f64(), "f64", NumKind::FloatingPoint},
-
-            // signed int:
-            {types::IntType::get_i8(), "i8", NumKind::SignedInt},
-            {types::IntType::get_i16(), "i16", NumKind::SignedInt},
-            {types::IntType::get_i32(), "i32", NumKind::SignedInt},
-            {types::IntType::get_i64(), "i64", NumKind::SignedInt},
-            {types::IntType::get_i128(), "i128", NumKind::SignedInt},
-
-            // unsigned int:
-            {types::IntType::get_u1(), "u1", NumKind::UnsignedInt},
-            {types::IntType::get_u8(), "u8", NumKind::UnsignedInt},
-            {types::IntType::get_u16(), "u16", NumKind::UnsignedInt},
-            {types::IntType::get_u32(), "u32", NumKind::UnsignedInt},
-            {types::IntType::get_u64(), "u64", NumKind::UnsignedInt},
-            {types::IntType::get_u128(), "u128", NumKind::UnsignedInt}
-        };
-
-        // unary operators are (1) arithmetic (return value closed) or (2) comparative (returns u1)
-        // binary operators are (1) arithmetic (return value closed) or (2) comparative (returns u1)
-        // todo: remove UOP_DEREF and UOP_GETREF from compiler.
-
-        std::vector<BinaryOpCbInfo> const si_arithmetic_bin_op_info_vec = {
-            {ast::BinaryOperator::Mul, LLVMBuildMul},
-            {ast::BinaryOperator::Div, LLVMBuildSDiv},
-            {ast::BinaryOperator::Rem, LLVMBuildSRem},
-            {ast::BinaryOperator::Add, LLVMBuildAdd},
-            {ast::BinaryOperator::Subtract, LLVMBuildSub},
-            {ast::BinaryOperator::And, LLVMBuildAnd},
-            {ast::BinaryOperator::XOr, LLVMBuildXor},
-            {ast::BinaryOperator::Or, LLVMBuildOr}
-        };
-
-        std::vector<BinaryOpCbInfo> const ui_arithmetic_bin_op_info_vec = {
-            {ast::BinaryOperator::Mul, LLVMBuildMul},
-            {ast::BinaryOperator::Div, LLVMBuildUDiv},
-            {ast::BinaryOperator::Rem, LLVMBuildURem},
-            {ast::BinaryOperator::Add, LLVMBuildAdd},
-            {ast::BinaryOperator::Subtract, LLVMBuildSub},
-            {ast::BinaryOperator::And, LLVMBuildAnd},
-            {ast::BinaryOperator::XOr, LLVMBuildXor},
-            {ast::BinaryOperator::Or, LLVMBuildOr}
-        };
-        std::vector<BinaryOpCbInfo> const fp_arithmetic_bin_op_info_vec = {
-            {ast::BinaryOperator::Mul, LLVMBuildFMul},
-            {ast::BinaryOperator::Div, LLVMBuildFDiv},
-            {ast::BinaryOperator::Rem, LLVMBuildFRem},
-            {ast::BinaryOperator::Add, LLVMBuildFAdd},
-            {ast::BinaryOperator::Subtract, LLVMBuildFSub}
-        };
-
-        //
-        // local function definitions:
-        //
-
-        auto const define_inline_fn =
-            [this] (std::string const& fn_name, types::Type* fn_type) -> LLVMValueRef {
-                LLVMTypeRef llvm_fn_type = emit_llvm_type_for(fn_type);
-                LLVMValueRef fn = LLVMAddFunction(
-                    this->m_output_module,
-                    fn_name.c_str(),
-                    llvm_fn_type
-                );
-
-                // setting the fn attributes (e.g. always-inline...)
-                // fixme: it appears we cannot use the 'always-inline' attribute through the C API, so we will have to
-                //        switch to the C++ API. Talk about technical debt...
-
-                // for now, just returning non-inline.
-                return fn;
-            };
-
-        auto const begin_inline_fn_def =
-            [this] (LLVMValueRef inline_fn) -> LLVMBasicBlockRef {
-                LLVMBasicBlockRef bb = LLVMAppendBasicBlock(
-                    inline_fn,
-                    "builtin-inline-fn-implementation"
-                );
-                LLVMPositionBuilderAtEnd(
-                    static_cast<LLVMBuilderRef>(this->m_compiler->llvm_builder()),
-                    bb
-                );
-                return bb;
-            };
-
-        auto const end_inline_fn_def = (
-            [this] (LLVMValueRef inline_fn) {
-                LLVMClearInsertionPosition(
-                    static_cast<LLVMBuilderRef>(this->m_compiler->llvm_builder())
-                );
-            }
-        );
-        auto const emit_arithmetic_bin_op_defs = (
-            [&] (
-                NumInfo const& num_info,
-                std::vector<BinaryOpCbInfo> const& arithmetic_bin_op_cb_info
-            ) {
-
-                // creating fn type: T x T -> T
-                types::FnType* binary_arithmetic_fn_type = nullptr;
-                {
-                    intern::String lhs_name = "left_operand";
-                    intern::String rhs_name = "right_operand";
-
-                    std::vector<types::tt::FnField> binary_arithmetic_fn_sgn_fields;
-                    binary_arithmetic_fn_sgn_fields.reserve(3); {
-                        // pushing the return type LAST
-                        binary_arithmetic_fn_sgn_fields.push_back({ast::VArgAccessSpec::In, lhs_name, num_info.num_type, false});
-                        binary_arithmetic_fn_sgn_fields.push_back({ast::VArgAccessSpec::In, lhs_name, num_info.num_type, false});
-                        binary_arithmetic_fn_sgn_fields.push_back({ast::VArgAccessSpec::Out, {}, num_info.num_type, true});
-                    }
-
-                    binary_arithmetic_fn_type = types::FnType::get(binary_arithmetic_fn_sgn_fields);
-                };
-                assert(binary_arithmetic_fn_type && "Expected `binary_arithmetic_fn_type` for builtin inline fn");
-
-                // defining all arithmetic binary operators:
-                for (BinaryOpCbInfo const& cb_info: arithmetic_bin_op_cb_info) {
-                    LLVMValueRef fn = define_inline_fn(
-                        name_prefix + num_info.name + "_" + ast::binary_operator_name(cb_info.op),
-                        binary_arithmetic_fn_type
-                    );
-                    LLVMBasicBlockRef bb = begin_inline_fn_def(fn);
-                    {
-                        LLVMValueRef return_value = cb_info.cb(
-                            static_cast<LLVMBuilderRef>(this->m_compiler->llvm_builder()),
-                            LLVMGetParam(fn, 0),
-                            LLVMGetParam(fn, 1),
-                            "return-value"
-                        );
-                        LLVMBuildRet(
-                            static_cast<LLVMBuilderRef>(this->m_compiler->llvm_builder()),
-                            return_value
-                        );
-                    }
-                    end_inline_fn_def(fn);
-
-                    std::pair<ast::BinaryOperator, std::pair<types::Type*, types::Type*>> key = {cb_info.op, {num_info.num_type, num_info.num_type}};
-
-                    if (pdm::DEBUG) {
-                        assert(
-                            !m_digest.binary_operator_table.contains(key) &&
-                            "Expected each insertion to be unique in builtin fn table"
-                        );
-                    }
-
-                    m_digest.binary_operator_table.insert({key, fn});
-                }
-            }
-        );
-
-        //
-        // implementation:
-        //
-
-        // emitting 'binary arithmetic' operators:
-        for (auto const& num_info: num_info_vec) {
-            // implementing each symmetric operator depending on the type's `num_kind`:
-            switch (num_info.num_kind) {
-                case NumKind::UnsignedInt: {
-                    emit_arithmetic_bin_op_defs(num_info, ui_arithmetic_bin_op_info_vec);
-                    break;
-                }
-                case NumKind::SignedInt: {
-                    emit_arithmetic_bin_op_defs(num_info, si_arithmetic_bin_op_info_vec);
-                    break;
-                }
-                case NumKind::FloatingPoint: {
-                    emit_arithmetic_bin_op_defs(num_info, fp_arithmetic_bin_op_info_vec);
-                    break;
-                }
-            }
-        }
-
-        // todo: emit 'binary comparison' operators using a similar scheme to above
-        // - cf typer/typer.cc with clear type rules
-        // - only for prime types: need to emit `==` operators for more complex data types later.
-
-        // todo: emit unary operators
-        // - only a handful exist for well-known types-- not as complex as above
-
-        // todo: save emitted values to the header digest @ m_digest
-        // todo: write 'export_header_digest' method to send tables to EmitDefsVisitor
-        // todo: update BinaryExp emitter to query these tables to select the right fn for each call.
-    }
-    void EmitHeadersVisitor::emit_postamble() {
-
-    }
+    void EmitHeadersVisitor::emit_postamble() {}
 
     bool EmitHeadersVisitor::on_visit_script(ast::Script* script, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
@@ -1029,7 +760,10 @@ namespace pdm::emitter {
                     // 'in' arguments have space pushed just like 'val' or 'var'
                     // here, we store (copy) the value in the argument to the stack, relying on mem2reg to optimize
                     // if required.
-                    assert(dim->data_as.llvm_ptr_to_storage && "expected non-nullptr to storage after fn_dim for Arg_In.");
+                    assert(
+                        dim->data_as.llvm_ptr_to_storage &&
+                        "expected non-nullptr to storage after fn_dim for Arg_In."
+                    );
                     LLVMValueRef init_store_value = LLVMGetParam(llvm_fn, arg_index);
                     LLVMBuildStore(
                         static_cast<LLVMBuilderRef>(
@@ -1088,12 +822,14 @@ namespace pdm::emitter {
     }
 
     RValue* EmitDefsVisitor::emit_ro_llvm_value_for(ast::Exp* exp) {
+        auto builder = static_cast<LLVMBuilderRef>(m_compiler->llvm_builder());
+
         types::Type* exp_type = exp->x_type_of_var()->get_type_soln();
 
         // pattern-matching to emit values:
         switch (exp->kind()) {
             case ast::Kind::UnitExp: {
-                return new RValue(exp, LLVMGetUndef(LLVMVoidType()));
+                return new RValue(exp, nullptr);
             }
             case ast::Kind::IntExp: {
                 auto int_exp = dynamic_cast<ast::IntExp*>(exp);
@@ -1139,7 +875,7 @@ namespace pdm::emitter {
                             return new RValue(
                                 exp,
                                 LLVMBuildLoad(
-                                    static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()),
+                                    builder,
                                     dim->data_as.llvm_ptr_to_storage,
                                     id_name.c_str()
                                 ),
@@ -1156,22 +892,43 @@ namespace pdm::emitter {
                 } else {
                     return new RValue(
                         exp,
-                        LLVMGetUndef(LLVMVoidType())
+                        nullptr
                     );
                 }
             }
 //            case ast::Kind::StringExp: {
 //                break;
 //            }
-//            case ast::Kind::UnaryExp: {
-//                break;
-//            }
+            case ast::Kind::UnaryExp: {
+                assert(0 && "NotImplemented: emitting unary operators");
+
+                auto unary_exp = dynamic_cast<ast::UnaryExp*>(exp);
+                auto unary_op = unary_exp->unary_operator();
+
+                switch (unary_op) {
+                    case ast::UnaryOperator::Plus: {
+                        break;
+                    }
+                    case ast::UnaryOperator::Minus: {
+                        break;
+                    }
+                    case ast::UnaryOperator::Not: {
+                        break;
+                    }
+                    case ast::UnaryOperator::META_Count: {
+                        break;
+                    }
+                }
+
+                break;
+            }
             case ast::Kind::BinaryExp: {
                 auto binary_exp = dynamic_cast<ast::BinaryExp*>(exp);
                 auto binary_op = binary_exp->binary_operator();
 
                 auto ret_type = binary_exp->x_type_of_var()->get_type_soln();
                 assert(ret_type && "`ret_type` is nullptr");
+                auto llvm_ret_type = emit_llvm_type_for(ret_type);
 
                 // depending on the return type, we must cast arguments to the right type
 
@@ -1181,15 +938,231 @@ namespace pdm::emitter {
                 auto lhs_exp_type = lhs_exp->x_type_of_var()->get_type_soln();
                 auto rhs_exp_type = rhs_exp->x_type_of_var()->get_type_soln();
 
-                auto llvm_lhs_operand = emit_ro_llvm_value_for(lhs_exp);
-                auto llvm_rhs_operand = emit_ro_llvm_value_for(rhs_exp);
+                auto llvm_lhs_exp_type = emit_llvm_type_for(lhs_exp_type);
+                auto llvm_rhs_exp_type = emit_llvm_type_for(rhs_exp_type);
 
-                // todo: determine if cast is required
-                // dangerously assuming all OK
-                // NOTE: cannot just compare with return type, consider '==' operator where arg type != ret type
-                //       except for arg type = U1
+                RValue* emitted_lhs_operand = emit_ro_llvm_value_for(lhs_exp);
+                RValue* emitted_rhs_operand = emit_ro_llvm_value_for(rhs_exp);
 
-                 assert(0 && "NotImplemented: looking up fn to use for binary operator in header digest");
+                LLVMValueRef llvm_lhs = emitted_lhs_operand->llvm_value();
+                LLVMValueRef llvm_rhs = emitted_rhs_operand->llvm_value();
+
+                // trying to emit builtin inline definitions:
+                // - if successful, return immediately with result
+                {
+                    assert(
+                        lhs_exp_type->type_kind() == rhs_exp_type->type_kind() &&
+                        "Asymmetric type kinds in type system"
+                    );
+                    types::Kind symmetric_type_kind = lhs_exp_type->type_kind();
+
+                    // todo: implement type conversions as required.
+                    if (lhs_exp_type != rhs_exp_type) {
+                        // this should be moved to a function and reused for function calls
+                        switch (symmetric_type_kind) {
+                            case types::Kind::SignedInt: {
+                                auto lhs_type = dynamic_cast<types::IntType*>(lhs_exp_type);
+                                auto rhs_type = dynamic_cast<types::IntType*>(rhs_exp_type);
+
+                                // extending the smaller value to match the bigger value:
+                                // may update either `llvm_lhs` or `llvm_rhs`
+                                if (lhs_type->width_in_bits() > rhs_type->width_in_bits()) {
+                                    llvm_rhs = LLVMBuildSExtOrBitCast(builder, llvm_rhs, llvm_lhs_exp_type, "converted(s-ext)_rhs");
+                                    llvm_rhs_exp_type = llvm_lhs_exp_type;
+                                } else if (lhs_type->width_in_bits() < rhs_type->width_in_bits()) {
+                                    llvm_lhs = LLVMBuildSExtOrBitCast(builder, llvm_lhs, llvm_rhs_exp_type, "converted(s-ext)_lhs");
+                                    llvm_lhs_exp_type = llvm_rhs_exp_type;
+                                } else {
+                                    assert(0 && "Error: apparently equal types have different pointer reps.");
+                                }
+                                break;
+                            }
+                            case types::Kind::UnsignedInt: {
+                                auto lhs_type = dynamic_cast<types::IntType*>(lhs_exp_type);
+                                auto rhs_type = dynamic_cast<types::IntType*>(rhs_exp_type);
+
+                                // extending the smaller value to match the bigger value:
+                                // may update either `llvm_lhs` or `llvm_rhs`
+                                if (lhs_type->width_in_bits() > rhs_type->width_in_bits()) {
+                                    llvm_rhs = LLVMBuildZExt(builder, llvm_rhs, llvm_lhs_exp_type, "converted(u-ext)_rhs");
+                                    llvm_rhs_exp_type = llvm_lhs_exp_type;
+                                } else if (lhs_type->width_in_bits() < rhs_type->width_in_bits()) {
+                                    llvm_lhs = LLVMBuildZExt(builder, llvm_lhs, llvm_rhs_exp_type, "converted(u-ext)_lhs");
+                                    llvm_lhs_exp_type = llvm_rhs_exp_type;
+                                } else {
+                                    assert(0 && "Error: apparently equal types have different pointer reps.");
+                                }
+                                break;
+                            }
+                            case types::Kind::Float: {
+                                auto lhs_type = dynamic_cast<types::FloatType*>(lhs_exp_type);
+                                auto rhs_type = dynamic_cast<types::FloatType*>(rhs_exp_type);
+
+                                // extending the smaller value to match the bigger value:
+                                // may update either `llvm_lhs` or `llvm_rhs`
+                                if (lhs_type->width_in_bits() > rhs_type->width_in_bits()) {
+                                    llvm_rhs = LLVMBuildFPExt(builder, llvm_rhs, llvm_lhs_exp_type, "converted(fp-ext)_rhs");
+                                    llvm_rhs_exp_type = llvm_lhs_exp_type;
+                                } else if (lhs_type->width_in_bits() < rhs_type->width_in_bits()) {
+                                    llvm_lhs = LLVMBuildFPExt(builder, llvm_lhs, llvm_rhs_exp_type, "converted(fp-ext)_lhs");
+                                    llvm_lhs_exp_type = llvm_rhs_exp_type;
+                                } else {
+                                    assert(0 && "Error: apparently equal types have different pointer reps.");
+                                }
+                                break;
+                            }
+                            default: {
+                                break;
+                            }
+                        }
+                    }
+                    // - for each operator, can acquire a 'convert-to-type' in _typer_ ('t' metavar)
+
+                    // there are several binary operators to apply to 3 type kinds with 3-6 types each.
+                    switch (binary_op) {
+                        // these 4 operators are defined for every prime type.
+                        case ast::BinaryOperator::Mul: {
+                            switch (symmetric_type_kind) {
+                                case types::Kind::Float:
+                                    return new RValue(exp, LLVMBuildFMul(builder, llvm_lhs, llvm_rhs, "f_mul_res"));
+                                case types::Kind::UnsignedInt:
+                                case types::Kind::SignedInt:
+                                    return new RValue(exp, LLVMBuildMul(builder, llvm_lhs, llvm_rhs, "i_mul_res"));
+                                default: {}
+                            }
+                            break;
+                        }
+                        case ast::BinaryOperator::Div: {
+                            switch (symmetric_type_kind) {
+                                case types::Kind::Float:
+                                    return new RValue(exp, LLVMBuildFDiv(builder, llvm_lhs, llvm_rhs, "f_div_res"));
+                                case types::Kind::SignedInt:
+                                    return new RValue(exp, LLVMBuildSDiv(builder, llvm_lhs, llvm_rhs, "s_div_res"));
+                                case types::Kind::UnsignedInt:
+                                    return new RValue(exp, LLVMBuildUDiv(builder, llvm_lhs, llvm_rhs, "u_div_res"));
+                                default: {}
+                            }
+                            break;
+                        }
+                        case ast::BinaryOperator::Rem: {
+                            switch (symmetric_type_kind) {
+                                case types::Kind::Float:
+                                    return new RValue(exp, LLVMBuildFRem(builder, llvm_lhs, llvm_rhs, "f_rem_res"));
+                                case types::Kind::SignedInt:
+                                    return new RValue(exp, LLVMBuildSRem(builder, llvm_lhs, llvm_rhs, "s_rem_res"));
+                                case types::Kind::UnsignedInt:
+                                    return new RValue(exp, LLVMBuildURem(builder, llvm_lhs, llvm_rhs, "u_rem_res"));
+                                default: {}
+                            }
+                        }
+                        case ast::BinaryOperator::Add: {
+                            switch (symmetric_type_kind) {
+                                case types::Kind::Float:
+                                    return new RValue(exp, LLVMBuildFAdd(builder, llvm_lhs, llvm_rhs, "f_add_res"));
+                                case types::Kind::SignedInt:
+                                case types::Kind::UnsignedInt:
+                                    return new RValue(exp, LLVMBuildAdd(builder, llvm_lhs, llvm_rhs, "i_add_res"));
+                                default: {}
+                            }
+                        }
+                        case ast::BinaryOperator::Subtract: {
+                            switch (symmetric_type_kind) {
+                                case types::Kind::Float:
+                                    return new RValue(exp, LLVMBuildFSub(builder, llvm_lhs, llvm_rhs, "f_subtract_res"));
+                                case types::Kind::SignedInt:
+                                case types::Kind::UnsignedInt:
+                                    return new RValue(exp, LLVMBuildSub(builder, llvm_lhs, llvm_rhs, "i_subtract_res"));
+                                default: {}
+                            }
+                        }
+                        case ast::BinaryOperator::Less: {
+                            switch (symmetric_type_kind) {
+                                case types::Kind::Float:
+                                    return new RValue(exp, LLVMBuildFCmp(builder, LLVMRealOLT, llvm_lhs, llvm_rhs, "f_less_than_res"));
+                                case types::Kind::SignedInt:
+                                    return new RValue(exp, LLVMBuildICmp(builder, LLVMIntSLT, llvm_lhs, llvm_rhs, "s_less_than_res"));
+                                case types::Kind::UnsignedInt:
+                                    return new RValue(exp, LLVMBuildICmp(builder, LLVMIntULT, llvm_lhs, llvm_rhs, "u_less_than_res"));
+                                default: {}
+                            }
+                        }
+                        case ast::BinaryOperator::Greater: {
+                            switch (symmetric_type_kind) {
+                                case types::Kind::Float:
+                                    return new RValue(exp, LLVMBuildFCmp(builder, LLVMRealOGT, llvm_lhs, llvm_rhs, "f_greater_than_res"));
+                                case types::Kind::SignedInt:
+                                    return new RValue(exp, LLVMBuildICmp(builder, LLVMIntSGT, llvm_lhs, llvm_rhs, "s_greater_than_res"));
+                                case types::Kind::UnsignedInt:
+                                    return new RValue(exp, LLVMBuildICmp(builder, LLVMIntUGT, llvm_lhs, llvm_rhs, "u_greater_than_res"));
+                                default: {}
+                            }
+                        }
+                        case ast::BinaryOperator::LessOrEq: {
+                            switch (symmetric_type_kind) {
+                                case types::Kind::Float:
+                                    return new RValue(exp, LLVMBuildFCmp(builder, LLVMRealOLE, llvm_lhs, llvm_rhs, "f_less_or_eq_res"));
+                                case types::Kind::SignedInt:
+                                    return new RValue(exp, LLVMBuildICmp(builder, LLVMIntSLE, llvm_lhs, llvm_rhs, "s_less_or_eq_res"));
+                                case types::Kind::UnsignedInt:
+                                    return new RValue(exp, LLVMBuildICmp(builder, LLVMIntULE, llvm_lhs, llvm_rhs, "u_less_or_eq_res"));
+                                default: {}
+                            }
+                        }
+                        case ast::BinaryOperator::GreaterOrEq: {
+                            switch (symmetric_type_kind) {
+                                case types::Kind::Float:
+                                    return new RValue(exp, LLVMBuildFCmp(builder, LLVMRealOGE, llvm_lhs, llvm_rhs, "f_greater_or_eq_res"));
+                                case types::Kind::SignedInt:
+                                    return new RValue(exp, LLVMBuildICmp(builder, LLVMIntSGE, llvm_lhs, llvm_rhs, "s_greater_or_eq_res"));
+                                case types::Kind::UnsignedInt:
+                                    return new RValue(exp, LLVMBuildICmp(builder, LLVMIntUGE, llvm_lhs, llvm_rhs, "u_greater_or_eq_res"));
+                                default: {}
+                            }
+                        }
+                        case ast::BinaryOperator::Equals: {
+                            switch (symmetric_type_kind) {
+                                case types::Kind::Float:
+                                    return new RValue(exp, LLVMBuildFCmp(builder, LLVMRealOEQ, llvm_lhs, llvm_rhs, "f_equals_res"));
+                                case types::Kind::UnsignedInt:
+                                case types::Kind::SignedInt:
+                                    return new RValue(exp, LLVMBuildICmp(builder, LLVMIntEQ, llvm_lhs, llvm_rhs, "i_equals_res"));
+                                default: {}
+                            }
+                        }
+                        case ast::BinaryOperator::NotEquals: {
+                            switch (symmetric_type_kind) {
+                                case types::Kind::Float:
+                                    return new RValue(exp, LLVMBuildFCmp(builder, LLVMRealONE, llvm_lhs, llvm_rhs, "f_not_equals_res"));
+                                case types::Kind::SignedInt:
+                                case types::Kind::UnsignedInt:
+                                    return new RValue(exp, LLVMBuildICmp(builder, LLVMIntNE, llvm_lhs, llvm_rhs, "i_not_equals_res"));
+                                default: {}
+                            }
+                        }
+                        case ast::BinaryOperator::And: {
+                            if (symmetric_type_kind == types::Kind::UnsignedInt) {
+                                return new RValue(exp, LLVMBuildAnd(builder, llvm_lhs, llvm_rhs, "u_and"));
+                            }
+                        }
+                        case ast::BinaryOperator::XOr: {
+                            if (symmetric_type_kind == types::Kind::UnsignedInt) {
+                                return new RValue(exp, LLVMBuildAnd(builder, llvm_lhs, llvm_rhs, "u_xor"));
+                            }
+                        }
+                        case ast::BinaryOperator::Or: {
+                            if (symmetric_type_kind == types::Kind::UnsignedInt) {
+                                return new RValue(exp, LLVMBuildAnd(builder, llvm_lhs, llvm_rhs, "u_or"));
+                            }
+                        }
+                        case ast::BinaryOperator::META_Count: {
+                            assert(0 && "Invalid Binary Operator-- META_Count intended as a placeholder.");
+                        }
+                    }
+                }
+                // cont. BinaryExp
+
+                // if this point is reached and no 'return' in this branch, undefined op
+                assert(0 && "NotImplemented: reporting undefined BinaryOp for arguments of type ?.");
             }
 //            case ast::Kind::LambdaExp: {
 //                break;
@@ -1238,16 +1211,15 @@ namespace pdm::emitter {
                                 actual_arg_type = actual_arg_r_value->exp()->x_type_of_var()->get_type_soln();
                             }
 
-                            // the past participle of 'cast' is 'cast', but in this case, the intuitive misspelling
-                            // 'casted' helps disambiguate.
-                            LLVMValueRef casted_value = nullptr;
-                            if (formal_arg_type != actual_arg_type) {
-                                casted_value = actual_arg_r_value->llvm_value();
+                            // performing type conversion if required:
+                            LLVMValueRef converted_value = nullptr;
+                            if (formal_arg_type == actual_arg_type) {
+                                converted_value = actual_arg_r_value->llvm_value();
                             } else {
                                 assert(0 && "NotImplemented: casting input arguments for fn call");
                             }
-                            assert(casted_value && "Expected non-nullptr casted value to pass to fn call");
-                            actual_args.push_back(casted_value);
+                            assert(converted_value && "Expected non-nullptr casted value to pass to fn call");
+                            actual_args.push_back(converted_value);
                             break;
                         }
                         case ast::VArgAccessSpec::InOut:
@@ -1272,12 +1244,14 @@ namespace pdm::emitter {
                 }
 
                 // building a call expression:
+                // - NOTE: cannot specify a name because possible void return values will result in LLVM complaining
+                //         that we cannot name 'void' values.
                 std::string returned_value_name = "returned";
                 LLVMValueRef returned_value = LLVMBuildCall(
-                    static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()),
+                    builder,
                     llvm_lhs_called_exp->llvm_value(),
                     actual_args.data(), actual_args.size(),
-                    returned_value_name.c_str()
+                    ""
                 );
 
                 return new RValue(
@@ -1315,7 +1289,7 @@ namespace pdm::emitter {
                                 sole_field->x_defn()->x_llvm_dim(dim);
 
                                 LLVMBuildStore(
-                                    static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()),
+                                    builder,
                                     rhs_value->llvm_value(),
                                     dim->data_as.llvm_ptr_to_storage
                                 );
@@ -1346,7 +1320,7 @@ namespace pdm::emitter {
                                 sole_field->x_defn()->x_llvm_dim(dim);
 
                                 LLVMBuildStore(
-                                    static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()),
+                                    builder,
                                     rhs_value->llvm_value(),
                                     dim->data_as.llvm_ptr_to_storage
                                 );
@@ -1364,8 +1338,10 @@ namespace pdm::emitter {
                             // NOTE:
                             // - discard does not mean this expression is safe to optimize out.
                             // - on the contrary, it means this expression's result MUST be evaluated and discarded.
-                            std::string discard_var_name = "discard @ " + discard_stmt->loc().cpp_str();
-                            LLVMSetValueName(discarded_llvm_value->llvm_value(), discard_var_name.c_str());
+                            // NOTE:
+                            // - cannot name because may be void.
+                            // std::string discard_var_name = "discard @ " + discard_stmt->loc().cpp_str();
+                            // LLVMSetValueName(discarded_llvm_value->llvm_value(), discard_var_name.c_str());
 
                             break;
                         }
@@ -1387,7 +1363,11 @@ namespace pdm::emitter {
                 }
 
                 // emitting the chain suffix:
-                return emit_ro_llvm_value_for(chain_exp->suffix());
+                if (chain_exp->suffix()) {
+                    return emit_ro_llvm_value_for(chain_exp->suffix());
+                } else {
+                    return new RValue(exp, nullptr);
+                }
             }
             default: {
                 assert(0 && "NotImplemented: emitting LLVM for unknown expression kind.");
@@ -1469,6 +1449,8 @@ namespace pdm::emitter {
     //
 
     void EmitDefsVisitor::help_assign_exp_to_l_value(LValue* lhs, ast::Exp* rhs) {
+        auto builder = static_cast<LLVMBuilderRef>(m_compiler->llvm_builder());
+
         switch (lhs->l_value_kind()) {
             case LValueKind::Id: {
                 auto lhs_value = dynamic_cast<IdLValue*>(lhs);
@@ -1478,8 +1460,15 @@ namespace pdm::emitter {
                 if (lhs_type->type_kind() == types::Kind::Void) {
                     // do nothing!
                 } else {
+                    // std::cout << "LHS: " << std::endl << '\t';
+                    // LLVMDumpValue(lhs_value->llvm_storage_ptr());
+                    // std::cout << std::endl;
+                    // std::cout << "RHS:" << std::endl << '\t';
+                    // LLVMDumpValue(rhs_value->llvm_value());
+                    // std::cout << std::endl;
+
                     LLVMBuildStore(
-                        static_cast<LLVMBuilderRef>(m_compiler->llvm_builder()),
+                        builder,
                         rhs_value->llvm_value(),
                         lhs_value->llvm_storage_ptr()
                     );

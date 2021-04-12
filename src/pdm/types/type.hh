@@ -106,8 +106,7 @@ namespace pdm::types {
 
     class IntType: public Type {
       private:
-        int  m_width_in_bits;
-        bool m_using_sign_ext;
+        int m_width_in_bits;
 
       // shared singletons:
       private:
@@ -149,8 +148,7 @@ namespace pdm::types {
 
     inline IntType::IntType(std::string &&name, int width_in_bits, bool using_sign_ext)
     :   Type("IntType:" + std::move(name), (using_sign_ext ? Kind::SignedInt : Kind::UnsignedInt)),
-        m_width_in_bits(width_in_bits),
-        m_using_sign_ext(using_sign_ext)
+        m_width_in_bits(width_in_bits)
     {}
 
     inline int IntType::width_in_bits() const {
@@ -158,7 +156,12 @@ namespace pdm::types {
     }
 
     inline bool IntType::using_sign_ext() const {
-        return m_using_sign_ext;
+        if (type_kind() == Kind::SignedInt) {
+            return true;
+        } else {
+            assert(type_kind() == Kind::UnsignedInt);
+            return false;
+        }
     }
 
     //

@@ -306,7 +306,7 @@ namespace pdm {
 
     bool Compiler::finish() {
         // dump state to stdout after each phase?
-        bool disable_all_printing = false;
+        bool disable_all_printing = true;
         bool print_source_code = pdm::DEBUG && !disable_all_printing;
         bool print_scopes = pdm::DEBUG && !disable_all_printing;
         bool print_types = pdm::DEBUG && !disable_all_printing;
