@@ -1,3 +1,0 @@
-#!/bin/bash
-
-cat src/*.c src/*.h | egrep "todo|fixme" | sed -e 's/^[ \t]*//'

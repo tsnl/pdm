@@ -9,7 +9,7 @@ echo "[Pdm] building with Ninja"
 # - build directory: /build/llvm
 # - install directory: /build/llvm/install
 # see: https://llvm.org/docs/GettingStarted.html#getting-the-source-code-and-building-llvm
-pushd ./build/llvm/
+pushd ./build/llvm/ || exit 1
 cmake ../../dep/llvm-project/llvm \
     -DLLVM_ENABLE_PROJECTS='clang;compiler-rt' \
     -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
@@ -17,12 +17,10 @@ cmake ../../dep/llvm-project/llvm \
     -GNinja
 cmake --build .
 cmake -DCMAKE_INSTALL_PREFIX="./install" -P cmake_install.cmake
-popd
+popd || exit 1
 
 # building source for the parser:
-pushd src/pdm/parser
-./bison-build.sh -Wnone
-popd
+bash top-bison-build.sh
 
 # rebuilding sources now that everything is configured:
 bash rebuild.sh

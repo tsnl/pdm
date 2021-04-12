@@ -656,7 +656,7 @@ namespace pdm { namespace parser {
     KW_NOT = 284,                  // "not"
     KW_OUT = 285,                  // "out"
     KW_INOUT = 286,                // "inout"
-    KW_DISCARD = 287,              // "discard"
+    KW_RUN = 287,                  // "run"
     KW_AS = 288,                   // "as"
     KW_FOR = 289,                  // "for"
     KW_CORE_PROFILE = 290,         // "CORE_PROFILE"
@@ -751,7 +751,7 @@ namespace pdm { namespace parser {
         S_KW_NOT = 29,                           // "not"
         S_KW_OUT = 30,                           // "out"
         S_KW_INOUT = 31,                         // "inout"
-        S_KW_DISCARD = 32,                       // "discard"
+        S_KW_RUN = 32,                           // "run"
         S_KW_AS = 33,                            // "as"
         S_KW_FOR = 34,                           // "for"
         S_KW_CORE_PROFILE = 35,                  // "CORE_PROFILE"
@@ -2738,16 +2738,16 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_KW_DISCARD (location_type l)
+      make_KW_RUN (location_type l)
       {
-        return symbol_type (token::KW_DISCARD, std::move (l));
+        return symbol_type (token::KW_RUN, std::move (l));
       }
 #else
       static
       symbol_type
-      make_KW_DISCARD (const location_type& l)
+      make_KW_RUN (const location_type& l)
       {
-        return symbol_type (token::KW_DISCARD, l);
+        return symbol_type (token::KW_RUN, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS

@@ -1312,7 +1312,7 @@ namespace pdm::emitter {
 
                                 auto sole_field_type = sole_field->x_defn_tv()->get_type_soln();
                                 Dim* dim = fn_dim(
-                                    DimKind::Var,
+                                    DimKind::Val,
                                     sole_field->lhs_name(),
                                     sole_field_type
                                 );

@@ -2,29 +2,18 @@
 #   1. implement function calls (V-call)
 #   2. implement unary, binary operators
 
-#mod entry_point {
-#
-#    let entry_point_without_args () Int32 = {
-#        # module:main()
-#        0
-#    };
-#
-#};
-
 mod entry_point {
 
-    let line_1 (m Int32, c Int32, x Int32, out y Int32) Void = {
-        set y = m * x + c;
+    let line (m Int32, c Int32, x Int32) Int32 = {
+        m * x + c
     };
 
     let main () Int32 = {
-        val m Int32 = 1 * 2;
-        val c Int32 = 12;
-
-        var x1 Int32 = 15;
-        var y1 Int32 = 0;
-
-        discard line_1(m, c, x1, out y1);
+        val m Int32 = 2;
+        val c Int32 = 2*2*3;
+     
+        val x1 Int32 = 3 * 5;
+        val y1 Int32 = line(m, c, x1);
         y1
     };
 

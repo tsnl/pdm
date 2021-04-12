@@ -1,0 +1,31 @@
+# TODO:
+#   1. implement function calls (V-call)
+#   2. implement unary, binary operators
+
+mod entry_point {
+
+    let line (m Int32, c Int32, x Int32, out y Int32) Void = {
+        set y = m * x + c;
+    };
+
+    # let main () Int32 = {
+    #     val m Int32 = 2;
+    #     val c Int32 = 2*2*3;
+    # 
+    #     val x1 Int32 = 3 * 5;
+    #     var y1 Int32 = 0;
+    #
+    #     run line_1(m, c, x1, out y1);
+    #     y1
+    # };
+
+    let main () Int32 = {
+        var y Int32 = 0;
+        run line(0, 0, 0, y);
+        y
+    };
+
+};
+
+# PROBLEM: cannot type integer literal expressions suitably,
+#          even / esp. when passing to function. 

@@ -2534,9 +2534,9 @@ namespace pdm { namespace parser {
 #line 2535 "parser.tab.cc"
     break;
 
-  case 36: // discard_stmt: "discard" expr
+  case 36: // discard_stmt: "run" expr
 #line 375 "parser.yy"
-                        { yylhs.value.as < pdm::ast::Stmt* > () = mgr->new_discard_stmt(yylhs.location, yystack_[0].value.as < pdm::ast::Exp* > ()); }
+                    { yylhs.value.as < pdm::ast::Stmt* > () = mgr->new_discard_stmt(yylhs.location, yystack_[0].value.as < pdm::ast::Exp* > ()); }
 #line 2541 "parser.tab.cc"
     break;
 
@@ -4054,7 +4054,7 @@ namespace pdm { namespace parser {
   "\"else\"", "\"match\"", "\"with\"", "\"imports\"", "\"extern\"",
   "\"from\"", "\"const\"", "\"val\"", "\"var\"", "\"let\"", "\"set\"",
   "\"anonymous_fn\"", "\"and\"", "\"xor\"", "\"or\"", "\"not\"", "\"out\"",
-  "\"inout\"", "\"discard\"", "\"as\"", "\"for\"", "\"CORE_PROFILE\"",
+  "\"inout\"", "\"run\"", "\"as\"", "\"for\"", "\"CORE_PROFILE\"",
   "\"BROWSER_PROFILE\"", "\"NATIVE_PROFILE\"", "\"42\"", "\"0x2a\"",
   "\"42u\"", "\"0x2Au\"", "\"4.2\"", "\"\\\"dq-string-literal\\\"\"",
   "\"'sq-string-literal'\"", "\".\"", "\":\"", "\",\"", "\";\"", "\"::\"",

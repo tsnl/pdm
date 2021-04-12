@@ -219,7 +219,7 @@
 %token KW_NOT "not"
 %token KW_OUT "out"
 %token KW_INOUT "inout"
-%token KW_DISCARD "discard"
+%token KW_RUN "run"
 %token KW_AS "as"
 %token KW_FOR "for"
 %token KW_CORE_PROFILE "CORE_PROFILE"           /* todo: add to lexer */
@@ -372,7 +372,7 @@ set_stmt
     : KW_SET mut_expr BIND expr   { $$ = mgr->new_set_stmt(@$, $2, $4); }
     ; 
 discard_stmt
-    : KW_DISCARD expr   { $$ = mgr->new_discard_stmt(@$, $2); }
+    : KW_RUN expr   { $$ = mgr->new_discard_stmt(@$, $2); }
     ;
 
 /*

@@ -75,7 +75,7 @@ Grammar
 
    34 set_stmt: "set" mut_expr "=" expr
 
-   35 discard_stmt: "discard" expr
+   35 discard_stmt: "run" expr
 
    36 tid: "TypeId"
 
@@ -346,7 +346,7 @@ Terminals, with rules where they appear
     "not" (284) 105
     "out" (285) 164 176
     "inout" (286) 165 177
-    "discard" (287) 35
+    "run" (287) 35
     "as" (288)
     "for" (289)
     "CORE_PROFILE" (290)
@@ -1945,7 +1945,7 @@ State 112
     "set"                    shift, and go to state 185
     "anonymous_fn"           shift, and go to state 47
     "not"                    shift, and go to state 103
-    "discard"                shift, and go to state 186
+    "run"                    shift, and go to state 186
     "42"                     shift, and go to state 104
     "0x2a"                   shift, and go to state 105
     "42u"                    shift, and go to state 106
@@ -2844,7 +2844,7 @@ State 176
     "set"                    shift, and go to state 185
     "anonymous_fn"           shift, and go to state 47
     "not"                    shift, and go to state 103
-    "discard"                shift, and go to state 186
+    "run"                    shift, and go to state 186
     "42"                     shift, and go to state 104
     "0x2a"                   shift, and go to state 105
     "42u"                    shift, and go to state 106
@@ -3008,7 +3008,7 @@ State 185
 
 State 186
 
-   35 discard_stmt: "discard" • expr
+   35 discard_stmt: "run" • expr
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -3169,7 +3169,7 @@ State 196
     "set"                    shift, and go to state 185
     "anonymous_fn"           shift, and go to state 47
     "not"                    shift, and go to state 103
-    "discard"                shift, and go to state 186
+    "run"                    shift, and go to state 186
     "42"                     shift, and go to state 104
     "0x2a"                   shift, and go to state 105
     "42u"                    shift, and go to state 106
@@ -4373,7 +4373,7 @@ State 261
 
 State 262
 
-   35 discard_stmt: "discard" expr •
+   35 discard_stmt: "run" expr •
 
     $default  reduce using rule 35 (discard_stmt)
 

@@ -46,7 +46,7 @@ namespace pdm::parser::aux {
         intern::String else_int_str;
         intern::String match_int_str;
         intern::String with_int_str;
-        intern::String discard_int_str;
+        intern::String run_int_str;
         intern::String fn_int_str;
         intern::String val_int_str;
         intern::String var_int_str;
@@ -73,7 +73,7 @@ namespace pdm::parser::aux {
           else_int_str{},
           match_int_str{},
           with_int_str{},
-          discard_int_str{},
+          run_int_str{},
           fn_int_str{},
           val_int_str{},
           var_int_str{},
@@ -100,7 +100,7 @@ namespace pdm::parser::aux {
             else_int_str = "else";
             match_int_str = "match";
             with_int_str = "with";
-            discard_int_str = "discard";
+            run_int_str = "run";
             fn_int_str = "anonymous_fn";
             val_int_str = "val";
             var_int_str = "var";
@@ -595,7 +595,7 @@ namespace pdm::parser::aux {
         if (intstr == keywords.from_int_str) { return Tk::KW_FROM; }
         if (intstr == keywords.out_int_str) { return Tk::KW_OUT; }
         if (intstr == keywords.inout_int_str) { return Tk::KW_INOUT; }
-        if (intstr == keywords.discard_int_str) { return Tk::KW_DISCARD; }
+        if (intstr == keywords.run_int_str) { return Tk::KW_RUN; }
         if (intstr == keywords.enum_int_str) { return Tk::KW_ENUM; }
         if (intstr == keywords.for_int_str) { return Tk::KW_FOR; }
         else {
@@ -994,9 +994,9 @@ namespace pdm::parser::aux {
                 name = "from";
                 break;
             }
-            case Tk::KW_DISCARD:
+            case Tk::KW_RUN:
             {
-                name = "discard";
+                name = "run";
                 break;
             }
             case Tk::KW_ENUM:
