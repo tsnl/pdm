@@ -67,6 +67,8 @@ add_library(pdm STATIC
     src/pdm/ast/kind.hh
     src/pdm/ast/node.cc
     src/pdm/ast/node.hh
+    src/pdm/ast/builtin.cc
+    src/pdm/ast/builtin.hh
     src/pdm/ast/visitor.cc
     src/pdm/ast/visitor.hh
 
@@ -106,8 +108,6 @@ add_library(pdm STATIC
     src/pdm/ast/source-node/package.hh
 
     src/pdm/ast/stmt/stmt.hh
-    src/pdm/ast/stmt/builtin.cc
-    src/pdm/ast/stmt/builtin.hh
     src/pdm/ast/stmt/const.hh
     src/pdm/ast/stmt/discard.hh
     src/pdm/ast/header/extern_stmt.hh

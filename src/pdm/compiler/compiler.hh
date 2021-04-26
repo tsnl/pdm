@@ -73,6 +73,13 @@ namespace pdm {
         ast::BuiltinStmt* m_f32_tv_client_astn;
         ast::BuiltinStmt* m_f64_tv_client_astn;
 
+      // builtin class stmts:
+      public:
+        ast::BuiltinStmt* m_signed_int_cv_client_astn;
+        ast::BuiltinStmt* m_unsigned_int_cv_client_astn;
+        ast::BuiltinStmt* m_int_cv_client_astn;
+        ast::BuiltinStmt* m_float_cv_client_astn;
+
       public:
         Compiler(std::string&& cwd, std::string const& entry_point_path, intern::String target_name);
         ~Compiler();
@@ -84,6 +91,7 @@ namespace pdm {
         // help_define_builtin_type is called during the constructor, post initialization to define
         // universal types.
         ast::BuiltinStmt* help_define_builtin_type(scoper::Scoper& scoper, intern::String name, types::Var* typer_var);
+        ast::BuiltinStmt* help_define_builtin_class(scoper::Scoper& scoper, intern::String name, types::Var* typer_var);
 
         ast::ISourceNode* check_cache_or_import(std::string const& from_path, std::string const& reason);
         ast::ISourceNode* import_new(std::string const& raw_from_path_string, std::string const& abs_from_path_string, std::string const& reason);

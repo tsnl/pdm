@@ -1,3 +1,5 @@
+April 25, 2021
+
 ## What Went Wrong
 
 Attempted to implement `reduct` system, but ran into issues with 
@@ -115,3 +117,15 @@ mod entry_point {
 
 };
 ```
+
+## Extra Note
+
+If we add templates, each module must be pure to instantiate.
+
+This rules out `var` members in modules, which in turn rules out the ECS-style this language may have been
+going for. Bad.
+
+As Go adds generics on top of an existing type-tree, this increasingly looks like a futile task.
+
+If we commit to adding templates, we cannot use 'var' mod members.
+Instead, rely on functions instantiating and referencing data from the consumer.

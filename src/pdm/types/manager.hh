@@ -5,7 +5,7 @@
 #include <deque>
 
 #include "pdm/core/integer.hh"
-#include "pdm/ast/stmt/builtin.hh"
+#include "pdm/ast/builtin.hh"
 #include "pdm/printer/printer.hh"
 
 #include "var.hh"

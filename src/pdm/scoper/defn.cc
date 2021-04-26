@@ -5,6 +5,7 @@ namespace pdm::scoper {
         switch (defn_kind)
         {
             case DefnKind::BuiltinType: return "BuiltinType";
+            case DefnKind::BuiltinClass: return "BuiltinClass";
             case DefnKind::Module: return "Mod";
             case DefnKind::ImportModule: return "ImportModule";
             case DefnKind::Const: return "Const";

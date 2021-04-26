@@ -39,7 +39,7 @@
 #include "pattern/vpattern.hh"
 #include "pattern/tpattern.hh"
 
-#include "stmt/builtin.hh"
+#include "builtin.hh"
 #include "stmt/const.hh"
 #include "stmt/discard.hh"
 #include "stmt/mod_enum.hh"

@@ -20,7 +20,7 @@ namespace pdm::emitter {
 namespace pdm::scoper {
 
     enum class DefnKind {
-        BuiltinType,
+        BuiltinType, BuiltinClass,
         Module, ImportModule,
         Const,
         Val, Var,

@@ -37,7 +37,7 @@
 #include "pdm/ast/stmt/mod_type.hh"
 #include "pdm/ast/stmt/mod_typeclass.hh"
 #include "pdm/ast/header/extern_stmt.hh"
-#include "pdm/ast/stmt/builtin.hh"
+#include "builtin.hh"
 #include "pdm/ast/stmt/discard.hh"
 #include "pdm/ast/stmt/set.hh"
 #include "pdm/ast/stmt/using.hh"

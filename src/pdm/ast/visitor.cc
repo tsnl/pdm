@@ -44,6 +44,9 @@ namespace pdm::ast {
 
             case Kind::NativeModExp: {
                 auto exp = dynamic_cast<NativeModExp*>(node);
+                if (exp->opt_template_pattern()) {
+                    ok = visit(exp->opt_template_pattern()) && ok;
+                }
                 for (ast::NativeModExp::Field* field: exp->fields()) {
                     ok = visit(field) && ok;
                 }

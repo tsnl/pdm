@@ -10,6 +10,8 @@ namespace pdm::scoper {
 namespace pdm::ast {
 
     class IdClassSpec: public ClassSpec {
+        friend Manager;
+
       private:
         intern::String      m_name;
         scoper::Defn const* m_x_defn;

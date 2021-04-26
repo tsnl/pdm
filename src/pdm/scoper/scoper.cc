@@ -316,7 +316,7 @@ namespace pdm::scoper {
             using_order.lookup_context->link(module_frame, using_stmt->suffix());
         }
 
-        // ModAddressLookupOrders:
+        // ModAddressLookupOrder:
         // Each 'ModAddress' (i.e. a::b::c::, multiple 'residents' can share a module) requires a sequence of successive
         // queries.
         // - using grammar, recursive queries encoded as nested nodes
@@ -328,7 +328,9 @@ namespace pdm::scoper {
         for (auto order_it = m_mod_address_orders.begin(); order_it != m_mod_address_orders.end(); order_it++) {
             ModAddressLookupOrder order = *order_it;
             ast::ModAddress* mod_address = order.mod_address;
-            assert(mod_address->template_args().empty() && "NotImplemented: template calls in mod addresses");
+
+            // note: ignoring template args for now-- looking up in polymorphic space
+            // assert(mod_address->template_args().empty() && "NotImplemented: template calls in mod addresses");
 
             Defn const* module_defn = nullptr;
             if (mod_address->opt_parent_address()) {
@@ -336,17 +338,15 @@ namespace pdm::scoper {
                 auto lhs_origin_mod_exp = mod_address->opt_parent_address()->x_origin_mod_exp();
                 assert(lhs_origin_mod_exp && "Expected non-nullptr lhs_origin_mod_exp when scoping ModAddress");
 
-                // if the parent origin is unknown, an error has already been reported. ignore and move on.
-                if (!lhs_origin_mod_exp) {
-                    continue;
-                }
-
                 // if traversing in reverse order and visit-order correct, LHS' origin should already be known:
                 if (lhs_origin_mod_exp) {
                     // looking up in LHS:
                     module_defn = lhs_origin_mod_exp->x_module_frame()->last_context()->lookup(mod_address->rhs_name());
                 } else {
-                    assert(lhs_origin_mod_exp && "Iterating/appending 'ModAddressLookupOrder's incorrectly-- order error.");
+                    assert(
+                        lhs_origin_mod_exp &&
+                        "Iterating/appending 'ModAddressLookupOrder's incorrectly-- order error."
+                    );
                 }
             } else {
                 // parent address not provided: lookup in the context where this address was used:
@@ -595,17 +595,26 @@ namespace pdm::scoper {
             // - value fields get ValueVars
             if (node->opt_template_pattern()) {
                 for (ast::TPattern::Field* tpattern_field: node->opt_template_pattern()->fields()) {
+                    // defn Type always stores a TypeVar that references can substitute
                     types::Var* formal_var = nullptr;
+                    std::string field_prefix = defn_kind_as_text(DefnKind::FormalTArg);
+                    std::string field_name = tpattern_field->lhs_name().cpp_str();
+                    std::string tv_name = "TPattern(" + field_prefix + "):" + field_name;
                     switch (tpattern_field->field_kind()) {
                         case ast::TPattern::FieldKind::Type: {
+                            // storing PROXY arg:
+                            // doesn't need a unique soln, typechecked like a class, but has 'typevar' interface for
+                            // typing formal arguments in place of (as a proxy of) actual arguments.
+                            // todo: annotate this var as a proxy/polymorph, i.e. gets checked differently
                             std::string targ_var_name = "ttarg:" + tpattern_field->lhs_name().cpp_str();
-                            formal_var = scoper()->types_mgr()->new_unknown_class_var(
+                            formal_var = scoper()->types_mgr()->new_unknown_type_var(
                                 std::move(targ_var_name),
                                 tpattern_field
                             );
                             break;
                         }
                         case ast::TPattern::FieldKind::Value: {
+                            // storing typeof arg:
                             std::string targ_var_name = "vtarg:" + tpattern_field->lhs_name().cpp_str();
                             formal_var = scoper()->types_mgr()->new_unknown_type_var(
                                 std::move(targ_var_name),
@@ -623,9 +632,11 @@ namespace pdm::scoper {
                     };
                     bool defn_ok = top_frame()->define(targ_defn);
                     if (!defn_ok) {
-                        assert(0 && "NotImplemented: report invalid TArg defn");
+                        post_overlapping_defn_error(field_prefix, targ_defn);
+
+                    } else {
+                        tpattern_field->x_defn(targ_defn);
                     }
-                    tpattern_field->x_defn(targ_defn);
                 }
             }
         } else {
@@ -1023,39 +1034,7 @@ namespace pdm::scoper {
         return true;
     }
     bool ScriptScoperVisitor::on_visit_t_pattern(ast::TPattern* node, VisitOrder visit_order) {
-        if (visit_order == VisitOrder::Pre) {
-            for (ast::TPattern::Field* field: node->fields()) {
-                types::Var* field_var = nullptr;
-                std::string field_prefix = defn_kind_as_text(DefnKind::FormalTArg);
-                std::string field_name = field->lhs_name().content();
-                std::string tv_name = "TPattern(" + field_prefix + "):" + field_name;
-                if (field->field_kind() == ast::TPattern::FieldKind::Value) {
-                    // storing typeof arg:
-                    field_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
-                } else if (field->field_kind() == ast::TPattern::FieldKind::Type) {
-                    // storing PROXY arg:
-                    // doesn't need a unique soln, typechecked like a class, but has 'typevar' interface for
-                    // typing formal arguments in place of (as a proxy of) actual arguments.
-                    field_var = scoper()->types_mgr()->new_unknown_type_var(std::move(tv_name), node);
-                }
-                
-                assert(field_var != nullptr && "Unknown TPattern Field Kind or bad var.");
-
-                auto new_defn = new Defn {
-                    DefnKind::FormalTArg,
-                    field->lhs_name(),
-                    field,
-                    field_var
-                };
-
-                bool defn_ok = top_frame()->define(new_defn);
-                if (!defn_ok) {
-                    post_overlapping_defn_error(field_prefix, new_defn);
-                    return false;
-                }
-                field->x_defn(new_defn);
-            }
-        }
+        // note: definitions made by the module
         return true;
     }
     bool ScriptScoperVisitor::on_visit_l_pattern(ast::LPattern* node, VisitOrder visit_order) {

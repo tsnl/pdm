@@ -83,9 +83,17 @@ namespace pdm {
     }
 
     ast::BuiltinStmt* Compiler::help_define_builtin_type(scoper::Scoper& scoper, intern::String name, types::Var* typer_var) {
-        std::string debug_name = std::string("RootType:") + std::string(name.content());
+        std::string debug_name = std::string("RootType:") + name.cpp_str();
         ast::BuiltinStmt* stmt = m_ast_mgr.new_builtin_stmt(std::move(debug_name));
         auto defn = new scoper::Defn {scoper::DefnKind::BuiltinType, name, stmt, typer_var};
+        assert(scoper.root_frame()->define(defn) && "Bad builtins setup.");
+        return stmt;
+    }
+
+    ast::BuiltinStmt* Compiler::help_define_builtin_class(scoper::Scoper& scoper, intern::String name, types::Var* typer_var) {
+        std::string debug_name = std::string("RootClass:") + name.cpp_str();
+        ast::BuiltinStmt* stmt = m_ast_mgr.new_builtin_stmt(std::move(debug_name));
+        auto defn = new scoper::Defn {scoper::DefnKind::BuiltinClass, name, stmt, typer_var};
         assert(scoper.root_frame()->define(defn) && "Bad builtins setup.");
         return stmt;
     }
@@ -218,8 +226,9 @@ namespace pdm {
                 m_f32_tv_client_astn = help_define_builtin_type(scoper, "Float32", types_mgr()->get_f32_tv());
                 m_f64_tv_client_astn = help_define_builtin_type(scoper, "Float64", types_mgr()->get_f64_tv());
 
-                // todo: define class vars:
-
+                m_signed_int_cv_client_astn = help_define_builtin_class(scoper, "S_INT", types_mgr()->get_signed_int_cv());
+                m_unsigned_int_cv_client_astn = help_define_builtin_class(scoper, "U_INT", types_mgr()->get_unsigned_int_cv());
+                m_float_cv_client_astn = help_define_builtin_class(scoper, "FLOAT", types_mgr()->get_float_cv());
             }
         }
 

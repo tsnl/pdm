@@ -2,7 +2,7 @@
 #include "pdm/types/manager.hh"
 #include "pdm/types/var.hh"
 
-#include "pdm/ast/stmt/builtin.hh"
+#include "pdm/ast/builtin.hh"
 
 namespace pdm::scoper {
 
