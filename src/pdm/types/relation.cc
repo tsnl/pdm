@@ -69,16 +69,20 @@ namespace pdm::types {
 
     bool SubtypeOfRelation::on_assume_impl(types::Manager* manager) {
         SolveResult assume_op_result = m_subtype_tv->assume_invariant_holds(
-            new SubtypeOfInvariant(this, m_supertype_tv));
+            new SubtypeOfInvariant(this, m_supertype_tv)
+        );
         return !result_is_error(assume_op_result);
     }
     bool SubclassOfRelation::on_assume_impl(types::Manager* manager) {
         SolveResult assume_op_result = m_subclass_cv->assume_invariant_holds(
-            new SubclassOfInvariant(this, m_superclass_cv));
+            new SubclassOfInvariant(this, m_superclass_cv)
+        );
         return !result_is_error(assume_op_result);
     }
     bool ClassOfRelation::on_assume_impl(types::Manager* manager) {
-        SolveResult assume_op_result = m_class_cv->assume_invariant_holds(new ClassOfInvariant(this, m_member_tv));
+        SolveResult assume_op_result = m_class_cv->assume_invariant_holds(
+            new ClassOfInvariant(this, m_member_tv)
+        );
         return !result_is_error(assume_op_result);
     }
     

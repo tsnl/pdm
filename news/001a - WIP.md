@@ -1,5 +1,16 @@
 # New Plan
 
+
+## Overview
+
+*Continue from: LLVM emitter.*
+
+*Then, change how packages are loaded to load C modules.*
+
+*Then, load C modules as source code.*
+
+## Notes
+
 Just emit binary and unary op instructions, type conversions inline ourselves instead of relying on LLVM to.
 - Allows us to keep the C API.
 - Allows us to simplify implementation and emitted IR (no more functions)

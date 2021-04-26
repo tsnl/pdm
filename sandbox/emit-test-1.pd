@@ -9,11 +9,11 @@ mod entry_point {
     };
 
     let main () Int32 = {
-        val m Int32 = 2;
-        val c Int32 = 2*2*3;
+        val m = 5 * 4;
+        val c = 12;
      
-        val x1 Int32 = 3 * 5;
-        val y1 Int32 = line(m, c, x1);
+        val x1 = 15;
+        val y1 = line(m, c, x1);
         y1
     };
 

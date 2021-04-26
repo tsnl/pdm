@@ -1,6 +1,7 @@
 #include "scoper.hh"
 
 #include <string>
+#include <iostream>
 #include <cassert>
 
 #include "pdm/compiler/compiler.hh"
@@ -249,7 +250,7 @@ namespace pdm::scoper {
             Defn const* module_defn = last_ctx->lookup_until(import_field->import_name(), first_ctx);
             if (module_defn == nullptr) {
                 // posting feedback about importing an undefined symbol
-                std::string headline = "Module '" + import_field->import_name().cpp_str() + "' could not be found in the origin script.";
+                std::string headline = "Mod '" + import_field->import_name().cpp_str() + "' could not be found in the origin script.";
                 std::string desc = "From '" + import_field->parent_group()->from_path().string() + "'";
                 std::vector<feedback::Note*> notes{1}; {
                     std::string note_desc0 = "at import statement here...";
@@ -356,6 +357,7 @@ namespace pdm::scoper {
                 ast::BaseModExp* origin_mod_exp = original_mod_exp_of_import(module_defn);
                 assert(origin_mod_exp && "error in Scoper::finish: could not find origin mod_exp of import");
                 mod_address->x_origin_mod_exp(origin_mod_exp);
+                origin_mod_exp->x_append_mod_address_ref(mod_address);
             } else {
                 // lookup failed... fail & post feedback.
                 ok = false;
@@ -587,6 +589,45 @@ namespace pdm::scoper {
             node->x_module_var(module_tv);
 
             push_frame(FrameKind::ModuleBody);
+
+            // defining each formal tpattern field:
+            // - type fields get ClassVars
+            // - value fields get ValueVars
+            if (node->opt_template_pattern()) {
+                for (ast::TPattern::Field* tpattern_field: node->opt_template_pattern()->fields()) {
+                    types::Var* formal_var = nullptr;
+                    switch (tpattern_field->field_kind()) {
+                        case ast::TPattern::FieldKind::Type: {
+                            std::string targ_var_name = "ttarg:" + tpattern_field->lhs_name().cpp_str();
+                            formal_var = scoper()->types_mgr()->new_unknown_class_var(
+                                std::move(targ_var_name),
+                                tpattern_field
+                            );
+                            break;
+                        }
+                        case ast::TPattern::FieldKind::Value: {
+                            std::string targ_var_name = "vtarg:" + tpattern_field->lhs_name().cpp_str();
+                            formal_var = scoper()->types_mgr()->new_unknown_type_var(
+                                std::move(targ_var_name),
+                                tpattern_field
+                            );
+                            break;
+                        }
+                    }
+
+                    auto targ_defn = new Defn {
+                        DefnKind::FormalTArg,
+                        tpattern_field->lhs_name(),
+                        tpattern_field,
+                        formal_var
+                    };
+                    bool defn_ok = top_frame()->define(targ_defn);
+                    if (!defn_ok) {
+                        assert(0 && "NotImplemented: report invalid TArg defn");
+                    }
+                    tpattern_field->x_defn(targ_defn);
+                }
+            }
         } else {
             node->x_module_frame(top_frame());
             pop_frame();

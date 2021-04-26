@@ -13,6 +13,9 @@
 
 namespace pdm::ast {
 
+    // todo: overhaul this
+    // the other kind of source node is an 'extern' json file that can be imported from source.
+
     // Package is a source node that is a collection of 2 kinds of modules:
     // - ExternModExps: link a static binary and expose a module interface
     // - PkgBundleModExp: import * from X

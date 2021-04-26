@@ -181,7 +181,7 @@ add_library(pdm STATIC
     src/pdm/types/typeop-result.hh
     src/pdm/types/var-invariant.cc
     src/pdm/types/var-invariant.hh
-    src/pdm/types/type.cc
+    src/pdm/types/typespec.cc
     src/pdm/types/type.hh
     src/pdm/types/kind.hh
     src/pdm/types/var.cc
@@ -238,6 +238,10 @@ add_library(pdm STATIC
     #   we should eliminate this dependency ASAP.
     dep/utf8proc/utf8proc.c
     dep/utf8proc/utf8proc.h
+
+    src/pdm/expansion/expansion.cc
+    src/pdm/expansion/expansion.hh
+    src/pdm/expansion/simval.hh
 )
 
 target_link_libraries(pdm PUBLIC

@@ -4,10 +4,10 @@ import {
 
 mod fib_helper {
     let register (x Int32, y Int32) Void = {
-        # print, or something?
-        call_extern {
-            raylib,
+        raylib:init_window();
 
-        }
+        # todo: display a window with a message using RayLib
+
+        raylib:close_window();
     };
 };

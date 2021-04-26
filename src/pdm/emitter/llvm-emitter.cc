@@ -278,8 +278,8 @@ namespace pdm::emitter {
         void emit_postamble();
     };
 
-    std::string const EmitHeadersVisitor::s_root_module_name = "root";
-    std::string const EmitHeadersVisitor::s_module_name_separator = "_$_";
+    std::string const EmitHeadersVisitor::s_root_module_name {"pd"};
+    std::string const EmitHeadersVisitor::s_module_name_separator {"___"};
 
     EmitHeadersVisitor::EmitHeadersVisitor(
         Compiler* compiler,

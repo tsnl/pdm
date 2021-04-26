@@ -217,6 +217,9 @@ namespace pdm {
                 m_f16_tv_client_astn = help_define_builtin_type(scoper, "Float16", types_mgr()->get_f16_tv());
                 m_f32_tv_client_astn = help_define_builtin_type(scoper, "Float32", types_mgr()->get_f32_tv());
                 m_f64_tv_client_astn = help_define_builtin_type(scoper, "Float64", types_mgr()->get_f64_tv());
+
+                // todo: define class vars:
+
             }
         }
 

@@ -12,7 +12,6 @@ Terminals unused in grammar
     "BROWSER_PROFILE"
     "NATIVE_PROFILE"
     "->"
-    "^"
     "&"
     "!"
     "|"
@@ -236,7 +235,7 @@ Grammar
   146 tuple_type_spec: "{" type_spec "}"
   147                | "{" type_spec_cl2 "}"
 
-  148 array_type_spec: "[" type_spec "*" expr "]"
+  148 array_type_spec: "[" type_spec "^" expr "]"
 
   149 struct_type_spec: "{" struct_type_spec_field_cl "}"
 
@@ -371,7 +370,7 @@ Terminals, with rules where they appear
     "{" (309) 8 9 10 11 19 20 65 83 84 85 86 146 147 149 157 173 182
     "}" (310) 8 9 10 11 19 20 65 83 84 85 86 146 147 149 157 173 182
     "->" (311)
-    "*" (312) 107 148
+    "*" (312) 107
     "/" (313) 108
     "%" (314) 109
     "+" (315) 103 112
@@ -383,7 +382,7 @@ Terminals, with rules where they appear
     "=" (321) 14 15 16 18 19 31 32 33 34 174
     "==" (322) 122 135
     "!=" (323) 123
-    "^" (324)
+    "^" (324) 148
     "&" (325)
     "!" (326)
     "|" (327)
@@ -1121,7 +1120,7 @@ State 47
 
 State 48
 
-  148 array_type_spec: "[" • type_spec "*" expr "]"
+  148 array_type_spec: "[" • type_spec "^" expr "]"
 
     "val_id"        shift, and go to state 10
     "TypeId"        shift, and go to state 22
@@ -1507,9 +1506,9 @@ State 80
 
 State 81
 
-  148 array_type_spec: "[" type_spec • "*" expr "]"
+  148 array_type_spec: "[" type_spec • "^" expr "]"
 
-    "*"  shift, and go to state 157
+    "^"  shift, and go to state 157
 
 
 State 82
@@ -2530,7 +2529,7 @@ State 156
 
 State 157
 
-  148 array_type_spec: "[" type_spec "*" • expr "]"
+  148 array_type_spec: "[" type_spec "^" • expr "]"
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -2591,7 +2590,7 @@ State 157
 State 158
 
    43 mod_prefix: vid "[" • targ_cl "]" ":"
-  148 array_type_spec: "[" • type_spec "*" expr "]"
+  148 array_type_spec: "[" • type_spec "^" expr "]"
 
     "val_id"                 shift, and go to state 10
     "TypeId"                 shift, and go to state 22
@@ -4016,7 +4015,7 @@ State 235
 
 State 236
 
-  148 array_type_spec: "[" type_spec "*" expr • "]"
+  148 array_type_spec: "[" type_spec "^" expr • "]"
 
     "]"  shift, and go to state 295
 
@@ -4025,11 +4024,11 @@ State 237
 
    97 dot_name_exp: type_spec • "::" "TypeId"
    98             | type_spec • "::" "TypeId" "using" paren_exp
-  148 array_type_spec: "[" type_spec • "*" expr "]"
+  148 array_type_spec: "[" type_spec • "^" expr "]"
   159 targ: type_spec •
 
     "::"  shift, and go to state 224
-    "*"   shift, and go to state 157
+    "^"   shift, and go to state 157
 
     $default  reduce using rule 159 (targ)
 
@@ -4706,7 +4705,7 @@ State 294
 
 State 295
 
-  148 array_type_spec: "[" type_spec "*" expr "]" •
+  148 array_type_spec: "[" type_spec "^" expr "]" •
 
     $default  reduce using rule 148 (array_type_spec)
 

@@ -186,13 +186,66 @@ namespace pdm::types {
     // modules:
     bool TyperVisitor::on_visit_native_mod_exp(ast::NativeModExp* mod_exp, VisitOrder visit_order) {
         if (visit_order == VisitOrder::Pre) {
-            // TODO: implement typing for templates.
+
+            // binding type specifiers for each tpattern_res
+            SolveResult tpattern_res = SolveResult::NoChange;
             if (mod_exp->opt_template_pattern()) {
-                assert(0 && "NotImplemented: 'TyperVisitor::on_visit_native_mod_exp' with template args.");
+                for (ast::TPattern::Field* field: mod_exp->opt_template_pattern()->fields()) {
+                    switch (field->field_kind()) {
+                        case ast::TPattern::FieldKind::Value: {
+                            auto type_spec = dynamic_cast<ast::TypeSpec*>(field->rhs_set_spec());
+                            assert(type_spec != nullptr && "Expected non-nullptr type-spec.");
+                            TypeVar* tv = expect_type_var(
+                                type_spec->x_spec_var(),
+                                "value tpattern field", "mod tpattern",
+                                field->loc()
+                            );
+                            auto defn_tv = dynamic_cast<TypeVar*>(field->x_defn_var());
+                            assert(defn_tv && "Expected defn_tv from scoper.");
+                            auto spec_eq_relation = new TypeEqualsRelation(
+                                field,
+                                tv, defn_tv
+                            );
+                            tpattern_res = result_and(
+                                m_types_mgr->assume_relation_holds(spec_eq_relation),
+                                tpattern_res
+                            );
+                            break;
+                        }
+                        case ast::TPattern::FieldKind::Type: {
+                            auto class_spec = dynamic_cast<ast::ClassSpec*>(field->rhs_set_spec());
+                            assert(class_spec != nullptr && "Expected non-nullptr typeclass-spec.");
+                            ClassVar* cv = expect_class_var(
+                                class_spec->x_spec_var(),
+                                "type tpattern field", "mod tpattern",
+                                field->loc()
+                            );
+                            auto defn_cv = dynamic_cast<ClassVar*>(field->x_defn_var());
+                            assert(defn_cv && "Expected defn_cv from scoper.");
+                            auto spec_eq_relation = new ClassEqualsRelation(
+                                field,
+                                cv, defn_cv
+                            );
+                            tpattern_res = result_and(
+                                m_types_mgr->assume_relation_holds(spec_eq_relation),
+                                tpattern_res
+                            );
+                            break;
+                        }
+                    }
+                }
+                // assert(0 && "NotImplemented: 'TyperVisitor::on_visit_native_mod_exp' with template args.");
+            }
+
+            // relating targ types to each reference, as determined by module address id lookup orders in the scoper
+            {
+                for (ast::ModAddress* mod_address: mod_exp->x_mod_address_refs()) {
+
+                }
             }
 
             // all ok:
-            return true;
+            return !result_is_error(tpattern_res);
         } else {
             // retrieving and typing the TV:
             assert(visit_order == VisitOrder::Post && "Invalid visit order.");

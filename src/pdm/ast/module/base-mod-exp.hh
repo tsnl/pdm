@@ -10,6 +10,7 @@ namespace pdm::ast {
     class Exp;
     class TypeSpec;
     class ClassSpec;
+    class ModAddress;
 }
 namespace pdm::scoper {
     class Defn;
@@ -92,6 +93,7 @@ namespace pdm::ast {
         std::vector<Field*> m_fields;
         scoper::Frame* m_x_module_frame;
         types::TypeVar* m_x_module_var;
+        std::vector<ModAddress*> m_x_ma_refs;
 
       public:
         [[nodiscard]] scoper::Frame* x_module_frame() const;
@@ -102,13 +104,18 @@ namespace pdm::ast {
 
       public:
         [[nodiscard]] std::vector<Field*> const& fields() const;
+
+      public:
+        void x_append_mod_address_ref(ModAddress* mod_address_ref);
+        std::vector<ModAddress*> x_mod_address_refs();
     };
 
     inline BaseModExp::BaseModExp(source::Loc loc, ast::Kind kind, std::vector<Field*>&& fields)
     :   Node{loc, kind},
         m_fields(std::move(fields)),
         m_x_module_frame{nullptr},
-        m_x_module_var{nullptr}
+        m_x_module_var{nullptr},
+        m_x_ma_refs()
     {}
 
     inline scoper::Frame* BaseModExp::x_module_frame() const {
@@ -167,6 +174,14 @@ namespace pdm::ast {
 
     inline std::vector<BaseModExp::Field*> const& BaseModExp::fields() const {
         return m_fields;
+    }
+
+    inline void BaseModExp::x_append_mod_address_ref(ModAddress* mod_address_ref) {
+        m_x_ma_refs.push_back(mod_address_ref);
+    }
+
+    inline std::vector<ast::ModAddress*> BaseModExp::x_mod_address_refs() {
+        return m_x_ma_refs;
     }
 
     inline scoper::Defn* BaseModExp::Field::x_defn() const {

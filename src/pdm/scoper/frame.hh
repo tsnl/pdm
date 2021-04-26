@@ -40,11 +40,12 @@ namespace pdm::scoper {
       protected:
         // primary constructor: called by all other constructors
         Frame(FrameKind kind, Frame* parent_frame, types::Manager* typer)
-        : m_typer(typer),
-          m_kind(kind),
-          m_parent_frame(parent_frame),
-          m_first_context(nullptr),
-          m_last_context(nullptr) {
+        :   m_typer(typer),
+            m_kind(kind),
+            m_parent_frame(parent_frame),
+            m_first_context(nullptr),
+            m_last_context(nullptr)
+        {
             // if non-null parent, updating:
             Context* parent_last_ctx = nullptr;
             if (m_parent_frame) {
@@ -66,27 +67,27 @@ namespace pdm::scoper {
         : Frame(kind, parent_frame, parent_frame->typer()) {}
 
       public:
-        FrameKind kind() const {
+        inline FrameKind kind() const {
             return m_kind;
         }
-        types::Manager* typer() const {
+        inline types::Manager* typer() const {
             return m_typer;
         }
-        Frame* parent_frame() const {
+        inline Frame* parent_frame() const {
             return m_parent_frame;
         }
-        std::vector<Frame*> const& child_frames() const {
+        inline std::vector<Frame*> const& child_frames() const {
             return m_child_frames;
         }
-        Context* first_context() const {
+        inline Context* first_context() const {
             return m_first_context;
         }
-        Context* last_context() const {
+        inline Context* last_context() const {
             return m_last_context;
         }
 
       private:
-        ContextKind select_child_ctx_kind() const { 
+        inline ContextKind select_child_ctx_kind() const {
             switch (m_kind) {
                 case FrameKind::Root: return ContextKind::RootDefs;
                 case FrameKind::Script: return ContextKind::ScriptDefs;

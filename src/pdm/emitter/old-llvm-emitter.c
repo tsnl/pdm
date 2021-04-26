@@ -1386,7 +1386,7 @@ int EmitLlvmModule(Manager* typer, AstNode* module) {
 
     int debugPrintLlvmLL = 1;
     if (DEBUG && debugPrintLlvmLL) {
-        printf("!!- LLVM Module Dump:\n");
+        printf("!!- LLVM Mod Dump:\n");
         LLVMDumpModule(emitter.module);
     }
 

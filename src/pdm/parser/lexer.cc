@@ -101,7 +101,7 @@ namespace pdm::parser::aux {
             match_int_str = "match";
             with_int_str = "with";
             run_int_str = "run";
-            fn_int_str = "anonymous_fn";
+            fn_int_str = "fn";
             val_int_str = "val";
             var_int_str = "var";
             const_int_str = "const";
@@ -912,6 +912,11 @@ namespace pdm::parser::aux {
             case Tk::KW_TYPECLASS:
             {
                 name = "typeclass";
+                break;
+            }
+            case Tk::KW_FN:
+            {
+                name = "fn";
                 break;
             }
             case Tk::KW_MOD:

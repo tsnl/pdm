@@ -7,6 +7,6 @@
 namespace pdm::scoper {
 
     RootFrame::RootFrame(types::Manager* frame_typer)
-    : Frame(FrameKind::Root, nullptr, frame_typer) {}
+    :    Frame(FrameKind::Root, nullptr, frame_typer) {}
 
 }

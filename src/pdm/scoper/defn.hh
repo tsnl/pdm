@@ -74,7 +74,7 @@ namespace pdm::scoper {
             return m_defn_node;
         }
         [[nodiscard]] types::Var* var() const {
-            return m_var;
+             return m_var;
         }
         [[nodiscard]] Context* container_context() const {
             return m_container_context;

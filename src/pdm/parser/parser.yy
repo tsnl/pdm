@@ -623,7 +623,7 @@ tuple_type_spec
     | LCYBRK type_spec_cl2 RCYBRK  { $$ = mgr->new_tuple_type_spec(@$, std::move($2)); }
     ;
 array_type_spec
-    : LSQBRK type_spec ASTERISK expr RSQBRK     { $$ = nullptr; }
+    : LSQBRK type_spec CARET expr RSQBRK     { $$ = nullptr; }
     ;
 
 struct_type_spec

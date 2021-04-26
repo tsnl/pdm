@@ -39,7 +39,7 @@ namespace pdm::types {
             case Kind::Tuple: return "Tuple";
             case Kind::Struct: return "Struct";
             case Kind::Enum: return "Enum";
-            case Kind::Module: return "Module";
+            case Kind::Module: return "Mod";
             case Kind::Fn: return "Fn";
             case Kind::Array: return "Array";
         }
